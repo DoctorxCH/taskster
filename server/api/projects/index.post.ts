@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto'
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { folder_id, title } = body
+  const { folder_id, title, template_id } = body
 
   if (!folder_id || !title || !title.trim()) {
     throw createError({ statusCode: 400, statusMessage: 'Ordner-ID und Projekttitel sind erforderlich' })
@@ -45,12 +45,72 @@ export default defineEventHandler(async (event) => {
     VALUES (?, ?, ?, 'active')
   `).run(projectId, folder_id, title.trim())
 
-  // Default initial list
-  const listId = 'lst_' + randomUUID().substring(0, 8)
-  db.prepare(`
-    INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-    VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
-  `).run(listId, projectId)
+  if (template_id) {
+    const tmpl = db.prepare('SELECT * FROM project_templates WHERE id = ?').get(template_id) as any
+    if (tmpl) {
+      const lists = tmpl.lists ? JSON.parse(tmpl.lists) : []
+      const fields = tmpl.fields ? JSON.parse(tmpl.fields) : []
+
+      if (lists && lists.length > 0) {
+        let order = 1
+        for (const listTitle of lists) {
+          const listId = 'lst_' + randomUUID().substring(0, 8)
+          db.prepare(`
+            INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+            VALUES (?, ?, ?, 'inherit', ?)
+          `).run(listId, projectId, listTitle, order++)
+        }
+      } else {
+        const listId = 'lst_' + randomUUID().substring(0, 8)
+        db.prepare(`
+          INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+          VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
+        `).run(listId, projectId)
+      }
+
+      if (fields && fields.length > 0) {
+        const existingKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
+        const count = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
+        let sortOrder = count + 1
+
+        for (const f of fields) {
+          const fKey = f.field_key || f.label.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+          if (existingKeys.includes(fKey)) continue
+
+          const fId = 'fld_def_' + randomUUID().substring(0, 8)
+          db.prepare(`
+            INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            fId,
+            folder_id,
+            fKey,
+            f.label || fKey,
+            f.field_type || 'text',
+            f.entity_type || 'task',
+            JSON.stringify(f.options || []),
+            f.logic_rules ? JSON.stringify(f.logic_rules) : null,
+            f.is_required ? 1 : 0,
+            sortOrder++
+          )
+          existingKeys.push(fKey)
+        }
+      }
+    } else {
+      const listId = 'lst_' + randomUUID().substring(0, 8)
+      db.prepare(`
+        INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+        VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
+      `).run(listId, projectId)
+    }
+  } else {
+    // Default initial list
+    const listId = 'lst_' + randomUUID().substring(0, 8)
+    db.prepare(`
+      INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+      VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
+    `).run(listId, projectId)
+  }
 
   return {
     project: {
@@ -61,4 +121,5 @@ export default defineEventHandler(async (event) => {
     }
   }
 })
+
 

@@ -86,7 +86,17 @@
         <span>🛡️</span>
         <span>Zugriffsregeln & Tarif-Limits</span>
       </button>
+
+      <button
+        @click="activeTab = 'templates'"
+        class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
+        :class="activeTab === 'templates' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+      >
+        <span>📋</span>
+        <span>Projekt-Vorlagen (Job & Privat)</span>
+      </button>
     </div>
+
 
     <!-- TAB 1: USERS & CUSTOMERS -->
     <div v-if="activeTab === 'users'" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
@@ -400,6 +410,431 @@
       </div>
     </div>
 
+    <!-- TAB 4: PROJECT TEMPLATES -->
+    <div v-if="activeTab === 'templates'" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+            <span>📋</span>
+            <span>Projekt-Vorlagen (Gewerbe, Jobs & Privat)</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+            Verwalte strukturierte Vorlagen mit Standard-Listen und benutzerdefinierten Feldern inklusive bedingter IF-THEN-Logik. Benutzer können diese beim Erstellen eines neuen Projekts auswählen.
+          </p>
+        </div>
+
+        <button
+          @click="openCreateTemplateModal"
+          class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+        >
+          <span>+ Neue Vorlage erstellen</span>
+        </button>
+      </div>
+
+      <!-- Filter and Search Bar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+          <button
+            @click="templateCategoryFilter = 'all'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition"
+            :class="templateCategoryFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+          >
+            Alle Vorlagen ({{ templates.length }})
+          </button>
+          <button
+            @click="templateCategoryFilter = 'job'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5"
+            :class="templateCategoryFilter === 'job' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+          >
+            <span>💼</span>
+            <span>Job & Gewerbe ({{ templates.filter(t => t.category === 'job').length }})</span>
+          </button>
+          <button
+            @click="templateCategoryFilter = 'private'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5"
+            :class="templateCategoryFilter === 'private' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+          >
+            <span>🏡</span>
+            <span>Privat ({{ templates.filter(t => t.category === 'private').length }})</span>
+          </button>
+        </div>
+
+        <div class="w-full sm:w-72">
+          <input
+            v-model="templateSearch"
+            type="text"
+            placeholder="Vorlage suchen..."
+            class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+          />
+        </div>
+      </div>
+
+      <!-- Templates Grid -->
+      <div v-if="filteredTemplates.length === 0" class="p-12 text-center bg-slate-900 border border-slate-800 rounded-2xl">
+        <div class="text-4xl mb-3">🔍</div>
+        <h4 class="text-sm font-bold text-white mb-1">Keine Vorlagen gefunden</h4>
+        <p class="text-xs text-slate-400 mb-4">Erstelle deine erste Vorlage oder passe den Suchfilter an.</p>
+        <button @click="openCreateTemplateModal" class="taskster_button px-6 text-xs h-[42px] rounded-lg">
+          + Jetzt Vorlage anlegen
+        </button>
+      </div>
+
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          v-for="tmpl in filteredTemplates"
+          :key="tmpl.id"
+          class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-700 transition"
+        >
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="flex items-center space-x-2">
+                <span
+                  class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                  :class="tmpl.category === 'job' ? 'bg-blue-950 text-blue-300 border border-blue-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                >
+                  {{ tmpl.category === 'job' ? '💼 Job / Gewerbe' : '🏡 Privat' }}
+                </span>
+                <span v-if="tmpl.subcategory" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
+                  {{ tmpl.subcategory }}
+                </span>
+              </div>
+              <span v-if="tmpl.is_system" class="text-[10px] text-purple-400 font-semibold bg-purple-950/60 border border-purple-900 px-2 py-0.5 rounded">
+                System-Vorlage
+              </span>
+            </div>
+
+            <h4 class="text-base font-bold text-white mb-1">{{ tmpl.name }}</h4>
+            <p class="text-xs text-slate-400 leading-relaxed line-clamp-2 mb-4">
+              {{ tmpl.description || 'Keine Beschreibung angegeben.' }}
+            </p>
+
+            <!-- Pre-configured Lists -->
+            <div class="mb-3">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Vordefinierte Abschnitte / Listen ({{ tmpl.lists?.length || 0 }})</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <span
+                  v-for="(lst, i) in tmpl.lists"
+                  :key="i"
+                  class="px-2 py-0.5 rounded text-[11px] bg-slate-950 border border-slate-800 text-slate-300"
+                >
+                  {{ lst }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Custom Fields & Logic -->
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Benutzerdefinierte Felder ({{ tmpl.fields?.length || 0 }})</span>
+              </div>
+              <div class="space-y-1.5">
+                <div
+                  v-for="(f, i) in tmpl.fields"
+                  :key="i"
+                  class="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800/80 text-xs"
+                >
+                  <div class="flex items-center space-x-2">
+                    <span class="font-medium text-slate-200">{{ f.label }}</span>
+                    <span class="text-[10px] font-mono text-slate-500">({{ f.field_key }})</span>
+                    <span class="text-slate-400 font-mono">[{{ f.field_type }}]</span>
+                    <span
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                      :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                    >
+                      {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
+                    </span>
+                  </div>
+
+                  <span
+                    v-if="f.logic_rules && f.logic_rules.depends_on_field"
+                    class="text-[10px] text-amber-300 font-mono bg-amber-950/60 border border-amber-900/60 px-2 py-0.5 rounded"
+                    :title="`Nur sichtbar wenn ${f.logic_rules.depends_on_field} == ${f.logic_rules.depends_on_value}`"
+                  >
+                    ⚡ Wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+            <button
+              @click="openEditTemplateModal(tmpl)"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Bearbeiten
+            </button>
+            <button
+              @click="deleteTemplate(tmpl.id)"
+              class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg"
+            >
+              Löschen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Create / Edit Template -->
+    <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl w-full shadow-2xl my-8">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-white">
+            {{ editingTemplate ? 'Projekt-Vorlage bearbeiten' : 'Neue Projekt-Vorlage erstellen' }}
+          </h3>
+          <button @click="showTemplateModal = false" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+
+        <form @submit.prevent="saveTemplate" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Vorlagen-Name *</label>
+              <input
+                v-model="tmplForm.name"
+                type="text"
+                required
+                placeholder="z.B. Bauleitung Tiefbau & LWL"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Kategorie *</label>
+              <select
+                v-model="tmplForm.category"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+              >
+                <option value="job">💼 Job / Gewerbe</option>
+                <option value="private">🏡 Privat / Persönlich</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Unterkategorie / Branche</label>
+              <input
+                v-model="tmplForm.subcategory"
+                type="text"
+                placeholder="z.B. bau, it, handwerk, renovierung, event"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Beschreibung</label>
+              <input
+                v-model="tmplForm.description"
+                type="text"
+                placeholder="Kurze Zusammenfassung des Einsatzbereichs"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+          </div>
+
+          <!-- Lists / Sections Editor -->
+          <div class="pt-3 border-t border-slate-800">
+            <label class="block text-xs font-bold text-white uppercase tracking-wider mb-1">
+              Vordefinierte Abschnitte / Listen
+            </label>
+            <p class="text-[11px] text-slate-400 mb-2">
+              Diese Listen werden automatisch angelegt, wenn ein Projekt mit dieser Vorlage erstellt wird.
+            </p>
+
+            <div class="flex flex-wrap gap-2 mb-2">
+              <span
+                v-for="(lst, idx) in tmplForm.lists"
+                :key="idx"
+                class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200"
+              >
+                <span>{{ lst }}</span>
+                <button type="button" @click="tmplForm.lists.splice(idx, 1)" class="text-rose-400 hover:text-rose-300 text-xs">✕</button>
+              </span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="newTmplListInput"
+                type="text"
+                placeholder="Neuen Abschnitt eingeben (z.B. In Prüfung)..."
+                class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                @keydown.enter.prevent="addTmplList"
+              />
+              <button
+                type="button"
+                @click="addTmplList"
+                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-semibold"
+              >
+                + Hinzufügen
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Fields Editor -->
+          <div class="pt-3 border-t border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-xs font-bold text-white uppercase tracking-wider">
+                  Benutzerdefinierte Felder mit Logik
+                </label>
+                <p class="text-[11px] text-slate-400">
+                  Felder für Aufgaben oder das gesamte Projekt inkl. bedingter Abhängigkeiten.
+                </p>
+              </div>
+            </div>
+
+            <!-- Existing fields list -->
+            <div v-if="tmplForm.fields.length > 0" class="space-y-2">
+              <div
+                v-for="(f, idx) in tmplForm.fields"
+                :key="idx"
+                class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+              >
+                <div class="space-y-0.5">
+                  <div class="flex items-center space-x-2">
+                    <strong class="text-white">{{ f.label }}</strong>
+                    <span class="text-slate-500 font-mono text-[11px]">({{ f.field_key }})</span>
+                    <span class="text-slate-400 font-mono">[{{ f.field_type }}]</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300' : 'bg-emerald-950 text-emerald-300'">
+                      {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
+                    </span>
+                  </div>
+                  <div v-if="f.options && f.options.length > 0" class="text-[11px] text-slate-400">
+                    Optionen: {{ f.options.join(', ') }}
+                  </div>
+                  <div v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-300 font-mono">
+                    ⚡ Nur sichtbar wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  @click="tmplForm.fields.splice(idx, 1)"
+                  class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1"
+                >
+                  Löschen
+                </button>
+              </div>
+            </div>
+
+            <!-- New field inputs -->
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+              <h5 class="text-xs font-bold text-slate-300">+ Neues Feld zur Vorlage hinzufügen</h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">Feldbezeichnung</label>
+                  <input
+                    v-model="newField.label"
+                    type="text"
+                    placeholder="z.B. OTDR Messung"
+                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">Feldtyp</label>
+                  <select
+                    v-model="newField.field_type"
+                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                  >
+                    <option value="text">Textzeile</option>
+                    <option value="number">Zahl / Währung</option>
+                    <option value="select">Auswahlliste (Dropdown)</option>
+                    <option value="date">Datum</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">Ebene</label>
+                  <select
+                    v-model="newField.entity_type"
+                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                  >
+                    <option value="task">Aufgaben-Feld</option>
+                    <option value="project">Projekt-Feld</option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="newField.field_type === 'select'">
+                <label class="block text-[10px] text-slate-400 mb-1">Dropdown-Optionen (Komma-getrennt)</label>
+                <input
+                  v-model="newFieldOptionsInput"
+                  type="text"
+                  placeholder="Ja, Nein, Ausstehend"
+                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                />
+              </div>
+
+              <!-- Conditional Logic Controls -->
+              <div class="pt-2 border-t border-slate-800">
+                <label class="flex items-center space-x-2 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    v-model="newFieldHasLogic"
+                    class="rounded border-slate-700 text-purple-600 focus:ring-0"
+                  />
+                  <span class="text-xs text-amber-300 font-semibold">⚡ Bedingte Sichtbarkeit (Abhängig von anderem Feld)</span>
+                </label>
+
+                <div v-if="newFieldHasLogic" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-lg bg-amber-950/20 border border-amber-900/40">
+                  <div>
+                    <label class="block text-[10px] text-amber-200 mb-1">Abhängig von Feld-Key</label>
+                    <select
+                      v-model="newFieldLogicDepField"
+                      class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                    >
+                      <option value="">-- Feld auswählen --</option>
+                      <option v-for="f in tmplForm.fields" :key="f.field_key" :value="f.field_key">
+                        {{ f.label }} ({{ f.field_key }})
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-amber-200 mb-1">Erwarteter Wert</label>
+                    <input
+                      v-model="newFieldLogicExpectedVal"
+                      type="text"
+                      placeholder="z.B. LWL / Spleissen"
+                      class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  @click="addFieldToTemplate"
+                  class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition"
+                >
+                  + Feld hinzufügen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+            <button
+              type="button"
+              @click="showTemplateModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              Vorlage speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
     <!-- Modal: Create Company -->
     <div v-if="showCreateCompanyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
@@ -483,11 +918,163 @@
 <script setup lang="ts">
 const { user, authHeaders } = useAuth()
 
-const activeTab = ref<'users' | 'companies' | 'invites' | 'policies'>('users')
+const activeTab = ref<'users' | 'companies' | 'invites' | 'policies' | 'templates'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
 const loading = ref(true)
+
+const templates = ref<any[]>([])
+const templateCategoryFilter = ref('all')
+const templateSearch = ref('')
+const showTemplateModal = ref(false)
+const editingTemplate = ref<any>(null)
+
+const tmplForm = ref({
+  name: '',
+  category: 'job',
+  subcategory: '',
+  description: '',
+  icon: 'Folder',
+  lists: [] as string[],
+  fields: [] as any[]
+})
+
+const newTmplListInput = ref('')
+const newField = ref({
+  label: '',
+  field_type: 'text',
+  entity_type: 'task'
+})
+const newFieldOptionsInput = ref('')
+const newFieldHasLogic = ref(false)
+const newFieldLogicDepField = ref('')
+const newFieldLogicExpectedVal = ref('')
+
+const filteredTemplates = computed(() => {
+  return templates.value.filter((t: any) => {
+    const matchCat = templateCategoryFilter.value === 'all' || t.category === templateCategoryFilter.value
+    const q = templateSearch.value.toLowerCase().trim()
+    const matchSearch = !q || (t.name?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.subcategory?.toLowerCase().includes(q))
+    return matchCat && matchSearch
+  })
+})
+
+const openCreateTemplateModal = () => {
+  editingTemplate.value = null
+  tmplForm.value = {
+    name: '',
+    category: 'job',
+    subcategory: '',
+    description: '',
+    icon: 'Folder',
+    lists: ['Planung', 'In Bearbeitung', 'Abnahme', 'Erledigt'],
+    fields: []
+  }
+  newTmplListInput.value = ''
+  resetNewField()
+  showTemplateModal.value = true
+}
+
+const openEditTemplateModal = (tmpl: any) => {
+  editingTemplate.value = tmpl
+  tmplForm.value = {
+    name: tmpl.name,
+    category: tmpl.category,
+    subcategory: tmpl.subcategory || '',
+    description: tmpl.description || '',
+    icon: tmpl.icon || 'Folder',
+    lists: [...(tmpl.lists || [])],
+    fields: JSON.parse(JSON.stringify(tmpl.fields || []))
+  }
+  newTmplListInput.value = ''
+  resetNewField()
+  showTemplateModal.value = true
+}
+
+const resetNewField = () => {
+  newField.value = { label: '', field_type: 'text', entity_type: 'task' }
+  newFieldOptionsInput.value = ''
+  newFieldHasLogic.value = false
+  newFieldLogicDepField.value = ''
+  newFieldLogicExpectedVal.value = ''
+}
+
+const addTmplList = () => {
+  const l = newTmplListInput.value.trim()
+  if (l && !tmplForm.value.lists.includes(l)) {
+    tmplForm.value.lists.push(l)
+    newTmplListInput.value = ''
+  }
+}
+
+const addFieldToTemplate = () => {
+  const lbl = newField.value.label.trim()
+  if (!lbl) return alert('Bitte Feldbezeichnung eingeben')
+  const key = lbl.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+
+  let options: string[] = []
+  if (newField.value.field_type === 'select') {
+    options = newFieldOptionsInput.value.split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  let logicRules: any = null
+  if (newFieldHasLogic.value && newFieldLogicDepField.value) {
+    logicRules = {
+      depends_on_field: newFieldLogicDepField.value,
+      depends_on_value: newFieldLogicExpectedVal.value.trim()
+    }
+  }
+
+  tmplForm.value.fields.push({
+    field_key: key,
+    label: lbl,
+    field_type: newField.value.field_type,
+    entity_type: newField.value.entity_type,
+    options,
+    logic_rules: logicRules,
+    is_required: false
+  })
+
+  resetNewField()
+}
+
+const saveTemplate = async () => {
+  try {
+    if (editingTemplate.value) {
+      await $fetch(`/api/templates/${editingTemplate.value.id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: tmplForm.value
+      })
+      alert('Vorlage erfolgreich aktualisiert!')
+    } else {
+      await $fetch('/api/templates', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: tmplForm.value
+      })
+      alert('Vorlage erfolgreich erstellt!')
+    }
+    showTemplateModal.value = false
+    await loadAdminData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage')
+  }
+}
+
+const deleteTemplate = async (id: string) => {
+  if (!confirm('Möchtest du diese Vorlage wirklich löschen?')) return
+  try {
+    await $fetch(`/api/templates/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadAdminData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen der Vorlage')
+  }
+}
 
 const inviteEmail = ref('')
 const inviteRole = ref('member')
@@ -507,7 +1094,8 @@ const loadAdminData = async () => {
     const promises: Promise<any>[] = [
       $fetch<any>('/api/admin/overview', { headers: authHeaders() }),
       $fetch<any>('/api/admin/users', { headers: authHeaders() }),
-      $fetch<any>('/api/admin/companies', { headers: authHeaders() })
+      $fetch<any>('/api/admin/companies', { headers: authHeaders() }),
+      $fetch<any>('/api/templates', { headers: authHeaders() })
     ]
     if (user.value?.company_id && user.value?.company_role === 'admin') {
       promises.push($fetch<any>('/api/companies/invitations', { headers: authHeaders() }))
@@ -517,8 +1105,9 @@ const loadAdminData = async () => {
     overview.value = results[0]
     users.value = results[1].users || []
     companies.value = results[2].companies || []
-    if (results[3]) {
-      pendingInvites.value = results[3].invitations || []
+    templates.value = results[3].templates || []
+    if (results[4]) {
+      pendingInvites.value = results[4].invitations || []
     }
   } catch (err: any) {
     if (err.statusCode === 403 || err.statusCode === 401) {

@@ -25,9 +25,311 @@ function getDb() {
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]);
+        ensureTables($pdo);
     }
     return $pdo;
 }
+
+function ensureTables($pdo) {
+    static $ensured = false;
+    if ($ensured) return;
+    $ensured = true;
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS project_templates (
+                id VARCHAR(64) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                category VARCHAR(64) NOT NULL DEFAULT 'job',
+                subcategory VARCHAR(64) NULL,
+                description TEXT NULL,
+                icon VARCHAR(64) DEFAULT 'Folder',
+                is_system TINYINT(1) NOT NULL DEFAULT 1,
+                company_id VARCHAR(64) NULL,
+                lists JSON NULL,
+                fields JSON NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        $count = $pdo->query("SELECT COUNT(*) FROM project_templates")->fetchColumn();
+        if ((int)$count === 0) {
+            seedTemplates($pdo);
+        }
+    } catch (Exception $e) {
+        // Continue if table exists or migration done
+    }
+}
+
+function seedTemplates($pdo) {
+    $defaults = [
+        [
+            'id' => 'tmpl_lwl_tiefbau',
+            'name' => 'Bau- & Tiefbauleitung (LWL / Glasfaser)',
+            'category' => 'job',
+            'subcategory' => 'bau',
+            'description' => 'Vorkonfigurierte Bauleitung für Telekommunikation, Grabenbau, Rohrverlegung, Spleissen und OTDR-Dämpfungsmessung.',
+            'icon' => 'HardHat',
+            'lists' => ["Planung / Trasse", "Tiefbau & Rohrverlegung", "Einblasen & Spleissen", "Messung & Abnahme", "Erledigt"],
+            'fields' => [
+                [
+                    'field_key' => 'gewerk',
+                    'label' => 'Gewerk / Bauabschnitt',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Tiefbau & Graben', 'LWL / Spleissen', 'Kupfermontage'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'baufirma',
+                    'label' => 'Ausführendes Bauunternehmen',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'trassenlaenge_m',
+                    'label' => 'Trassenlänge (Meter)',
+                    'field_type' => 'number',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => ['depends_on_field' => 'gewerk', 'depends_on_value' => 'Tiefbau & Graben']
+                ],
+                [
+                    'field_key' => 'otdr_messung_ok',
+                    'label' => 'OTDR Dämpfungsmessung',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Ja (Protokoll angehängt)', 'Nein (Mangel)', 'Nicht erforderlich'],
+                    'is_required' => false,
+                    'logic_rules' => ['depends_on_field' => 'gewerk', 'depends_on_value' => 'LWL / Spleissen']
+                ],
+                [
+                    'field_key' => 'abnahme_status',
+                    'label' => 'Bauabnahme Status',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Ausstehend', 'Mängelfrei abgenommen', 'Nachbesserung erforderlich'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_it_software',
+            'name' => 'IT-Systemhaus & Software-Entwicklung',
+            'category' => 'job',
+            'subcategory' => 'it',
+            'description' => 'Agiles Aufgaben- und Ticketmanagement für IT-Projekte, Bugtracking, Code-Reviews und Deployments.',
+            'icon' => 'Laptop',
+            'lists' => ["Backlog", "In Bearbeitung (Sprint)", "Code Review & QA", "Deployment / Live"],
+            'fields' => [
+                [
+                    'field_key' => 'ticket_typ',
+                    'label' => 'Ticket-Typ',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Feature', 'Bug / Fehler', 'Support / Wartung', 'Dokumentation'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'prio',
+                    'label' => 'Dringlichkeit (Prio)',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Prio 1 (Kritisch)', 'Prio 2 (Hoch)', 'Prio 3 (Mittel)', 'Prio 4 (Niedrig)'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'bug_severity',
+                    'label' => 'Bug Severity',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Blocker (Systemausfall)', 'Major (Fehlfunktion)', 'Minor (Kosmetisch)'],
+                    'is_required' => false,
+                    'logic_rules' => ['depends_on_field' => 'ticket_typ', 'depends_on_value' => 'Bug / Fehler']
+                ],
+                [
+                    'field_key' => 'aufwand_stunden',
+                    'label' => 'Geschätzter Aufwand (h)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_elektro_handwerk',
+            'name' => 'Handwerk & Elektroinstallation',
+            'category' => 'job',
+            'subcategory' => 'handwerk',
+            'description' => 'Strukturierte Projektabwicklung vom Auftragseingang über Materialbeschaffung bis zur Abnahme und SiNa-Prüfung.',
+            'icon' => 'Wrench',
+            'lists' => ["Auftragseingang", "Materialbestellung", "Montage vor Ort", "Messung & SiNa-Prüfung", "Rechnung gestellt"],
+            'fields' => [
+                [
+                    'field_key' => 'auftraggeber_typ',
+                    'label' => 'Auftraggeber-Kategorie',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Privatkunde', 'Gewerbekunde', 'Öffentliche Hand'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'sicherheitsnachweis_nr',
+                    'label' => 'SiNa-Protokoll-Nummer',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'material_status',
+                    'label' => 'Material-Status',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Material bestellt', 'Im Lager vorrätig', 'Vor Ort montiert'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'stundenaufwand',
+                    'label' => 'Geleistete Stunden',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_hausbau_privat',
+            'name' => 'Hausbau & Wohnungsrenovierung',
+            'category' => 'private',
+            'subcategory' => 'renovierung',
+            'description' => 'Perfekt für private Renovierungen, Sanierungen und Umbauten inklusive Gewerke- und Kostenübersicht.',
+            'icon' => 'Home',
+            'lists' => ["Ideen & Recherche", "Offerten / Angebote einholen", "In Ausführung", "Fertiggestellt"],
+            'fields' => [
+                [
+                    'field_key' => 'raum',
+                    'label' => 'Zimmer / Bereich',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Wohnzimmer', 'Küche', 'Badezimmer', 'Schlafzimmer', 'Garten / Terrasse', 'Keller / Technik'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'ausfuehrung_durch',
+                    'label' => 'Ausführung durch',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Eigenleistung', 'Handwerker / Extern', 'Familie & Freunde'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'handwerker_firma',
+                    'label' => 'Beauftragte Firma / Handwerker',
+                    'field_type' => 'text',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => ['depends_on_field' => 'ausfuehrung_durch', 'depends_on_value' => 'Handwerker / Extern']
+                ],
+                [
+                    'field_key' => 'budget_chf',
+                    'label' => 'Kostenbudget (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'ist_kosten_chf',
+                    'label' => 'Tatsächliche Kosten (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_event_privat',
+            'name' => 'Event- & Feierplanung (Hochzeit, Fest)',
+            'category' => 'private',
+            'subcategory' => 'event',
+            'description' => 'Organisation privater Feiern von Dienstleisterverträgen bis zum Ablaufplan am Eventtag.',
+            'icon' => 'Sparkles',
+            'lists' => ["Planung & Ideen", "Buchungen & Verträge", "Woche vor dem Event", "Tag des Events", "Nachbereitung"],
+            'fields' => [
+                [
+                    'field_key' => 'kategorie',
+                    'label' => 'Event-Kategorie',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Location & Catering', 'Musik / DJ', 'Fotograf & Video', 'Deko & Blumen', 'Gäste & Einladungen'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'anzahlung_erledigt',
+                    'label' => 'Anzahlung geleistet',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Ja (Quittung vorhanden)', 'Nein (Offen)', 'Nicht erforderlich'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'preis_chf',
+                    'label' => 'Kosten / Honorar (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'faelligkeit',
+                    'label' => 'Fälligkeitsdatum',
+                    'field_type' => 'date',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ]
+    ];
+
+    $stmt = $pdo->prepare("
+        INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+    ");
+    foreach ($defaults as $d) {
+        $stmt->execute([
+            $d['id'], $d['name'], $d['category'], $d['subcategory'], $d['description'],
+            $d['icon'], json_encode($d['lists']), json_encode($d['fields'])
+        ]);
+    }
+}
+
 
 function base64UrlEncode($data) {
     return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
@@ -578,6 +880,7 @@ try {
         $folderId = $body['folder_id'] ?? '';
         $title = trim($body['title'] ?? '');
         $customData = $body['custom_data'] ?? [];
+        $templateId = $body['template_id'] ?? null;
         if (!$folderId || !$title) errorResponse('Ordner und Titel erforderlich', 400);
 
         $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
@@ -585,11 +888,64 @@ try {
             $prjId, $folderId, $title, json_encode($customData)
         ]);
 
-        $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+        if ($templateId) {
+            $tStmt = $db->prepare("SELECT * FROM project_templates WHERE id = ?");
+            $tStmt->execute([$templateId]);
+            $tmpl = $tStmt->fetch();
+            if ($tmpl) {
+                $lists = !empty($tmpl['lists']) ? (is_string($tmpl['lists']) ? json_decode($tmpl['lists'], true) : $tmpl['lists']) : [];
+                $fields = !empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : [];
+
+                if (!empty($lists)) {
+                    $order = 1;
+                    foreach ($lists as $listTitle) {
+                        $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, 'inherit', ?)")
+                           ->execute([$lstId, $prjId, $listTitle, $order++]);
+                    }
+                } else {
+                    $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+                }
+
+                if (!empty($fields)) {
+                    $existingFieldsStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
+                    $existingFieldsStmt->execute([$folderId]);
+                    $existingKeys = $existingFieldsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                    $countStmt = $db->prepare("SELECT COUNT(*) FROM folder_field_definitions WHERE folder_id = ?");
+                    $countStmt->execute([$folderId]);
+                    $sortOrder = (int)$countStmt->fetchColumn() + 1;
+
+                    foreach ($fields as $f) {
+                        $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
+                        if (in_array($fKey, $existingKeys)) continue;
+
+                        $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                        $fLabel = $f['label'] ?? $fKey;
+                        $fType = $f['field_type'] ?? 'text';
+                        $fEntity = $f['entity_type'] ?? 'task';
+                        $fOpts = $f['options'] ?? [];
+                        $fRules = $f['logic_rules'] ?? null;
+                        $fReq = !empty($f['is_required']) ? 1 : 0;
+
+                        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                           ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
+                        $existingKeys[] = $fKey;
+                    }
+                }
+            } else {
+                $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+            }
+        } else {
+            $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+        }
 
         jsonResponse(['project' => ['id' => $prjId, 'folder_id' => $folderId, 'title' => $title, 'status' => 'active']]);
     }
+
 
     // 9. GET projects/:id
     if (preg_match('#^projects/([^/]+)$#', $path, $m) && $method === 'GET') {
@@ -1058,8 +1414,125 @@ try {
         jsonResponse(['success' => true]);
     }
 
+    // ----------------------------------------------------
+    // PROJECT TEMPLATES ENDPOINTS
+    // ----------------------------------------------------
+
+    // 23. GET templates
+    if ($path === 'templates' && $method === 'GET') {
+        $user = requireAuth();
+        $cat = $_GET['category'] ?? null;
+        $q = trim($_GET['q'] ?? '');
+
+        $sql = "SELECT * FROM project_templates WHERE 1=1";
+        $params = [];
+        if ($cat && $cat !== 'all') {
+            $sql .= " AND category = ?";
+            $params[] = $cat;
+        }
+        if ($q) {
+            $sql .= " AND (name LIKE ? OR description LIKE ? OR subcategory LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+        }
+        $sql .= " ORDER BY is_system DESC, category ASC, name ASC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $templates = array_map(function($t) {
+            $t['lists'] = !empty($t['lists']) ? (is_string($t['lists']) ? json_decode($t['lists'], true) : $t['lists']) : [];
+            $t['fields'] = !empty($t['fields']) ? (is_string($t['fields']) ? json_decode($t['fields'], true) : $t['fields']) : [];
+            return $t;
+        }, $stmt->fetchAll());
+
+        jsonResponse(['templates' => $templates]);
+    }
+
+    // 24. GET templates/:id
+    if (preg_match('#^templates/([^/]+)$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $tmplId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_templates WHERE id = ?");
+        $stmt->execute([$tmplId]);
+        $t = $stmt->fetch();
+        if (!$t) errorResponse('Vorlage nicht gefunden', 404);
+
+        $t['lists'] = !empty($t['lists']) ? (is_string($t['lists']) ? json_decode($t['lists'], true) : $t['lists']) : [];
+        $t['fields'] = !empty($t['fields']) ? (is_string($t['fields']) ? json_decode($t['fields'], true) : $t['fields']) : [];
+        jsonResponse(['template' => $t]);
+    }
+
+    // 25. POST templates (Admin only)
+    if ($path === 'templates' && $method === 'POST') {
+        $user = requireAuth();
+        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+            errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
+        }
+
+        $name = trim($body['name'] ?? '');
+        if (!$name) errorResponse('Vorlagenname erforderlich', 400);
+
+        $tmplId = 'tmpl_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $category = in_array($body['category'] ?? '', ['job', 'private']) ? $body['category'] : 'job';
+        $subcategory = trim($body['subcategory'] ?? '');
+        $description = trim($body['description'] ?? '');
+        $icon = trim($body['icon'] ?? 'Folder');
+        $lists = $body['lists'] ?? [];
+        $fields = $body['fields'] ?? [];
+
+        $stmt = $db->prepare("INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, company_id, lists, fields) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $tmplId, $name, $category, $subcategory, $description, $icon,
+            !empty($user['is_superadmin']) ? 1 : 0,
+            $user['company_id'] ?? null,
+            json_encode($lists),
+            json_encode($fields)
+        ]);
+
+        jsonResponse(['success' => true, 'id' => $tmplId]);
+    }
+
+    // 26. PUT templates/:id (Admin only)
+    if (preg_match('#^templates/([^/]+)$#', $path, $m) && $method === 'PUT') {
+        $user = requireAuth();
+        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+            errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
+        }
+        $tmplId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_templates WHERE id = ?");
+        $stmt->execute([$tmplId]);
+        $existing = $stmt->fetch();
+        if (!$existing) errorResponse('Vorlage nicht gefunden', 404);
+
+        $name = trim($body['name'] ?? $existing['name']);
+        $category = in_array($body['category'] ?? '', ['job', 'private']) ? $body['category'] : $existing['category'];
+        $subcategory = isset($body['subcategory']) ? trim($body['subcategory']) : $existing['subcategory'];
+        $description = isset($body['description']) ? trim($body['description']) : $existing['description'];
+        $icon = isset($body['icon']) ? trim($body['icon']) : $existing['icon'];
+        $lists = isset($body['lists']) ? json_encode($body['lists']) : $existing['lists'];
+        $fields = isset($body['fields']) ? json_encode($body['fields']) : $existing['fields'];
+
+        $upStmt = $db->prepare("UPDATE project_templates SET name = ?, category = ?, subcategory = ?, description = ?, icon = ?, lists = ?, fields = ? WHERE id = ?");
+        $upStmt->execute([$name, $category, $subcategory, $description, $icon, $lists, $fields, $tmplId]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // 27. DELETE templates/:id (Admin only)
+    if (preg_match('#^templates/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+            errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
+        }
+        $tmplId = $m[1];
+        $db->prepare("DELETE FROM project_templates WHERE id = ?")->execute([$tmplId]);
+        jsonResponse(['success' => true]);
+    }
+
     // Not found
     errorResponse("Endpoint nicht gefunden: {$method} {$path}", 404);
+
 
 } catch (Exception $e) {
     errorResponse('Server Error: ' . $e->getMessage(), 500);
