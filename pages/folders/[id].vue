@@ -41,27 +41,63 @@
 
       <!-- Projects Section -->
       <div class="mb-12">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-white tracking-wide flex items-center space-x-2">
-            <span>🏗️</span>
-            <span>Projekte & Bauvorhaben</span>
-          </h2>
-          <span class="text-xs text-slate-400">{{ projects.length }} Projekte</span>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div class="flex items-center space-x-3">
+            <h2 class="text-lg font-bold text-white tracking-wide flex items-center space-x-2">
+              <span>📋</span>
+              <span>Projekte</span>
+            </h2>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
+              {{ projects.length }}
+            </span>
+          </div>
+
+          <!-- View Mode Toggle & Actions -->
+          <div class="flex items-center space-x-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center space-x-1">
+              <button
+                @click="projectViewMode = 'grid'"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5"
+                :class="projectViewMode === 'grid' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-white'"
+                title="Kachel-Ansicht"
+              >
+                <span>▦</span>
+                <span>Kacheln</span>
+              </button>
+              <button
+                @click="projectViewMode = 'list'"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5"
+                :class="projectViewMode === 'list' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-white'"
+                title="Listen- / Tabellenansicht"
+              >
+                <span>☰</span>
+                <span>Liste</span>
+              </button>
+            </div>
+
+            <button
+              @click="showNewProjectModal = true"
+              class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition flex items-center space-x-1.5 shadow-lg shadow-emerald-500/10"
+            >
+              <span>+ Neues Projekt</span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="projects.length === 0" class="text-center py-12 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
-          <span class="text-3xl">🏗️</span>
+        <div v-if="projects.length === 0" class="text-center py-16 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
+          <span class="text-3xl">📋</span>
           <h3 class="text-sm font-bold text-slate-200 mt-2">Noch keine Projekte in diesem Ordner</h3>
-          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle jetzt das erste Bau- oder Arbeitsprojekt.</p>
+          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle jetzt das erste Projekt für dein Team.</p>
           <button
             @click="showNewProjectModal = true"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+            class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
           >
             + Projekt anlegen
           </button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- VIEW MODE 1: GRID / KACHELN -->
+        <div v-else-if="projectViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="project in projects"
             :key="project.id"
@@ -69,8 +105,11 @@
           >
             <div>
               <div class="flex items-start justify-between mb-3">
-                <span class="text-xl">📋</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 uppercase tracking-wider">
+                <span class="text-xl">📁</span>
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                  :class="project.status === 'completed' ? 'bg-slate-800 text-slate-300' : 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60'"
+                >
                   {{ project.status }}
                 </span>
               </div>
@@ -79,9 +118,20 @@
                 {{ project.title }}
               </h3>
 
+              <!-- Project Custom Fields chips -->
+              <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-3">
+                <span
+                  v-for="(val, key) in project.custom_data"
+                  :key="key"
+                  class="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 font-medium"
+                >
+                  <strong class="text-emerald-400">{{ getFieldLabel(key) }}:</strong> {{ val }}
+                </span>
+              </div>
+
               <div class="grid grid-cols-3 gap-2 py-3 border-y border-slate-800/80 my-3 text-center">
                 <div>
-                  <div class="text-[10px] text-slate-500 uppercase">Listen</div>
+                  <div class="text-[10px] text-slate-500 uppercase">Abschnitte</div>
                   <div class="text-sm font-bold text-slate-200">{{ project.list_count }}</div>
                 </div>
                 <div>
@@ -105,56 +155,62 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Folder Field Definitions Section -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center space-x-2">
-              <span>⚙️</span>
-              <span>Benutzerdefinierte Felder (Ordner-Vererbung)</span>
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Alle hier definierten Felder werden automatisch an alle Aufgaben in diesem Ordner vererbt (z.B. Priorität, Verantwortlicher, Status, Budget).
-            </p>
-          </div>
-          <button
-            @click="showNewFieldModal = true"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-          >
-            + Feld definieren
-          </button>
-        </div>
-
-        <div v-if="fields.length === 0" class="text-center py-8 text-xs text-slate-500">
-          Noch keine benutzerdefinierten Felder definiert.
-        </div>
-
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-          <div
-            v-for="field in fields"
-            :key="field.id"
-            class="p-4 rounded-xl bg-slate-950 border border-slate-800"
-          >
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold text-slate-200">{{ field.label }}</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                {{ field.field_type }}
-              </span>
-            </div>
-            <div class="text-[11px] font-mono text-emerald-400/80 mb-2">
-              Key: {{ field.field_key }}
-            </div>
-            <div v-if="field.options && field.options.length > 0" class="flex flex-wrap gap-1">
-              <span
-                v-for="opt in field.options"
-                :key="opt"
-                class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400"
-              >
-                {{ opt }}
-              </span>
-            </div>
+        <!-- VIEW MODE 2: LIST / TABELLE -->
+        <div v-else class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-3.5 px-4">Projekttitel</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4">Abschnitte & Aufgaben</th>
+                  <th class="py-3.5 px-4">Projekt-Felder</th>
+                  <th class="py-3.5 px-4 text-right">Aktion</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                <tr v-for="project in projects" :key="project.id" class="hover:bg-slate-800/40 transition">
+                  <td class="py-3.5 px-4">
+                    <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-100 hover:text-emerald-400 transition text-sm">
+                      {{ project.title }}
+                    </NuxtLink>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span
+                      class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                      :class="project.status === 'completed' ? 'bg-slate-800 text-slate-400' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'"
+                    >
+                      {{ project.status }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="text-slate-200 font-semibold">{{ project.task_count }} Aufgaben</span>
+                    <span class="text-slate-500"> in {{ project.list_count }} Abschnitten</span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-1">
+                      <span
+                        v-for="(val, key) in project.custom_data"
+                        :key="key"
+                        class="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300"
+                      >
+                        {{ getFieldLabel(key) }}: <strong class="text-white">{{ val }}</strong>
+                      </span>
+                    </div>
+                    <span v-else class="text-slate-600">-</span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <NuxtLink
+                      :to="`/projects/${project.id}`"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-200 transition inline-block"
+                    >
+                      Öffnen →
+                    </NuxtLink>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -165,7 +221,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
         <h3 class="text-lg font-bold text-white mb-2">Neues Projekt anlegen</h3>
         <p class="text-xs text-slate-400 mb-4">
-          Das Projekt wird innerhalb des Ordners "{{ folder?.name }}" erstellt und erbt dessen Einstellungen und Felddefinitionen.
+          Das Projekt wird innerhalb des Ordners "{{ folder?.name }}" erstellt.
         </p>
 
         <div v-if="projectModalError" class="mb-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
@@ -182,6 +238,30 @@
               placeholder="z.B. Website Relaunch Q3"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
+          </div>
+
+          <!-- Project Custom Fields if any exist -->
+          <div v-if="projectFields.length > 0" class="pt-3 border-t border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+              Projekt-Felder
+            </h4>
+            <div v-for="f in projectFields" :key="f.id">
+              <label class="block text-xs font-medium text-slate-300 mb-1">{{ f.label }}</label>
+              <select
+                v-if="f.field_type === 'select'"
+                v-model="newProjectCustomData[f.field_key]"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="">-- Nicht ausgewählt --</option>
+                <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input
+                v-else
+                v-model="newProjectCustomData[f.field_key]"
+                :type="f.field_type === 'number' ? 'number' : 'text'"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-4">
@@ -203,65 +283,6 @@
         </form>
       </div>
     </div>
-
-    <!-- Modal: New Field Definition -->
-    <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Neues Feld für Ordner definieren</h3>
-
-        <form @submit.prevent="createField" class="space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Feldbezeichnung (Label)</label>
-            <input
-              v-model="newFieldLabel"
-              type="text"
-              required
-              placeholder="z.B. Priorität oder Kostenstelle"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Feldtyp</label>
-            <select
-              v-model="newFieldType"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-            >
-              <option value="text">Textzeile</option>
-              <option value="select">Auswahlliste (Dropdown)</option>
-              <option value="number">Zahl / Währung</option>
-              <option value="date">Datum</option>
-            </select>
-          </div>
-
-          <div v-if="newFieldType === 'select'">
-            <label class="block text-xs font-medium text-slate-300 mb-1">Optionen (Komma-getrennt)</label>
-            <input
-              v-model="newFieldOptionsRaw"
-              type="text"
-              placeholder="z.B. Offen, In Prüfung, Freigegeben"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-
-          <div class="flex items-center justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              @click="showNewFieldModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
-            >
-              Feld speichern
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -274,16 +295,22 @@ const folder = ref<any>(null)
 const projects = ref<any[]>([])
 const fields = ref<any[]>([])
 const loading = ref(true)
+const projectViewMode = ref<'grid' | 'list'>('grid')
 
 const showNewProjectModal = ref(false)
 const newProjectTitle = ref('')
+const newProjectCustomData = ref<Record<string, any>>({})
 const creatingProject = ref(false)
 const projectModalError = ref('')
 
-const showNewFieldModal = ref(false)
-const newFieldLabel = ref('')
-const newFieldType = ref('text')
-const newFieldOptionsRaw = ref('')
+const projectFields = computed(() => {
+  return fields.value.filter((f: any) => f.entity_type === 'project')
+})
+
+const getFieldLabel = (key: string) => {
+  const f = fields.value.find((item: any) => item.field_key === key)
+  return f ? f.label : key
+}
 
 const loadFolderData = async () => {
   loading.value = true
@@ -310,40 +337,20 @@ const createProject = async () => {
     await $fetch('/api/projects', {
       method: 'POST',
       headers: authHeaders(),
-      body: { folder_id: folderId, title: newProjectTitle.value }
+      body: {
+        folder_id: folderId,
+        title: newProjectTitle.value,
+        custom_data: newProjectCustomData.value
+      }
     })
     showNewProjectModal.value = false
     newProjectTitle.value = ''
+    newProjectCustomData.value = {}
     await loadFolderData()
   } catch (err: any) {
     projectModalError.value = err.data?.statusMessage || 'Projekt konnte nicht erstellt werden'
   } finally {
     creatingProject.value = false
-  }
-}
-
-const createField = async () => {
-  try {
-    const options = newFieldType.value === 'select'
-      ? newFieldOptionsRaw.value.split(',').map((s) => s.trim()).filter(Boolean)
-      : []
-
-    await $fetch(`/api/folders/${folderId}/fields`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        field_key: newFieldLabel.value,
-        label: newFieldLabel.value,
-        field_type: newFieldType.value,
-        options
-      }
-    })
-    showNewFieldModal.value = false
-    newFieldLabel.value = ''
-    newFieldOptionsRaw.value = ''
-    await loadFolderData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Feld konnte nicht hinzugefügt werden')
   }
 }
 

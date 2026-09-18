@@ -13,7 +13,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-slate-500">
-      Lade Projektdaten und Berechtigungen...
+      Lade Projektdaten...
     </div>
 
     <div v-else-if="project">
@@ -21,20 +21,37 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex items-center space-x-3 mb-1">
+            <div class="flex flex-wrap items-center gap-3 mb-1">
               <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ project.title }}</h1>
               <span
                 class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
                 :class="userRole === 'viewer' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'"
               >
-                Rolle: {{ userRole }}
+                {{ userRole }}
+              </span>
+              <span
+                class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700"
+              >
+                Status: {{ project.status }}
               </span>
             </div>
-            <p class="text-xs text-slate-400 flex items-center space-x-3">
+
+            <p class="text-xs text-slate-400 flex items-center space-x-3 mb-2">
               <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-emerald-400 hover:underline">{{ project.folder_name }}</NuxtLink></span>
               <span v-if="project.company_name">• {{ project.company_name }}</span>
-              <span>• Status: <strong class="text-slate-200 uppercase">{{ project.status }}</strong></span>
             </p>
+
+            <!-- Project-level custom fields display in header -->
+            <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-2 pt-1">
+              <span
+                v-for="(val, key) in project.custom_data"
+                :key="key"
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300"
+              >
+                <span class="text-emerald-400 font-medium mr-1.5">{{ getFieldLabel(key) }}:</span>
+                <span class="text-white font-semibold">{{ val }}</span>
+              </span>
+            </div>
           </div>
 
           <!-- Actions -->
@@ -44,7 +61,7 @@
               @click="showNewListModal = true"
               class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
             >
-              + Neue Liste
+              + Neuer Abschnitt
             </button>
             <button
               v-if="userRole !== 'viewer'"
@@ -58,19 +75,19 @@
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-800 mt-6 -mb-6 space-x-6">
+        <div class="flex border-b border-slate-800 mt-6 -mb-6 space-x-6 overflow-x-auto">
           <button
-            @click="currentView = 'board'"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5"
-            :class="currentView === 'board' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+            @click="currentView = 'tasks'"
+            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'tasks' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <span>📋</span>
-            <span>Aufgaben & Listen ({{ totalTasks }})</span>
+            <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
           </button>
 
           <button
             @click="currentView = 'journal'; loadJournals()"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5"
+            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
             :class="currentView === 'journal' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <span>📝</span>
@@ -79,41 +96,81 @@
 
           <button
             @click="currentView = 'team'"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5"
+            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
             :class="currentView === 'team' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <span>👥</span>
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
           </button>
+
+          <button
+            v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+            @click="currentView = 'settings'; initSettingsTab()"
+            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'settings' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+          >
+            <span>⚙️</span>
+            <span>Projekt-Einstellungen</span>
+          </button>
         </div>
       </div>
 
-      <!-- VIEW 1: BOARD / LISTS -->
-      <div v-if="currentView === 'board'">
+      <!-- VIEW 1: TASKS & ABSCHNITTE -->
+      <div v-if="currentView === 'tasks'">
+        <!-- View controls: Board vs Table/List -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-semibold text-slate-400">Ansicht:</span>
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center space-x-1">
+              <button
+                @click="taskViewMode = 'board'"
+                class="px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center space-x-1"
+                :class="taskViewMode === 'board' ? 'bg-slate-800 text-emerald-400 shadow' : 'text-slate-400 hover:text-white'"
+              >
+                <span>▦</span>
+                <span>Kacheln (Board)</span>
+              </button>
+              <button
+                @click="taskViewMode = 'table'"
+                class="px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center space-x-1"
+                :class="taskViewMode === 'table' ? 'bg-slate-800 text-emerald-400 shadow' : 'text-slate-400 hover:text-white'"
+              >
+                <span>☰</span>
+                <span>Liste</span>
+              </button>
+            </div>
+          </div>
+
+          <span class="text-xs text-slate-500">
+            {{ lists.length }} Abschnitte • {{ totalTasks }} Aufgaben
+          </span>
+        </div>
+
         <!-- Viewer Notice Banner -->
         <div
           v-if="userRole === 'viewer'"
           class="mb-6 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-300 text-xs flex items-center space-x-2"
         >
           <span>👁️</span>
-          <span><strong>Viewer-Modus aktiv:</strong> Du hast Leserechte für dieses Projekt.</span>
+          <span><strong>Viewer-Modus:</strong> Du besitzt Leserechte für dieses Projekt.</span>
         </div>
 
-        <!-- Lists Container -->
+        <!-- Empty state -->
         <div v-if="lists.length === 0" class="text-center py-16 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
           <span class="text-3xl">📋</span>
-          <h3 class="text-base font-bold text-slate-200 mt-2">Noch keine Listen in diesem Projekt</h3>
-          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle jetzt die erste Aufgabenliste (z.B. "Geplant", "In Bearbeitung", "Erledigt").</p>
+          <h3 class="text-base font-bold text-slate-200 mt-2">Noch keine Abschnitte in diesem Projekt</h3>
+          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle den ersten Abschnitt (z.B. "Geplant", "In Bearbeitung", "Abgeschlossen").</p>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewListModal = true"
             class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
           >
-            + Erste Liste erstellen
+            + Ersten Abschnitt erstellen
           </button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+        <!-- MODE A: BOARD (KANBAN KACHELN MIT DRAG & DROP) -->
+        <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           <div
             v-for="list in lists"
             :key="list.id"
@@ -123,7 +180,7 @@
             @dragleave="onDragLeaveList(list.id)"
             @drop="onDropToList(list.id)"
           >
-            <!-- List Header -->
+            <!-- Section Header -->
             <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
               <div class="flex items-center space-x-2">
                 <h3 class="text-sm font-bold text-white">{{ list.title }}</h3>
@@ -136,20 +193,18 @@
               <span
                 v-if="list.access_mode === 'custom'"
                 class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60"
-                title="Vertrauliche Liste mit eingeschränkter Sichtbarkeit"
               >
-                🔒 Vertraulich
+                🔒 Eingeschränkt
               </span>
               <span
                 v-else
                 class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
-                title="Sichtbarkeit wird vom Projekt geerbt"
               >
-                Geerbt
+                Abschnitt
               </span>
             </div>
 
-            <!-- Tasks in this list -->
+            <!-- Tasks in this section -->
             <div class="space-y-3 min-h-[60px] p-1 rounded-xl transition-colors" :class="dragOverListId === list.id ? 'bg-emerald-950/20' : ''">
               <div
                 v-for="task in list.tasks"
@@ -170,7 +225,7 @@
                     <span
                       v-if="userRole !== 'viewer'"
                       class="text-slate-600 hover:text-slate-300 text-xs mt-0.5"
-                      title="Karte ziehen zum Verschieben"
+                      title="Ziehen zum Verschieben"
                     >
                       ⋮⋮
                     </span>
@@ -191,23 +246,21 @@
                   </span>
                 </div>
 
-                <!-- Description excerpt -->
                 <p v-if="task.description" class="text-[11px] text-slate-400 line-clamp-2 mb-3 leading-relaxed">
                   {{ task.description }}
                 </p>
 
-                <!-- Custom Fields Chips -->
+                <!-- Task Custom Fields Chips -->
                 <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-3">
                   <span
                     v-for="(val, key) in task.custom_data"
                     :key="key"
                     class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300"
                   >
-                    {{ key }}: {{ val }}
+                    {{ getFieldLabel(key) }}: {{ val }}
                   </span>
                 </div>
 
-                <!-- Footer: Due date -->
                 <div class="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-slate-900">
                   <span v-if="task.due_date" class="flex items-center space-x-1">
                     <span>📅</span>
@@ -218,7 +271,6 @@
                 </div>
               </div>
 
-              <!-- Empty drop zone hint -->
               <div
                 v-if="!list.tasks || list.tasks.length === 0"
                 class="py-6 text-center text-[11px] text-slate-600 border border-dashed border-slate-800/80 rounded-xl"
@@ -227,7 +279,7 @@
               </div>
             </div>
 
-            <!-- Add Task Button in List -->
+            <!-- Add Task Button in Section -->
             <button
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(list.id)"
@@ -237,9 +289,101 @@
             </button>
           </div>
         </div>
+
+        <!-- MODE B: TABLE / LISTE -->
+        <div v-else class="space-y-6">
+          <div
+            v-for="list in lists"
+            :key="list.id"
+            class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
+          >
+            <div class="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold text-white">{{ list.title }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+                  {{ list.tasks?.length || 0 }}
+                </span>
+              </div>
+              <button
+                v-if="userRole !== 'viewer'"
+                @click="openNewTaskModal(list.id)"
+                class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+              >
+                + Aufgabe erfassen
+              </button>
+            </div>
+
+            <div v-if="!list.tasks || list.tasks.length === 0" class="p-4 text-center text-xs text-slate-500">
+              Keine Aufgaben in diesem Abschnitt.
+            </div>
+
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800">
+                  <tr>
+                    <th class="py-2.5 px-4">Titel & Beschreibung</th>
+                    <th class="py-2.5 px-4">Status</th>
+                    <th class="py-2.5 px-4">Fälligkeit</th>
+                    <th class="py-2.5 px-4">Felder</th>
+                    <th class="py-2.5 px-4 text-right">Aktion</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                  <tr
+                    v-for="task in list.tasks"
+                    :key="task.id"
+                    class="hover:bg-slate-800/40 transition cursor-pointer"
+                    @click="openEditTaskModal(task)"
+                  >
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-100">{{ task.title }}</div>
+                      <div v-if="task.description" class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                        {{ task.description }}
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <span
+                        class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                        :class="{
+                          'bg-emerald-950 text-emerald-400 border border-emerald-800': task.status === 'done',
+                          'bg-teal-950 text-teal-400 border border-teal-800': task.status === 'in_progress',
+                          'bg-amber-950 text-amber-400 border border-amber-800': task.status === 'review',
+                          'bg-slate-800 text-slate-400': task.status === 'todo'
+                        }"
+                      >
+                        {{ task.status }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4">
+                      <span v-if="task.due_date" class="text-slate-300">
+                        {{ new Date(task.due_date).toLocaleDateString('de-CH') }}
+                      </span>
+                      <span v-else class="text-slate-600">-</span>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1">
+                        <span
+                          v-for="(val, key) in task.custom_data"
+                          :key="key"
+                          class="text-[9px] px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400"
+                        >
+                          {{ getFieldLabel(key) }}: {{ val }}
+                        </span>
+                      </div>
+                      <span v-else class="text-slate-600">-</span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <span class="text-xs text-emerald-400 hover:underline">Öffnen →</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- VIEW 2: JOURNAL / AKTIVITÄTSNOTIZEN -->
+      <!-- VIEW 2: JOURNAL & NOTIZEN -->
       <div v-else-if="currentView === 'journal'" class="space-y-6">
         <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-xl">
           <div>
@@ -282,7 +426,7 @@
               </span>
             </div>
 
-            <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800/80 my-3">
+            <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800/80 my-3 whitespace-pre-wrap">
               {{ entry.content }}
             </p>
 
@@ -298,9 +442,9 @@
       <div v-else-if="currentView === 'team'" class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
           <div>
-            <h3 class="text-base font-bold text-white">Projektteam & Berechtigungsmatrix</h3>
+            <h3 class="text-base font-bold text-white">Projektteam & Berechtigungen</h3>
             <p class="text-xs text-slate-400">
-              Steuerung von Editor- und Viewer-Rollen (Stufe 4 des Berechtigungsmodells).
+              Steuerung von Editor- und Viewer-Rollen für dieses Projekt.
             </p>
           </div>
           <button
@@ -313,7 +457,6 @@
         </div>
 
         <div class="space-y-3">
-          <!-- Owner row -->
           <div class="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800">
             <div class="flex items-center space-x-3">
               <div class="w-9 h-9 rounded-full bg-emerald-950 text-emerald-300 font-bold flex items-center justify-center text-xs border border-emerald-800">
@@ -329,7 +472,6 @@
             </span>
           </div>
 
-          <!-- Members rows -->
           <div
             v-for="m in members"
             :key="m.id"
@@ -353,26 +495,174 @@
           </div>
         </div>
       </div>
+
+      <!-- VIEW 4: PROJEKT-EINSTELLUNGEN & BENUTZERDEFINIERTE FELDER -->
+      <div v-else-if="currentView === 'settings'" class="space-y-8">
+        <!-- Card 1: Projekt-Stammdaten & Projekt-Felder -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div>
+              <h3 class="text-base font-bold text-white">Allgemeine Projekt-Einstellungen</h3>
+              <p class="text-xs text-slate-400">Passe den Projektnamen, den Status und projektweite Eigenschaften an.</p>
+            </div>
+          </div>
+
+          <form @submit.prevent="saveProjectSettings" class="space-y-4 max-w-xl">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Projekttitel</label>
+              <input
+                v-model="settingsForm.title"
+                type="text"
+                required
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Projekt-Status</label>
+              <select
+                v-model="settingsForm.status"
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="active">Aktiv (Active)</option>
+                <option value="on_hold">Pausiert (On Hold)</option>
+                <option value="completed">Abgeschlossen (Completed)</option>
+              </select>
+            </div>
+
+            <!-- Project-level Custom Fields Input -->
+            <div v-if="projectCustomFields.length > 0" class="pt-4 border-t border-slate-800 space-y-3">
+              <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                Projekt-Felder (Werte für dieses Projekt)
+              </h4>
+              <div v-for="f in projectCustomFields" :key="f.id">
+                <label class="block text-xs font-medium text-slate-300 mb-1">{{ f.label }}</label>
+                <select
+                  v-if="f.field_type === 'select'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">-- Nicht ausgewählt --</option>
+                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <input
+                  v-else
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  :type="f.field_type === 'number' ? 'number' : 'text'"
+                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button
+                type="submit"
+                :disabled="savingProjectSettings"
+                class="px-5 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition disabled:opacity-50"
+              >
+                {{ savingProjectSettings ? 'Speichern...' : 'Projekt-Einstellungen speichern' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Card 2: Benutzerdefinierte Felder verwalten (Versteckt in Projekt-Einstellungen) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <span>⚙️</span>
+                <span>Benutzerdefinierte Felder & Logik</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Definiere eigene Attribute für Aufgaben oder für Projekte. Felder können auch bedingt voneinander abhängig gemacht werden.
+              </p>
+            </div>
+            <button
+              @click="showNewFieldModal = true"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition shadow-sm"
+            >
+              + Neues Feld anlegen
+            </button>
+          </div>
+
+          <!-- Fields Table -->
+          <div v-if="fields.length === 0" class="text-center py-8 text-xs text-slate-500">
+            Noch keine benutzerdefinierten Felder angelegt.
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-4">Feld-Bezeichnung</th>
+                  <th class="py-2.5 px-4">Schlüssel (Key)</th>
+                  <th class="py-2.5 px-4">Bereich / Typ</th>
+                  <th class="py-2.5 px-4">Bedingte Logik</th>
+                  <th class="py-2.5 px-4 text-right">Aktion</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-800/40 transition">
+                  <td class="py-3 px-4 font-bold text-white">
+                    {{ f.label }}
+                  </td>
+                  <td class="py-3 px-4 font-mono text-emerald-400 text-[11px]">
+                    {{ f.field_key }}
+                  </td>
+                  <td class="py-3 px-4">
+                    <span
+                      class="px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-1.5"
+                      :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                    >
+                      {{ f.entity_type === 'project' ? 'Projekt-Feld' : 'Aufgaben-Feld' }}
+                    </span>
+                    <span class="text-slate-400 text-[11px]">({{ f.field_type }})</span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-300 font-mono">
+                      Nur wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
+                    </span>
+                    <span v-else class="text-slate-600">-</span>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <button
+                      @click="deleteField(f.id)"
+                      class="text-rose-400 hover:text-rose-300 text-xs font-semibold"
+                    >
+                      Löschen
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Modal: New List -->
+    <!-- Modal: New Section (Abschnitt) -->
     <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Neue Aufgabenliste anlegen</h3>
+        <h3 class="text-lg font-bold text-white mb-2">Neuen Abschnitt anlegen</h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Abschnitte gliedern dein Projekt in Phasen, Kategorien oder Workflow-Schritte.
+        </p>
+
         <form @submit.prevent="createList" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Listentitel</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Titel des Abschnitts</label>
             <input
               v-model="newListTitle"
               type="text"
               required
-              placeholder="z.B. 4. Qualitätskontrolle & Abnahme"
+              placeholder="z.B. Vorbereitung, In Bearbeitung oder Abnahme"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Zugriffsmodus</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Sichtbarkeits-Modus</label>
             <select
               v-model="newListAccessMode"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
@@ -394,7 +684,7 @@
               type="submit"
               class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
             >
-              Liste anlegen
+              Abschnitt anlegen
             </button>
           </div>
         </form>
@@ -463,12 +753,17 @@
             </div>
           </div>
 
-          <!-- Dynamic Folder Custom Fields -->
-          <div v-if="fields.length > 0" class="pt-4 border-t border-slate-800 space-y-3">
+          <!-- Dynamic Task Custom Fields with Conditional Logic -->
+          <div v-if="taskCustomFields.length > 0" class="pt-4 border-t border-slate-800 space-y-3">
             <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-              ⚙️ Benutzerdefinierte Felder (Ordner-Vererbung)
+              Zusatzfelder
             </h4>
-            <div v-for="f in fields" :key="f.id">
+            <div
+              v-for="f in taskCustomFields"
+              :key="f.id"
+              v-show="isFieldVisibleForTask(f)"
+              class="transition-all"
+            >
               <label class="block text-xs font-medium text-slate-300 mb-1">{{ f.label }}</label>
 
               <!-- Select dropdown -->
@@ -530,6 +825,131 @@
                 Speichern
               </button>
             </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: New Custom Field (Inside Settings) -->
+    <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-white mb-2">Neues benutzerdefiniertes Feld</h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Definiere ein Attribut für Aufgaben oder das Projekt.
+        </p>
+
+        <form @submit.prevent="createField" class="space-y-4">
+          <!-- Entity Type Distinction: Project vs Task -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Gültigkeitsbereich</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                @click="newFieldEntityType = 'task'"
+                class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-center"
+                :class="newFieldEntityType === 'task' ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : 'bg-slate-950 text-slate-400 border-slate-700'"
+              >
+                Aufgaben-Feld
+              </button>
+              <button
+                type="button"
+                @click="newFieldEntityType = 'project'"
+                class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-center"
+                :class="newFieldEntityType === 'project' ? 'bg-purple-950 text-purple-300 border-purple-500' : 'bg-slate-950 text-slate-400 border-slate-700'"
+              >
+                Projekt-Feld
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Feld-Bezeichnung (Label)</label>
+            <input
+              v-model="newFieldLabel"
+              type="text"
+              required
+              placeholder="z.B. Kostenstelle oder Priorität"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Feldtyp</label>
+            <select
+              v-model="newFieldType"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="text">Textzeile</option>
+              <option value="select">Auswahlliste (Dropdown)</option>
+              <option value="number">Zahl / Währung</option>
+              <option value="date">Datum</option>
+            </select>
+          </div>
+
+          <div v-if="newFieldType === 'select'">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Optionen (Komma-getrennt)</label>
+            <input
+              v-model="newFieldOptionsRaw"
+              type="text"
+              placeholder="z.B. Niedrig, Mittel, Hoch, Dringend"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          <!-- Conditional Logic Builder -->
+          <div class="pt-3 border-t border-slate-800 space-y-3">
+            <div class="flex items-center space-x-2">
+              <input
+                id="enableLogic"
+                v-model="enableFieldLogic"
+                type="checkbox"
+                class="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0"
+              />
+              <label for="enableLogic" class="text-xs font-medium text-slate-300 cursor-pointer">
+                Bedingte Logik (Feld nur unter Bedingung anzeigen)
+              </label>
+            </div>
+
+            <div v-if="enableFieldLogic" class="space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Abhängig von Feld</label>
+                <select
+                  v-model="logicDependsOnField"
+                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">-- Feld auswählen --</option>
+                  <option v-for="other in fields" :key="other.id" :value="other.field_key">
+                    {{ other.label }} ({{ other.field_key }})
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Nur anzeigen wenn Wert gleich:</label>
+                <input
+                  v-model="logicDependsOnValue"
+                  type="text"
+                  placeholder="z.B. Hoch oder Freigegeben"
+                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              @click="showNewFieldModal = false"
+              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+            >
+              Feld speichern
+            </button>
           </div>
         </form>
       </div>
@@ -660,7 +1080,13 @@ const members = ref<any[]>([])
 const journalEntries = ref<any[]>([])
 const loading = ref(true)
 
-const currentView = ref<'board' | 'journal' | 'team'>('board')
+const currentView = ref<'tasks' | 'journal' | 'team' | 'settings'>('tasks')
+const taskViewMode = ref<'board' | 'table'>('board')
+
+// Drag & Drop
+const draggedTask = ref<any>(null)
+const sourceListId = ref<string>('')
+const dragOverListId = ref<string>('')
 
 // Modals
 const showNewListModal = ref(false)
@@ -679,9 +1105,27 @@ const taskForm = ref<any>({
   custom_data: {}
 })
 
+// Custom Field Creation Modal
+const showNewFieldModal = ref(false)
+const newFieldLabel = ref('')
+const newFieldType = ref('text')
+const newFieldEntityType = ref<'task' | 'project'>('task')
+const newFieldOptionsRaw = ref('')
+const enableFieldLogic = ref(false)
+const logicDependsOnField = ref('')
+const logicDependsOnValue = ref('')
+
+// Project Settings form
+const settingsForm = ref<any>({
+  title: '',
+  status: 'active',
+  custom_data: {}
+})
+const savingProjectSettings = ref(false)
+
 const showNewJournalModal = ref(false)
 const journalForm = ref<any>({
-  entry_type: 'voice',
+  entry_type: 'manual',
   title: '',
   content: ''
 })
@@ -690,10 +1134,31 @@ const showInviteMemberModal = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref('editor')
 
-// Drag & Drop state
-const draggedTask = ref<any>(null)
-const sourceListId = ref<string>('')
-const dragOverListId = ref<string>('')
+const totalTasks = computed(() => {
+  return lists.value.reduce((acc, l) => acc + (l.tasks?.length || 0), 0)
+})
+
+const taskCustomFields = computed(() => {
+  return fields.value.filter((f: any) => f.entity_type !== 'project')
+})
+
+const projectCustomFields = computed(() => {
+  return fields.value.filter((f: any) => f.entity_type === 'project')
+})
+
+const getFieldLabel = (key: string) => {
+  const f = fields.value.find((item: any) => item.field_key === key)
+  return f ? f.label : key
+}
+
+// Check conditional visibility of a task field
+const isFieldVisibleForTask = (f: any) => {
+  if (!f.logic_rules || !f.logic_rules.depends_on_field) return true
+  const depField = f.logic_rules.depends_on_field
+  const expectedVal = f.logic_rules.depends_on_value
+  const currentVal = taskForm.value.custom_data[depField]
+  return currentVal == expectedVal
+}
 
 const onDragStart = (task: any, listId: string) => {
   if (userRole.value === 'viewer') return
@@ -726,14 +1191,10 @@ const onDropToList = async (targetListId: string) => {
   draggedTask.value = null
   sourceListId.value = ''
 
-  if (fromListId === targetListId) {
-    return
-  }
+  if (fromListId === targetListId) return
 
-  // Optimistic UI update
   const sourceList = lists.value.find(l => l.id === fromListId)
   const targetList = lists.value.find(l => l.id === targetListId)
-
   if (!sourceList || !targetList) return
 
   sourceList.tasks = (sourceList.tasks || []).filter((t: any) => t.id !== taskToMove.id)
@@ -741,7 +1202,6 @@ const onDropToList = async (targetListId: string) => {
   targetList.tasks = targetList.tasks || []
   targetList.tasks.push(taskToMove)
 
-  // Persist to backend
   try {
     await $fetch(`/api/tasks/${taskToMove.id}`, {
       method: 'PUT',
@@ -752,14 +1212,10 @@ const onDropToList = async (targetListId: string) => {
       }
     })
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben (Berechtigung prüfen)')
+    alert(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben')
     await loadProjectData()
   }
 }
-
-const totalTasks = computed(() => {
-  return lists.value.reduce((acc, l) => acc + (l.tasks?.length || 0), 0)
-})
 
 const loadProjectData = async () => {
   loading.value = true
@@ -779,6 +1235,83 @@ const loadProjectData = async () => {
     }
   } finally {
     loading.value = false
+  }
+}
+
+const initSettingsTab = () => {
+  if (project.value) {
+    settingsForm.value = {
+      title: project.value.title,
+      status: project.value.status,
+      custom_data: { ...(project.value.custom_data || {}) }
+    }
+  }
+}
+
+const saveProjectSettings = async () => {
+  savingProjectSettings.value = true
+  try {
+    await $fetch(`/api/projects/${projectId}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        title: settingsForm.value.title,
+        status: settingsForm.value.status,
+        custom_data: settingsForm.value.custom_data
+      }
+    })
+    await loadProjectData()
+    alert('Projekt-Einstellungen erfolgreich gespeichert!')
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der Einstellungen')
+  } finally {
+    savingProjectSettings.value = false
+  }
+}
+
+const createField = async () => {
+  try {
+    const options = newFieldType.value === 'select'
+      ? newFieldOptionsRaw.value.split(',').map((s) => s.trim()).filter(Boolean)
+      : []
+
+    const logicRules = enableFieldLogic.value && logicDependsOnField.value
+      ? { depends_on_field: logicDependsOnField.value, depends_on_value: logicDependsOnValue.value }
+      : null
+
+    await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        label: newFieldLabel.value,
+        field_type: newFieldType.value,
+        entity_type: newFieldEntityType.value,
+        options,
+        logic_rules: logicRules
+      }
+    })
+    showNewFieldModal.value = false
+    newFieldLabel.value = ''
+    newFieldOptionsRaw.value = ''
+    enableFieldLogic.value = false
+    logicDependsOnField.value = ''
+    logicDependsOnValue.value = ''
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Feld konnte nicht hinzugefügt werden')
+  }
+}
+
+const deleteField = async (fieldId: string) => {
+  if (!confirm('Möchtest du dieses benutzerdefinierte Feld wirklich löschen?')) return
+  try {
+    await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Feldes')
   }
 }
 
@@ -806,7 +1339,7 @@ const createList = async () => {
     newListTitle.value = ''
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Liste')
+    alert(err.data?.statusMessage || 'Fehler beim Erstellen des Abschnitts')
   }
 }
 
@@ -900,10 +1433,10 @@ const createJournalEntry = async () => {
       }
     })
     showNewJournalModal.value = false
-    journalForm.value = { entry_type: 'voice', title: '', content: '' }
+    journalForm.value = { entry_type: 'manual', title: '', content: '' }
     await loadJournals()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern des Eintrags')
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der Notiz')
   }
 }
 
@@ -928,6 +1461,5 @@ const inviteMember = async () => {
 
 onMounted(async () => {
   await loadProjectData()
-  await loadJournals()
 })
 </script>
