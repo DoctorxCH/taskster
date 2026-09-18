@@ -666,10 +666,49 @@ try {
         $dueDate = $body['due_date'] ?? $task['due_date'];
         $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $task['custom_data'];
         $listId = $body['list_id'] ?? $task['list_id'];
+        $sortOrder = isset($body['sort_order']) ? (int)$body['sort_order'] : (int)($task['sort_order'] ?? 0);
 
-        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ? WHERE id = ?")->execute([
-            $title, $desc, $status, $dueDate, $customData, $listId, $taskId
+        // If target list differs from current list, check write access on target list too
+        if ($listId !== $task['list_id']) {
+            evaluateListAccess($user, $listId, 'write');
+        }
+
+        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ? WHERE id = ?")->execute([
+            $title, $desc, $status, $dueDate, $customData, $listId, $sortOrder, $taskId
         ]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // 13b. POST tasks/reorder (Kanban drag-and-drop batch reorder)
+    if ($path === 'tasks/reorder' && $method === 'POST') {
+        $user = requireAuth();
+        $items = $body['items'] ?? [];
+        if (!is_array($items)) errorResponse('Items array erforderlich', 400);
+
+        // Validate access and update positions
+        foreach ($items as $item) {
+            $tId = $item['id'] ?? '';
+            $targetListId = $item['list_id'] ?? '';
+            $sort = (int)($item['sort_order'] ?? 0);
+            $newStatus = $item['status'] ?? null;
+
+            if ($tId && $targetListId) {
+                $tStmt = $db->prepare("SELECT list_id, status FROM tasks WHERE id = ?");
+                $tStmt->execute([$tId]);
+                $cur = $tStmt->fetch();
+                if ($cur) {
+                    evaluateListAccess($user, $cur['list_id'], 'write');
+                    if ($targetListId !== $cur['list_id']) {
+                        evaluateListAccess($user, $targetListId, 'write');
+                    }
+                    $statusToSet = $newStatus !== null ? $newStatus : $cur['status'];
+                    $db->prepare("UPDATE tasks SET list_id = ?, sort_order = ?, status = ? WHERE id = ?")->execute([
+                        $targetListId, $sort, $statusToSet, $tId
+                    ]);
+                }
+            }
+        }
 
         jsonResponse(['success' => true]);
     }

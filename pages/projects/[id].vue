@@ -117,7 +117,11 @@
           <div
             v-for="list in lists"
             :key="list.id"
-            class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col"
+            class="bg-slate-900 border rounded-2xl p-5 flex flex-col transition-colors"
+            :class="dragOverListId === list.id ? 'border-emerald-500 bg-slate-900/90 ring-2 ring-emerald-500/20' : 'border-slate-800'"
+            @dragover.prevent="onDragOverList(list.id)"
+            @dragleave="onDragLeaveList(list.id)"
+            @drop="onDropToList(list.id)"
           >
             <!-- List Header -->
             <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
@@ -146,17 +150,33 @@
             </div>
 
             <!-- Tasks in this list -->
-            <div class="space-y-3 min-h-[50px]">
+            <div class="space-y-3 min-h-[60px] p-1 rounded-xl transition-colors" :class="dragOverListId === list.id ? 'bg-emerald-950/20' : ''">
               <div
                 v-for="task in list.tasks"
                 :key="task.id"
-                class="bg-slate-950 border border-slate-800/90 hover:border-slate-700 rounded-xl p-4 transition shadow-sm cursor-pointer group"
+                :draggable="userRole !== 'viewer'"
+                class="bg-slate-950 border rounded-xl p-4 transition shadow-sm group select-none"
+                :class="[
+                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-emerald-400 scale-[0.98]' : 'border-slate-800/90 hover:border-slate-700',
+                  userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-pointer'
+                ]"
+                @dragstart="onDragStart(task, list.id)"
+                @dragend="onDragEnd"
                 @click="openEditTaskModal(task)"
               >
-                <!-- Task Header -->
+                <!-- Drag handle & Task Header -->
                 <div class="flex items-start justify-between gap-2 mb-2">
-                  <div class="text-xs font-bold text-slate-100 group-hover:text-emerald-400 transition leading-snug">
-                    {{ task.title }}
+                  <div class="flex items-start space-x-2">
+                    <span
+                      v-if="userRole !== 'viewer'"
+                      class="text-slate-600 hover:text-slate-300 text-xs mt-0.5"
+                      title="Karte ziehen zum Verschieben"
+                    >
+                      ⋮⋮
+                    </span>
+                    <span class="text-xs font-bold text-slate-100 group-hover:text-emerald-400 transition leading-snug">
+                      {{ task.title }}
+                    </span>
                   </div>
                   <span
                     class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded whitespace-nowrap"
@@ -207,6 +227,14 @@
                   <span v-else>Keine Frist</span>
                   <span class="text-slate-600 group-hover:text-emerald-400 transition">Details →</span>
                 </div>
+              </div>
+
+              <!-- Empty drop zone hint -->
+              <div
+                v-if="!list.tasks || list.tasks.length === 0"
+                class="py-6 text-center text-[11px] text-slate-600 border border-dashed border-slate-800/80 rounded-xl"
+              >
+                Hier ablegen oder Aufgabe hinzufügen
               </div>
             </div>
 
@@ -672,6 +700,73 @@ const journalForm = ref<any>({
 const showInviteMemberModal = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref('editor')
+
+// Drag & Drop state
+const draggedTask = ref<any>(null)
+const sourceListId = ref<string>('')
+const dragOverListId = ref<string>('')
+
+const onDragStart = (task: any, listId: string) => {
+  if (userRole.value === 'viewer') return
+  draggedTask.value = task
+  sourceListId.value = listId
+}
+
+const onDragEnd = () => {
+  draggedTask.value = null
+  sourceListId.value = ''
+  dragOverListId.value = ''
+}
+
+const onDragOverList = (listId: string) => {
+  if (userRole.value === 'viewer' || !draggedTask.value) return
+  dragOverListId.value = listId
+}
+
+const onDragLeaveList = (listId: string) => {
+  if (dragOverListId.value === listId) {
+    dragOverListId.value = ''
+  }
+}
+
+const onDropToList = async (targetListId: string) => {
+  if (userRole.value === 'viewer' || !draggedTask.value) return
+  const taskToMove = draggedTask.value
+  const fromListId = sourceListId.value
+  dragOverListId.value = ''
+  draggedTask.value = null
+  sourceListId.value = ''
+
+  if (fromListId === targetListId) {
+    return
+  }
+
+  // Optimistic UI update
+  const sourceList = lists.value.find(l => l.id === fromListId)
+  const targetList = lists.value.find(l => l.id === targetListId)
+
+  if (!sourceList || !targetList) return
+
+  sourceList.tasks = (sourceList.tasks || []).filter((t: any) => t.id !== taskToMove.id)
+  taskToMove.list_id = targetListId
+  targetList.tasks = targetList.tasks || []
+  targetList.tasks.push(taskToMove)
+
+  // Persist to backend
+  try {
+    await $fetch(`/api/tasks/${taskToMove.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        list_id: targetListId,
+        sort_order: targetList.tasks.length
+      }
+    })
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben (Berechtigung prüfen)')
+    await loadProjectData()
+  }
+}
 
 const totalTasks = computed(() => {
   return lists.value.reduce((acc, l) => acc + (l.tasks?.length || 0), 0)
