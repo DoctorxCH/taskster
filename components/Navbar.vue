@@ -24,7 +24,7 @@
           </NuxtLink>
 
           <NuxtLink
-            v-if="user.is_superadmin || (user.company_id && user.company_role === 'admin')"
+            v-if="user.is_superadmin"
             to="/admin"
             class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
             :class="$route.path.startsWith('/admin') ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/50' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'"

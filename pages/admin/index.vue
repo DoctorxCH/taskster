@@ -4,14 +4,14 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-800 text-purple-300 text-xs font-semibold mb-2">
-          <span>🛡️</span>
-          <span>Zentrale Admin- & Mandantenverwaltung</span>
+          <span>⚙️</span>
+          <span>Zentrale Site-Administration</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
           Taskster Plattform-Administration
         </h1>
         <p class="text-xs text-slate-400 mt-1">
-          Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zero-Trust Compliance und serverseitige Aufgabenlogik.
+          Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.
         </p>
       </div>
 
@@ -36,13 +36,13 @@
       <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
         <div class="text-[11px] font-semibold text-slate-400 uppercase">Unternehmen</div>
         <div class="text-2xl font-black text-purple-400 mt-1">{{ overview?.metrics?.companies || 0 }}</div>
-        <div class="text-[10px] text-slate-500">Mandanten B2B</div>
+        <div class="text-[10px] text-slate-500">Organisationen</div>
       </div>
 
       <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
         <div class="text-[11px] font-semibold text-slate-400 uppercase">Projekte</div>
         <div class="text-2xl font-black text-emerald-400 mt-1">{{ overview?.metrics?.projects || 0 }}</div>
-        <div class="text-[10px] text-slate-500">Bauvorhaben</div>
+        <div class="text-[10px] text-slate-500">Aktiv</div>
       </div>
 
       <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
@@ -52,9 +52,9 @@
       </div>
 
       <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Bautagebuch</div>
+        <div class="text-[11px] font-semibold text-slate-400 uppercase">Journal-Einträge</div>
         <div class="text-2xl font-black text-amber-400 mt-1">{{ overview?.metrics?.journals || 0 }}</div>
-        <div class="text-[10px] text-slate-500">Voice- & Sachberichte</div>
+        <div class="text-[10px] text-slate-500">Aktivitätsnotizen</div>
       </div>
     </div>
 
@@ -75,17 +75,7 @@
         :class="activeTab === 'companies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
       >
         <span>🏢</span>
-        <span>Unternehmen & Mandanten</span>
-      </button>
-
-      <button
-        v-if="user?.company_id && user?.company_role === 'admin'"
-        @click="activeTab = 'invites'"
-        class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
-        :class="activeTab === 'invites' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
-      >
-        <span>✉️</span>
-        <span>Mitarbeiter einladen</span>
+        <span>Unternehmen & Organisationen</span>
       </button>
 
       <button
@@ -94,7 +84,7 @@
         :class="activeTab === 'policies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
       >
         <span>🛡️</span>
-        <span>Aufgabenlogik & Zero-Trust Compliance</span>
+        <span>Zugriffsregeln & Tarif-Limits</span>
       </button>
     </div>
 
@@ -217,7 +207,7 @@
                     class="px-2.5 py-1 rounded text-[11px] font-bold border transition flex items-center space-x-1.5"
                     :class="c.settings?.allow_document_upload ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800' : 'bg-rose-950/60 text-rose-300 border-rose-800'"
                   >
-                    <span>{{ c.settings?.allow_document_upload ? '✓ Erlaubt' : '🚫 Upload gesperrt (Swisscom Policy)' }}</span>
+                    <span>{{ c.settings?.allow_document_upload ? '✓ Erlaubt' : '🚫 Upload gesperrt (Policy)' }}</span>
                   </button>
                 </td>
                 <td class="py-3.5 px-4 text-right">
@@ -323,11 +313,11 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <div class="flex items-center space-x-2 text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>🛡️</span>
-            <span>Berechtigungs-Pipeline (Stufe 1 bis 4)</span>
+            <span>Rollen- & Berechtigungsmodell</span>
           </div>
           <h3 class="text-lg font-bold text-white mb-3">Aktive Sicherheitsarchitektur</h3>
           <p class="text-xs text-slate-400 leading-relaxed mb-6">
-            Gemäss <strong class="text-slate-200">agent/strukturen.md</strong> durchläuft jeder API-Zugriff ausnahmslos serverseitig diese 4 Prüfstufen:
+            Jeder API-Zugriff durchläuft serverseitig diese 4 Prüfstufen:
           </p>
 
           <ol class="space-y-3 text-xs">
@@ -335,28 +325,28 @@
               <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">1</span>
               <div>
                 <strong class="text-white">Company Policy Check:</strong>
-                <p class="text-slate-400 mt-0.5">Prüft globale Unternehmensrichtlinien (z.B. Swisscom Upload-Sperre). Verstoß liefert 403 Forbidden.</p>
+                <p class="text-slate-400 mt-0.5">Prüft globale Unternehmensrichtlinien (z.B. Dokumenten-Upload-Sperre). Verstoß liefert 403 Forbidden.</p>
               </div>
             </li>
             <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
               <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">2</span>
               <div>
                 <strong class="text-white">Project Membership Check:</strong>
-                <p class="text-slate-400 mt-0.5">Prüft Ordnerinhaber oder Projektmitgliedschaft. Kein Zugriff liefert <strong>404 Not Found</strong> zur Verschleierung.</p>
+                <p class="text-slate-400 mt-0.5">Prüft Ordnerinhaber oder Projektmitgliedschaft. Nicht berechtigte Anfragen erhalten 404 Not Found.</p>
               </div>
             </li>
             <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
               <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">3</span>
               <div>
                 <strong class="text-white">List Scope Check:</strong>
-                <p class="text-slate-400 mt-0.5">Custom-Listen erfordern explizite Listensichtbarkeit. Andernfalls 404 Not Found.</p>
+                <p class="text-slate-400 mt-0.5">Eingeschränkte Listen erfordern explizite Listensichtbarkeit.</p>
               </div>
             </li>
             <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
               <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">4</span>
               <div>
                 <strong class="text-white">Role Action Check:</strong>
-                <p class="text-slate-400 mt-0.5">Viewer dürfen nur GET aufrufen (kein Schreiben/Löschen möglich). Verstoß liefert 403.</p>
+                <p class="text-slate-400 mt-0.5">Viewer dürfen nur Lesemethoden (GET) nutzen. Schreibzugriffe werden serverseitig abgewiesen.</p>
               </div>
             </li>
           </ol>
@@ -366,11 +356,11 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>⚙️</span>
-            <span>Aufgabenlogik & Tarifregeln (Free vs Pro)</span>
+            <span>Tarifregeln & Systemgrenzen</span>
           </div>
           <h3 class="text-lg font-bold text-white mb-3">Durchgesetzte Systemgrenzen</h3>
           <p class="text-xs text-slate-400 leading-relaxed mb-6">
-            Gemäss <strong class="text-slate-200">agent/main.md</strong> gelten folgende Geschäftsregeln in den Controllern:
+            Folgende Systemgrenzen sind im Backend aktiv durchgesetzt:
           </p>
 
           <div class="space-y-3 text-xs">
@@ -425,7 +415,7 @@
               v-model="newCompanyName"
               type="text"
               required
-              placeholder="z.B. Swisscom Tiefbau Partner AG"
+              placeholder="z.B. Acme Solutions AG"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
             />
           </div>
@@ -644,7 +634,7 @@ onMounted(async () => {
     const { initAuth } = useAuth()
     await initAuth()
   }
-  if (!user.value?.is_superadmin && (!user.value?.company_id || user.value?.company_role !== 'admin')) {
+  if (!user.value?.is_superadmin) {
     navigateTo('/dashboard')
     return
   }
