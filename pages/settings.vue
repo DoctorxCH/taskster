@@ -1,29 +1,37 @@
 <template>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-xs text-slate-500 mb-6 font-medium">
-      <NuxtLink to="/dashboard" class="hover:text-cyan-600 transition">Dashboard</NuxtLink>
-      <span>/</span>
-      <span class="text-slate-900 font-bold">Benutzer-Einstellungen</span>
+    <!-- Breadcrumb in Liquid Glass Pill -->
+    <div class="mb-6">
+      <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
+        <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition flex items-center space-x-1">
+          <span>🏠</span>
+          <span>Dashboard</span>
+        </NuxtLink>
+        <span class="text-slate-400">/</span>
+        <span class="text-slate-900 font-bold flex items-center space-x-1">
+          <span>⚙️</span>
+          <span>Benutzer-Einstellungen</span>
+        </span>
+      </div>
     </div>
 
-    <!-- Header -->
-    <div class="mb-8">
+    <!-- Header in Liquid Glass Card -->
+    <div class="mb-8 liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
       <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Benutzer-Einstellungen</h1>
-      <p class="text-xs text-slate-500 mt-1">Verwalte dein Profil, deine Zugangsdaten und deine Arbeitsbereich-Informationen.</p>
+      <p class="text-xs text-slate-600 mt-1 font-medium">Verwalte dein Profil, deine Zugangsdaten und deine Arbeitsbereich-Informationen.</p>
     </div>
 
     <!-- Feedback messages -->
-    <div v-if="successMsg" class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+    <div v-if="successMsg" class="mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-300 text-emerald-950 text-xs font-bold liquid_glass_pill">
       {{ successMsg }}
     </div>
-    <div v-if="errorMsg" class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+    <div v-if="errorMsg" class="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-300 text-rose-950 text-xs font-bold liquid_glass_pill">
       {{ errorMsg }}
     </div>
 
     <div class="space-y-8">
       <!-- Card 1: Profil-Informationen -->
-      <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
           <span>👤</span>
           <span>Persönliche Daten</span>
@@ -37,7 +45,7 @@
               v-model="profileName"
               type="text"
               required
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
@@ -47,9 +55,9 @@
               :value="user?.email"
               type="email"
               disabled
-              class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-xs text-slate-500 cursor-not-allowed font-medium"
+              class="w-full px-3.5 py-2.5 bg-slate-100/90 border border-slate-300 rounded-xl text-xs text-slate-500 cursor-not-allowed font-medium"
             />
-            <p class="text-[11px] text-slate-400 mt-1">Die E-Mail dient als Login-Kennung und kann aus Sicherheitsgründen nicht direkt geändert werden.</p>
+            <p class="text-[11px] text-slate-500 mt-1">Die E-Mail dient als Login-Kennung und kann aus Sicherheitsgründen nicht direkt geändert werden.</p>
           </div>
 
           <div class="pt-2">
@@ -65,7 +73,7 @@
       </div>
 
       <!-- Card 2: Passwort ändern -->
-      <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
           <span>🔒</span>
           <span>Passwort & Sicherheit</span>
@@ -80,7 +88,7 @@
               type="password"
               required
               placeholder="••••••••"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
@@ -91,7 +99,7 @@
               type="password"
               required
               placeholder="••••••••"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
@@ -102,7 +110,7 @@
               type="password"
               required
               placeholder="••••••••"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
@@ -119,7 +127,7 @@
       </div>
 
       <!-- Card 3: Arbeitsbereich & Tarif -->
-      <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
           <span>🏢</span>
           <span>Unternehmen & Tarifplan</span>

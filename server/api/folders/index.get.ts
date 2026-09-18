@@ -6,16 +6,9 @@ export default defineEventHandler((event) => {
 
   let folders = []
 
-  if (user.is_superadmin) {
-    folders = db.prepare(`
-      SELECT pf.*, u.name as owner_name, c.name as company_name,
-        (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
-      FROM project_folders pf
-      JOIN users u ON u.id = pf.owner_id
-      LEFT JOIN companies c ON c.id = pf.company_id
-      ORDER BY pf.created_at DESC
-    `).all()
-  } else if (user.company_id) {
+  // On personal workspace dashboard: users (including superadmin) only see their company or owned folders, or folders where they are a project member.
+  // System-wide administrative overview across all companies/users is strictly reserved for /admin.
+  if (user.company_id) {
     folders = db.prepare(`
       SELECT pf.*, u.name as owner_name, c.name as company_name,
         (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
@@ -26,7 +19,7 @@ export default defineEventHandler((event) => {
       ORDER BY pf.created_at DESC
     `).all(user.company_id, user.id)
   } else {
-    // Private user: only owned folders or folders where user is a project member
+    // Private user (or admin in personal private mode): only owned folders or folders where user is a project member
     folders = db.prepare(`
       SELECT pf.*, u.name as owner_name, NULL as company_name,
         (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count

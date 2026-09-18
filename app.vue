@@ -8,7 +8,7 @@
         class="w-full h-full object-cover object-center filter brightness-[0.92] contrast-[1.03] transition-all duration-700 ease-out"
       />
       <!-- Soft subtle gradient overlay so light cards and text pop crisp and readable -->
-      <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-[0.5px]"></div>
+      <div class="absolute inset-0 bg-slate-950/25 backdrop-blur-[1px]"></div>
     </div>
 
     <!-- Main App Container (Navbar + Views + Right Sidebar) -->
@@ -194,5 +194,30 @@ onMounted(async () => {
 }
 .taskster_button_light {
   @apply bg-white hover:bg-slate-50 text-slate-800 border-[3px] border-[#00A3C4] font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
+}
+
+/* Liquid Glass Design System */
+.liquid_glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 35px -5px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+}
+
+.liquid_glass_pill {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.liquid_glass_card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 </style>
