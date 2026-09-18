@@ -752,17 +752,9 @@ try {
     // 4. GET folders
     if ($path === 'folders' && $method === 'GET') {
         $user = requireAuth();
-        if (!empty($user['is_superadmin'])) {
-            $stmt = $db->query("
-                SELECT pf.*, u.name as owner_name, c.name as company_name,
-                  (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
-                FROM project_folders pf
-                JOIN users u ON u.id = pf.owner_id
-                LEFT JOIN companies c ON c.id = pf.company_id
-                ORDER BY pf.created_at DESC
-            ");
-            $folders = $stmt->fetchAll();
-        } elseif (!empty($user['company_id'])) {
+        // Personal workspace dashboard: users (including superadmin) only see their company or owned folders,
+        // or folders where they are a project member. System-wide administrative views belong in /admin.
+        if (!empty($user['company_id'])) {
             $stmt = $db->prepare("
                 SELECT pf.*, u.name as owner_name, c.name as company_name,
                   (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
@@ -1162,6 +1154,29 @@ try {
         jsonResponse(['success' => true]);
     }
 
+    // 11e. GET tasks (Query assigned or relevant tasks across accessible projects for personal dashboard)
+    if ($path === 'tasks' && $method === 'GET') {
+        $user = requireAuth();
+        $tStmt = $db->prepare("
+            SELECT t.*, l.title as list_title, p.id as project_id, p.title as project_title, pf.id as folder_id, pf.name as folder_name, pf.icon as folder_icon
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE p.owner_id = ? OR pf.owner_id = ? OR p.id IN (
+              SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?
+            )
+            ORDER BY t.created_at DESC
+            LIMIT 20
+        ");
+        $tStmt->execute([$user['id'], $user['id'], $user['id']]);
+        $tasks = array_map(function($t) {
+            $t['custom_data'] = !empty($t['custom_data']) ? (is_string($t['custom_data']) ? json_decode($t['custom_data'], true) : $t['custom_data']) : [];
+            return $t;
+        }, $tStmt->fetchAll());
+        jsonResponse(['tasks' => $tasks]);
+    }
+
     // 12. POST tasks
     if ($path === 'tasks' && $method === 'POST') {
         $user = requireAuth();
@@ -1426,13 +1441,44 @@ try {
         jsonResponse(['users' => $users]);
     }
 
-    // 19. PATCH admin/users/:id
+    // 19. PATCH admin/users/:id (Update user settings: pro status, company, role, superadmin)
     if (preg_match('#^admin/users/([^/]+)$#', $path, $m) && $method === 'PATCH') {
         requireSuperadmin();
         $targetId = $m[1];
+        
+        $fields = [];
+        $params = [];
+
         if (isset($body['is_pro'])) {
-            $db->prepare("UPDATE users SET is_pro = ? WHERE id = ?")->execute([$body['is_pro'] ? 1 : 0, $targetId]);
+            $fields[] = "is_pro = ?";
+            $params[] = $body['is_pro'] ? 1 : 0;
         }
+        if (isset($body['is_superadmin'])) {
+            $fields[] = "is_superadmin = ?";
+            $params[] = $body['is_superadmin'] ? 1 : 0;
+        }
+        if (array_key_exists('company_id', $body)) {
+            $fields[] = "company_id = ?";
+            $params[] = !empty($body['company_id']) ? $body['company_id'] : null;
+        }
+        if (array_key_exists('company_role', $body)) {
+            $fields[] = "company_role = ?";
+            $params[] = !empty($body['company_role']) ? $body['company_role'] : null;
+        }
+        if (!empty($body['name'])) {
+            $fields[] = "name = ?";
+            $params[] = trim($body['name']);
+        }
+        if (!empty($body['email'])) {
+            $fields[] = "email = ?";
+            $params[] = strtolower(trim($body['email']));
+        }
+
+        if (!empty($fields)) {
+            $params[] = $targetId;
+            $db->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?")->execute($params);
+        }
+
         jsonResponse(['success' => true]);
     }
 
