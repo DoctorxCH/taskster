@@ -56,6 +56,10 @@ function ensureTables($pdo) {
         if ((int)$count === 0) {
             seedTemplates($pdo);
         }
+
+        try {
+            $pdo->exec("ALTER TABLE project_folders ADD COLUMN icon VARCHAR(64) DEFAULT '📁'");
+        } catch (Exception $e) {}
     } catch (Exception $e) {
         // Continue if table exists or migration done
     }
@@ -805,9 +809,34 @@ try {
         }
 
         $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name) VALUES (?, ?, ?, ?)")->execute([$fldId, $user['id'], $user['company_id'], $name]);
+        $icon = trim($body['icon'] ?? '📁');
+        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon) VALUES (?, ?, ?, ?, ?)")->execute([$fldId, $user['id'], $user['company_id'], $name, $icon]);
 
-        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'owner_id' => $user['id'], 'company_id' => $user['company_id']]]);
+        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'owner_id' => $user['id'], 'company_id' => $user['company_id']]]);
+    }
+
+    // 5b. PUT folders/:id
+    if (preg_match('#^folders/([^/]+)$#', $path, $m) && $method === 'PUT') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+        $stmt->execute([$fldId]);
+        $folder = $stmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id']) {
+            errorResponse('Nur der Eigentümer kann diesen Projektordner bearbeiten', 403);
+        }
+
+        $name = trim($body['name'] ?? $folder['name']);
+        $icon = trim($body['icon'] ?? ($folder['icon'] ?? '📁'));
+        if (!$name) errorResponse('Name erforderlich', 400);
+
+        $db->prepare("UPDATE project_folders SET name = ?, icon = ? WHERE id = ?")->execute([$name, $icon, $fldId]);
+
+        $uStmt = $db->prepare("SELECT pf.*, u.name as owner_name, c.name as company_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
+        $uStmt->execute([$fldId]);
+        jsonResponse(['success' => true, 'folder' => $uStmt->fetch()]);
     }
 
     // 6. GET folders/:id
@@ -1077,9 +1106,60 @@ try {
         evaluateProjectAccess($user, $projectId, 'write');
 
         $listId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, ?, 1)")->execute([$listId, $projectId, $title, $accessMode]);
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM lists WHERE project_id = ?");
+        $countStmt->execute([$projectId]);
+        $nextSort = (int)$countStmt->fetchColumn() + 1;
 
-        jsonResponse(['success' => true, 'list' => ['id' => $listId, 'title' => $title, 'access_mode' => $accessMode]]);
+        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, ?, ?)")->execute([$listId, $projectId, $title, $accessMode, $nextSort]);
+
+        jsonResponse(['success' => true, 'list' => ['id' => $listId, 'title' => $title, 'access_mode' => $accessMode, 'sort_order' => $nextSort]]);
+    }
+
+    // 11b. PUT lists/:id
+    if (preg_match('#^lists/([^/]+)$#', $path, $m) && $method === 'PUT') {
+        $user = requireAuth();
+        $listId = $m[1];
+        $acc = evaluateListAccess($user, $listId, 'write');
+        $list = $acc['list'];
+
+        $title = isset($body['title']) ? trim($body['title']) : $list['title'];
+        $accessMode = $body['access_mode'] ?? $list['access_mode'];
+        $sortOrder = isset($body['sort_order']) ? (int)$body['sort_order'] : (int)$list['sort_order'];
+
+        $db->prepare("UPDATE lists SET title = ?, access_mode = ?, sort_order = ? WHERE id = ?")->execute([$title, $accessMode, $sortOrder, $listId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 11c. DELETE lists/:id
+    if (preg_match('#^lists/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $listId = $m[1];
+        evaluateListAccess($user, $listId, 'write');
+
+        $db->prepare("DELETE FROM tasks WHERE list_id = ?")->execute([$listId]);
+        $db->prepare("DELETE FROM lists WHERE id = ?")->execute([$listId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 11d. POST lists/reorder
+    if ($path === 'lists/reorder' && $method === 'POST') {
+        $user = requireAuth();
+        $projectId = $body['project_id'] ?? '';
+        evaluateProjectAccess($user, $projectId, 'write');
+
+        $lists = $body['lists'] ?? [];
+        if (is_array($lists)) {
+            $upStmt = $db->prepare("UPDATE lists SET sort_order = ?, title = COALESCE(?, title) WHERE id = ? AND project_id = ?");
+            foreach ($lists as $idx => $item) {
+                $lid = is_string($item) ? $item : ($item['id'] ?? '');
+                $title = (is_array($item) && !empty($item['title'])) ? trim($item['title']) : null;
+                $sort = (is_array($item) && isset($item['sort_order'])) ? (int)$item['sort_order'] : ($idx + 1);
+                if ($lid) {
+                    $upStmt->execute([$sort, $title, $lid, $projectId]);
+                }
+            }
+        }
+        jsonResponse(['success' => true]);
     }
 
     // 12. POST tasks

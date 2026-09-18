@@ -26,15 +26,18 @@ export default defineEventHandler(async (event) => {
   const folderId = 'fld_' + randomUUID().substring(0, 8)
   const companyId = user.company_id || null
 
+  const icon = body.icon ? String(body.icon).trim() : '📁'
+
   db.prepare(`
-    INSERT INTO project_folders (id, owner_id, company_id, name)
-    VALUES (?, ?, ?, ?)
-  `).run(folderId, user.id, companyId, name.trim())
+    INSERT INTO project_folders (id, owner_id, company_id, name, icon)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(folderId, user.id, companyId, name.trim(), icon)
 
   return {
     folder: {
       id: folderId,
       name: name.trim(),
+      icon: icon,
       owner_id: user.id,
       company_id: companyId
     }

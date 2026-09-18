@@ -58,18 +58,27 @@
           <div class="flex items-center space-x-2">
             <button
               v-if="userRole !== 'viewer'"
-              @click="showNewListModal = true"
-              class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+              @click="openManageSectionsModal"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+              title="Abschnitte bearbeiten, umbenennen, per Drag & Drop sortieren"
             >
-              + Neuer Abschnitt
+              <span>✏️</span>
+              <span>Abschnitte bearbeiten</span>
+            </button>
+            <button
+              v-if="userRole !== 'viewer'"
+              @click="showNewListModal = true"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              <span>+ Neuer Abschnitt</span>
             </button>
             <button
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(lists[0]?.id)"
               :disabled="lists.length === 0"
-              class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              + Aufgabe erfassen
+              <span>+ Aufgabe erfassen</span>
             </button>
           </div>
         </div>
@@ -175,33 +184,59 @@
             v-for="list in lists"
             :key="list.id"
             class="bg-slate-900 border rounded-2xl p-5 flex flex-col transition-colors"
-            :class="dragOverListId === list.id ? 'border-emerald-500 bg-slate-900/90 ring-2 ring-emerald-500/20' : 'border-slate-800'"
+            :class="[
+              dragOverListId === list.id ? 'border-emerald-500 bg-slate-900/90 ring-2 ring-emerald-500/20' : 'border-slate-800',
+              draggedBoardSection?.id === list.id ? 'opacity-40 border-dashed border-blue-500 scale-[0.99]' : ''
+            ]"
             @dragover.prevent="onDragOverList(list.id)"
             @dragleave="onDragLeaveList(list.id)"
             @drop="onDropToList(list.id)"
           >
-            <!-- Section Header -->
-            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <!-- Section Header (Draggable for reordering columns) -->
+            <div
+              class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800 select-none group/hdr"
+              :draggable="userRole !== 'viewer'"
+              @dragstart="onSectionDragStart(list, $event)"
+              @dragover.prevent="onSectionDragOver(list, $event)"
+              @drop.stop="onSectionDrop(list, $event)"
+            >
               <div class="flex items-center space-x-2">
+                <span
+                  v-if="userRole !== 'viewer'"
+                  class="text-slate-600 hover:text-blue-400 cursor-grab active:cursor-grabbing text-xs transition"
+                  title="Abschnitt ziehen, um Spalte zu verschieben"
+                >
+                  ⋮⋮
+                </span>
                 <h3 class="text-sm font-bold text-white">{{ list.title }}</h3>
                 <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
                   {{ list.tasks?.length || 0 }}
                 </span>
               </div>
 
-              <!-- Access Mode Badge -->
-              <span
-                v-if="list.access_mode === 'custom'"
-                class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60"
-              >
-                🔒 Eingeschränkt
-              </span>
-              <span
-                v-else
-                class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
-              >
-                Abschnitt
-              </span>
+              <div class="flex items-center space-x-1.5">
+                <button
+                  v-if="userRole !== 'viewer'"
+                  @click.stop="openManageSectionsModal"
+                  class="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-800 text-xs transition"
+                  title="Abschnitte bearbeiten & sortieren"
+                >
+                  ✏️
+                </button>
+                <!-- Access Mode Badge -->
+                <span
+                  v-if="list.access_mode === 'custom'"
+                  class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60"
+                >
+                  🔒 Eingeschränkt
+                </span>
+                <span
+                  v-else
+                  class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
+                >
+                  Abschnitt
+                </span>
+              </div>
             </div>
 
             <!-- Tasks in this section -->
@@ -672,22 +707,160 @@
             </select>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               @click="showNewListModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               Abschnitt anlegen
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Manage Sections (Drag & Drop, Rename, Delete, Reorder) -->
+    <div v-if="showManageSectionsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col my-8">
+        
+        <!-- Modal Header -->
+        <div class="p-6 border-b border-slate-800 flex items-start justify-between bg-slate-950/50">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">📋</span>
+              <h3 class="text-lg font-bold text-white">Projekt-Abschnitte verwalten</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Passe die Reihenfolge per Drag & Drop oder Pfeiltasten an, benenne Abschnitte um oder entferne Phasen.
+            </p>
+          </div>
+          <button
+            type="button"
+            @click="showManageSectionsModal = false"
+            class="text-slate-400 hover:text-white text-lg p-1 rounded-lg hover:bg-slate-800 transition"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div v-if="manageSectionsError" class="mx-6 mt-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+          {{ manageSectionsError }}
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Sections List (Drag & Drop) -->
+          <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+            <div
+              v-for="(sec, idx) in managingSections"
+              :key="sec.id || idx"
+              draggable="true"
+              @dragstart="onModalDragStart(idx, $event)"
+              @dragover.prevent="onModalDragOver(idx, $event)"
+              @drop="onModalDrop(idx, $event)"
+              class="p-3.5 rounded-xl border bg-slate-950/90 transition flex items-center justify-between gap-3 group"
+              :class="draggedSectionModalIdx === idx ? 'border-blue-500 bg-blue-950/30 opacity-50' : 'border-slate-800 hover:border-slate-700'"
+            >
+              <!-- Drag Handle & Index -->
+              <div class="flex items-center space-x-3">
+                <span class="text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing text-sm select-none" title="Ziehen zum Verschieben">⋮⋮</span>
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center select-none">
+                  {{ idx + 1 }}
+                </span>
+              </div>
+
+              <!-- Title Input -->
+              <div class="flex-1">
+                <input
+                  v-model="sec.title"
+                  type="text"
+                  required
+                  placeholder="Abschnittsbezeichnung"
+                  class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-slate-100 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <!-- Task Count Badge -->
+              <span class="text-[11px] text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800 whitespace-nowrap">
+                {{ sec.tasks?.length || sec.task_count || 0 }} Aufgaben
+              </span>
+
+              <!-- Action Controls: Up, Down, Delete -->
+              <div class="flex items-center space-x-1">
+                <button
+                  type="button"
+                  @click="moveSectionUp(idx)"
+                  :disabled="idx === 0"
+                  class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition"
+                  title="Nach oben verschieben"
+                >
+                  ⬆️
+                </button>
+                <button
+                  type="button"
+                  @click="moveSectionDown(idx)"
+                  :disabled="idx === managingSections.length - 1"
+                  class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition"
+                  title="Nach unten verschieben"
+                >
+                  ⬇️
+                </button>
+                <button
+                  type="button"
+                  @click="deleteSectionInModal(idx)"
+                  class="p-1.5 rounded hover:bg-rose-950 text-rose-400 hover:text-rose-300 transition ml-1"
+                  title="Abschnitt löschen"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Add Section Row inside Modal -->
+          <div class="pt-4 border-t border-slate-800 flex items-center gap-2">
+            <input
+              v-model="newSectionTitleInModal"
+              type="text"
+              placeholder="+ Weiterer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
+              class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              @keyup.enter="addSectionInModal"
+            />
+            <button
+              type="button"
+              @click="addSectionInModal"
+              :disabled="!newSectionTitleInModal.trim()"
+              class="taskster_button px-4 text-xs h-[38px] rounded-lg"
+            >
+              + Hinzufügen
+            </button>
+          </div>
+
+          <!-- Modal Footer Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+            <button
+              type="button"
+              @click="showManageSectionsModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              @click="saveSectionsReorder"
+              :disabled="savingSections"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              <span>{{ savingSections ? 'Wird gespeichert...' : 'Reihenfolge & Namen speichern' }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1340,6 +1513,179 @@ const createList = async () => {
     await loadProjectData()
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Erstellen des Abschnitts')
+  }
+}
+
+// Section / List Management State & Methods
+const showManageSectionsModal = ref(false)
+const managingSections = ref<any[]>([])
+const newSectionTitleInModal = ref('')
+const savingSections = ref(false)
+const manageSectionsError = ref('')
+const draggedSectionModalIdx = ref<number | null>(null)
+const draggedBoardSection = ref<any>(null)
+
+const openManageSectionsModal = () => {
+  managingSections.value = JSON.parse(JSON.stringify(lists.value))
+  newSectionTitleInModal.value = ''
+  manageSectionsError.value = ''
+  showManageSectionsModal.value = true
+}
+
+const moveSectionUp = (idx: number) => {
+  if (idx <= 0) return
+  const temp = managingSections.value[idx]
+  managingSections.value[idx] = managingSections.value[idx - 1]
+  managingSections.value[idx - 1] = temp
+}
+
+const moveSectionDown = (idx: number) => {
+  if (idx >= managingSections.value.length - 1) return
+  const temp = managingSections.value[idx]
+  managingSections.value[idx] = managingSections.value[idx + 1]
+  managingSections.value[idx + 1] = temp
+}
+
+const onModalDragStart = (idx: number, e: DragEvent) => {
+  draggedSectionModalIdx.value = idx
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(idx))
+  }
+}
+
+const onModalDragOver = (idx: number, e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const onModalDrop = (targetIdx: number, e: DragEvent) => {
+  e.preventDefault()
+  if (draggedSectionModalIdx.value === null || draggedSectionModalIdx.value === targetIdx) return
+  const item = managingSections.value.splice(draggedSectionModalIdx.value, 1)[0]
+  managingSections.value.splice(targetIdx, 0, item)
+  draggedSectionModalIdx.value = null
+}
+
+const addSectionInModal = async () => {
+  const t = newSectionTitleInModal.value.trim()
+  if (!t) return
+  try {
+    await $fetch<any>('/api/lists', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        title: t,
+        access_mode: 'inherit'
+      }
+    })
+    newSectionTitleInModal.value = ''
+    await loadProjectData()
+    managingSections.value = JSON.parse(JSON.stringify(lists.value))
+  } catch (err: any) {
+    manageSectionsError.value = err.data?.statusMessage || 'Fehler beim Hinzufügen'
+  }
+}
+
+const deleteSectionInModal = async (idx: number) => {
+  const sec = managingSections.value[idx]
+  const count = sec.tasks?.length || sec.task_count || 0
+  const msg = count > 0
+    ? `Abschnitt "${sec.title}" enthält ${count} Aufgabe(n). Möchtest du diesen Abschnitt und alle darin enthaltenen Aufgaben wirklich unwiderruflich löschen?`
+    : `Möchtest du den Abschnitt "${sec.title}" wirklich löschen?`
+  if (!confirm(msg)) return
+
+  try {
+    if (sec.id) {
+      await $fetch(`/api/lists/${sec.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+    }
+    managingSections.value.splice(idx, 1)
+    await loadProjectData()
+  } catch (err: any) {
+    manageSectionsError.value = err.data?.statusMessage || 'Fehler beim Löschen des Abschnitts'
+  }
+}
+
+const saveSectionsReorder = async () => {
+  savingSections.value = true
+  manageSectionsError.value = ''
+  try {
+    const payload = managingSections.value.map((sec, idx) => ({
+      id: sec.id,
+      title: sec.title ? sec.title.trim() : `Abschnitt ${idx + 1}`,
+      sort_order: idx + 1
+    }))
+    await $fetch('/api/lists/reorder', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        lists: payload
+      }
+    })
+    showManageSectionsModal.value = false
+    await loadProjectData()
+  } catch (err: any) {
+    manageSectionsError.value = err.data?.statusMessage || 'Fehler beim Speichern der Abschnitte'
+  } finally {
+    savingSections.value = false
+  }
+}
+
+// Board-Level Section Drag & Drop
+const onSectionDragStart = (list: any, e: DragEvent) => {
+  draggedBoardSection.value = list
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', list.id)
+  }
+}
+
+const onSectionDragOver = (list: any, e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const onSectionDrop = async (targetList: any, e: DragEvent) => {
+  e.preventDefault()
+  if (!draggedBoardSection.value || draggedBoardSection.value.id === targetList.id) {
+    draggedBoardSection.value = null
+    return
+  }
+  const fromIdx = lists.value.findIndex(l => l.id === draggedBoardSection.value.id)
+  const toIdx = lists.value.findIndex(l => l.id === targetList.id)
+  if (fromIdx === -1 || toIdx === -1) {
+    draggedBoardSection.value = null
+    return
+  }
+  const moved = lists.value.splice(fromIdx, 1)[0]
+  lists.value.splice(toIdx, 0, moved)
+  draggedBoardSection.value = null
+
+  try {
+    const payload = lists.value.map((sec, idx) => ({
+      id: sec.id,
+      sort_order: idx + 1
+    }))
+    await $fetch('/api/lists/reorder', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        lists: payload
+      }
+    })
+    await loadProjectData()
+  } catch (err) {
+    console.error('Failed to save section reorder on board', err)
   }
 }
 
