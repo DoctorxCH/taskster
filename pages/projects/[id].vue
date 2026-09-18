@@ -1300,6 +1300,67 @@
                 </div>
               </div>
             </div>
+
+            <!-- Documents / Attachments -->
+            <div>
+              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                <span>📎</span>
+                <span>Dateianhänge</span>
+              </label>
+
+              <!-- Upload zone -->
+              <div v-if="userRole !== 'viewer'" class="mb-4 p-4 rounded-2xl border-2 border-dashed border-slate-300 hover:border-cyan-400 hover:bg-cyan-50/50 transition cursor-pointer" @click="triggerFileInput" @dragover.prevent="onDragOverFiles" @dragleave="onDragLeaveFiles" @drop.prevent="onDropFiles" :class="{ 'border-cyan-400 bg-cyan-50/50': dragOverFiles }">
+                <input ref="fileInput" type="file" multiple @change="onFileSelected" class="hidden" />
+                <div class="flex flex-col items-center text-center">
+                  <span class="text-3xl mb-2">📤</span>
+                  <p class="text-xs font-bold text-slate-700">Dateien hierher ziehen oder klicken zum Auswählen</p>
+                  <p class="text-[10px] text-slate-500 mt-1">Max. 10 MB pro Datei · Bilder, PDFs, Office-Dokumente</p>
+                </div>
+              </div>
+
+              <!-- Upload progress -->
+              <div v-if="uploadingFiles.length > 0" class="space-y-2 mb-4">
+                <div v-for="uf in uploadingFiles" :key="uf.id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="font-bold text-slate-800 truncate pr-2">{{ uf.name }}</span>
+                    <span class="text-slate-500">{{ Math.round(uf.progress) }}%</span>
+                  </div>
+                  <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-cyan-500 h-1.5 rounded-full transition-all" :style="{width: uf.progress + '%'}"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Documents list -->
+              <div class="space-y-2">
+                <div v-if="drawerDocuments.length === 0 && uploadingFiles.length === 0" class="text-xs text-slate-500 italic text-center py-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                  Noch keine Dateien angehängt.
+                </div>
+                <div v-for="doc in drawerDocuments" :key="doc.id" class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-xs hover:border-slate-300 transition group/doc">
+                  <!-- File icon based on mime type -->
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="getFileIconClass(doc.mime_type)">
+                    <span class="text-xl">{{ getFileIcon(doc.mime_type) }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-900 truncate">{{ doc.file_name }}</p>
+                    <p class="text-[10px] text-slate-500 flex items-center gap-2">
+                      <span>{{ formatFileSize(doc.file_size) }}</span>
+                      <span>·</span>
+                      <span>{{ new Date(doc.created_at).toLocaleDateString('de-CH') }}</span>
+                      <span v-if="doc.uploaded_by_name" class="text-cyan-700">· von {{ doc.uploaded_by_name }}</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <a :href="doc.storage_path" target="_blank" class="p-2 rounded-lg text-slate-500 hover:text-cyan-700 hover:bg-cyan-50 transition" title="Herunterladen">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </a>
+                    <button v-if="userRole !== 'viewer'" @click="deleteDocument(doc.id)" class="opacity-0 group-hover/doc:opacity-100 p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Löschen">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10m4-10v10M10 7v10"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- RIGHT COLUMN: Sidebar (Status, Prio, Assignee, Date, Color, Tags, Fields, Delete) -->
@@ -1828,6 +1889,10 @@ const showTaskDrawer = ref(false)
 const drawerTask = ref<any>(null)
 const drawerSubtasks = ref<any[]>([])
 const drawerComments = ref<any[]>([])
+const drawerDocuments = ref<any[]>([])
+const uploadingFiles = ref<any[]>([])
+const dragOverFiles = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 const newTagInput = ref('')
 const newChecklistInput = ref('')
 const newSubtaskInput = ref('')
@@ -2274,6 +2339,8 @@ const openTaskDrawer = async (task: any) => {
   }
   drawerSubtasks.value = []
   drawerComments.value = []
+  drawerDocuments.value = []
+  uploadingFiles.value = []
   showTaskDrawer.value = true
 
   // Load full detail from API
@@ -2292,6 +2359,7 @@ const openTaskDrawer = async (task: any) => {
     }
     drawerSubtasks.value = res.subtasks || []
     drawerComments.value = res.comments || []
+    drawerDocuments.value = res.documents || []
   } catch (err) {
     console.error('Failed to load task detail', err)
   }
@@ -2432,6 +2500,127 @@ const deleteTaskFromDrawer = async () => {
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Löschen')
   }
+}
+
+// File Attachment Upload & Management
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const onDragOverFiles = () => {
+  dragOverFiles.value = true
+}
+
+const onDragLeaveFiles = () => {
+  dragOverFiles.value = false
+}
+
+const onDropFiles = (e: DragEvent) => {
+  dragOverFiles.value = false
+  if (e.dataTransfer?.files) {
+    handleFiles(Array.from(e.dataTransfer.files))
+  }
+}
+
+const onFileSelected = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files) {
+    handleFiles(Array.from(target.files))
+  }
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const handleFiles = async (files: File[]) => {
+  if (!drawerTask.value?.id || userRole.value === 'viewer') return
+
+  for (const file of files) {
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`Die Datei "${file.name}" ist größer als 10 MB.`)
+      continue
+    }
+
+    const uploadItem = {
+      id: 'up_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: file.name,
+      progress: 10
+    }
+    uploadingFiles.value.push(uploadItem)
+
+    try {
+      // Convert file to Base64 Data URL for robust persistence without requiring external S3/FTP server
+      const base64Data = await readFileAsDataUrl(file)
+      uploadItem.progress = 60
+
+      const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/documents`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          file_name: file.name,
+          mime_type: file.type || 'application/octet-stream',
+          file_size: file.size,
+          storage_path: base64Data
+        }
+      })
+
+      uploadItem.progress = 100
+      drawerDocuments.value.unshift(res.document)
+    } catch (err: any) {
+      alert(err.data?.statusMessage || `Fehler beim Hochladen von "${file.name}"`)
+    } finally {
+      uploadingFiles.value = uploadingFiles.value.filter(u => u.id !== uploadItem.id)
+    }
+  }
+}
+
+const readFileAsDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = error => reject(error)
+    reader.readAsDataURL(file)
+  })
+}
+
+const deleteDocument = async (docId: string) => {
+  if (!confirm('Möchtest du diese Datei wirklich entfernen?')) return
+  try {
+    await $fetch(`/api/tasks/${drawerTask.value.id}/documents/${docId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    drawerDocuments.value = drawerDocuments.value.filter(d => d.id !== docId)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen der Datei')
+  }
+}
+
+const formatFileSize = (bytes: number) => {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const getFileIcon = (mime: string) => {
+  if (!mime) return '📄'
+  if (mime.startsWith('image/')) return '🖼️'
+  if (mime.includes('pdf')) return '📕'
+  if (mime.includes('word') || mime.includes('document')) return '📝'
+  if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')) return '📊'
+  if (mime.includes('zip') || mime.includes('tar') || mime.includes('compressed')) return '📦'
+  return '📄'
+}
+
+const getFileIconClass = (mime: string) => {
+  if (!mime) return 'bg-slate-100 text-slate-700'
+  if (mime.startsWith('image/')) return 'bg-cyan-50 text-cyan-700'
+  if (mime.includes('pdf')) return 'bg-rose-50 text-rose-700'
+  if (mime.includes('word') || mime.includes('document')) return 'bg-blue-50 text-blue-700'
+  if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')) return 'bg-emerald-50 text-emerald-700'
+  return 'bg-slate-100 text-slate-700'
 }
 
 const saveTask = async () => {
