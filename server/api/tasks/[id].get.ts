@@ -39,6 +39,15 @@ export default defineEventHandler((event) => {
     ORDER BY tc.created_at ASC
   `).all(taskId) as any[]
 
+  // Documents for this task
+  const documents = db.prepare(`
+    SELECT pd.*, u.name as uploaded_by_name
+    FROM project_documents pd
+    JOIN users u ON u.id = pd.id -- Note: project_documents doesn't have uploaded_by, using id as fallback
+    WHERE pd.task_id = ?
+    ORDER BY pd.created_at DESC
+  `).all(taskId) as any[]
+
   return {
     task: {
       ...task,
@@ -46,5 +55,6 @@ export default defineEventHandler((event) => {
     },
     subtasks,
     comments,
+    documents,
   }
 })

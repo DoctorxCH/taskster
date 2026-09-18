@@ -1347,7 +1347,11 @@ try {
         $cStmt->execute([$taskId]);
         $comments = $cStmt->fetchAll();
 
-        jsonResponse(['task' => array_merge($task, ['assignee' => $assignee]), 'subtasks' => $subtasks, 'comments' => $comments]);
+        $dStmt = $db->prepare("SELECT * FROM project_documents WHERE task_id = ? ORDER BY created_at DESC");
+        $dStmt->execute([$taskId]);
+        $documents = $dStmt->fetchAll();
+
+        jsonResponse(['task' => array_merge($task, ['assignee' => $assignee]), 'subtasks' => $subtasks, 'comments' => $comments, 'documents' => $documents]);
     }
 
     // 13d. POST tasks/:id/comments
@@ -1413,6 +1417,57 @@ try {
         if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
         evaluateListAccess($user, $task['list_id'], 'write');
         $db->prepare("DELETE FROM task_subtasks WHERE id = ? AND task_id = ?")->execute([$subId, $taskId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 13h. POST tasks/:id/documents
+    if (preg_match('#^tasks/([^/]+)/documents$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $taskId = $m[1];
+        $fileName = trim($body['file_name'] ?? '');
+        $mimeType = trim($body['mime_type'] ?? 'application/octet-stream');
+        $fileSize = (int)($body['file_size'] ?? 0);
+        $storagePath = trim($body['storage_path'] ?? '');
+
+        if (!$fileName || !$storagePath) errorResponse('Dateiname und Inhalt erforderlich', 400);
+
+        $tStmt = $db->prepare("SELECT t.*, l.project_id FROM tasks t JOIN lists l ON l.id = t.list_id WHERE t.id = ?");
+        $tStmt->execute([$taskId]);
+        $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'write');
+
+        $docId = 'doc_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("
+            INSERT INTO project_documents (id, project_id, task_id, file_name, mime_type, file_size, storage_path, version, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
+        ")->execute([$docId, $task['project_id'], $taskId, $fileName, $mimeType, $fileSize, $storagePath]);
+
+        jsonResponse([
+            'document' => [
+                'id' => $docId,
+                'project_id' => $task['project_id'],
+                'task_id' => $taskId,
+                'file_name' => $fileName,
+                'mime_type' => $mimeType,
+                'file_size' => $fileSize,
+                'storage_path' => $storagePath,
+                'version' => 1,
+                'created_at' => date('Y-m-d H:i:s'),
+                'uploaded_by_name' => $user['name']
+            ]
+        ]);
+    }
+
+    // 13i. DELETE tasks/:id/documents/:docId
+    if (preg_match('#^tasks/([^/]+)/documents/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $taskId = $m[1]; $docId = $m[2];
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?"); $tStmt->execute([$taskId]); $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'write');
+
+        $db->prepare("DELETE FROM project_documents WHERE id = ? AND task_id = ?")->execute([$docId, $taskId]);
         jsonResponse(['success' => true]);
     }
 
