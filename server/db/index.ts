@@ -20,11 +20,38 @@ export function initDatabase() {
   const schemaSql = readFileSync(schemaPath, 'utf8')
   db.exec(schemaSql)
 
-  try {
-    db.exec("ALTER TABLE project_folders ADD COLUMN icon TEXT DEFAULT '📁'")
-  } catch (e) {
-    // Column already exists
+  // Idempotent column migrations
+  const columnMigrations: string[] = [
+    "ALTER TABLE project_folders ADD COLUMN icon TEXT DEFAULT '📁'",
+    "ALTER TABLE tasks ADD COLUMN assigned_to TEXT",
+    "ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'normal'",
+    "ALTER TABLE tasks ADD COLUMN color TEXT",
+    "ALTER TABLE tasks ADD COLUMN tags TEXT DEFAULT '[]'",
+    "ALTER TABLE tasks ADD COLUMN checklist TEXT DEFAULT '[]'",
+  ]
+  for (const sql of columnMigrations) {
+    try { db.exec(sql) } catch (_) { /* column already exists */ }
   }
+
+  // New tables (idempotent via IF NOT EXISTS in schema)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_comments (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS task_subtasks (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      is_done INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `)
 }
 
 initDatabase()
