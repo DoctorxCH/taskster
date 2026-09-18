@@ -28,9 +28,20 @@
         </button>
       </div>
 
+      <!-- Invitation Banner if token is present -->
+      <div v-if="invitationInfo" class="mb-5 p-3 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-200 text-xs">
+        <div class="font-bold text-sm text-purple-300 mb-0.5">Einladung zu {{ invitationInfo.company_name }}</div>
+        <div>Du wurdest eingeladen, diesem Unternehmen beizutreten. Erstelle ein Konto oder melde dich an, um den Beitritt abzuschliessen.</div>
+      </div>
+
       <!-- Error banner -->
       <div v-if="errorMessage" class="mb-5 p-3 rounded-lg bg-rose-950/60 border border-rose-800/80 text-rose-300 text-xs">
         {{ errorMessage }}
+      </div>
+
+      <!-- Success banner -->
+      <div v-if="successMessage" class="mb-5 p-3 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs">
+        {{ successMessage }}
       </div>
 
       <!-- Login Form -->
@@ -41,7 +52,7 @@
             v-model="loginEmail"
             type="email"
             required
-            placeholder="name@firma.ch"
+            placeholder="name@domain.ch"
             class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
           />
         </div>
@@ -85,20 +96,9 @@
             v-model="regEmail"
             type="email"
             required
-            placeholder="max@unternehmen.ch"
+            placeholder="max@domain.ch"
             class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
           />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Unternehmen / Organisation (optional)</label>
-          <input
-            v-model="regCompany"
-            type="text"
-            placeholder="z.B. Swisscom Tiefbau Partner AG (leer lassen für Free Plan)"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
-          <p class="text-[11px] text-slate-500 mt-1">Ohne Company wird automatisch ein privater Free-Account angelegt.</p>
         </div>
 
         <div>
@@ -117,7 +117,7 @@
           :disabled="loading"
           class="w-full py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 transition disabled:opacity-50"
         >
-          {{ loading ? 'Konto wird erstellt...' : 'Registrieren & Starten' }}
+          {{ loading ? 'Konto wird erstellt...' : (invitationToken ? 'Konto erstellen & Unternehmen beitreten' : 'Registrieren & Starten') }}
         </button>
       </form>
 
@@ -191,17 +191,36 @@
 const route = useRoute()
 const { setAuth } = useAuth()
 
-const activeTab = ref<'login' | 'register'>((route.query.tab as string) === 'register' ? 'register' : 'login')
+const activeTab = ref<'login' | 'register'>((route.query.tab as string) === 'register' || Boolean(route.query.token) ? 'register' : 'login')
 const loading = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
+
+const invitationToken = ref((route.query.token as string) || '')
+const invitationInfo = ref<any>(null)
 
 const loginEmail = ref('marc@swissinfra.ch')
 const loginPassword = ref('password123')
 
 const regName = ref('')
 const regEmail = ref('')
-const regCompany = ref('')
 const regPassword = ref('')
+
+onMounted(async () => {
+  if (invitationToken.value) {
+    try {
+      const res = await $fetch<any>(`/api/companies/invitations/info?token=${invitationToken.value}`)
+      invitationInfo.value = res.invitation
+      if (res.invitation?.email) {
+        regEmail.value = res.invitation.email
+        loginEmail.value = res.invitation.email
+      }
+      activeTab.value = 'register'
+    } catch (err: any) {
+      errorMessage.value = err.data?.statusMessage || 'Ungültige oder abgelaufene Einladung'
+    }
+  }
+})
 
 const handleLogin = async () => {
   errorMessage.value = ''
@@ -209,7 +228,11 @@ const handleLogin = async () => {
   try {
     const res = await $fetch<{ token: string; user: any }>('/api/auth/login', {
       method: 'POST',
-      body: { email: loginEmail.value, password: loginPassword.value }
+      body: {
+        email: loginEmail.value,
+        password: loginPassword.value,
+        invitation_token: invitationToken.value || undefined
+      }
     })
     setAuth(res.token, res.user)
     navigateTo('/dashboard')
@@ -229,8 +252,8 @@ const handleRegister = async () => {
       body: {
         name: regName.value,
         email: regEmail.value,
-        company_name: regCompany.value,
-        password: regPassword.value
+        password: regPassword.value,
+        invitation_token: invitationToken.value || undefined
       }
     })
     setAuth(res.token, res.user)

@@ -79,6 +79,16 @@
       </button>
 
       <button
+        v-if="user?.company_id && user?.company_role === 'admin'"
+        @click="activeTab = 'invites'"
+        class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
+        :class="activeTab === 'invites' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+      >
+        <span>✉️</span>
+        <span>Mitarbeiter einladen</span>
+      </button>
+
+      <button
         @click="activeTab = 'policies'"
         class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
         :class="activeTab === 'policies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
@@ -216,6 +226,92 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: COMPANY INVITES (Für Company Admins) -->
+    <div v-if="activeTab === 'invites'" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+          <div>
+            <h3 class="text-base font-bold text-white">Mitarbeiter zu {{ user?.company_name }} einladen</h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Bereits registrierte Nutzer werden sofort dem Unternehmen zugewiesen. Nicht registrierte Nutzer erhalten einen Registrierungslink und treten nach der Registrierung automatisch bei.
+            </p>
+          </div>
+        </div>
+
+        <!-- Invite Form -->
+        <form @submit.prevent="sendCompanyInvite" class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mb-8">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">E-Mail-Adresse</label>
+            <input
+              v-model="inviteEmail"
+              type="email"
+              required
+              placeholder="mitarbeiter@domain.ch"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Rolle im Unternehmen</label>
+            <select
+              v-model="inviteRole"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+            >
+              <option value="member">Mitglied (Member)</option>
+              <option value="admin">Company Administrator</option>
+            </select>
+          </div>
+
+          <div class="flex items-end">
+            <button
+              type="submit"
+              :disabled="sendingInvite"
+              class="w-full py-2 px-4 rounded-lg font-bold text-xs bg-purple-600 hover:bg-purple-500 text-white transition disabled:opacity-50"
+            >
+              {{ sendingInvite ? 'Sende...' : 'Einladung absenden' }}
+            </button>
+          </div>
+        </form>
+
+        <!-- Success link box -->
+        <div v-if="lastInviteLink" class="p-4 rounded-xl bg-purple-950/60 border border-purple-800 text-xs mb-6">
+          <div class="font-bold text-purple-300 mb-1">Einladung erfolgreich generiert!</div>
+          <div class="text-slate-300 mb-2">Für nicht registrierte Nutzer kann dieser direkte Registrierungslink weitergegeben werden:</div>
+          <div class="flex items-center space-x-2">
+            <input
+              readonly
+              :value="lastInviteLink"
+              class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs font-mono text-emerald-400 select-all"
+            />
+            <button
+              type="button"
+              @click="copyInviteLink"
+              class="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold"
+            >
+              Kopieren
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending Invites List -->
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Offene Einladungen</h4>
+        <div v-if="pendingInvites.length === 0" class="text-xs text-slate-500 py-4 text-center border border-dashed border-slate-800 rounded-xl">
+          Keine offenen Einladungen vorhanden.
+        </div>
+        <div v-else class="divide-y divide-slate-800/80 border border-slate-800 rounded-xl overflow-hidden">
+          <div v-for="inv in pendingInvites" :key="inv.id" class="p-3 bg-slate-950 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-200">{{ inv.email }}</div>
+              <div class="text-[10px] text-slate-500">Rolle: {{ inv.role }} • Erstellt: {{ new Date(inv.created_at).toLocaleDateString('de-CH') }}</div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800">
+              {{ inv.status }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -397,11 +493,17 @@
 <script setup lang="ts">
 const { user, authHeaders } = useAuth()
 
-const activeTab = ref<'users' | 'companies' | 'policies'>('users')
+const activeTab = ref<'users' | 'companies' | 'invites' | 'policies'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
 const loading = ref(true)
+
+const inviteEmail = ref('')
+const inviteRole = ref('member')
+const sendingInvite = ref(false)
+const lastInviteLink = ref('')
+const pendingInvites = ref<any[]>([])
 
 const showCreateCompanyModal = ref(false)
 const newCompanyName = ref('')
@@ -412,14 +514,22 @@ const newCompanyAdminEmail = ref('')
 const loadAdminData = async () => {
   loading.value = true
   try {
-    const [ovRes, uRes, cRes] = await Promise.all([
+    const promises: Promise<any>[] = [
       $fetch<any>('/api/admin/overview', { headers: authHeaders() }),
       $fetch<any>('/api/admin/users', { headers: authHeaders() }),
       $fetch<any>('/api/admin/companies', { headers: authHeaders() })
-    ])
-    overview.value = ovRes
-    users.value = uRes.users || []
-    companies.value = cRes.companies || []
+    ]
+    if (user.value?.company_id && user.value?.company_role === 'admin') {
+      promises.push($fetch<any>('/api/companies/invitations', { headers: authHeaders() }))
+    }
+
+    const results = await Promise.all(promises)
+    overview.value = results[0]
+    users.value = results[1].users || []
+    companies.value = results[2].companies || []
+    if (results[3]) {
+      pendingInvites.value = results[3].invitations || []
+    }
   } catch (err: any) {
     if (err.statusCode === 403 || err.statusCode === 401) {
       alert('Zugriff nur für autorisierte Administratoren gestattet.')
@@ -427,6 +537,39 @@ const loadAdminData = async () => {
     }
   } finally {
     loading.value = false
+  }
+}
+
+const sendCompanyInvite = async () => {
+  sendingInvite.value = true
+  lastInviteLink.value = ''
+  try {
+    const res = await $fetch<any>('/api/companies/members', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        email: inviteEmail.value,
+        role: inviteRole.value
+      }
+    })
+    if (res.action === 'added') {
+      alert(`Benutzer ${inviteEmail.value} war bereits registriert und wurde dem Unternehmen sofort hinzugefügt!`)
+    } else if (res.action === 'invited') {
+      lastInviteLink.value = `${window.location.origin}/login?token=${res.token}`
+    }
+    inviteEmail.value = ''
+    await loadAdminData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Senden der Einladung')
+  } finally {
+    sendingInvite.value = false
+  }
+}
+
+const copyInviteLink = () => {
+  if (lastInviteLink.value && navigator.clipboard) {
+    navigator.clipboard.writeText(lastInviteLink.value)
+    alert('Einladungslink in die Zwischenablage kopiert!')
   }
 }
 

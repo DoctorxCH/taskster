@@ -213,6 +213,7 @@ try {
     if ($path === 'auth/login' && $method === 'POST') {
         $email = trim($body['email'] ?? '');
         $password = $body['password'] ?? '';
+        $invitationToken = trim($body['invitation_token'] ?? '');
         if (!$email || !$password) errorResponse('E-Mail und Passwort erforderlich', 400);
 
         $stmt = $db->prepare("
@@ -226,6 +227,23 @@ try {
 
         if (!$u || !password_verify($password, $u['password_hash'])) {
             errorResponse('Ungültige Zugangsdaten', 401);
+        }
+
+        // If logging in via an invitation link, process auto-join
+        if ($invitationToken) {
+            $invStmt = $db->prepare("SELECT * FROM company_invitations WHERE token = ? AND status = 'pending'");
+            $invStmt->execute([$invitationToken]);
+            $inv = $invStmt->fetch();
+            if ($inv) {
+                $db->prepare("UPDATE users SET company_id = ?, company_role = ?, is_pro = 1 WHERE id = ?")->execute([
+                    $inv['company_id'], $inv['role'], $u['id']
+                ]);
+                $db->prepare("UPDATE company_invitations SET status = 'accepted' WHERE id = ?")->execute([$inv['id']]);
+
+                // Re-fetch user
+                $stmt->execute([$email]);
+                $u = $stmt->fetch();
+            }
         }
 
         $token = jwtEncode([
@@ -259,7 +277,7 @@ try {
         $name = trim($body['name'] ?? '');
         $email = strtolower(trim($body['email'] ?? ''));
         $password = $body['password'] ?? '';
-        $companyName = trim($body['company_name'] ?? '');
+        $invitationToken = trim($body['invitation_token'] ?? '');
 
         if (!$name || !$email || !$password) errorResponse('Pflichtfelder fehlen', 400);
 
@@ -271,27 +289,49 @@ try {
         $pwHash = password_hash($password, PASSWORD_BCRYPT);
         $companyId = null;
         $companyRole = null;
+        $isPro = 0;
 
-        if ($companyName) {
-            $companyId = 'comp_' . substr(bin2hex(random_bytes(6)), 0, 8);
-            $companyRole = 'admin';
-            $cStmt = $db->prepare("INSERT INTO companies (id, name, subscription_plan, settings) VALUES (?, ?, 'starter', ?)");
-            $cStmt->execute([$companyId, $companyName, json_encode(['allow_document_upload' => true, 'max_seats' => 10])]);
+        // Check invitation token
+        if ($invitationToken) {
+            $invStmt = $db->prepare("SELECT * FROM company_invitations WHERE token = ? AND status = 'pending'");
+            $invStmt->execute([$invitationToken]);
+            $inv = $invStmt->fetch();
+            if ($inv) {
+                $companyId = $inv['company_id'];
+                $companyRole = $inv['role'];
+                $isPro = 1;
+                $db->prepare("UPDATE company_invitations SET status = 'accepted' WHERE id = ?")->execute([$inv['id']]);
+            }
         }
 
         $uStmt = $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash) VALUES (?, ?, ?, 0, ?, ?, ?, ?)");
-        $uStmt->execute([$userId, $companyId, $companyRole, $companyId ? 1 : 0, $name, $email, $pwHash]);
+        $uStmt->execute([$userId, $companyId, $companyRole, $isPro, $name, $email, $pwHash]);
 
-        // Default folder & project
-        $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $fldName = $companyName ? "{$companyName} - Hauptordner" : "{$name}s Projekte";
-        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name) VALUES (?, ?, ?, ?)")->execute([$fldId, $userId, $companyId, $fldName]);
+        // Default folder & project only if not joining an existing company
+        if (!$companyId) {
+            $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
+            $fldName = "{$name}s Projekte";
+            $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name) VALUES (?, ?, NULL, ?)")->execute([$fldId, $userId, $fldName]);
 
-        $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO projects (id, folder_id, title, status) VALUES (?, ?, 'Erstes Projekt', 'active')")->execute([$prjId, $fldId]);
+            $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
+            $db->prepare("INSERT INTO projects (id, folder_id, title, status) VALUES (?, ?, 'Erstes Projekt', 'active')")->execute([$prjId, $fldId]);
 
-        $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Zu erledigen', 'inherit', 1)")->execute([$lstId, $prjId]);
+            $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Zu erledigen', 'inherit', 1)")->execute([$lstId, $prjId]);
+        }
+
+        // Fetch company name if joined
+        $compName = null;
+        $compPlan = null;
+        if ($companyId) {
+            $cStmt = $db->prepare("SELECT name, subscription_plan FROM companies WHERE id = ?");
+            $cStmt->execute([$companyId]);
+            $cRow = $cStmt->fetch();
+            if ($cRow) {
+                $compName = $cRow['name'];
+                $compPlan = $cRow['subscription_plan'];
+            }
+        }
 
         $token = jwtEncode([
             'id' => $userId,
@@ -300,7 +340,7 @@ try {
             'company_id' => $companyId,
             'company_role' => $companyRole,
             'is_superadmin' => 0,
-            'is_pro' => $companyId ? 1 : 0
+            'is_pro' => $isPro
         ], $jwtSecret);
 
         jsonResponse([
@@ -311,8 +351,10 @@ try {
                 'email' => $email,
                 'company_id' => $companyId,
                 'company_role' => $companyRole,
+                'company_name' => $compName,
+                'company_plan' => $compPlan,
                 'is_superadmin' => false,
-                'is_pro' => (bool)$companyId
+                'is_pro' => (bool)$isPro
             ]
         ]);
     }
@@ -685,6 +727,92 @@ try {
         ]);
 
         jsonResponse(['success' => true, 'entry' => ['id' => $jrnId, 'title' => $title, 'content' => $content]]);
+    }
+
+    // --- COMPANY INVITATIONS & MEMBERS ENDPOINTS ---
+
+    // 16a. POST companies/members (Company Admin invites user or assigns directly)
+    if ($path === 'companies/members' && $method === 'POST') {
+        $user = requireAuth();
+        $email = strtolower(trim($body['email'] ?? ''));
+        $role = $body['role'] ?? 'member';
+
+        if (!$email) errorResponse('E-Mail erforderlich', 400);
+
+        // Must be company admin or superadmin
+        if (empty($user['is_superadmin']) && (empty($user['company_id']) || $user['company_role'] !== 'admin')) {
+            errorResponse('Nur Company-Admins dürfen Mitarbeiter einladen', 403);
+        }
+
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        // Check if user already exists
+        $uStmt = $db->prepare("SELECT id, email, name FROM users WHERE LOWER(email) = ?");
+        $uStmt->execute([$email]);
+        $existing = $uStmt->fetch();
+
+        if ($existing) {
+            // Already registered -> direct join!
+            $db->prepare("UPDATE users SET company_id = ?, company_role = ?, is_pro = 1 WHERE id = ?")->execute([
+                $companyId, $role, $existing['id']
+            ]);
+            jsonResponse([
+                'success' => true,
+                'action' => 'added',
+                'user' => ['id' => $existing['id'], 'email' => $existing['email'], 'name' => $existing['name']]
+            ]);
+        } else {
+            // Not registered -> create pending invitation with token
+            $token = bin2hex(random_bytes(24));
+            $invId = 'inv_' . substr(bin2hex(random_bytes(6)), 0, 8);
+
+            // Invalidate existing pending invites for this email & company
+            $db->prepare("DELETE FROM company_invitations WHERE company_id = ? AND LOWER(email) = ?")->execute([$companyId, $email]);
+
+            $db->prepare("INSERT INTO company_invitations (id, company_id, email, role, token, invited_by, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')")->execute([
+                $invId, $companyId, $email, $role, $token, $user['id']
+            ]);
+
+            jsonResponse([
+                'success' => true,
+                'action' => 'invited',
+                'token' => $token,
+                'email' => $email
+            ]);
+        }
+    }
+
+    // 16b. GET companies/invitations (List pending invitations for current company)
+    if ($path === 'companies/invitations' && $method === 'GET') {
+        $user = requireAuth();
+        $companyId = $user['company_id'];
+        if (!$companyId && empty($user['is_superadmin'])) errorResponse('Keine Company', 400);
+
+        $stmt = $db->prepare("SELECT id, email, role, token, status, created_at FROM company_invitations WHERE company_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$companyId]);
+        jsonResponse(['invitations' => $stmt->fetchAll()]);
+    }
+
+    // 16c. GET companies/invitations/info (Public token check for registration mask)
+    if ($path === 'companies/invitations/info' && $method === 'GET') {
+        $token = trim($_GET['token'] ?? '');
+        if (!$token) errorResponse('Token erforderlich', 400);
+
+        $stmt = $db->prepare("
+            SELECT ci.id, ci.email, ci.role, ci.company_id, ci.status, c.name as company_name
+            FROM company_invitations ci
+            JOIN companies c ON c.id = ci.company_id
+            WHERE ci.token = ? AND ci.status = 'pending'
+        ");
+        $stmt->execute([$token]);
+        $inv = $stmt->fetch();
+        if (!$inv) errorResponse('Ungültige oder bereits genutzte Einladung', 404);
+
+        jsonResponse(['invitation' => $inv]);
     }
 
     // 17. GET admin/overview

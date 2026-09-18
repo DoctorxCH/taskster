@@ -32,7 +32,7 @@
             to="/login?tab=register"
             class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition text-center"
           >
-            Neues Unternehmen registrieren
+            Kostenlos registrieren
           </NuxtLink>
         </div>
       </div>
