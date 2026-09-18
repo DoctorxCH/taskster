@@ -1,44 +1,44 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-xs text-slate-400 mb-6">
-      <NuxtLink to="/dashboard" class="hover:text-emerald-400 transition">Dashboard</NuxtLink>
+    <div class="flex items-center space-x-2 text-xs text-slate-500 mb-6 font-medium">
+      <NuxtLink to="/dashboard" class="hover:text-cyan-600 transition">Dashboard</NuxtLink>
       <span>/</span>
-      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-emerald-400 transition">
+      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-600 transition">
         {{ project?.folder_name || 'Ordner' }}
       </NuxtLink>
       <span>/</span>
-      <span class="text-slate-200 font-medium">{{ project?.title || 'Projekt' }}</span>
+      <span class="text-slate-900 font-bold">{{ project?.title || 'Projekt' }}</span>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-center py-16 text-slate-500">
+    <div v-if="loading" class="text-center py-16 text-slate-400 text-xs">
       Lade Projektdaten...
     </div>
 
     <div v-else-if="project">
-      <!-- Project Header -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+      <!-- Project Header (MeisterTask Clean White Card with Pastel Highlights) -->
+      <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 mb-6 shadow-sm">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex flex-wrap items-center gap-3 mb-1">
-              <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ project.title }}</h1>
+            <div class="flex flex-wrap items-center gap-2.5 mb-1.5">
+              <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ project.title }}</h1>
               <span
-                class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
-                :class="userRole === 'viewer' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'"
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider"
+                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-cyan-50 text-cyan-800 border border-cyan-200'"
               >
                 {{ userRole }}
               </span>
               <span
-                class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700"
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700"
               >
                 Status: {{ project.status }}
               </span>
             </div>
 
-            <p class="text-xs text-slate-400 flex items-center space-x-3 mb-2">
-              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-emerald-400 hover:underline">{{ project.folder_name }}</NuxtLink></span>
-              <span v-if="project.company_name">• {{ project.company_name }}</span>
+            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-cyan-700 font-bold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="project.company_name" class="text-teal-700 font-semibold">• {{ project.company_name }}</span>
             </p>
 
             <!-- Project-level custom fields display in header -->
@@ -46,10 +46,10 @@
               <span
                 v-for="(val, key) in project.custom_data"
                 :key="key"
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300"
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
               >
-                <span class="text-emerald-400 font-medium mr-1.5">{{ getFieldLabel(key) }}:</span>
-                <span class="text-white font-semibold">{{ val }}</span>
+                <span class="text-cyan-700 font-bold mr-1.5">{{ getFieldLabel(key) }}:</span>
+                <span class="text-slate-900 font-bold">{{ val }}</span>
               </span>
             </div>
           </div>
@@ -84,11 +84,11 @@
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-800 mt-6 -mb-6 space-x-6 overflow-x-auto">
+        <div class="flex border-b border-slate-200 mt-6 -mb-6 sm:-mb-8 space-x-6 overflow-x-auto">
           <button
             @click="currentView = 'tasks'"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'tasks' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
           >
             <span>📋</span>
             <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
@@ -96,17 +96,17 @@
 
           <button
             @click="currentView = 'journal'; loadJournals()"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'journal' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
           >
             <span>📝</span>
-            <span>Aktivitätsjournal & Notizen ({{ journalEntries.length }})</span>
+            <span>Aktivitätsjournal ({{ journalEntries.length }})</span>
           </button>
 
           <button
             @click="currentView = 'team'"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'team' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
           >
             <span>👥</span>
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
@@ -115,8 +115,8 @@
           <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="currentView = 'settings'; initSettingsTab()"
-            class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'settings' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
+            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
           >
             <span>⚙️</span>
             <span>Projekt-Einstellungen</span>
@@ -127,22 +127,22 @@
       <!-- VIEW 1: TASKS & ABSCHNITTE -->
       <div v-if="currentView === 'tasks'">
         <!-- View controls: Board vs Table/List -->
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-5">
           <div class="flex items-center space-x-2">
-            <span class="text-xs font-semibold text-slate-400">Ansicht:</span>
-            <div class="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center space-x-1">
+            <span class="text-xs font-bold text-slate-500">Ansicht:</span>
+            <div class="bg-white border border-slate-200 rounded-xl p-0.5 flex items-center space-x-1 shadow-sm">
               <button
                 @click="taskViewMode = 'board'"
-                class="px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center space-x-1"
-                :class="taskViewMode === 'board' ? 'bg-slate-800 text-emerald-400 shadow' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1"
+                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-700 font-extrabold shadow-sm' : 'text-slate-500 hover:text-slate-800'"
               >
                 <span>▦</span>
                 <span>Kacheln (Board)</span>
               </button>
               <button
                 @click="taskViewMode = 'table'"
-                class="px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center space-x-1"
-                :class="taskViewMode === 'table' ? 'bg-slate-800 text-emerald-400 shadow' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1"
+                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-700 font-extrabold shadow-sm' : 'text-slate-500 hover:text-slate-800'"
               >
                 <span>☰</span>
                 <span>Liste</span>
@@ -150,7 +150,7 @@
             </div>
           </div>
 
-          <span class="text-xs text-slate-500">
+          <span class="text-xs text-slate-400 font-medium">
             {{ lists.length }} Abschnitte • {{ totalTasks }} Aufgaben
           </span>
         </div>
@@ -158,43 +158,43 @@
         <!-- Viewer Notice Banner -->
         <div
           v-if="userRole === 'viewer'"
-          class="mb-6 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-300 text-xs flex items-center space-x-2"
+          class="mb-6 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center space-x-2"
         >
           <span>👁️</span>
           <span><strong>Viewer-Modus:</strong> Du besitzt Leserechte für dieses Projekt.</span>
         </div>
 
         <!-- Empty state -->
-        <div v-if="lists.length === 0" class="text-center py-16 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
+        <div v-if="lists.length === 0" class="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm max-w-lg mx-auto">
           <span class="text-3xl">📋</span>
-          <h3 class="text-base font-bold text-slate-200 mt-2">Noch keine Abschnitte in diesem Projekt</h3>
-          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle den ersten Abschnitt (z.B. "Geplant", "In Bearbeitung", "Abgeschlossen").</p>
+          <h3 class="text-base font-bold text-slate-800 mt-2">Noch keine Abschnitte in diesem Projekt</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">Erstelle den ersten Abschnitt (z.B. "Geplant", "In Bearbeitung", "Abgeschlossen").</p>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewListModal = true"
-            class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
             + Ersten Abschnitt erstellen
           </button>
         </div>
 
-        <!-- MODE A: BOARD (KANBAN KACHELN MIT DRAG & DROP) -->
+        <!-- MODE A: BOARD (KANBAN MEISTERTASK-STYLE COLUMNS) -->
         <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           <div
-            v-for="list in lists"
+            v-for="(list, listIdx) in lists"
             :key="list.id"
-            class="bg-slate-900 border rounded-2xl p-5 flex flex-col transition-colors"
+            class="bg-slate-100/80 border rounded-3xl p-4 flex flex-col transition-all duration-150"
             :class="[
-              dragOverListId === list.id ? 'border-emerald-500 bg-slate-900/90 ring-2 ring-emerald-500/20' : 'border-slate-800',
-              draggedBoardSection?.id === list.id ? 'opacity-40 border-dashed border-blue-500 scale-[0.99]' : ''
+              dragOverListId === list.id ? 'border-cyan-500 bg-cyan-50/50 ring-2 ring-cyan-500/20' : 'border-slate-200/80',
+              draggedBoardSection?.id === list.id ? 'opacity-40 border-dashed border-cyan-600 scale-[0.99]' : ''
             ]"
             @dragover.prevent="onDragOverList(list.id)"
             @dragleave="onDragLeaveList(list.id)"
             @drop="onDropToList(list.id)"
           >
-            <!-- Section Header (Draggable for reordering columns) -->
+            <!-- Column Header Color Bar / Title -->
             <div
-              class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800 select-none group/hdr"
+              class="flex items-center justify-between mb-3 pb-3 border-b border-slate-200 select-none group/hdr"
               :draggable="userRole !== 'viewer'"
               @dragstart="onSectionDragStart(list, $event)"
               @dragover.prevent="onSectionDragOver(list, $event)"
@@ -203,52 +203,50 @@
               <div class="flex items-center space-x-2">
                 <span
                   v-if="userRole !== 'viewer'"
-                  class="text-slate-600 hover:text-blue-400 cursor-grab active:cursor-grabbing text-xs transition"
+                  class="text-slate-400 hover:text-cyan-600 cursor-grab active:cursor-grabbing text-xs transition"
                   title="Abschnitt ziehen, um Spalte zu verschieben"
                 >
                   ⋮⋮
                 </span>
-                <h3 class="text-sm font-bold text-white">{{ list.title }}</h3>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                <span class="w-3 h-3 rounded-full" :class="[
+                  listIdx % 4 === 0 ? 'bg-[#00A3C4]' :
+                  listIdx % 4 === 1 ? 'bg-amber-400' :
+                  listIdx % 4 === 2 ? 'bg-purple-500' : 'bg-emerald-500'
+                ]"></span>
+                <h3 class="text-sm font-black text-slate-800">{{ list.title }}</h3>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 shadow-sm">
                   {{ list.tasks?.length || 0 }}
                 </span>
               </div>
 
-              <div class="flex items-center space-x-1.5">
+              <div class="flex items-center space-x-1">
                 <button
                   v-if="userRole !== 'viewer'"
                   @click.stop="openManageSectionsModal"
-                  class="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-800 text-xs transition"
+                  class="p-1 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-white text-xs transition"
                   title="Abschnitte bearbeiten & sortieren"
                 >
                   ✏️
                 </button>
-                <!-- Access Mode Badge -->
                 <span
                   v-if="list.access_mode === 'custom'"
-                  class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60"
+                  class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200"
                 >
-                  🔒 Eingeschränkt
-                </span>
-                <span
-                  v-else
-                  class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
-                >
-                  Abschnitt
+                  🔒
                 </span>
               </div>
             </div>
 
             <!-- Tasks in this section -->
-            <div class="space-y-3 min-h-[60px] p-1 rounded-xl transition-colors" :class="dragOverListId === list.id ? 'bg-emerald-950/20' : ''">
+            <div class="space-y-3 min-h-[60px] p-1 rounded-2xl transition-colors" :class="dragOverListId === list.id ? 'bg-cyan-50/70' : ''">
               <div
                 v-for="task in list.tasks"
                 :key="task.id"
                 :draggable="userRole !== 'viewer'"
-                class="bg-slate-950 border rounded-xl p-4 transition shadow-sm group select-none"
+                class="bg-white border rounded-2xl p-4 transition-all duration-150 shadow-sm group select-none hover:shadow-md"
                 :class="[
-                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-emerald-400 scale-[0.98]' : 'border-slate-800/90 hover:border-slate-700',
-                  userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-pointer'
+                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : 'border-slate-200/90 hover:border-cyan-400',
+                  userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 ]"
                 @dragstart="onDragStart(task, list.id)"
                 @dragend="onDragEnd"
@@ -259,56 +257,56 @@
                   <div class="flex items-start space-x-2">
                     <span
                       v-if="userRole !== 'viewer'"
-                      class="text-slate-600 hover:text-slate-300 text-xs mt-0.5"
+                      class="text-slate-300 group-hover:text-slate-500 text-xs mt-0.5"
                       title="Ziehen zum Verschieben"
                     >
                       ⋮⋮
                     </span>
-                    <span class="text-xs font-bold text-slate-100 group-hover:text-emerald-400 transition leading-snug">
+                    <span class="text-xs font-bold text-slate-800 group-hover:text-cyan-700 transition leading-snug">
                       {{ task.title }}
                     </span>
                   </div>
                   <span
-                    class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded whitespace-nowrap"
+                    class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full whitespace-nowrap"
                     :class="{
-                      'bg-emerald-950 text-emerald-400 border border-emerald-800': task.status === 'done',
-                      'bg-teal-950 text-teal-400 border border-teal-800': task.status === 'in_progress',
-                      'bg-amber-950 text-amber-400 border border-amber-800': task.status === 'review',
-                      'bg-slate-800 text-slate-400 border border-slate-700': task.status === 'todo'
+                      'bg-emerald-50 text-emerald-700 border border-emerald-200': task.status === 'done',
+                      'bg-cyan-50 text-cyan-700 border border-cyan-200': task.status === 'in_progress',
+                      'bg-amber-50 text-amber-700 border border-amber-200': task.status === 'review',
+                      'bg-slate-100 text-slate-600': task.status === 'todo'
                     }"
                   >
                     {{ task.status }}
                   </span>
                 </div>
 
-                <p v-if="task.description" class="text-[11px] text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                <p v-if="task.description" class="text-[11px] text-slate-500 line-clamp-2 mb-3 leading-relaxed">
                   {{ task.description }}
                 </p>
 
                 <!-- Task Custom Fields Chips -->
-                <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-3">
+                <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1 mb-2.5">
                   <span
                     v-for="(val, key) in task.custom_data"
                     :key="key"
-                    class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300"
+                    class="text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                   >
-                    {{ getFieldLabel(key) }}: {{ val }}
+                    {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ val }}</strong>
                   </span>
                 </div>
 
-                <div class="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-slate-900">
-                  <span v-if="task.due_date" class="flex items-center space-x-1">
+                <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-100">
+                  <span v-if="task.due_date" class="flex items-center space-x-1 font-medium text-slate-600">
                     <span>📅</span>
                     <span>{{ new Date(task.due_date).toLocaleDateString('de-CH') }}</span>
                   </span>
                   <span v-else>Keine Frist</span>
-                  <span class="text-slate-600 group-hover:text-emerald-400 transition">Details →</span>
+                  <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
                 </div>
               </div>
 
               <div
                 v-if="!list.tasks || list.tasks.length === 0"
-                class="py-6 text-center text-[11px] text-slate-600 border border-dashed border-slate-800/80 rounded-xl"
+                class="py-6 text-center text-[11px] text-slate-400 border border-dashed border-slate-300 rounded-2xl bg-white/50"
               >
                 Hier ablegen oder Aufgabe hinzufügen
               </div>
@@ -318,7 +316,7 @@
             <button
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(list.id)"
-              class="mt-4 py-2 px-3 rounded-lg border border-dashed border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-950/20 text-xs font-semibold text-slate-400 hover:text-emerald-400 transition text-center"
+              class="mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-cyan-500 hover:bg-white text-xs font-bold text-slate-500 hover:text-cyan-700 transition text-center"
             >
               + Aufgabe hinzufügen
             </button>
@@ -330,31 +328,31 @@
           <div
             v-for="list in lists"
             :key="list.id"
-            class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
+            class="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm"
           >
-            <div class="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+            <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <span class="text-sm font-bold text-white">{{ list.title }}</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+                <span class="text-sm font-black text-slate-900">{{ list.title }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
                   {{ list.tasks?.length || 0 }}
                 </span>
               </div>
               <button
                 v-if="userRole !== 'viewer'"
                 @click="openNewTaskModal(list.id)"
-                class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                class="text-xs font-bold text-cyan-700 hover:text-cyan-800"
               >
                 + Aufgabe erfassen
               </button>
             </div>
 
-            <div v-if="!list.tasks || list.tasks.length === 0" class="p-4 text-center text-xs text-slate-500">
+            <div v-if="!list.tasks || list.tasks.length === 0" class="p-4 text-center text-xs text-slate-400">
               Keine Aufgaben in diesem Abschnitt.
             </div>
 
             <div v-else class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
                     <th class="py-2.5 px-4">Titel & Beschreibung</th>
                     <th class="py-2.5 px-4">Status</th>
@@ -363,52 +361,52 @@
                     <th class="py-2.5 px-4 text-right">Aktion</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                <tbody class="divide-y divide-slate-100 text-slate-700">
                   <tr
                     v-for="task in list.tasks"
                     :key="task.id"
-                    class="hover:bg-slate-800/40 transition cursor-pointer"
+                    class="hover:bg-slate-50 transition cursor-pointer"
                     @click="openEditTaskModal(task)"
                   >
                     <td class="py-3 px-4">
-                      <div class="font-bold text-slate-100">{{ task.title }}</div>
-                      <div v-if="task.description" class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                      <div class="font-bold text-slate-900">{{ task.title }}</div>
+                      <div v-if="task.description" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                         {{ task.description }}
                       </div>
                     </td>
                     <td class="py-3 px-4">
                       <span
-                        class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
                         :class="{
-                          'bg-emerald-950 text-emerald-400 border border-emerald-800': task.status === 'done',
-                          'bg-teal-950 text-teal-400 border border-teal-800': task.status === 'in_progress',
-                          'bg-amber-950 text-amber-400 border border-amber-800': task.status === 'review',
-                          'bg-slate-800 text-slate-400': task.status === 'todo'
+                          'bg-emerald-50 text-emerald-700 border border-emerald-200': task.status === 'done',
+                          'bg-cyan-50 text-cyan-700 border border-cyan-200': task.status === 'in_progress',
+                          'bg-amber-50 text-amber-700 border border-amber-200': task.status === 'review',
+                          'bg-slate-100 text-slate-600': task.status === 'todo'
                         }"
                       >
                         {{ task.status }}
                       </span>
                     </td>
                     <td class="py-3 px-4">
-                      <span v-if="task.due_date" class="text-slate-300">
+                      <span v-if="task.due_date" class="text-slate-800 font-medium">
                         {{ new Date(task.due_date).toLocaleDateString('de-CH') }}
                       </span>
-                      <span v-else class="text-slate-600">-</span>
+                      <span v-else class="text-slate-400">-</span>
                     </td>
                     <td class="py-3 px-4">
                       <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1">
                         <span
                           v-for="(val, key) in task.custom_data"
                           :key="key"
-                          class="text-[9px] px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400"
+                          class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                         >
                           {{ getFieldLabel(key) }}: {{ val }}
                         </span>
                       </div>
-                      <span v-else class="text-slate-600">-</span>
+                      <span v-else class="text-slate-400">-</span>
                     </td>
                     <td class="py-3 px-4 text-right">
-                      <span class="text-xs text-emerald-400 hover:underline">Öffnen →</span>
+                      <span class="text-xs text-cyan-700 font-bold hover:underline">Öffnen →</span>
                     </td>
                   </tr>
                 </tbody>
@@ -420,21 +418,21 @@
 
       <!-- VIEW 2: JOURNAL & NOTIZEN -->
       <div v-else-if="currentView === 'journal'" class="space-y-6">
-        <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-xl">
+        <div class="flex items-center justify-between bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
           <div>
-            <h3 class="text-sm font-bold text-white">Projektjournal & Notizen</h3>
-            <p class="text-xs text-slate-400">Chronologische Protokollierung, Besprechungsnotizen und wichtige Updates.</p>
+            <h3 class="text-base font-black text-slate-900">Projektjournal & Notizen</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Chronologische Protokollierung, Besprechungsnotizen und wichtige Updates.</p>
           </div>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewJournalModal = true"
-            class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
             + Neue Notiz erfassen
           </button>
         </div>
 
-        <div v-if="journalEntries.length === 0" class="text-center py-12 text-slate-500 text-xs">
+        <div v-if="journalEntries.length === 0" class="text-center py-12 text-slate-400 text-xs">
           Noch keine Journaleinträge vorhanden.
         </div>
 
@@ -442,7 +440,7 @@
           <div
             v-for="entry in journalEntries"
             :key="entry.id"
-            class="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+            class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm"
           >
             <div class="flex items-start justify-between gap-4 mb-2">
               <div class="flex items-center space-x-2">
@@ -450,59 +448,59 @@
                   {{ entry.entry_type === 'voice' ? '🎙️' : entry.entry_type === 'system' ? '⚙️' : entry.entry_type === 'email' ? '✉️' : '📝' }}
                 </span>
                 <div>
-                  <h4 class="text-sm font-bold text-white">{{ entry.title }}</h4>
+                  <h4 class="text-sm font-bold text-slate-900">{{ entry.title }}</h4>
                   <div class="text-[11px] text-slate-400">
-                    Von <strong class="text-slate-300">{{ entry.author_name }}</strong> am {{ new Date(entry.created_at).toLocaleString('de-CH') }}
+                    Von <strong class="text-slate-700">{{ entry.author_name }}</strong> am {{ new Date(entry.created_at).toLocaleString('de-CH') }}
                   </div>
                 </div>
               </div>
-              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                 {{ entry.entry_type }}
               </span>
             </div>
 
-            <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800/80 my-3 whitespace-pre-wrap">
+            <p class="text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/80 my-3 whitespace-pre-wrap">
               {{ entry.content }}
             </p>
 
-            <div v-if="entry.task_title" class="text-[11px] text-emerald-400/90 flex items-center space-x-1">
+            <div v-if="entry.task_title" class="text-[11px] text-cyan-700 font-bold flex items-center space-x-1">
               <span>Verknüpft mit Aufgabe:</span>
-              <strong class="text-slate-200">{{ entry.task_title }}</strong>
+              <strong class="text-slate-900">{{ entry.task_title }}</strong>
             </div>
           </div>
         </div>
       </div>
 
       <!-- VIEW 3: TEAM & BERECHTIGUNGEN -->
-      <div v-else-if="currentView === 'team'" class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+      <div v-else-if="currentView === 'team'" class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-bold text-white">Projektteam & Berechtigungen</h3>
-            <p class="text-xs text-slate-400">
+            <h3 class="text-base font-black text-slate-900">Projektteam & Berechtigungen</h3>
+            <p class="text-xs text-slate-500 mt-0.5">
               Steuerung von Editor- und Viewer-Rollen für dieses Projekt.
             </p>
           </div>
           <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="showInviteMemberModal = true"
-            class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
             + Mitglied einladen
           </button>
         </div>
 
         <div class="space-y-3">
-          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800">
+          <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-full bg-emerald-950 text-emerald-300 font-bold flex items-center justify-center text-xs border border-emerald-800">
-                PW
+              <div class="w-9 h-9 rounded-full bg-cyan-100 text-cyan-800 font-bold flex items-center justify-center text-xs border border-cyan-200">
+                PO
               </div>
               <div>
-                <div class="text-xs font-bold text-white">{{ project.folder_name }} Owner</div>
-                <div class="text-[11px] text-slate-400">Projektinhaber (Voller administrativer Zugriff)</div>
+                <div class="text-xs font-bold text-slate-900">{{ project.folder_name }} Owner</div>
+                <div class="text-[11px] text-slate-500">Projektinhaber (Voller administrativer Zugriff)</div>
               </div>
             </div>
-            <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200">
               PROJECT OWNER
             </span>
           </div>
@@ -510,20 +508,20 @@
           <div
             v-for="m in members"
             :key="m.id"
-            class="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800"
+            class="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-sm"
           >
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-full bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs">
+              <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs">
                 {{ m.name.charAt(0) }}
               </div>
               <div>
-                <div class="text-xs font-bold text-white">{{ m.name }}</div>
-                <div class="text-[11px] text-slate-400">{{ m.email }}</div>
+                <div class="text-xs font-bold text-slate-900">{{ m.name }}</div>
+                <div class="text-[11px] text-slate-500">{{ m.email }}</div>
               </div>
             </div>
             <span
-              class="text-xs font-bold uppercase px-2 py-0.5 rounded"
-              :class="m.role === 'editor' ? 'bg-teal-950 text-teal-300 border border-teal-800' : 'bg-amber-950 text-amber-300 border border-amber-800'"
+              class="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full"
+              :class="m.role === 'editor' ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
             >
               {{ m.role }}
             </span>
@@ -534,30 +532,30 @@
       <!-- VIEW 4: PROJEKT-EINSTELLUNGEN & BENUTZERDEFINIERTE FELDER -->
       <div v-else-if="currentView === 'settings'" class="space-y-8">
         <!-- Card 1: Projekt-Stammdaten & Projekt-Felder -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
             <div>
-              <h3 class="text-base font-bold text-white">Allgemeine Projekt-Einstellungen</h3>
-              <p class="text-xs text-slate-400">Passe den Projektnamen, den Status und projektweite Eigenschaften an.</p>
+              <h3 class="text-base font-black text-slate-900">Allgemeine Projekt-Einstellungen</h3>
+              <p class="text-xs text-slate-500">Passe den Projektnamen, den Status und projektweite Eigenschaften an.</p>
             </div>
           </div>
 
           <form @submit.prevent="saveProjectSettings" class="space-y-4 max-w-xl">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Projekttitel</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Projekttitel</label>
               <input
                 v-model="settingsForm.title"
                 type="text"
                 required
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
               />
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Projekt-Status</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Projekt-Status</label>
               <select
                 v-model="settingsForm.status"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
               >
                 <option value="active">Aktiv (Active)</option>
                 <option value="on_hold">Pausiert (On Hold)</option>
@@ -566,16 +564,16 @@
             </div>
 
             <!-- Project-level Custom Fields Input -->
-            <div v-if="projectCustomFields.length > 0" class="pt-4 border-t border-slate-800 space-y-3">
-              <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+            <div v-if="projectCustomFields.length > 0" class="pt-4 border-t border-slate-100 space-y-3">
+              <h4 class="text-xs font-bold text-cyan-800 uppercase tracking-wider">
                 Projekt-Felder (Werte für dieses Projekt)
               </h4>
               <div v-for="f in projectCustomFields" :key="f.id">
-                <label class="block text-xs font-medium text-slate-300 mb-1">{{ f.label }}</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
                 <select
                   v-if="f.field_type === 'select'"
                   v-model="settingsForm.custom_data[f.field_key]"
-                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 >
                   <option value="">-- Nicht ausgewählt --</option>
                   <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
@@ -584,7 +582,7 @@
                   v-else
                   v-model="settingsForm.custom_data[f.field_key]"
                   :type="f.field_type === 'number' ? 'number' : 'text'"
-                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
               </div>
             </div>
@@ -593,7 +591,7 @@
               <button
                 type="submit"
                 :disabled="savingProjectSettings"
-                class="px-5 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition disabled:opacity-50"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg"
               >
                 {{ savingProjectSettings ? 'Speichern...' : 'Projekt-Einstellungen speichern' }}
               </button>
@@ -601,34 +599,34 @@
           </form>
         </div>
 
-        <!-- Card 2: Benutzerdefinierte Felder verwalten (Versteckt in Projekt-Einstellungen) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+        <!-- Card 2: Benutzerdefinierte Felder verwalten -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
             <div>
-              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
                 <span>⚙️</span>
                 <span>Benutzerdefinierte Felder & Logik</span>
               </h3>
-              <p class="text-xs text-slate-400 mt-0.5">
-                Definiere eigene Attribute für Aufgaben oder für Projekte. Felder können auch bedingt voneinander abhängig gemacht werden.
+              <p class="text-xs text-slate-500 mt-0.5">
+                Definiere eigene Attribute für Aufgaben oder für Projekte mit bedingter Sichtbarkeit.
               </p>
             </div>
             <button
               @click="showNewFieldModal = true"
-              class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition shadow-sm"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               + Neues Feld anlegen
             </button>
           </div>
 
           <!-- Fields Table -->
-          <div v-if="fields.length === 0" class="text-center py-8 text-xs text-slate-500">
+          <div v-if="fields.length === 0" class="text-center py-8 text-xs text-slate-400">
             Noch keine benutzerdefinierten Felder angelegt.
           </div>
 
           <div v-else class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
                   <th class="py-2.5 px-4">Feld-Bezeichnung</th>
                   <th class="py-2.5 px-4">Schlüssel (Key)</th>
@@ -637,33 +635,33 @@
                   <th class="py-2.5 px-4 text-right">Aktion</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/80 text-slate-300">
-                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-800/40 transition">
-                  <td class="py-3 px-4 font-bold text-white">
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50 transition">
+                  <td class="py-3 px-4 font-bold text-slate-900">
                     {{ f.label }}
                   </td>
-                  <td class="py-3 px-4 font-mono text-emerald-400 text-[11px]">
+                  <td class="py-3 px-4 font-mono text-cyan-700 text-[11px]">
                     {{ f.field_key }}
                   </td>
                   <td class="py-3 px-4">
                     <span
-                      class="px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-1.5"
-                      :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mr-1.5"
+                      :class="f.entity_type === 'project' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'"
                     >
-                      {{ f.entity_type === 'project' ? 'Projekt-Feld' : 'Aufgaben-Feld' }}
+                      {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
                     </span>
-                    <span class="text-slate-400 text-[11px]">({{ f.field_type }})</span>
+                    <span class="text-slate-500 text-[11px]">({{ f.field_type }})</span>
                   </td>
                   <td class="py-3 px-4">
-                    <span v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-300 font-mono">
+                    <span v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-700 font-medium">
                       Nur wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
                     </span>
-                    <span v-else class="text-slate-600">-</span>
+                    <span v-else class="text-slate-400">-</span>
                   </td>
                   <td class="py-3 px-4 text-right">
                     <button
                       @click="deleteField(f.id)"
-                      class="text-rose-400 hover:text-rose-300 text-xs font-semibold"
+                      class="text-rose-600 hover:text-rose-700 text-xs font-bold"
                     >
                       Löschen
                     </button>
@@ -677,37 +675,37 @@
     </div>
 
     <!-- Modal: New Section (Abschnitt) -->
-    <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Neuen Abschnitt anlegen</h3>
-        <p class="text-xs text-slate-400 mb-4">
+    <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-black text-slate-900 mb-1">Neuen Abschnitt anlegen</h3>
+        <p class="text-xs text-slate-500 mb-4">
           Abschnitte gliedern dein Projekt in Phasen, Kategorien oder Workflow-Schritte.
         </p>
 
         <form @submit.prevent="createList" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Titel des Abschnitts</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Titel des Abschnitts</label>
             <input
               v-model="newListTitle"
               type="text"
               required
               placeholder="z.B. Vorbereitung, In Bearbeitung oder Abnahme"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Sichtbarkeits-Modus</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Sichtbarkeits-Modus</label>
             <select
               v-model="newListAccessMode"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
               <option value="inherit">Standard (Alle Projektmitglieder haben Zugriff)</option>
               <option value="custom">Eingeschränkt (Nur Owner & explizit berechtigte Personen)</option>
             </select>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showNewListModal = false"
@@ -727,30 +725,30 @@
     </div>
 
     <!-- Modal: Manage Sections (Drag & Drop, Rename, Delete, Reorder) -->
-    <div v-if="showManageSectionsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col my-8">
+    <div v-if="showManageSectionsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col my-8">
         
         <!-- Modal Header -->
-        <div class="p-6 border-b border-slate-800 flex items-start justify-between bg-slate-950/50">
+        <div class="p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50">
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-xl">📋</span>
-              <h3 class="text-lg font-bold text-white">Projekt-Abschnitte verwalten</h3>
+              <h3 class="text-lg font-black text-slate-900">Projekt-Abschnitte verwalten</h3>
             </div>
-            <p class="text-xs text-slate-400 mt-1">
+            <p class="text-xs text-slate-500 mt-1">
               Passe die Reihenfolge per Drag & Drop oder Pfeiltasten an, benenne Abschnitte um oder entferne Phasen.
             </p>
           </div>
           <button
             type="button"
             @click="showManageSectionsModal = false"
-            class="text-slate-400 hover:text-white text-lg p-1 rounded-lg hover:bg-slate-800 transition"
+            class="text-slate-400 hover:text-slate-600 text-lg p-1 rounded-lg hover:bg-slate-200 transition"
           >
             ✕
           </button>
         </div>
 
-        <div v-if="manageSectionsError" class="mx-6 mt-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+        <div v-if="manageSectionsError" class="mx-6 mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
           {{ manageSectionsError }}
         </div>
 
@@ -764,13 +762,13 @@
               @dragstart="onModalDragStart(idx, $event)"
               @dragover.prevent="onModalDragOver(idx, $event)"
               @drop="onModalDrop(idx, $event)"
-              class="p-3.5 rounded-xl border bg-slate-950/90 transition flex items-center justify-between gap-3 group"
-              :class="draggedSectionModalIdx === idx ? 'border-blue-500 bg-blue-950/30 opacity-50' : 'border-slate-800 hover:border-slate-700'"
+              class="p-3.5 rounded-2xl border bg-white transition flex items-center justify-between gap-3 group shadow-sm"
+              :class="draggedSectionModalIdx === idx ? 'border-cyan-500 bg-cyan-50/50 opacity-50' : 'border-slate-200 hover:border-slate-300'"
             >
               <!-- Drag Handle & Index -->
               <div class="flex items-center space-x-3">
-                <span class="text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing text-sm select-none" title="Ziehen zum Verschieben">⋮⋮</span>
-                <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center select-none">
+                <span class="text-slate-400 hover:text-cyan-600 cursor-grab active:cursor-grabbing text-sm select-none" title="Ziehen zum Verschieben">⋮⋮</span>
+                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center select-none">
                   {{ idx + 1 }}
                 </span>
               </div>
@@ -782,12 +780,12 @@
                   type="text"
                   required
                   placeholder="Abschnittsbezeichnung"
-                  class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-slate-100 focus:outline-none focus:border-blue-500"
+                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
               </div>
 
               <!-- Task Count Badge -->
-              <span class="text-[11px] text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800 whitespace-nowrap">
+              <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
                 {{ sec.tasks?.length || sec.task_count || 0 }} Aufgaben
               </span>
 
@@ -797,7 +795,7 @@
                   type="button"
                   @click="moveSectionUp(idx)"
                   :disabled="idx === 0"
-                  class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition"
+                  class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition"
                   title="Nach oben verschieben"
                 >
                   ⬆️
@@ -806,7 +804,7 @@
                   type="button"
                   @click="moveSectionDown(idx)"
                   :disabled="idx === managingSections.length - 1"
-                  class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition"
+                  class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition"
                   title="Nach unten verschieben"
                 >
                   ⬇️
@@ -814,7 +812,7 @@
                 <button
                   type="button"
                   @click="deleteSectionInModal(idx)"
-                  class="p-1.5 rounded hover:bg-rose-950 text-rose-400 hover:text-rose-300 transition ml-1"
+                  class="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition ml-1"
                   title="Abschnitt löschen"
                 >
                   🗑️
@@ -824,12 +822,12 @@
           </div>
 
           <!-- Quick Add Section Row inside Modal -->
-          <div class="pt-4 border-t border-slate-800 flex items-center gap-2">
+          <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
             <input
               v-model="newSectionTitleInModal"
               type="text"
               placeholder="+ Weiterer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
-              class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
               @keyup.enter="addSectionInModal"
             />
             <button
@@ -843,7 +841,7 @@
           </div>
 
           <!-- Modal Footer Actions -->
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showManageSectionsModal = false"
@@ -857,7 +855,7 @@
               :disabled="savingSections"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span>{{ savingSections ? 'Wird gespeichert...' : 'Reihenfolge & Namen speichern' }}</span>
+              <span>{{ savingSections ? 'Wird gespeichert...' : 'Reihenfolge speichern' }}</span>
             </button>
           </div>
         </div>
@@ -865,48 +863,48 @@
     </div>
 
     <!-- Modal: New Task / Edit Task -->
-    <div v-if="showTaskModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div v-if="showTaskModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold text-white">
+          <h3 class="text-lg font-black text-slate-900">
             {{ isEditingTask ? 'Aufgabe bearbeiten' : 'Neue Aufgabe erfassen' }}
           </h3>
-          <span v-if="userRole === 'viewer'" class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded">
+          <span v-if="userRole === 'viewer'" class="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
             Viewer Read-Only
           </span>
         </div>
 
         <form @submit.prevent="saveTask" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Aufgabentitel</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Aufgabentitel</label>
             <input
               v-model="taskForm.title"
               :disabled="userRole === 'viewer'"
               type="text"
               required
               placeholder="z.B. Konzeptentwurf finalisieren"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Beschreibung</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Beschreibung</label>
             <textarea
               v-model="taskForm.description"
               :disabled="userRole === 'viewer'"
               rows="3"
               placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
             ></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
               <select
                 v-model="taskForm.status"
                 :disabled="userRole === 'viewer'"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               >
                 <option value="todo">Zu erledigen (Todo)</option>
                 <option value="in_progress">In Arbeit (In Progress)</option>
@@ -916,19 +914,19 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Fälligkeitsdatum</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Fälligkeitsdatum</label>
               <input
                 v-model="taskForm.due_date"
                 :disabled="userRole === 'viewer'"
                 type="date"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               />
             </div>
           </div>
 
           <!-- Dynamic Task Custom Fields with Conditional Logic -->
-          <div v-if="taskCustomFields.length > 0" class="pt-4 border-t border-slate-800 space-y-3">
-            <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+          <div v-if="taskCustomFields.length > 0" class="pt-4 border-t border-slate-100 space-y-3">
+            <h4 class="text-xs font-bold text-cyan-800 uppercase tracking-wider">
               Zusatzfelder
             </h4>
             <div
@@ -937,14 +935,14 @@
               v-show="isFieldVisibleForTask(f)"
               class="transition-all"
             >
-              <label class="block text-xs font-medium text-slate-300 mb-1">{{ f.label }}</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
 
               <!-- Select dropdown -->
               <select
                 v-if="f.field_type === 'select'"
                 v-model="taskForm.custom_data[f.field_key]"
                 :disabled="userRole === 'viewer'"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               >
                 <option value="">-- Nicht ausgewählt --</option>
                 <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
@@ -957,7 +955,7 @@
                 :disabled="userRole === 'viewer'"
                 type="number"
                 placeholder="0.00"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               />
 
               <!-- Default Text -->
@@ -966,17 +964,17 @@
                 v-model="taskForm.custom_data[f.field_key]"
                 :disabled="userRole === 'viewer'"
                 type="text"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               />
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
               v-if="isEditingTask && userRole !== 'viewer'"
               type="button"
               @click="deleteTask"
-              class="px-3 py-2 rounded-lg text-xs font-bold text-rose-400 hover:bg-rose-950/40 border border-rose-900/60 transition"
+              class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg"
             >
               Löschen
             </button>
@@ -986,14 +984,14 @@
               <button
                 type="button"
                 @click="showTaskModal = false"
-                class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+                class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
               >
                 Schliessen
               </button>
               <button
                 v-if="userRole !== 'viewer'"
                 type="submit"
-                class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg"
               >
                 Speichern
               </button>
@@ -1004,31 +1002,30 @@
     </div>
 
     <!-- Modal: New Custom Field (Inside Settings) -->
-    <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-bold text-white mb-2">Neues benutzerdefiniertes Feld</h3>
-        <p class="text-xs text-slate-400 mb-4">
+    <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-black text-slate-900 mb-1">Neues benutzerdefiniertes Feld</h3>
+        <p class="text-xs text-slate-500 mb-4">
           Definiere ein Attribut für Aufgaben oder das Projekt.
         </p>
 
         <form @submit.prevent="createField" class="space-y-4">
-          <!-- Entity Type Distinction: Project vs Task -->
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Gültigkeitsbereich</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Gültigkeitsbereich</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 @click="newFieldEntityType = 'task'"
-                class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-center"
-                :class="newFieldEntityType === 'task' ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : 'bg-slate-950 text-slate-400 border-slate-700'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center"
+                :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
               >
                 Aufgaben-Feld
               </button>
               <button
                 type="button"
                 @click="newFieldEntityType = 'project'"
-                class="py-2 px-3 rounded-lg text-xs font-semibold border transition text-center"
-                :class="newFieldEntityType === 'project' ? 'bg-purple-950 text-purple-300 border-purple-500' : 'bg-slate-950 text-slate-400 border-slate-700'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center"
+                :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
               >
                 Projekt-Feld
               </button>
@@ -1036,21 +1033,21 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Feld-Bezeichnung (Label)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Feld-Bezeichnung (Label)</label>
             <input
               v-model="newFieldLabel"
               type="text"
               required
               placeholder="z.B. Kostenstelle oder Priorität"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Feldtyp</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
               <option value="text">Textzeile</option>
               <option value="select">Auswahlliste (Dropdown)</option>
@@ -1060,35 +1057,35 @@
           </div>
 
           <div v-if="newFieldType === 'select'">
-            <label class="block text-xs font-medium text-slate-300 mb-1">Optionen (Komma-getrennt)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Optionen (Komma-getrennt)</label>
             <input
               v-model="newFieldOptionsRaw"
               type="text"
               placeholder="z.B. Niedrig, Mittel, Hoch, Dringend"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <!-- Conditional Logic Builder -->
-          <div class="pt-3 border-t border-slate-800 space-y-3">
+          <div class="pt-3 border-t border-slate-100 space-y-3">
             <div class="flex items-center space-x-2">
               <input
                 id="enableLogic"
                 v-model="enableFieldLogic"
                 type="checkbox"
-                class="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0"
+                class="rounded border-slate-300 text-cyan-600 focus:ring-0"
               />
-              <label for="enableLogic" class="text-xs font-medium text-slate-300 cursor-pointer">
+              <label for="enableLogic" class="text-xs font-bold text-slate-700 cursor-pointer">
                 Bedingte Logik (Feld nur unter Bedingung anzeigen)
               </label>
             </div>
 
-            <div v-if="enableFieldLogic" class="space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800">
+            <div v-if="enableFieldLogic" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
               <div>
-                <label class="block text-[11px] font-medium text-slate-400 mb-1">Abhängig von Feld</label>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Abhängig von Feld</label>
                 <select
                   v-model="logicDependsOnField"
-                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
                   <option value="">-- Feld auswählen --</option>
                   <option v-for="other in fields" :key="other.id" :value="other.field_key">
@@ -1098,28 +1095,28 @@
               </div>
 
               <div>
-                <label class="block text-[11px] font-medium text-slate-400 mb-1">Nur anzeigen wenn Wert gleich:</label>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nur anzeigen wenn Wert gleich:</label>
                 <input
                   v-model="logicDependsOnValue"
                   type="text"
                   placeholder="z.B. Hoch oder Freigegeben"
-                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 />
               </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showNewFieldModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               Feld speichern
             </button>
@@ -1129,16 +1126,16 @@
     </div>
 
     <!-- Modal: New Journal Entry -->
-    <div v-if="showNewJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Neuer Journaleintrag / Notiz</h3>
+    <div v-if="showNewJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-black text-slate-900 mb-2">Neuer Journaleintrag / Notiz</h3>
 
         <form @submit.prevent="createJournalEntry" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Eintrags-Typ</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Eintrags-Typ</label>
             <select
               v-model="journalForm.entry_type"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
               <option value="manual">📝 Besprechung / Notiz</option>
               <option value="voice">🎙️ Sprachnotiz</option>
@@ -1148,38 +1145,38 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Titel / Betreff</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Titel / Betreff</label>
             <input
               v-model="journalForm.title"
               type="text"
               required
               placeholder="z.B. Zwischenstand Meeting mit Kunden"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Inhalt / Notiz</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Inhalt / Notiz</label>
             <textarea
               v-model="journalForm.content"
               required
               rows="4"
               placeholder="Genaue Beschreibung oder Zusammenfassung..."
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             ></textarea>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showNewJournalModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               Eintrag speichern
             </button>
@@ -1189,47 +1186,47 @@
     </div>
 
     <!-- Modal: Invite Member -->
-    <div v-if="showInviteMemberModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Teammitglied ins Projekt einladen</h3>
-        <p class="text-xs text-slate-400 mb-4">
+    <div v-if="showInviteMemberModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-black text-slate-900 mb-1">Teammitglied ins Projekt einladen</h3>
+        <p class="text-xs text-slate-500 mb-4">
           Im Free Plan sind maximal 5 Mitglieder pro Projekt erlaubt.
         </p>
 
         <form @submit.prevent="inviteMember" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">E-Mail des Nutzers</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail des Nutzers</label>
             <input
               v-model="inviteEmail"
               type="email"
               required
               placeholder="kollege@domain.ch"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Rolle im Projekt</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Rolle im Projekt</label>
             <select
               v-model="inviteRole"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
               <option value="editor">Editor (Darf Aufgaben erstellen & bearbeiten)</option>
               <option value="viewer">Viewer (Nur Leserechte)</option>
             </select>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showInviteMemberModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               Einladen
             </button>

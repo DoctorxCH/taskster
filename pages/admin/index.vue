@@ -3,14 +3,14 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
-        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-800 text-purple-300 text-xs font-semibold mb-2">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold mb-2">
           <span>⚙️</span>
           <span>Zentrale Site-Administration</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
           Taskster Plattform-Administration
         </h1>
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="text-xs text-slate-500 mt-1">
           Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.
         </p>
       </div>
@@ -18,7 +18,7 @@
       <div class="flex items-center space-x-3">
         <button
           @click="showCreateCompanyModal = true"
-          class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition flex items-center space-x-2 shadow-lg shadow-purple-900/30"
+          class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-slate-900 transition flex items-center space-x-2 shadow-lg shadow-purple-900/30"
         >
           <span>+ Neues Unternehmen anlegen</span>
         </button>
@@ -27,43 +27,43 @@
 
     <!-- Admin Metrics -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Kunden & User</div>
-        <div class="text-2xl font-black text-white mt-1">{{ overview?.metrics?.users || 0 }}</div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="text-[11px] font-semibold text-slate-500 uppercase">Kunden & User</div>
+        <div class="text-2xl font-black text-slate-900 mt-1">{{ overview?.metrics?.users || 0 }}</div>
         <div class="text-[10px] text-slate-500">Registriert</div>
       </div>
 
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Unternehmen</div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="text-[11px] font-semibold text-slate-500 uppercase">Unternehmen</div>
         <div class="text-2xl font-black text-purple-400 mt-1">{{ overview?.metrics?.companies || 0 }}</div>
         <div class="text-[10px] text-slate-500">Organisationen</div>
       </div>
 
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Projekte</div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="text-[11px] font-semibold text-slate-500 uppercase">Projekte</div>
         <div class="text-2xl font-black text-emerald-400 mt-1">{{ overview?.metrics?.projects || 0 }}</div>
         <div class="text-[10px] text-slate-500">Aktiv</div>
       </div>
 
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Aufgaben</div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="text-[11px] font-semibold text-slate-500 uppercase">Aufgaben</div>
         <div class="text-2xl font-black text-cyan-400 mt-1">{{ overview?.metrics?.tasks || 0 }}</div>
         <div class="text-[10px] text-slate-500">In Listen gepflegt</div>
       </div>
 
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <div class="text-[11px] font-semibold text-slate-400 uppercase">Journal-Einträge</div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="text-[11px] font-semibold text-slate-500 uppercase">Journal-Einträge</div>
         <div class="text-2xl font-black text-amber-400 mt-1">{{ overview?.metrics?.journals || 0 }}</div>
         <div class="text-[10px] text-slate-500">Aktivitätsnotizen</div>
       </div>
     </div>
 
     <!-- Admin Tabs -->
-    <div class="flex border-b border-slate-800 mb-6 space-x-6">
+    <div class="flex border-b border-slate-200 mb-6 space-x-6">
       <button
         @click="activeTab = 'users'"
         class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
-        :class="activeTab === 'users' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+        :class="activeTab === 'users' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-200'"
       >
         <span>👤</span>
         <span>Kunden- & Benutzerverwaltung</span>
@@ -72,7 +72,7 @@
       <button
         @click="activeTab = 'companies'"
         class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
-        :class="activeTab === 'companies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+        :class="activeTab === 'companies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-200'"
       >
         <span>🏢</span>
         <span>Unternehmen & Organisationen</span>
@@ -81,7 +81,7 @@
       <button
         @click="activeTab = 'policies'"
         class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
-        :class="activeTab === 'policies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+        :class="activeTab === 'policies' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-200'"
       >
         <span>🛡️</span>
         <span>Zugriffsregeln & Tarif-Limits</span>
@@ -90,7 +90,7 @@
       <button
         @click="activeTab = 'templates'"
         class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-2"
-        :class="activeTab === 'templates' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
+        :class="activeTab === 'templates' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-200'"
       >
         <span>📋</span>
         <span>Projekt-Vorlagen (Job & Privat)</span>
@@ -99,17 +99,17 @@
 
 
     <!-- TAB 1: USERS & CUSTOMERS -->
-    <div v-if="activeTab === 'users'" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-      <div class="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+    <div v-if="activeTab === 'users'" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
+      <div class="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-bold text-white">Alle registrierten Kunden und Benutzer</h3>
-          <p class="text-xs text-slate-400">Verwalte Berechtigungen, Pro-Status und Firmenzuweisungen.</p>
+          <h3 class="text-sm font-bold text-slate-900">Alle registrierten Kunden und Benutzer</h3>
+          <p class="text-xs text-slate-500">Verwalte Berechtigungen, Pro-Status und Firmenzuweisungen.</p>
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
-          <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+          <thead class="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
             <tr>
               <th class="py-3.5 px-4">Name & E-Mail</th>
               <th class="py-3.5 px-4">Unternehmen / Organisation</th>
@@ -118,11 +118,11 @@
               <th class="py-3.5 px-4 text-right">Aktionen</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/80 text-slate-300">
-            <tr v-for="u in users" :key="u.id" class="hover:bg-slate-800/40 transition">
+          <tbody class="divide-y divide-slate-100 text-slate-300">
+            <tr v-for="u in users" :key="u.id" class="hover:bg-slate-50 transition">
               <td class="py-3.5 px-4">
-                <div class="font-bold text-slate-100">{{ u.name }}</div>
-                <div class="text-[11px] text-slate-400 font-mono">{{ u.email }}</div>
+                <div class="font-bold text-slate-800">{{ u.name }}</div>
+                <div class="text-[11px] text-slate-500 font-mono">{{ u.email }}</div>
               </td>
               <td class="py-3.5 px-4">
                 <span v-if="u.company_name" class="font-medium text-emerald-400">
@@ -134,7 +134,7 @@
               <td class="py-3.5 px-4">
                 <span
                   class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
-                  :class="u.is_pro || u.company_name ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-slate-800 text-slate-400'"
+                  :class="u.is_pro || u.company_name ? 'bg-emerald-950 text-emerald-700 border border-emerald-200' : 'bg-slate-800 text-slate-500'"
                 >
                   {{ u.company_plan || (u.is_pro ? 'PRO' : 'FREE PLAN') }}
                 </span>
@@ -142,7 +142,7 @@
               <td class="py-3.5 px-4">
                 <span
                   v-if="u.is_superadmin"
-                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200"
                 >
                   SUPERADMIN
                 </span>
@@ -152,7 +152,7 @@
                 <button
                   @click="toggleUserPro(u)"
                   class="px-2.5 py-1 rounded text-[11px] font-semibold border transition"
-                  :class="u.is_pro ? 'border-amber-800 text-amber-300 hover:bg-amber-950/40' : 'border-emerald-800 text-emerald-300 hover:bg-emerald-950/40'"
+                  :class="u.is_pro ? 'border-amber-200 text-amber-800 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-950/40'"
                 >
                   {{ u.is_pro ? 'Pro entziehen' : 'Zu Pro hochstufen' }}
                 </button>
@@ -165,15 +165,15 @@
 
     <!-- TAB 2: COMPANIES & CLIENTS -->
     <div v-else-if="activeTab === 'companies'" class="space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div class="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between">
           <div>
-            <h3 class="text-sm font-bold text-white">Unternehmen, Mandanten & B2B-Kunden</h3>
-            <p class="text-xs text-slate-400">Verwalte Subscription-Pläne, Upload-Restriktionen und Sicherheitsrichtlinien.</p>
+            <h3 class="text-sm font-bold text-slate-900">Unternehmen, Mandanten & B2B-Kunden</h3>
+            <p class="text-xs text-slate-500">Verwalte Subscription-Pläne, Upload-Restriktionen und Sicherheitsrichtlinien.</p>
           </div>
           <button
             @click="showCreateCompanyModal = true"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-slate-900 transition"
           >
             + Unternehmen anlegen
           </button>
@@ -181,7 +181,7 @@
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
               <tr>
                 <th class="py-3.5 px-4">Unternehmen</th>
                 <th class="py-3.5 px-4">Abo-Plan</th>
@@ -190,17 +190,17 @@
                 <th class="py-3.5 px-4 text-right">Aktionen</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800/80 text-slate-300">
-              <tr v-for="c in companies" :key="c.id" class="hover:bg-slate-800/40 transition">
+            <tbody class="divide-y divide-slate-100 text-slate-300">
+              <tr v-for="c in companies" :key="c.id" class="hover:bg-slate-50 transition">
                 <td class="py-3.5 px-4">
-                  <div class="font-bold text-slate-100 text-sm">{{ c.name }}</div>
+                  <div class="font-bold text-slate-800 text-sm">{{ c.name }}</div>
                   <div class="text-[10px] text-slate-500 font-mono">ID: {{ c.id }}</div>
                 </td>
                 <td class="py-3.5 px-4">
                   <select
                     v-model="c.subscription_plan"
                     @change="updateCompanyPlan(c)"
-                    class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
                   >
                     <option value="starter">Starter Plan</option>
                     <option value="pro">Pro Plan</option>
@@ -215,7 +215,7 @@
                   <button
                     @click="toggleCompanyUploads(c)"
                     class="px-2.5 py-1 rounded text-[11px] font-bold border transition flex items-center space-x-1.5"
-                    :class="c.settings?.allow_document_upload ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800' : 'bg-rose-950/60 text-rose-300 border-rose-800'"
+                    :class="c.settings?.allow_document_upload ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'"
                   >
                     <span>{{ c.settings?.allow_document_upload ? '✓ Erlaubt' : '🚫 Upload gesperrt (Policy)' }}</span>
                   </button>
@@ -232,11 +232,11 @@
 
     <!-- TAB: COMPANY INVITES (Für Company Admins) -->
     <div v-if="activeTab === 'invites'" class="space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
           <div>
-            <h3 class="text-base font-bold text-white">Mitarbeiter zu {{ user?.company_name }} einladen</h3>
-            <p class="text-xs text-slate-400 mt-1">
+            <h3 class="text-base font-bold text-slate-900">Mitarbeiter zu {{ user?.company_name }} einladen</h3>
+            <p class="text-xs text-slate-500 mt-1">
               Bereits registrierte Nutzer werden sofort dem Unternehmen zugewiesen. Nicht registrierte Nutzer erhalten einen Registrierungslink und treten nach der Registrierung automatisch bei.
             </p>
           </div>
@@ -251,7 +251,7 @@
               type="email"
               required
               placeholder="mitarbeiter@domain.ch"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
             />
           </div>
 
@@ -259,7 +259,7 @@
             <label class="block text-xs font-medium text-slate-300 mb-1">Rolle im Unternehmen</label>
             <select
               v-model="inviteRole"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
             >
               <option value="member">Mitglied (Member)</option>
               <option value="admin">Company Administrator</option>
@@ -270,7 +270,7 @@
             <button
               type="submit"
               :disabled="sendingInvite"
-              class="w-full py-2 px-4 rounded-lg font-bold text-xs bg-purple-600 hover:bg-purple-500 text-white transition disabled:opacity-50"
+              class="w-full py-2 px-4 rounded-lg font-bold text-xs bg-purple-600 hover:bg-purple-500 text-slate-900 transition disabled:opacity-50"
             >
               {{ sendingInvite ? 'Sende...' : 'Einladung absenden' }}
             </button>
@@ -278,19 +278,19 @@
         </form>
 
         <!-- Success link box -->
-        <div v-if="lastInviteLink" class="p-4 rounded-xl bg-purple-950/60 border border-purple-800 text-xs mb-6">
-          <div class="font-bold text-purple-300 mb-1">Einladung erfolgreich generiert!</div>
+        <div v-if="lastInviteLink" class="p-4 rounded-xl bg-purple-50/60 border border-purple-200 text-xs mb-6">
+          <div class="font-bold text-purple-700 mb-1">Einladung erfolgreich generiert!</div>
           <div class="text-slate-300 mb-2">Für nicht registrierte Nutzer kann dieser direkte Registrierungslink weitergegeben werden:</div>
           <div class="flex items-center space-x-2">
             <input
               readonly
               :value="lastInviteLink"
-              class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs font-mono text-emerald-400 select-all"
+              class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-emerald-400 select-all"
             />
             <button
               type="button"
               @click="copyInviteLink"
-              class="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold"
+              class="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-slate-900 text-xs font-bold"
             >
               Kopieren
             </button>
@@ -298,17 +298,17 @@
         </div>
 
         <!-- Pending Invites List -->
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Offene Einladungen</h4>
-        <div v-if="pendingInvites.length === 0" class="text-xs text-slate-500 py-4 text-center border border-dashed border-slate-800 rounded-xl">
+        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Offene Einladungen</h4>
+        <div v-if="pendingInvites.length === 0" class="text-xs text-slate-500 py-4 text-center border border-dashed border-slate-200 rounded-xl">
           Keine offenen Einladungen vorhanden.
         </div>
-        <div v-else class="divide-y divide-slate-800/80 border border-slate-800 rounded-xl overflow-hidden">
-          <div v-for="inv in pendingInvites" :key="inv.id" class="p-3 bg-slate-950 flex items-center justify-between text-xs">
+        <div v-else class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+          <div v-for="inv in pendingInvites" :key="inv.id" class="p-3 bg-slate-50 flex items-center justify-between text-xs">
             <div>
               <div class="font-bold text-slate-200">{{ inv.email }}</div>
               <div class="text-[10px] text-slate-500">Rolle: {{ inv.role }} • Erstellt: {{ new Date(inv.created_at).toLocaleDateString('de-CH') }}</div>
             </div>
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950 text-amber-800 border border-amber-200">
               {{ inv.status }}
             </span>
           </div>
@@ -320,90 +320,90 @@
     <div v-else-if="activeTab === 'policies'" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- 4-Stage Pipeline Card -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6">
           <div class="flex items-center space-x-2 text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>🛡️</span>
             <span>Rollen- & Berechtigungsmodell</span>
           </div>
-          <h3 class="text-lg font-bold text-white mb-3">Aktive Sicherheitsarchitektur</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-6">
+          <h3 class="text-lg font-bold text-slate-900 mb-3">Aktive Sicherheitsarchitektur</h3>
+          <p class="text-xs text-slate-500 leading-relaxed mb-6">
             Jeder API-Zugriff durchläuft serverseitig diese 4 Prüfstufen:
           </p>
 
           <ol class="space-y-3 text-xs">
-            <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-              <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">1</span>
+            <li class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start space-x-3">
+              <span class="w-6 h-6 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-[11px]">1</span>
               <div>
-                <strong class="text-white">Company Policy Check:</strong>
-                <p class="text-slate-400 mt-0.5">Prüft globale Unternehmensrichtlinien (z.B. Dokumenten-Upload-Sperre). Verstoß liefert 403 Forbidden.</p>
+                <strong class="text-slate-900">Company Policy Check:</strong>
+                <p class="text-slate-500 mt-0.5">Prüft globale Unternehmensrichtlinien (z.B. Dokumenten-Upload-Sperre). Verstoß liefert 403 Forbidden.</p>
               </div>
             </li>
-            <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-              <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">2</span>
+            <li class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start space-x-3">
+              <span class="w-6 h-6 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-[11px]">2</span>
               <div>
-                <strong class="text-white">Project Membership Check:</strong>
-                <p class="text-slate-400 mt-0.5">Prüft Ordnerinhaber oder Projektmitgliedschaft. Nicht berechtigte Anfragen erhalten 404 Not Found.</p>
+                <strong class="text-slate-900">Project Membership Check:</strong>
+                <p class="text-slate-500 mt-0.5">Prüft Ordnerinhaber oder Projektmitgliedschaft. Nicht berechtigte Anfragen erhalten 404 Not Found.</p>
               </div>
             </li>
-            <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-              <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">3</span>
+            <li class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start space-x-3">
+              <span class="w-6 h-6 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-[11px]">3</span>
               <div>
-                <strong class="text-white">List Scope Check:</strong>
-                <p class="text-slate-400 mt-0.5">Eingeschränkte Listen erfordern explizite Listensichtbarkeit.</p>
+                <strong class="text-slate-900">List Scope Check:</strong>
+                <p class="text-slate-500 mt-0.5">Eingeschränkte Listen erfordern explizite Listensichtbarkeit.</p>
               </div>
             </li>
-            <li class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-              <span class="w-6 h-6 rounded-full bg-purple-950 text-purple-300 flex items-center justify-center font-bold text-[11px]">4</span>
+            <li class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start space-x-3">
+              <span class="w-6 h-6 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-[11px]">4</span>
               <div>
-                <strong class="text-white">Role Action Check:</strong>
-                <p class="text-slate-400 mt-0.5">Viewer dürfen nur Lesemethoden (GET) nutzen. Schreibzugriffe werden serverseitig abgewiesen.</p>
+                <strong class="text-slate-900">Role Action Check:</strong>
+                <p class="text-slate-500 mt-0.5">Viewer dürfen nur Lesemethoden (GET) nutzen. Schreibzugriffe werden serverseitig abgewiesen.</p>
               </div>
             </li>
           </ol>
         </div>
 
         <!-- Freemium Rules & App Logic -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6">
           <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>⚙️</span>
             <span>Tarifregeln & Systemgrenzen</span>
           </div>
-          <h3 class="text-lg font-bold text-white mb-3">Durchgesetzte Systemgrenzen</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-6">
+          <h3 class="text-lg font-bold text-slate-900 mb-3">Durchgesetzte Systemgrenzen</h3>
+          <p class="text-xs text-slate-500 leading-relaxed mb-6">
             Folgende Systemgrenzen sind im Backend aktiv durchgesetzt:
           </p>
 
           <div class="space-y-3 text-xs">
-            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <div class="flex items-center justify-between mb-1">
-                <strong class="text-white">Free-Plan Ordner-Limit</strong>
+                <strong class="text-slate-900">Free-Plan Ordner-Limit</strong>
                 <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono font-bold">1 Ordner</span>
               </div>
-              <p class="text-slate-400">Ein Kunde im Free-Plan hat maximal 1 Projektordner zur Verfügung.</p>
+              <p class="text-slate-500">Ein Kunde im Free-Plan hat maximal 1 Projektordner zur Verfügung.</p>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <div class="flex items-center justify-between mb-1">
-                <strong class="text-white">Gleichzeitige Projekt-Mitarbeit</strong>
+                <strong class="text-slate-900">Gleichzeitige Projekt-Mitarbeit</strong>
                 <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono font-bold">Max. 3</span>
               </div>
-              <p class="text-slate-400">Free-User dürfen maximal in 3 Projekten gleichzeitig aktiv mitarbeiten.</p>
+              <p class="text-slate-500">Free-User dürfen maximal in 3 Projekten gleichzeitig aktiv mitarbeiten.</p>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <div class="flex items-center justify-between mb-1">
-                <strong class="text-white">Teammitglieder pro Projekt</strong>
+                <strong class="text-slate-900">Teammitglieder pro Projekt</strong>
                 <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono font-bold">Max. 5</span>
               </div>
-              <p class="text-slate-400">Pro Projekt können im Free-Plan maximal 5 Teammitglieder inkl. Owner teilnehmen.</p>
+              <p class="text-slate-500">Pro Projekt können im Free-Plan maximal 5 Teammitglieder inkl. Owner teilnehmen.</p>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
               <div class="flex items-center justify-between mb-1">
-                <strong class="text-white">Company Plan Vererbung</strong>
-                <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-400 font-mono font-bold">Automatisch</span>
+                <strong class="text-slate-900">Company Plan Vererbung</strong>
+                <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-400 font-mono font-bold">Automatisch</span>
               </div>
-              <p class="text-slate-400">Eingeladene Mitarbeiter einer Company erben automatisch den bezahlten Company-Plan.</p>
+              <p class="text-slate-500">Eingeladene Mitarbeiter einer Company erben automatisch den bezahlten Company-Plan.</p>
             </div>
           </div>
         </div>
@@ -412,13 +412,13 @@
 
     <!-- TAB 4: PROJECT TEMPLATES -->
     <div v-if="activeTab === 'templates'" class="space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
             <span>📋</span>
             <span>Projekt-Vorlagen (Gewerbe, Jobs & Privat)</span>
           </h3>
-          <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+          <p class="text-xs text-slate-500 mt-1 max-w-2xl">
             Verwalte strukturierte Vorlagen mit Standard-Listen und benutzerdefinierten Feldern inklusive bedingter IF-THEN-Logik. Benutzer können diese beim Erstellen eines neuen Projekts auswählen.
           </p>
         </div>
@@ -437,14 +437,14 @@
           <button
             @click="templateCategoryFilter = 'all'"
             class="px-4 py-2 rounded-lg text-xs font-bold transition"
-            :class="templateCategoryFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+            :class="templateCategoryFilter === 'all' ? 'bg-purple-600 text-slate-900' : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200'"
           >
             Alle Vorlagen ({{ templates.length }})
           </button>
           <button
             @click="templateCategoryFilter = 'job'"
             class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5"
-            :class="templateCategoryFilter === 'job' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+            :class="templateCategoryFilter === 'job' ? 'bg-blue-600 text-slate-900' : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200'"
           >
             <span>💼</span>
             <span>Job & Gewerbe ({{ templates.filter(t => t.category === 'job').length }})</span>
@@ -452,7 +452,7 @@
           <button
             @click="templateCategoryFilter = 'private'"
             class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5"
-            :class="templateCategoryFilter === 'private' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+            :class="templateCategoryFilter === 'private' ? 'bg-emerald-600 text-slate-900' : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200'"
           >
             <span>🏡</span>
             <span>Privat ({{ templates.filter(t => t.category === 'private').length }})</span>
@@ -464,16 +464,16 @@
             v-model="templateSearch"
             type="text"
             placeholder="Vorlage suchen..."
-            class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
           />
         </div>
       </div>
 
       <!-- Templates Grid -->
-      <div v-if="filteredTemplates.length === 0" class="p-12 text-center bg-slate-900 border border-slate-800 rounded-2xl">
+      <div v-if="filteredTemplates.length === 0" class="p-12 text-center bg-white border border-slate-200 rounded-2xl">
         <div class="text-4xl mb-3">🔍</div>
-        <h4 class="text-sm font-bold text-white mb-1">Keine Vorlagen gefunden</h4>
-        <p class="text-xs text-slate-400 mb-4">Erstelle deine erste Vorlage oder passe den Suchfilter an.</p>
+        <h4 class="text-sm font-bold text-slate-900 mb-1">Keine Vorlagen gefunden</h4>
+        <p class="text-xs text-slate-500 mb-4">Erstelle deine erste Vorlage oder passe den Suchfilter an.</p>
         <button @click="openCreateTemplateModal" class="taskster_button px-6 text-xs h-[42px] rounded-lg">
           + Jetzt Vorlage anlegen
         </button>
@@ -483,41 +483,41 @@
         <div
           v-for="tmpl in filteredTemplates"
           :key="tmpl.id"
-          class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-700 transition"
+          class="bg-white border border-slate-200 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-300 transition"
         >
           <div>
             <div class="flex items-start justify-between gap-3 mb-2">
               <div class="flex items-center space-x-2">
                 <span
                   class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
-                  :class="tmpl.category === 'job' ? 'bg-blue-950 text-blue-300 border border-blue-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                  :class="tmpl.category === 'job' ? 'bg-blue-950 text-blue-300 border border-blue-800' : 'bg-emerald-950 text-emerald-700 border border-emerald-200'"
                 >
                   {{ tmpl.category === 'job' ? '💼 Job / Gewerbe' : '🏡 Privat' }}
                 </span>
-                <span v-if="tmpl.subcategory" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
+                <span v-if="tmpl.subcategory" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-50 border border-slate-200">
                   {{ tmpl.subcategory }}
                 </span>
               </div>
-              <span v-if="tmpl.is_system" class="text-[10px] text-purple-400 font-semibold bg-purple-950/60 border border-purple-900 px-2 py-0.5 rounded">
+              <span v-if="tmpl.is_system" class="text-[10px] text-purple-400 font-semibold bg-purple-50/60 border border-purple-900 px-2 py-0.5 rounded">
                 System-Vorlage
               </span>
             </div>
 
-            <h4 class="text-base font-bold text-white mb-1">{{ tmpl.name }}</h4>
-            <p class="text-xs text-slate-400 leading-relaxed line-clamp-2 mb-4">
+            <h4 class="text-base font-bold text-slate-900 mb-1">{{ tmpl.name }}</h4>
+            <p class="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-4">
               {{ tmpl.description || 'Keine Beschreibung angegeben.' }}
             </p>
 
             <!-- Pre-configured Lists -->
             <div class="mb-3">
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span>Vordefinierte Abschnitte / Listen ({{ tmpl.lists?.length || 0 }})</span>
               </div>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   v-for="(lst, i) in tmpl.lists"
                   :key="i"
-                  class="px-2 py-0.5 rounded text-[11px] bg-slate-950 border border-slate-800 text-slate-300"
+                  class="px-2 py-0.5 rounded text-[11px] bg-slate-50 border border-slate-200 text-slate-300"
                 >
                   {{ lst }}
                 </span>
@@ -526,22 +526,22 @@
 
             <!-- Custom Fields & Logic -->
             <div>
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span>Benutzerdefinierte Felder ({{ tmpl.fields?.length || 0 }})</span>
               </div>
               <div class="space-y-1.5">
                 <div
                   v-for="(f, i) in tmpl.fields"
                   :key="i"
-                  class="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800/80 text-xs"
+                  class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/80 text-xs"
                 >
                   <div class="flex items-center space-x-2">
                     <span class="font-medium text-slate-200">{{ f.label }}</span>
                     <span class="text-[10px] font-mono text-slate-500">({{ f.field_key }})</span>
-                    <span class="text-slate-400 font-mono">[{{ f.field_type }}]</span>
+                    <span class="text-slate-500 font-mono">[{{ f.field_type }}]</span>
                     <span
                       class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
-                      :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'"
+                      :class="f.entity_type === 'project' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-emerald-950 text-emerald-700 border border-emerald-200'"
                     >
                       {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
                     </span>
@@ -549,7 +549,7 @@
 
                   <span
                     v-if="f.logic_rules && f.logic_rules.depends_on_field"
-                    class="text-[10px] text-amber-300 font-mono bg-amber-950/60 border border-amber-900/60 px-2 py-0.5 rounded"
+                    class="text-[10px] text-amber-800 font-mono bg-amber-950/60 border border-amber-900/60 px-2 py-0.5 rounded"
                     :title="`Nur sichtbar wenn ${f.logic_rules.depends_on_field} == ${f.logic_rules.depends_on_value}`"
                   >
                     ⚡ Wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
@@ -560,7 +560,7 @@
           </div>
 
           <!-- Actions -->
-          <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
             <button
               @click="openEditTemplateModal(tmpl)"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
@@ -579,13 +579,13 @@
     </div>
 
     <!-- Modal: Create / Edit Template -->
-    <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl w-full shadow-2xl my-8">
+    <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/85 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl w-full shadow-2xl my-8">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold text-white">
+          <h3 class="text-lg font-bold text-slate-900">
             {{ editingTemplate ? 'Projekt-Vorlage bearbeiten' : 'Neue Projekt-Vorlage erstellen' }}
           </h3>
-          <button @click="showTemplateModal = false" class="text-slate-400 hover:text-white text-sm">✕</button>
+          <button @click="showTemplateModal = false" class="text-slate-500 hover:text-slate-900 text-sm">✕</button>
         </div>
 
         <form @submit.prevent="saveTemplate" class="space-y-4">
@@ -597,7 +597,7 @@
                 type="text"
                 required
                 placeholder="z.B. Bauleitung Tiefbau & LWL"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -605,7 +605,7 @@
               <label class="block text-xs font-medium text-slate-300 mb-1">Kategorie *</label>
               <select
                 v-model="tmplForm.category"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
               >
                 <option value="job">💼 Job / Gewerbe</option>
                 <option value="private">🏡 Privat / Persönlich</option>
@@ -620,7 +620,7 @@
                 v-model="tmplForm.subcategory"
                 type="text"
                 placeholder="z.B. bau, it, handwerk, renovierung, event"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -630,17 +630,17 @@
                 v-model="tmplForm.description"
                 type="text"
                 placeholder="Kurze Zusammenfassung des Einsatzbereichs"
-                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
             </div>
           </div>
 
           <!-- Lists / Sections Editor -->
-          <div class="pt-3 border-t border-slate-800">
-            <label class="block text-xs font-bold text-white uppercase tracking-wider mb-1">
+          <div class="pt-3 border-t border-slate-200">
+            <label class="block text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">
               Vordefinierte Abschnitte / Listen
             </label>
-            <p class="text-[11px] text-slate-400 mb-2">
+            <p class="text-[11px] text-slate-500 mb-2">
               Diese Listen werden automatisch angelegt, wenn ein Projekt mit dieser Vorlage erstellt wird.
             </p>
 
@@ -648,10 +648,10 @@
               <span
                 v-for="(lst, idx) in tmplForm.lists"
                 :key="idx"
-                class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200"
+                class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-50 border border-slate-300 text-xs text-slate-200"
               >
                 <span>{{ lst }}</span>
-                <button type="button" @click="tmplForm.lists.splice(idx, 1)" class="text-rose-400 hover:text-rose-300 text-xs">✕</button>
+                <button type="button" @click="tmplForm.lists.splice(idx, 1)" class="text-rose-400 hover:text-rose-700 text-xs">✕</button>
               </span>
             </div>
 
@@ -660,7 +660,7 @@
                 v-model="newTmplListInput"
                 type="text"
                 placeholder="Neuen Abschnitt eingeben (z.B. In Prüfung)..."
-                class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
                 @keydown.enter.prevent="addTmplList"
               />
               <button
@@ -674,13 +674,13 @@
           </div>
 
           <!-- Custom Fields Editor -->
-          <div class="pt-3 border-t border-slate-800 space-y-3">
+          <div class="pt-3 border-t border-slate-200 space-y-3">
             <div class="flex items-center justify-between">
               <div>
-                <label class="block text-xs font-bold text-white uppercase tracking-wider">
+                <label class="block text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Benutzerdefinierte Felder mit Logik
                 </label>
-                <p class="text-[11px] text-slate-400">
+                <p class="text-[11px] text-slate-500">
                   Felder für Aufgaben oder das gesamte Projekt inkl. bedingter Abhängigkeiten.
                 </p>
               </div>
@@ -691,21 +691,21 @@
               <div
                 v-for="(f, idx) in tmplForm.fields"
                 :key="idx"
-                class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+                class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
               >
                 <div class="space-y-0.5">
                   <div class="flex items-center space-x-2">
-                    <strong class="text-white">{{ f.label }}</strong>
+                    <strong class="text-slate-900">{{ f.label }}</strong>
                     <span class="text-slate-500 font-mono text-[11px]">({{ f.field_key }})</span>
-                    <span class="text-slate-400 font-mono">[{{ f.field_type }}]</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" :class="f.entity_type === 'project' ? 'bg-purple-950 text-purple-300' : 'bg-emerald-950 text-emerald-300'">
+                    <span class="text-slate-500 font-mono">[{{ f.field_type }}]</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" :class="f.entity_type === 'project' ? 'bg-purple-50 text-purple-700' : 'bg-emerald-950 text-emerald-700'">
                       {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
                     </span>
                   </div>
-                  <div v-if="f.options && f.options.length > 0" class="text-[11px] text-slate-400">
+                  <div v-if="f.options && f.options.length > 0" class="text-[11px] text-slate-500">
                     Optionen: {{ f.options.join(', ') }}
                   </div>
-                  <div v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-300 font-mono">
+                  <div v-if="f.logic_rules && f.logic_rules.depends_on_field" class="text-[11px] text-amber-800 font-mono">
                     ⚡ Nur sichtbar wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
                   </div>
                 </div>
@@ -713,7 +713,7 @@
                 <button
                   type="button"
                   @click="tmplForm.fields.splice(idx, 1)"
-                  class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1"
+                  class="text-rose-400 hover:text-rose-700 text-xs px-2 py-1"
                 >
                   Löschen
                 </button>
@@ -721,23 +721,23 @@
             </div>
 
             <!-- New field inputs -->
-            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+            <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3">
               <h5 class="text-xs font-bold text-slate-300">+ Neues Feld zur Vorlage hinzufügen</h5>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400 mb-1">Feldbezeichnung</label>
+                  <label class="block text-[10px] text-slate-500 mb-1">Feldbezeichnung</label>
                   <input
                     v-model="newField.label"
                     type="text"
                     placeholder="z.B. OTDR Messung"
-                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                   />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400 mb-1">Feldtyp</label>
+                  <label class="block text-[10px] text-slate-500 mb-1">Feldtyp</label>
                   <select
                     v-model="newField.field_type"
-                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                   >
                     <option value="text">Textzeile</option>
                     <option value="number">Zahl / Währung</option>
@@ -746,10 +746,10 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400 mb-1">Ebene</label>
+                  <label class="block text-[10px] text-slate-500 mb-1">Ebene</label>
                   <select
                     v-model="newField.entity_type"
-                    class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                   >
                     <option value="task">Aufgaben-Feld</option>
                     <option value="project">Projekt-Feld</option>
@@ -758,24 +758,24 @@
               </div>
 
               <div v-if="newField.field_type === 'select'">
-                <label class="block text-[10px] text-slate-400 mb-1">Dropdown-Optionen (Komma-getrennt)</label>
+                <label class="block text-[10px] text-slate-500 mb-1">Dropdown-Optionen (Komma-getrennt)</label>
                 <input
                   v-model="newFieldOptionsInput"
                   type="text"
                   placeholder="Ja, Nein, Ausstehend"
-                  class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                 />
               </div>
 
               <!-- Conditional Logic Controls -->
-              <div class="pt-2 border-t border-slate-800">
+              <div class="pt-2 border-t border-slate-200">
                 <label class="flex items-center space-x-2 cursor-pointer mb-2">
                   <input
                     type="checkbox"
                     v-model="newFieldHasLogic"
-                    class="rounded border-slate-700 text-purple-600 focus:ring-0"
+                    class="rounded border-slate-300 text-purple-600 focus:ring-0"
                   />
-                  <span class="text-xs text-amber-300 font-semibold">⚡ Bedingte Sichtbarkeit (Abhängig von anderem Feld)</span>
+                  <span class="text-xs text-amber-800 font-semibold">⚡ Bedingte Sichtbarkeit (Abhängig von anderem Feld)</span>
                 </label>
 
                 <div v-if="newFieldHasLogic" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-lg bg-amber-950/20 border border-amber-900/40">
@@ -783,7 +783,7 @@
                     <label class="block text-[10px] text-amber-200 mb-1">Abhängig von Feld-Key</label>
                     <select
                       v-model="newFieldLogicDepField"
-                      class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                      class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                     >
                       <option value="">-- Feld auswählen --</option>
                       <option v-for="f in tmplForm.fields" :key="f.field_key" :value="f.field_key">
@@ -797,7 +797,7 @@
                       v-model="newFieldLogicExpectedVal"
                       type="text"
                       placeholder="z.B. LWL / Spleissen"
-                      class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                      class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                     />
                   </div>
                 </div>
@@ -807,7 +807,7 @@
                 <button
                   type="button"
                   @click="addFieldToTemplate"
-                  class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition"
+                  class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-slate-900 rounded text-xs font-bold transition"
                 >
                   + Feld hinzufügen
                 </button>
@@ -815,7 +815,7 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               @click="showTemplateModal = false"
@@ -836,10 +836,10 @@
 
 
     <!-- Modal: Create Company -->
-    <div v-if="showCreateCompanyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Neues Unternehmen / Mandanten anlegen</h3>
-        <p class="text-xs text-slate-400 mb-4">
+    <div v-if="showCreateCompanyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/80 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Neues Unternehmen / Mandanten anlegen</h3>
+        <p class="text-xs text-slate-500 mb-4">
           Erstellt ein Unternehmens-Profil mit Company Admin und initialem Hauptordner.
         </p>
 
@@ -851,7 +851,7 @@
               type="text"
               required
               placeholder="z.B. Acme Solutions AG"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
             />
           </div>
 
@@ -859,7 +859,7 @@
             <label class="block text-xs font-medium text-slate-300 mb-1">Subscription-Plan</label>
             <select
               v-model="newCompanyPlan"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-purple-500"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-purple-500"
             >
               <option value="starter">Starter Plan</option>
               <option value="pro">Pro Plan</option>
@@ -867,8 +867,8 @@
             </select>
           </div>
 
-          <div class="pt-2 border-t border-slate-800">
-            <h4 class="text-xs font-bold text-purple-300 mb-2">Company Admin Zugangsdaten</h4>
+          <div class="pt-2 border-t border-slate-200">
+            <h4 class="text-xs font-bold text-purple-700 mb-2">Company Admin Zugangsdaten</h4>
             <div class="space-y-3">
               <div>
                 <label class="block text-[11px] font-medium text-slate-300 mb-1">Name des Admins</label>
@@ -877,7 +877,7 @@
                   type="text"
                   required
                   placeholder="Beat Meier"
-                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
                 />
               </div>
 
@@ -888,7 +888,7 @@
                   type="email"
                   required
                   placeholder="beat.meier@firma.ch"
-                  class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
                 />
               </div>
             </div>
@@ -898,13 +898,13 @@
             <button
               type="button"
               @click="showCreateCompanyModal = false"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition"
+              class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-slate-900 transition"
             >
               Unternehmen erstellen
             </button>

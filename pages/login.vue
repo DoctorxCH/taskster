@@ -1,188 +1,203 @@
 <template>
-  <div class="max-w-md mx-auto my-12 px-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-      <!-- Header -->
-      <div class="text-center mb-8">
-        <div class="inline-flex w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 items-center justify-center font-black text-slate-950 text-2xl shadow-lg shadow-emerald-500/20 mb-3">
-          T
+  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl w-full bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12">
+      
+      <!-- Left Column: Friendly Hero Visual (Nature / Fresh Aesthetic) -->
+      <div class="hidden md:flex md:col-span-5 relative bg-gradient-to-br from-cyan-600 to-teal-700 text-white p-8 flex-col justify-between overflow-hidden">
+        <img
+          src="/wallpapers/mountain-lake.jpg"
+          alt="Inspiring Workspace"
+          class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-35"
+        />
+        <div class="relative z-10">
+          <img src="/logo.png" alt="Taskster Logo" class="h-9 w-auto brightness-0 invert mb-6" />
+          <h3 class="text-2xl font-black leading-tight tracking-tight text-white">
+            Einfach. Klar.<br/>Projektmanagement.
+          </h3>
+          <p class="text-xs text-cyan-100 mt-2 leading-relaxed">
+            Organisiere Aufgaben, Abschnitte und Teamarbeit in einer fröhlichen, modernen Umgebung.
+          </p>
         </div>
-        <h2 class="text-2xl font-bold text-white tracking-tight">Taskster Authentifizierung</h2>
-        <p class="text-xs text-slate-400 mt-1">Moderne Projekt- & Aufgabenmanagement Plattform</p>
+
+        <div class="relative z-10 pt-6 border-t border-white/20">
+          <div class="flex items-center space-x-2 text-xs text-cyan-100 font-medium">
+            <span>✨</span>
+            <span>Zero-Trust Architektur & Schweizer Präzision</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="flex border-b border-slate-800 mb-6">
-        <button
-          @click="activeTab = 'login'"
-          class="flex-1 py-2 text-sm font-semibold border-b-2 transition"
-          :class="activeTab === 'login' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
-        >
-          Anmelden
-        </button>
-        <button
-          @click="activeTab = 'register'"
-          class="flex-1 py-2 text-sm font-semibold border-b-2 transition"
-          :class="activeTab === 'register' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
-        >
-          Registrieren
-        </button>
-      </div>
-
-      <!-- Invitation Banner if token is present -->
-      <div v-if="invitationInfo" class="mb-5 p-3 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-200 text-xs">
-        <div class="font-bold text-sm text-purple-300 mb-0.5">Einladung zu {{ invitationInfo.company_name }}</div>
-        <div>Du wurdest eingeladen, diesem Unternehmen beizutreten. Erstelle ein Konto oder melde dich an, um den Beitritt abzuschliessen.</div>
-      </div>
-
-      <!-- Error banner -->
-      <div v-if="errorMessage" class="mb-5 p-3 rounded-lg bg-rose-950/60 border border-rose-800/80 text-rose-300 text-xs">
-        {{ errorMessage }}
-      </div>
-
-      <!-- Success banner -->
-      <div v-if="successMessage" class="mb-5 p-3 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs">
-        {{ successMessage }}
-      </div>
-
-      <!-- Login Form -->
-      <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">E-Mail-Adresse</label>
-          <input
-            v-model="loginEmail"
-            type="email"
-            required
-            placeholder="name@domain.ch"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
+      <!-- Right Column: Clean Light Form -->
+      <div class="md:col-span-7 p-8 sm:p-10 flex flex-col justify-center">
+        <!-- Header -->
+        <div class="mb-6">
+          <div class="md:hidden flex items-center space-x-2 mb-4">
+            <img src="/logo.png" alt="Taskster" class="h-8 w-auto" />
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight">
+            {{ activeTab === 'login' ? 'Willkommen bei Taskster' : 'Konto erstellen' }}
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">
+            {{ activeTab === 'login' ? 'Melde dich an, um auf deine Projekte und Aufgaben zuzugreifen.' : 'Starte sofort mit deinen ersten Projektordnern & Vorlagen.' }}
+          </p>
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Passwort</label>
-          <input
-            v-model="loginPassword"
-            type="password"
-            required
-            placeholder="••••••••"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full py-2.5 rounded-lg font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition disabled:opacity-50"
-        >
-          {{ loading ? 'Authentifiziere...' : 'Anmelden' }}
-        </button>
-      </form>
-
-      <!-- Register Form -->
-      <form v-else @submit.prevent="handleRegister" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Vollständiger Name</label>
-          <input
-            v-model="regName"
-            type="text"
-            required
-            placeholder="Max Mustermann"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">E-Mail-Adresse</label>
-          <input
-            v-model="regEmail"
-            type="email"
-            required
-            placeholder="max@domain.ch"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Passwort</label>
-          <input
-            v-model="regPassword"
-            type="password"
-            required
-            placeholder="Mindestens 8 Zeichen"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 transition disabled:opacity-50"
-        >
-          {{ loading ? 'Konto wird erstellt...' : (invitationToken ? 'Konto erstellen & Unternehmen beitreten' : 'Registrieren & Starten') }}
-        </button>
-      </form>
-
-      <!-- One-Click Demo Logins -->
-      <div class="mt-8 pt-6 border-t border-slate-800">
-        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">
-          ⚡ 1-Klick Schnell-Login (Demo-Rollen)
-        </p>
-        <div class="grid grid-cols-1 gap-2">
+        <!-- Tabs -->
+        <div class="flex p-1 bg-slate-100 rounded-xl mb-6">
           <button
-            @click="quickLogin('admin@taskster.io', 'password123')"
-            class="flex items-center justify-between px-3 py-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/60 text-left transition group"
+            @click="activeTab = 'login'"
+            class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
+            :class="activeTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'"
           >
-            <div>
-              <span class="text-xs font-bold text-purple-300">Site Superadmin</span>
-              <p class="text-[10px] text-purple-400">admin@taskster.io (Voller Plattform- & Systemzugriff)</p>
-            </div>
-            <span class="text-xs text-purple-300 group-hover:translate-x-0.5 transition-transform">→</span>
+            Anmelden
           </button>
-
           <button
-            @click="quickLogin('marc@swissinfra.ch', 'password123')"
-            class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 text-left transition group"
+            @click="activeTab = 'register'"
+            class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
+            :class="activeTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'"
           >
-            <div>
-              <span class="text-xs font-bold text-emerald-300">Company Admin</span>
-              <p class="text-[10px] text-emerald-400">marc@swissinfra.ch (Unternehmens- & Teamverwaltung)</p>
-            </div>
-            <span class="text-xs text-emerald-300 group-hover:translate-x-0.5 transition-transform">→</span>
-          </button>
-
-          <button
-            @click="quickLogin('sarah.editor@swissinfra.ch', 'password123')"
-            class="flex items-center justify-between px-3 py-2 rounded-lg bg-teal-950/40 hover:bg-teal-900/60 border border-teal-800/60 text-left transition group"
-          >
-            <div>
-              <span class="text-xs font-bold text-teal-300">Projekt Editor</span>
-              <p class="text-[10px] text-teal-400">sarah.editor@swissinfra.ch (Aufgaben erstellen & bearbeiten)</p>
-            </div>
-            <span class="text-xs text-teal-300 group-hover:translate-x-0.5 transition-transform">→</span>
-          </button>
-
-          <button
-            @click="quickLogin('lukas.viewer@subunternehmer.ch', 'password123')"
-            class="flex items-center justify-between px-3 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 text-left transition group"
-          >
-            <div>
-              <span class="text-xs font-bold text-amber-300">Projekt Viewer</span>
-              <p class="text-[10px] text-amber-400">lukas.viewer@subunternehmer.ch (Read-Only / Leserechte)</p>
-            </div>
-            <span class="text-xs text-amber-300 group-hover:translate-x-0.5 transition-transform">→</span>
-          </button>
-
-          <button
-            @click="quickLogin('peter@muster.ch', 'password123')"
-            class="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-left transition group"
-          >
-            <div>
-              <span class="text-xs font-bold text-slate-200">Kunde im Free-Plan</span>
-              <p class="text-[10px] text-slate-400">peter@muster.ch (1 Ordner-Limit, max 5 Mitglieder)</p>
-            </div>
-            <span class="text-xs text-slate-300 group-hover:translate-x-0.5 transition-transform">→</span>
+            Registrieren
           </button>
         </div>
+
+        <!-- Invitation Banner if token is present -->
+        <div v-if="invitationInfo" class="mb-5 p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-800 text-xs">
+          <div class="font-bold text-sm text-purple-900 mb-0.5">Einladung zu {{ invitationInfo.company_name }}</div>
+          <div>Du wurdest eingeladen, diesem Unternehmen beizutreten.</div>
+        </div>
+
+        <!-- Error banner -->
+        <div v-if="errorMessage" class="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Success banner -->
+        <div v-if="successMessage" class="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+          {{ successMessage }}
+        </div>
+
+        <!-- Login Form -->
+        <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <input
+              v-model="loginEmail"
+              type="email"
+              required
+              placeholder="name@domain.ch"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Passwort</label>
+            <input
+              v-model="loginPassword"
+              type="password"
+              required
+              placeholder="••••••••"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+            />
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="loading"
+              class="taskster_button w-full px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ loading ? 'Wird angemeldet...' : 'Anmelden' }}
+            </button>
+          </div>
+        </form>
+
+        <!-- Register Form -->
+        <form v-else @submit.prevent="handleRegister" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Vollständiger Name</label>
+            <input
+              v-model="regName"
+              type="text"
+              required
+              placeholder="Max Mustermann"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <input
+              v-model="regEmail"
+              type="email"
+              required
+              placeholder="max@domain.ch"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Passwort</label>
+            <input
+              v-model="regPassword"
+              type="password"
+              required
+              placeholder="Mindestens 6 Zeichen"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+            />
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="loading"
+              class="taskster_button w-full px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ loading ? 'Konto wird erstellt...' : 'Registrieren' }}
+            </button>
+          </div>
+        </form>
+
+        <!-- One-Click Demo Logins -->
+        <div class="mt-8 pt-6 border-t border-slate-200">
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
+            ⚡ 1-Klick Schnell-Login (Demo-Rollen)
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              @click="quickLogin('admin@taskster.io', 'password123')"
+              class="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-left transition"
+            >
+              <div class="text-xs font-bold text-purple-900">Site Superadmin</div>
+              <div class="text-[10px] text-purple-700">admin@taskster.io</div>
+            </button>
+
+            <button
+              @click="quickLogin('marc@swissinfra.ch', 'password123')"
+              class="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-left transition"
+            >
+              <div class="text-xs font-bold text-emerald-900">Company Admin</div>
+              <div class="text-[10px] text-emerald-700">marc@swissinfra.ch</div>
+            </button>
+
+            <button
+              @click="quickLogin('sarah.editor@swissinfra.ch', 'password123')"
+              class="p-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-left transition"
+            >
+              <div class="text-xs font-bold text-cyan-900">Projekt Editor</div>
+              <div class="text-[10px] text-cyan-700">sarah.editor@swissinfra.ch</div>
+            </button>
+
+            <button
+              @click="quickLogin('lukas.viewer@subunternehmer.ch', 'password123')"
+              class="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left transition"
+            >
+              <div class="text-xs font-bold text-amber-900">Projekt Viewer</div>
+              <div class="text-[10px] text-amber-700">lukas.viewer@subunternehmer.ch</div>
+            </button>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </template>
