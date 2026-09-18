@@ -57,9 +57,42 @@ function ensureTables($pdo) {
             seedTemplates($pdo);
         }
 
-        try {
-            $pdo->exec("ALTER TABLE project_folders ADD COLUMN icon VARCHAR(64) DEFAULT '📁'");
-        } catch (Exception $e) {}
+        // Column migrations (idempotent)
+        $colMigrations = [
+            "ALTER TABLE project_folders ADD COLUMN icon VARCHAR(64) DEFAULT '📁'",
+            "ALTER TABLE tasks ADD COLUMN assigned_to VARCHAR(64) DEFAULT NULL",
+            "ALTER TABLE tasks ADD COLUMN priority VARCHAR(32) DEFAULT 'normal'",
+            "ALTER TABLE tasks ADD COLUMN color VARCHAR(64) DEFAULT NULL",
+            "ALTER TABLE tasks ADD COLUMN tags JSON",
+            "ALTER TABLE tasks ADD COLUMN checklist JSON",
+        ];
+        foreach ($colMigrations as $sql) {
+            try { $pdo->exec($sql); } catch (Exception $e) {}
+        }
+
+        // New tables
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS task_comments (
+              id VARCHAR(64) PRIMARY KEY,
+              task_id VARCHAR(64) NOT NULL,
+              author_id VARCHAR(64) NOT NULL,
+              content TEXT NOT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+              FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS task_subtasks (
+              id VARCHAR(64) PRIMARY KEY,
+              task_id VARCHAR(64) NOT NULL,
+              title VARCHAR(512) NOT NULL,
+              is_done TINYINT(1) NOT NULL DEFAULT 0,
+              sort_order INT NOT NULL DEFAULT 0,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
     } catch (Exception $e) {
         // Continue if table exists or migration done
     }
@@ -1222,8 +1255,15 @@ try {
             evaluateListAccess($user, $listId, 'write');
         }
 
-        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ? WHERE id = ?")->execute([
-            $title, $desc, $status, $dueDate, $customData, $listId, $sortOrder, $taskId
+        $assignedTo = array_key_exists('assigned_to', $body) ? ($body['assigned_to'] ?: null) : ($task['assigned_to'] ?? null);
+        $priority = $body['priority'] ?? ($task['priority'] ?? 'normal');
+        $color = array_key_exists('color', $body) ? ($body['color'] ?: null) : ($task['color'] ?? null);
+        $tags = isset($body['tags']) ? json_encode($body['tags']) : ($task['tags'] ?? '[]');
+        $checklist = isset($body['checklist']) ? json_encode($body['checklist']) : ($task['checklist'] ?? '[]');
+
+        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?, tags = ?, checklist = ? WHERE id = ?")->execute([
+            $title, $desc, $status, $dueDate, $customData, $listId, $sortOrder,
+            $assignedTo, $priority, $color, $tags, $checklist, $taskId
         ]);
 
         jsonResponse(['success' => true]);
@@ -1274,6 +1314,105 @@ try {
         evaluateListAccess($user, $task['list_id'], 'write');
         $db->prepare("DELETE FROM tasks WHERE id = ?")->execute([$taskId]);
 
+        jsonResponse(['success' => true]);
+    }
+
+    // 13c. GET tasks/:id (detail with subtasks, comments)
+    if (preg_match('#^tasks/([^/]+)$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $taskId = $m[1];
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?");
+        $tStmt->execute([$taskId]);
+        $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+
+        evaluateListAccess($user, $task['list_id'], 'read');
+
+        $task['custom_data'] = !empty($task['custom_data']) ? json_decode($task['custom_data'], true) : [];
+        $task['tags'] = !empty($task['tags']) ? json_decode($task['tags'], true) : [];
+        $task['checklist'] = !empty($task['checklist']) ? json_decode($task['checklist'], true) : [];
+
+        $assignee = null;
+        if (!empty($task['assigned_to'])) {
+            $aStmt = $db->prepare("SELECT id, name, email FROM users WHERE id = ?");
+            $aStmt->execute([$task['assigned_to']]);
+            $assignee = $aStmt->fetch() ?: null;
+        }
+
+        $subStmt = $db->prepare("SELECT * FROM task_subtasks WHERE task_id = ? ORDER BY sort_order ASC, created_at ASC");
+        $subStmt->execute([$taskId]);
+        $subtasks = $subStmt->fetchAll();
+
+        $cStmt = $db->prepare("SELECT tc.*, u.name as author_name FROM task_comments tc JOIN users u ON u.id = tc.author_id WHERE tc.task_id = ? ORDER BY tc.created_at ASC");
+        $cStmt->execute([$taskId]);
+        $comments = $cStmt->fetchAll();
+
+        jsonResponse(['task' => array_merge($task, ['assignee' => $assignee]), 'subtasks' => $subtasks, 'comments' => $comments]);
+    }
+
+    // 13d. POST tasks/:id/comments
+    if (preg_match('#^tasks/([^/]+)/comments$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $taskId = $m[1];
+        $content = trim($body['content'] ?? '');
+        if (!$content) errorResponse('Kommentar darf nicht leer sein', 400);
+
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?");
+        $tStmt->execute([$taskId]);
+        $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'read');
+
+        $cId = 'cmt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("INSERT INTO task_comments (id, task_id, author_id, content) VALUES (?, ?, ?, ?)")->execute([$cId, $taskId, $user['id'], $content]);
+        jsonResponse(['comment' => ['id' => $cId, 'task_id' => $taskId, 'author_id' => $user['id'], 'author_name' => $user['name'], 'content' => $content, 'created_at' => date('Y-m-d H:i:s')]]);
+    }
+
+    // 13e. POST tasks/:id/subtasks
+    if (preg_match('#^tasks/([^/]+)/subtasks$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $taskId = $m[1];
+        $title = trim($body['title'] ?? '');
+        if (!$title) errorResponse('Titel erforderlich', 400);
+
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?");
+        $tStmt->execute([$taskId]);
+        $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'write');
+
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM task_subtasks WHERE task_id = ?");
+        $countStmt->execute([$taskId]);
+        $nextSort = (int)$countStmt->fetchColumn() + 1;
+
+        $sId = 'sub_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("INSERT INTO task_subtasks (id, task_id, title, is_done, sort_order) VALUES (?, ?, ?, 0, ?)")->execute([$sId, $taskId, $title, $nextSort]);
+        jsonResponse(['subtask' => ['id' => $sId, 'task_id' => $taskId, 'title' => $title, 'is_done' => 0, 'sort_order' => $nextSort]]);
+    }
+
+    // 13f. PUT tasks/:id/subtasks/:subId
+    if (preg_match('#^tasks/([^/]+)/subtasks/([^/]+)$#', $path, $m) && $method === 'PUT') {
+        $user = requireAuth();
+        $taskId = $m[1]; $subId = $m[2];
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?"); $tStmt->execute([$taskId]); $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'write');
+        $sStmt = $db->prepare("SELECT * FROM task_subtasks WHERE id = ? AND task_id = ?"); $sStmt->execute([$subId, $taskId]); $sub = $sStmt->fetch();
+        if (!$sub) errorResponse('Unteraufgabe nicht gefunden', 404);
+        $isDone = isset($body['is_done']) ? (int)$body['is_done'] : (int)$sub['is_done'];
+        $title = isset($body['title']) ? trim($body['title']) : $sub['title'];
+        $db->prepare("UPDATE task_subtasks SET is_done = ?, title = ? WHERE id = ?")->execute([$isDone, $title, $subId]);
+        jsonResponse(['subtask' => ['id' => $subId, 'task_id' => $taskId, 'title' => $title, 'is_done' => $isDone]]);
+    }
+
+    // 13g. DELETE tasks/:id/subtasks/:subId
+    if (preg_match('#^tasks/([^/]+)/subtasks/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $taskId = $m[1]; $subId = $m[2];
+        $tStmt = $db->prepare("SELECT * FROM tasks WHERE id = ?"); $tStmt->execute([$taskId]); $task = $tStmt->fetch();
+        if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
+        evaluateListAccess($user, $task['list_id'], 'write');
+        $db->prepare("DELETE FROM task_subtasks WHERE id = ? AND task_id = ?")->execute([$subId, $taskId]);
         jsonResponse(['success' => true]);
     }
 

@@ -252,14 +252,14 @@
                 v-for="task in list.tasks"
                 :key="task.id"
                 :draggable="userRole !== 'viewer'"
-                class="bg-white border rounded-2xl p-4 transition-all duration-150 shadow-sm group select-none hover:shadow-md"
+                class="relative bg-white border rounded-2xl p-4 transition-all duration-150 shadow-sm group select-none hover:shadow-md overflow-hidden"
                 :class="[
                   draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : 'border-slate-200/90 hover:border-cyan-400',
                   userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 ]"
                 @dragstart="onDragStart(task, list.id)"
                 @dragend="onDragEnd"
-                @click="openEditTaskModal(task)"
+                @click="openTaskDrawer(task)"
               >
                 <!-- Drag handle & Task Header -->
                 <div class="flex items-start justify-between gap-2 mb-2">
@@ -304,13 +304,41 @@
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-100">
-                  <span v-if="task.due_date" class="flex items-center space-x-1 font-medium text-slate-600">
-                    <span>📅</span>
-                    <span>{{ new Date(task.due_date).toLocaleDateString('de-CH') }}</span>
-                  </span>
-                  <span v-else>Keine Frist</span>
+                  <div class="flex items-center gap-2">
+                    <span v-if="task.due_date" class="flex items-center space-x-1 font-medium text-slate-600">
+                      <span>📅</span>
+                      <span>{{ new Date(task.due_date).toLocaleDateString('de-CH') }}</span>
+                    </span>
+                    <!-- Assignee Avatar -->
+                    <span
+                      v-if="task.assigned_to"
+                      class="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-teal-400 text-white text-[9px] font-black flex items-center justify-center"
+                      :title="task.assignee_name || 'Zugewiesen'"
+                    >
+                      {{ (task.assignee_name || '?').charAt(0).toUpperCase() }}
+                    </span>
+                    <!-- Priority Badge -->
+                    <span
+                      v-if="task.priority && task.priority !== 'normal'"
+                      class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded"
+                      :class="{
+                        'bg-rose-100 text-rose-700': task.priority === 'dringend',
+                        'bg-amber-100 text-amber-700': task.priority === 'hoch',
+                        'bg-slate-100 text-slate-500': task.priority === 'niedrig'
+                      }"
+                    >
+                      {{ task.priority }}
+                    </span>
+                  </div>
                   <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
                 </div>
+
+                <!-- Color stripe at bottom of card -->
+                <div
+                  v-if="task.color"
+                  class="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl"
+                  :style="{backgroundColor: task.color}"
+                ></div>
               </div>
 
               <div
@@ -1010,7 +1038,263 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         TASK DETAIL DRAWER (MeisterTask Style - Slide-in from right)
+         ============================================================ -->
+    <transition name="drawer">
+      <div v-if="showTaskDrawer" class="fixed inset-0 z-50 flex" style="pointer-events:all">
+        <!-- Backdrop -->
+        <div class="flex-1 bg-slate-900/40 backdrop-blur-sm" @click="closeTaskDrawer"></div>
+
+        <!-- Drawer Panel -->
+        <div class="w-full max-w-2xl bg-white flex flex-col shadow-2xl overflow-hidden h-full">
+          <!-- Drawer Header -->
+          <div
+            class="flex-shrink-0 px-6 py-4 border-b border-slate-200 flex items-start justify-between gap-3"
+            :style="drawerTask?.color ? {borderTopColor: drawerTask.color, borderTopWidth: '4px', borderTopStyle: 'solid'} : {}"
+          >
+            <div class="flex-1 min-w-0">
+              <!-- Editable title -->
+              <input
+                v-if="drawerTask"
+                v-model="drawerTask.title"
+                @blur="autoSaveDrawer"
+                @keyup.enter="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                class="w-full text-xl font-black text-slate-900 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg px-2 -mx-2 py-1 placeholder-slate-400 disabled:cursor-default"
+                placeholder="Aufgabentitel"
+              />
+              <div v-if="drawerTask" class="flex items-center flex-wrap gap-2 mt-2">
+                <!-- Status Dropdown -->
+                <select
+                  v-model="drawerTask.status"
+                  @change="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  class="text-[11px] font-bold rounded-full px-3 py-1 border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default"
+                  :class="{
+                    'bg-emerald-50 text-emerald-700 border-emerald-300': drawerTask.status === 'done',
+                    'bg-cyan-50 text-cyan-700 border-cyan-300': drawerTask.status === 'in_progress',
+                    'bg-amber-50 text-amber-700 border-amber-300': drawerTask.status === 'review',
+                    'bg-slate-100 text-slate-600 border-slate-300': drawerTask.status === 'todo'
+                  }"
+                >
+                  <option value="todo">📋 Todo</option>
+                  <option value="in_progress">🔄 In Arbeit</option>
+                  <option value="review">🔍 In Prüfung</option>
+                  <option value="done">✅ Erledigt</option>
+                </select>
+                <!-- Priority -->
+                <select
+                  v-model="drawerTask.priority"
+                  @change="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  class="text-[11px] font-bold rounded-full px-3 py-1 border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default"
+                  :class="{
+                    'bg-rose-50 text-rose-700 border-rose-300': drawerTask.priority === 'dringend',
+                    'bg-amber-50 text-amber-700 border-amber-300': drawerTask.priority === 'hoch',
+                    'bg-slate-100 text-slate-600 border-slate-300': drawerTask.priority === 'normal',
+                    'bg-emerald-50 text-emerald-700 border-emerald-300': drawerTask.priority === 'niedrig'
+                  }"
+                >
+                  <option value="niedrig">🟢 Niedrig</option>
+                  <option value="normal">🔵 Normal</option>
+                  <option value="hoch">🟠 Hoch</option>
+                  <option value="dringend">🔴 Dringend</option>
+                </select>
+              </div>
+            </div>
+            <button @click="closeTaskDrawer" class="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 shrink-0 transition" title="Schliessen">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Drawer Scrollable Body -->
+          <div v-if="drawerTask" class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+            <!-- Meta Row: Assignee, Due Date -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">👤 Zuweisung</label>
+                <select
+                  v-model="drawerTask.assigned_to"
+                  @change="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default"
+                >
+                  <option value="">Nicht zugewiesen</option>
+                  <option v-for="m in members" :key="m.user_id" :value="m.user_id">
+                    {{ m.name || m.email }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">📅 Fälligkeitsdatum</label>
+                <input
+                  v-model="drawerTask.due_date"
+                  @change="autoSaveDrawer"
+                  type="date"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default"
+                />
+              </div>
+            </div>
+
+            <!-- Color + Tags -->
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">🎨 Farbmarkierung</label>
+              <div class="flex items-center flex-wrap gap-2 mb-4">
+                <button
+                  v-for="col in taskColors"
+                  :key="col.value"
+                  type="button"
+                  @click="setTaskColor(col.value)"
+                  :disabled="userRole === 'viewer'"
+                  class="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 disabled:cursor-default"
+                  :style="{backgroundColor: col.value}"
+                  :class="drawerTask.color === col.value ? 'border-slate-900 ring-2 ring-offset-1 ring-slate-400 scale-110' : 'border-white shadow-sm'"
+                  :title="col.label"
+                />
+                <button v-if="drawerTask.color" type="button" @click="setTaskColor('')" class="text-xs text-slate-400 hover:text-slate-700 underline ml-1">Entfernen</button>
+              </div>
+
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">🏷️ Tags</label>
+              <div class="flex flex-wrap gap-1.5 mb-2">
+                <span
+                  v-for="(tag, i) in drawerTask.tags"
+                  :key="i"
+                  class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200"
+                >
+                  <span>{{ tag }}</span>
+                  <button v-if="userRole !== 'viewer'" @click="removeTag(i)" class="text-cyan-500 hover:text-cyan-900 ml-0.5">✕</button>
+                </span>
+              </div>
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
+                <input v-model="newTagInput" @keyup.enter="addTag" type="text" placeholder="Tag hinzufügen..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
+                <button @click="addTag" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">📋 Beschreibung</label>
+              <textarea
+                v-model="drawerTask.description"
+                @blur="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                rows="4"
+                placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-500 resize-none disabled:cursor-default"
+              ></textarea>
+            </div>
+
+            <!-- Checklist -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">✅ Checkliste</label>
+                <span v-if="drawerTask.checklist?.length" class="text-[10px] font-bold text-slate-600">
+                  {{ drawerTask.checklist.filter((c:any) => c.done).length }} / {{ drawerTask.checklist.length }}
+                </span>
+              </div>
+              <div v-if="drawerTask.checklist?.length" class="w-full bg-slate-200 rounded-full h-1.5 mb-3">
+                <div
+                  class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                  :style="{width: (drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) + '%'}"
+                ></div>
+              </div>
+              <div class="space-y-1.5 mb-3">
+                <div v-for="(item, i) in drawerTask.checklist" :key="item.id" class="flex items-center gap-2 group/cl">
+                  <input type="checkbox" :checked="item.done" @change="toggleChecklistItem(i)" :disabled="userRole === 'viewer'" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-0 shrink-0" />
+                  <input v-model="item.text" @blur="autoSaveDrawer" :disabled="userRole === 'viewer'" class="flex-1 text-xs bg-transparent focus:outline-none focus:bg-slate-50 rounded px-1 disabled:cursor-default" :class="item.done ? 'line-through text-slate-400' : 'text-slate-800'" />
+                  <button v-if="userRole !== 'viewer'" @click="removeChecklistItem(i)" class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 transition text-xs">✕</button>
+                </div>
+              </div>
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
+                <input v-model="newChecklistInput" @keyup.enter="addChecklistItem" type="text" placeholder="+ Neuer Punkt..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
+                <button @click="addChecklistItem" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
+              </div>
+            </div>
+
+            <!-- Subtasks -->
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">📎 Unteraufgaben</label>
+              <div class="space-y-1.5 mb-3">
+                <div v-for="sub in drawerSubtasks" :key="sub.id" class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 group/sub">
+                  <input type="checkbox" :checked="Boolean(sub.is_done)" @change="toggleSubtask(sub)" :disabled="userRole === 'viewer'" class="w-4 h-4 rounded-full border-slate-300 text-cyan-600 focus:ring-0 shrink-0" />
+                  <span class="flex-1 text-xs" :class="sub.is_done ? 'line-through text-slate-400' : 'text-slate-800'">{{ sub.title }}</span>
+                  <button v-if="userRole !== 'viewer'" @click="deleteSubtask(sub.id)" class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 transition text-xs">🗑️</button>
+                </div>
+              </div>
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
+                <input v-model="newSubtaskInput" @keyup.enter="addSubtask" type="text" placeholder="+ Unteraufgabe hinzufügen..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
+                <button @click="addSubtask" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
+              </div>
+            </div>
+
+            <!-- Custom Fields -->
+            <div v-if="taskCustomFields.length > 0">
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">⚙️ Zusatzfelder</label>
+              <div class="space-y-3">
+                <div v-for="f in visibleDrawerFields" :key="f.id">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span></label>
+                  <select v-if="f.field_type === 'select'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default">
+                    <option value="">-- Nicht ausgewählt --</option>
+                    <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+                  <input v-else-if="f.field_type === 'date'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" type="date" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
+                  <input v-else-if="f.field_type === 'number'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" type="number" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
+                  <input v-else v-model="drawerTask.custom_data[f.field_key]" @blur="autoSaveDrawer" :disabled="userRole === 'viewer'" type="text" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Comments Feed -->
+            <div>
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">💬 Kommentare & Notizen</label>
+              <div class="space-y-3 mb-4">
+                <div v-if="drawerComments.length === 0" class="text-xs text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-2xl">
+                  Noch keine Kommentare. Sei der Erste!
+                </div>
+                <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                    {{ (c.author_name || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm px-3.5 py-2.5 border border-slate-200">
+                    <div class="flex items-baseline justify-between gap-2 mb-1">
+                      <span class="text-[11px] font-black text-slate-900">{{ c.author_name }}</span>
+                      <span class="text-[10px] text-slate-400">{{ new Date(c.created_at).toLocaleString('de-CH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) }}</span>
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{{ c.content }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                  {{ (user?.name || '?').charAt(0).toUpperCase() }}
+                </div>
+                <div class="flex-1">
+                  <textarea v-model="newCommentInput" @keydown.ctrl.enter="addComment" rows="2" placeholder="Kommentar schreiben... (Strg+Enter zum Senden)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-sm text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-500 resize-none"></textarea>
+                  <div class="flex justify-end mt-1.5">
+                    <button @click="addComment" :disabled="!newCommentInput.trim()" type="button" class="taskster_button px-4 text-xs h-[34px] rounded-lg">Senden</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drawer Footer -->
+          <div class="flex-shrink-0 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+            <button v-if="userRole !== 'viewer'" @click="deleteTaskFromDrawer" type="button" class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg">
+              🗑️ Aufgabe löschen
+            </button>
+            <div v-else></div>
+            <button @click="closeTaskDrawer" type="button" class="taskster_button_light px-6 text-xs h-[42px] rounded-lg">Schliessen</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Modal: New Custom Field (Inside Settings) -->
+
     <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-black text-slate-900 mb-1">Neues benutzerdefiniertes Feld</h3>
@@ -1313,7 +1597,38 @@ const showInviteMemberModal = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref('editor')
 
+// Task Detail Drawer
+const showTaskDrawer = ref(false)
+const drawerTask = ref<any>(null)
+const drawerSubtasks = ref<any[]>([])
+const drawerComments = ref<any[]>([])
+const newTagInput = ref('')
+const newChecklistInput = ref('')
+const newSubtaskInput = ref('')
+const newCommentInput = ref('')
+
+const taskColors = [
+  { value: '#00A3C4', label: 'Cyan' },
+  { value: '#8B5CF6', label: 'Lila' },
+  { value: '#F59E0B', label: 'Amber' },
+  { value: '#10B981', label: 'Smaragd' },
+  { value: '#EF4444', label: 'Rot' },
+  { value: '#EC4899', label: 'Pink' },
+  { value: '#6366F1', label: 'Indigo' },
+  { value: '#64748B', label: 'Slate' },
+]
+
+const visibleDrawerFields = computed(() => {
+  if (!drawerTask.value) return []
+  return taskCustomFields.value.filter((f: any) => {
+    if (!f.logic_rules || !f.logic_rules.depends_on_field) return true
+    const depVal = drawerTask.value.custom_data?.[f.logic_rules.depends_on_field]
+    return depVal === f.logic_rules.depends_on_value
+  })
+})
+
 const totalTasks = computed(() => {
+
   return lists.value.reduce((acc, l) => acc + (l.tasks?.length || 0), 0)
 })
 
@@ -1708,18 +2023,177 @@ const openNewTaskModal = (listId: string) => {
   showTaskModal.value = true
 }
 
-const openEditTaskModal = (task: any) => {
-  isEditingTask.value = true
-  currentEditingTaskId.value = task.id
-  targetListId.value = task.list_id
-  taskForm.value = {
-    title: task.title,
-    description: task.description,
-    status: task.status,
+const openTaskDrawer = async (task: any) => {
+  drawerTask.value = {
+    ...task,
     due_date: task.due_date ? task.due_date.substring(0, 10) : '',
-    custom_data: { ...(task.custom_data || {}) }
+    tags: Array.isArray(task.tags) ? [...task.tags] : [],
+    checklist: Array.isArray(task.checklist) ? JSON.parse(JSON.stringify(task.checklist)) : [],
+    custom_data: { ...(task.custom_data || {}) },
+    assigned_to: task.assigned_to || '',
+    priority: task.priority || 'normal',
+    color: task.color || ''
   }
-  showTaskModal.value = true
+  drawerSubtasks.value = []
+  drawerComments.value = []
+  showTaskDrawer.value = true
+
+  // Load full detail from API
+  try {
+    const res = await $fetch<any>(`/api/tasks/${task.id}`, { headers: authHeaders() })
+    const t = res.task
+    drawerTask.value = {
+      ...t,
+      due_date: t.due_date ? t.due_date.substring(0, 10) : '',
+      tags: Array.isArray(t.tags) ? [...t.tags] : [],
+      checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
+      custom_data: { ...(t.custom_data || {}) },
+      assigned_to: t.assigned_to || '',
+      priority: t.priority || 'normal',
+      color: t.color || ''
+    }
+    drawerSubtasks.value = res.subtasks || []
+    drawerComments.value = res.comments || []
+  } catch (err) {
+    console.error('Failed to load task detail', err)
+  }
+}
+
+// Keep backward compat for new task modal
+const openEditTaskModal = (task: any) => openTaskDrawer(task)
+
+const closeTaskDrawer = () => {
+  showTaskDrawer.value = false
+  loadProjectData()
+}
+
+const autoSaveDrawer = async () => {
+  if (!drawerTask.value?.id || userRole.value === 'viewer') return
+  try {
+    await $fetch(`/api/tasks/${drawerTask.value.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        title: drawerTask.value.title,
+        description: drawerTask.value.description,
+        status: drawerTask.value.status,
+        due_date: drawerTask.value.due_date || null,
+        custom_data: drawerTask.value.custom_data,
+        assigned_to: drawerTask.value.assigned_to || null,
+        priority: drawerTask.value.priority,
+        color: drawerTask.value.color || null,
+        tags: drawerTask.value.tags,
+        checklist: drawerTask.value.checklist
+      }
+    })
+  } catch (err) {
+    console.error('AutoSave failed', err)
+  }
+}
+
+const setTaskColor = (color: string) => {
+  if (userRole.value === 'viewer') return
+  drawerTask.value.color = color
+  autoSaveDrawer()
+}
+
+const addTag = () => {
+  const t = newTagInput.value.trim()
+  if (!t || drawerTask.value.tags.includes(t)) return
+  drawerTask.value.tags.push(t)
+  newTagInput.value = ''
+  autoSaveDrawer()
+}
+
+const removeTag = (i: number) => {
+  drawerTask.value.tags.splice(i, 1)
+  autoSaveDrawer()
+}
+
+const addChecklistItem = () => {
+  const t = newChecklistInput.value.trim()
+  if (!t) return
+  drawerTask.value.checklist.push({ id: 'cl_' + Date.now(), text: t, done: false })
+  newChecklistInput.value = ''
+  autoSaveDrawer()
+}
+
+const removeChecklistItem = (i: number) => {
+  drawerTask.value.checklist.splice(i, 1)
+  autoSaveDrawer()
+}
+
+const toggleChecklistItem = (i: number) => {
+  drawerTask.value.checklist[i].done = !drawerTask.value.checklist[i].done
+  autoSaveDrawer()
+}
+
+const addSubtask = async () => {
+  const t = newSubtaskInput.value.trim()
+  if (!t || !drawerTask.value?.id) return
+  try {
+    const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/subtasks`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { title: t }
+    })
+    drawerSubtasks.value.push(res.subtask)
+    newSubtaskInput.value = ''
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe')
+  }
+}
+
+const toggleSubtask = async (sub: any) => {
+  try {
+    const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/subtasks/${sub.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { is_done: !sub.is_done }
+    })
+    const idx = drawerSubtasks.value.findIndex((s: any) => s.id === sub.id)
+    if (idx !== -1) drawerSubtasks.value[idx] = res.subtask
+  } catch (err) {
+    console.error('Toggle subtask failed', err)
+  }
+}
+
+const deleteSubtask = async (subId: string) => {
+  try {
+    await $fetch(`/api/tasks/${drawerTask.value.id}/subtasks/${subId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    drawerSubtasks.value = drawerSubtasks.value.filter((s: any) => s.id !== subId)
+  } catch (err) {
+    console.error('Delete subtask failed', err)
+  }
+}
+
+const addComment = async () => {
+  const c = newCommentInput.value.trim()
+  if (!c || !drawerTask.value?.id) return
+  try {
+    const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/comments`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { content: c }
+    })
+    drawerComments.value.push(res.comment)
+    newCommentInput.value = ''
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Senden des Kommentars')
+  }
+}
+
+const deleteTaskFromDrawer = async () => {
+  if (!confirm('Möchtest du diese Aufgabe wirklich löschen?')) return
+  try {
+    await $fetch(`/api/tasks/${drawerTask.value.id}`, { method: 'DELETE', headers: authHeaders() })
+    closeTaskDrawer()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen')
+  }
 }
 
 const saveTask = async () => {
@@ -1815,3 +2289,27 @@ onMounted(async () => {
   await loadProjectData()
 })
 </script>
+
+<style scoped>
+/* Drawer slide-in animation from right */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 0.25s ease;
+}
+.drawer-enter-active > div:last-child,
+.drawer-leave-active > div:last-child {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.drawer-enter-from {
+  opacity: 0;
+}
+.drawer-enter-from > div:last-child {
+  transform: translateX(100%);
+}
+.drawer-leave-to {
+  opacity: 0;
+}
+.drawer-leave-to > div:last-child {
+  transform: translateX(100%);
+}
+</style>

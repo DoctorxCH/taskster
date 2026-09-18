@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
   // Must have write access to list
   evaluateListAccess(user, task.list_id, event, 'write')
 
-  const { title, description, status, custom_data, due_date, list_id, sort_order } = body
+  const { title, description, status, custom_data, due_date, list_id, sort_order,
+          assigned_to, priority, color, tags, checklist } = body
 
   // If moving task to another list, check destination list access as well
   const targetListId = list_id || task.list_id
@@ -29,12 +30,23 @@ export default defineEventHandler(async (event) => {
   const updatedCustom = custom_data !== undefined ? JSON.stringify(custom_data) : task.custom_data
   const updatedDueDate = due_date !== undefined ? due_date : task.due_date
   const updatedSort = sort_order !== undefined ? sort_order : task.sort_order
+  const updatedAssignedTo = assigned_to !== undefined ? (assigned_to || null) : task.assigned_to
+  const updatedPriority = priority !== undefined ? priority : (task.priority || 'normal')
+  const updatedColor = color !== undefined ? (color || null) : task.color
+  const updatedTags = tags !== undefined ? JSON.stringify(tags) : (task.tags || '[]')
+  const updatedChecklist = checklist !== undefined ? JSON.stringify(checklist) : (task.checklist || '[]')
 
   db.prepare(`
     UPDATE tasks
-    SET title = ?, description = ?, status = ?, custom_data = ?, due_date = ?, list_id = ?, sort_order = ?
+    SET title = ?, description = ?, status = ?, custom_data = ?, due_date = ?,
+        list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?,
+        tags = ?, checklist = ?
     WHERE id = ?
-  `).run(updatedTitle, updatedDesc, updatedStatus, updatedCustom, updatedDueDate, targetListId, updatedSort, taskId)
+  `).run(
+    updatedTitle, updatedDesc, updatedStatus, updatedCustom, updatedDueDate,
+    targetListId, updatedSort, updatedAssignedTo, updatedPriority, updatedColor,
+    updatedTags, updatedChecklist, taskId
+  )
 
   return {
     success: true,
@@ -46,7 +58,13 @@ export default defineEventHandler(async (event) => {
       status: updatedStatus,
       custom_data: JSON.parse(updatedCustom || '{}'),
       due_date: updatedDueDate,
-      sort_order: updatedSort
+      sort_order: updatedSort,
+      assigned_to: updatedAssignedTo,
+      priority: updatedPriority,
+      color: updatedColor,
+      tags: JSON.parse(updatedTags),
+      checklist: JSON.parse(updatedChecklist),
     }
   }
 })
+
