@@ -1,0 +1,52 @@
+import { db } from '~/server/db'
+import { requireAuth } from '~/server/utils/auth'
+import { evaluateListAccess } from '~/server/utils/permissions'
+
+export default defineEventHandler(async (event) => {
+  const user = requireAuth(event)
+  const taskId = getRouterParam(event, 'id')
+  const body = await readBody(event)
+
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any
+  if (!task) {
+    throw createError({ statusCode: 404, statusMessage: 'Aufgabe nicht gefunden' })
+  }
+
+  // Must have write access to list
+  evaluateListAccess(user, task.list_id, event, 'write')
+
+  const { title, description, status, custom_data, due_date, list_id, sort_order } = body
+
+  // If moving task to another list, check destination list access as well
+  const targetListId = list_id || task.list_id
+  if (targetListId !== task.list_id) {
+    evaluateListAccess(user, targetListId, event, 'write')
+  }
+
+  const updatedTitle = title !== undefined ? title.trim() : task.title
+  const updatedDesc = description !== undefined ? description : task.description
+  const updatedStatus = status !== undefined ? status : task.status
+  const updatedCustom = custom_data !== undefined ? JSON.stringify(custom_data) : task.custom_data
+  const updatedDueDate = due_date !== undefined ? due_date : task.due_date
+  const updatedSort = sort_order !== undefined ? sort_order : task.sort_order
+
+  db.prepare(`
+    UPDATE tasks
+    SET title = ?, description = ?, status = ?, custom_data = ?, due_date = ?, list_id = ?, sort_order = ?
+    WHERE id = ?
+  `).run(updatedTitle, updatedDesc, updatedStatus, updatedCustom, updatedDueDate, targetListId, updatedSort, taskId)
+
+  return {
+    success: true,
+    task: {
+      id: taskId,
+      list_id: targetListId,
+      title: updatedTitle,
+      description: updatedDesc,
+      status: updatedStatus,
+      custom_data: JSON.parse(updatedCustom || '{}'),
+      due_date: updatedDueDate,
+      sort_order: updatedSort
+    }
+  }
+})

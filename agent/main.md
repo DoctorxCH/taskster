@@ -1,0 +1,16 @@
+Wir erstellen die app taskster. Die app soll auf dem Browser und später auch auf mobilen Geräten verfügbar sein. Sie wird Aufgabenverwaltung, Benachrichtigungen und Synchronisation über verschiedene Plattformen hinweg bieten.
+Wir brauchen eine benutzerfreundliche Oberfläche, die es den Nutzern ermöglicht, ihre Aufgaben effizient zu verwalten. Außerdem soll die App sicherstellen, dass alle Daten zuverlässig synchronisiert werden, damit die Nutzer jederzeit und überall auf ihre Aufgaben zugreifen können.
+Die App soll zudem erweiterbar sein, sodass in Zukunft weitere Funktionen wie Kalenderintegration, Teamzusammenarbeit und erweiterte Benachrichtigungsoptionen hinzugefügt werden können. Unser Ziel ist es, eine zentrale Plattform für die Aufgabenverwaltung zu schaffen, die den Nutzern hilft, ihre Produktivität zu steigern und ihre Aufgaben effizient zu organisieren.
+Die App wird kontinuierlich weiterentwickelt, um den sich ändernden Bedürfnissen der Nutzer gerecht zu werden. Wir planen regelmäßige Updates, um neue Funktionen einzuführen, die Benutzerfreundlichkeit zu verbessern und die Sicherheit zu gewährleisten. Auf diese Weise soll taskster zu einem unverzichtbaren Werkzeug für die Aufgabenverwaltung werden.
+Wir brauchen einen Admin Bereich wo wir unsere Kunden sehen, verwalten, wo wir die logik der aufgaben anpassen können. Benutzer zu verwalten usw.
+Wir brauchen im Admin Bereich alles, was ein Admin dieser app verwalten muss, einschließlich Benutzerverwaltung, Aufgabenlogik, Kundenübersicht und weitere administrative Funktionen.
+
+
+Kunde: Ein Nutzer, der sich bei der App registriert hat und Aufgaben verwaltet. Er kann privat sein, aber auch einer Company zugeordnet sein falls dies gewünscht ist. Er kann mit anderen Nutzern zusammenarbeiten und Aufgaben innerhalb der App teilen. Pro Projekt können im free Plan 5 Team Mitglieder inkl. owner drin sein. 
+Ein Kunde im free plan hat 1 Projektordner zur Verfügung.
+Auf seinem Dashboard sieht er seine projekte oder die projekte anderer wo er mitarbeitet. Free user darf max. in 3 projekten gleichzeitig mitarbeiten.
+Company: Eine Organisation, der mehrere Kunden zugeordnet sein können. Eine Company kann mehrere Projekte haben, und die Mitglieder der Company können innerhalb dieser Projekte zusammenarbeiten. Admins der Company haben erweiterte Rechte zur Verwaltung von Projekten, Aufgaben und Mitgliedern innerhalb der Company. Sobald eine Company nutzer einlädt, erben die den Plan der company. Es gibt keinen Company Free plan. 
+Company werden von unserem Admin erstellt und einen oder mehrere Company Admins eingeladen, die dann die Verwaltung der Company übernehmen. Die Company Admins können neue Projekte erstellen, Aufgaben zuweisen, Mitglieder verwalten und die allgemeinen Einstellungen der Company konfigurieren.
+Die company teammitglieder werden im Company admin Bereich eingeladen mit email. Sie erhalten eine Einladung, der sie folgen müssen, um der Company beizutreten und Zugriff auf die Projekte und Aufgaben innerhalb der Company zu erhalten.
+
+Projektordner: Projektordner kann mehrere Projekte drin haben. Diese haben Aufgaben. Im Projekt sind dann verschiedene Listen, aufgaben usw. gemäs weiteren .md files in diesem Ordner. 

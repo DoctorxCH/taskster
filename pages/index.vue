@@ -1,0 +1,84 @@
+<template>
+  <div class="relative overflow-hidden py-16 sm:py-24">
+    <!-- Background glow -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs font-semibold mb-6">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Taskster Phase 1 Enterprise MVP</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
+          Projekt- & Bauleiter-<br />
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+            Management der nächsten Generation
+          </span>
+        </h1>
+
+        <p class="mt-6 text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          Schliesst die Lücke zwischen leichtgewichtigen To-do-Apps und schwerfälligen Enterprise-ERPs. Tiefe Ordnerhierarchien, Zero-Trust Sichtbarkeitssteuerung, rechtssicheres Bautagebuch und Unternehmens-Compliance.
+        </p>
+
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <NuxtLink
+            to="/login"
+            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 text-center"
+          >
+            Direkt starten & Demo testen
+          </NuxtLink>
+          <NuxtLink
+            to="/login?tab=register"
+            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition text-center"
+          >
+            Neues Unternehmen registrieren
+          </NuxtLink>
+        </div>
+      </div>
+
+      <!-- Features Matrix -->
+      <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 font-bold text-xl mb-4">
+            📁
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Mehrstufige Struktur</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Ordner → Unterprojekte → Meilensteine → Listen → Aufgaben. Keine flachen Boards, die bei 50+ Baustellen den Überblick verlieren lassen.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-800/60 flex items-center justify-center text-teal-400 font-bold text-xl mb-4">
+            🛡️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">4-Stufen Zero-Trust</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Company Policy → Project Membership → List Scope → Role Action. Geschützte Ressourcen liefern 404 Not Found zur Vermeidung von Information Leaks.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
+            🏢
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Enterprise Admin-Zentrale</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Mandantenverwaltung, Free/Pro/Enterprise Pläne, Upload-Sperren (Swisscom Zero-Trust) und serverseitige Aufgabenlogik zentral im Griff.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const { user } = useAuth()
+
+onMounted(() => {
+  if (user.value) {
+    navigateTo('/dashboard')
+  }
+})
+</script>
