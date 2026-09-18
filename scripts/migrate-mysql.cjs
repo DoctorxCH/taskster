@@ -157,6 +157,30 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS task_comments (
+      id VARCHAR(64) PRIMARY KEY,
+      task_id VARCHAR(64) NOT NULL,
+      author_id VARCHAR(64) NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_comments_task (task_id),
+      INDEX idx_comments_author (author_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS task_subtasks (
+      id VARCHAR(64) PRIMARY KEY,
+      task_id VARCHAR(64) NOT NULL,
+      title VARCHAR(512) NOT NULL,
+      is_done TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_subtasks_task (task_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   console.log('Tables created. Seeding initial data...')
   const pwHash = bcrypt.hashSync('password123', 10)
 

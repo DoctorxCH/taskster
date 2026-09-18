@@ -161,8 +161,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <!-- Free Plan -->
           <div
-            class="rounded-2xl p-5 flex flex-col"
-            :class="!user?.is_pro && !user?.company_name ? 'bg-white/40 border-2 border-slate-400/60 ring-2 ring-slate-400/20 shadow-md' : 'bg-white/20 border border-white/40'"
+            class="rounded-2xl p-5 flex flex-col bg-white border shadow-sm"
+            :class="!user?.is_pro && !user?.company_name ? 'border-2 border-slate-600 ring-2 ring-slate-400/20' : 'border-slate-200'"
           >
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-black text-slate-700 uppercase tracking-wider">Free</span>
@@ -181,8 +181,8 @@
 
           <!-- PRO Plan -->
           <div
-            class="rounded-2xl p-5 flex flex-col relative overflow-hidden"
-            :class="user?.is_pro && !user?.company_name ? 'bg-cyan-500/15 border-2 border-cyan-400/60 ring-2 ring-cyan-400/20 shadow-md' : 'bg-white/20 border border-white/40 hover:border-cyan-300/60 transition'"
+            class="rounded-2xl p-5 flex flex-col relative overflow-hidden bg-white border shadow-sm transition"
+            :class="user?.is_pro && !user?.company_name ? 'border-2 border-[#00A3C4] ring-2 ring-cyan-500/20' : 'border-slate-200 hover:border-cyan-300'"
           >
             <div class="absolute top-0 right-0 bg-[#00A3C4] text-white text-[9px] font-black uppercase px-3 py-1 rounded-bl-xl tracking-wider">Empfohlen</div>
             <div class="flex items-center justify-between mb-3">
@@ -202,8 +202,8 @@
 
           <!-- Enterprise Plan -->
           <div
-            class="rounded-2xl p-5 flex flex-col"
-            :class="user?.company_name ? 'bg-purple-500/15 border-2 border-purple-400/60 ring-2 ring-purple-400/20 shadow-md' : 'bg-white/20 border border-white/40'"
+            class="rounded-2xl p-5 flex flex-col bg-white border shadow-sm"
+            :class="user?.company_name ? 'border-2 border-purple-500 ring-2 ring-purple-500/20' : 'border-slate-200'"
           >
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-black text-purple-800 uppercase tracking-wider">Enterprise</span>

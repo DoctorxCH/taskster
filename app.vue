@@ -8,7 +8,7 @@
         class="w-full h-full object-cover object-center filter brightness-[0.92] contrast-[1.03] transition-all duration-700 ease-out"
       />
       <!-- Soft subtle gradient overlay so light cards and text pop crisp and readable -->
-      <div class="absolute inset-0 bg-slate-950/25 backdrop-blur-[1px]"></div>
+      <div class="absolute inset-0 bg-slate-900/15 backdrop-blur-[0.5px]"></div>
     </div>
 
     <!-- Main App Container (Navbar + Views + Right Sidebar) -->
@@ -196,28 +196,28 @@ onMounted(async () => {
   @apply bg-white hover:bg-slate-50 text-slate-800 border-[3px] border-[#00A3C4] font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
 }
 
-/* Liquid Glass Design System – optimised for wallpaper visibility */
+/* Liquid Glass Design System – balanced for maximum legibility on all wallpapers */
 .liquid_glass {
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
-  -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 10px 32px 0 rgba(0, 0, 0, 0.10), 0 1px 0 0 rgba(255, 255, 255, 0.55) inset;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;
 }
 
 .liquid_glass_pill {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(18px) saturate(200%) brightness(1.06);
-  -webkit-backdrop-filter: blur(18px) saturate(200%) brightness(1.06);
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.07), 0 1px 0 0 rgba(255, 255, 255, 0.55) inset;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.80);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;
 }
 
 .liquid_glass_card {
-  background: rgba(255, 255, 255, 0.26);
-  backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
-  -webkit-backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  box-shadow: 0 14px 34px 0 rgba(0, 0, 0, 0.09), 0 1px 0 0 rgba(255, 255, 255, 0.60) inset;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.07), 0 1px 0 0 rgba(255, 255, 255, 0.98) inset;
 }
 </style>

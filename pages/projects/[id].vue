@@ -96,8 +96,8 @@
         <div class="flex border-b border-slate-200/80 mt-6 -mb-6 sm:-mb-8 space-x-6 overflow-x-auto">
           <button
             @click="currentView = 'tasks'"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
           >
             <span>📋</span>
             <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
@@ -105,8 +105,8 @@
 
           <button
             @click="currentView = 'journal'; loadJournals()"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
           >
             <span>📝</span>
             <span>Aktivitätsjournal ({{ journalEntries.length }})</span>
@@ -114,8 +114,8 @@
 
           <button
             @click="currentView = 'team'"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
           >
             <span>👥</span>
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
@@ -124,8 +124,8 @@
           <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="currentView = 'settings'; initSettingsTab()"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
           >
             <span>⚙️</span>
             <span>Projekt-Einstellungen</span>
@@ -343,7 +343,7 @@
 
               <div
                 v-if="!list.tasks || list.tasks.length === 0"
-                class="py-6 text-center text-[11px] text-slate-400 border border-dashed border-slate-300 rounded-2xl bg-white/50"
+                class="py-6 text-center text-xs font-semibold text-slate-500 border border-dashed border-slate-300 rounded-2xl bg-white/70 shadow-xs"
               >
                 Hier ablegen oder Aufgabe hinzufügen
               </div>
@@ -353,7 +353,7 @@
             <button
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(list.id)"
-              class="mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-cyan-500 hover:bg-white text-xs font-bold text-slate-500 hover:text-cyan-700 transition text-center"
+              class="mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-cyan-500 bg-white/70 hover:bg-white text-xs font-black text-slate-700 hover:text-cyan-800 transition text-center shadow-xs"
             >
               + Aufgabe hinzufügen
             </button>
@@ -1039,110 +1039,363 @@
     </div>
 
     <!-- ============================================================
-         TASK DETAIL DRAWER (MeisterTask Style - Slide-in from right)
+         TASK DETAIL MODAL (Großes zentriertes Popup – MeisterTask Style)
          ============================================================ -->
-    <transition name="drawer">
-      <div v-if="showTaskDrawer" class="fixed inset-0 z-50 flex" style="pointer-events:all">
-        <!-- Backdrop -->
-        <div class="flex-1 bg-slate-900/40 backdrop-blur-sm" @click="closeTaskDrawer"></div>
+    <div
+      v-if="showTaskDrawer"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md overflow-y-auto"
+      @click.self="closeTaskDrawer"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative my-auto animate-in fade-in zoom-in-95 duration-150"
+      >
+        <!-- Top color accent bar -->
+        <div
+          v-if="drawerTask?.color"
+          class="h-2.5 w-full shrink-0 transition-colors"
+          :style="{ backgroundColor: drawerTask.color }"
+        ></div>
 
-        <!-- Drawer Panel -->
-        <div class="w-full max-w-2xl bg-white flex flex-col shadow-2xl overflow-hidden h-full">
-          <!-- Drawer Header -->
-          <div
-            class="flex-shrink-0 px-6 py-4 border-b border-slate-200 flex items-start justify-between gap-3"
-            :style="drawerTask?.color ? {borderTopColor: drawerTask.color, borderTopWidth: '4px', borderTopStyle: 'solid'} : {}"
-          >
-            <div class="flex-1 min-w-0">
-              <!-- Editable title -->
-              <input
-                v-if="drawerTask"
-                v-model="drawerTask.title"
-                @blur="autoSaveDrawer"
-                @keyup.enter="autoSaveDrawer"
-                :disabled="userRole === 'viewer'"
-                class="w-full text-xl font-black text-slate-900 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg px-2 -mx-2 py-1 placeholder-slate-400 disabled:cursor-default"
-                placeholder="Aufgabentitel"
-              />
-              <div v-if="drawerTask" class="flex items-center flex-wrap gap-2 mt-2">
-                <!-- Status Dropdown -->
-                <select
-                  v-model="drawerTask.status"
-                  @change="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  class="text-[11px] font-bold rounded-full px-3 py-1 border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default"
-                  :class="{
-                    'bg-emerald-50 text-emerald-700 border-emerald-300': drawerTask.status === 'done',
-                    'bg-cyan-50 text-cyan-700 border-cyan-300': drawerTask.status === 'in_progress',
-                    'bg-amber-50 text-amber-700 border-amber-300': drawerTask.status === 'review',
-                    'bg-slate-100 text-slate-600 border-slate-300': drawerTask.status === 'todo'
-                  }"
-                >
-                  <option value="todo">📋 Todo</option>
-                  <option value="in_progress">🔄 In Arbeit</option>
-                  <option value="review">🔍 In Prüfung</option>
-                  <option value="done">✅ Erledigt</option>
-                </select>
-                <!-- Priority -->
-                <select
-                  v-model="drawerTask.priority"
-                  @change="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  class="text-[11px] font-bold rounded-full px-3 py-1 border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default"
-                  :class="{
-                    'bg-rose-50 text-rose-700 border-rose-300': drawerTask.priority === 'dringend',
-                    'bg-amber-50 text-amber-700 border-amber-300': drawerTask.priority === 'hoch',
-                    'bg-slate-100 text-slate-600 border-slate-300': drawerTask.priority === 'normal',
-                    'bg-emerald-50 text-emerald-700 border-emerald-300': drawerTask.priority === 'niedrig'
-                  }"
-                >
-                  <option value="niedrig">🟢 Niedrig</option>
-                  <option value="normal">🔵 Normal</option>
-                  <option value="hoch">🟠 Hoch</option>
-                  <option value="dringend">🔴 Dringend</option>
-                </select>
-              </div>
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 bg-white flex items-start justify-between gap-4 shrink-0">
+          <div class="flex-1 min-w-0">
+            <!-- Breadcrumbs -->
+            <div class="flex items-center space-x-1.5 text-[11px] font-bold text-slate-500 mb-1.5 flex-wrap">
+              <span>📁 {{ project?.folder_name || 'Ordner' }}</span>
+              <span>/</span>
+              <span>📋 {{ project?.title || 'Projekt' }}</span>
+              <span v-if="getTaskSectionTitle(drawerTask?.list_id)">/</span>
+              <span v-if="getTaskSectionTitle(drawerTask?.list_id)" class="text-cyan-800 font-extrabold">
+                🏷️ {{ getTaskSectionTitle(drawerTask?.list_id) }}
+              </span>
             </div>
-            <button @click="closeTaskDrawer" class="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 shrink-0 transition" title="Schliessen">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+
+            <!-- Title (Inline editierbar) -->
+            <input
+              v-if="drawerTask"
+              v-model="drawerTask.title"
+              @blur="autoSaveDrawer"
+              @keyup.enter="autoSaveDrawer"
+              :disabled="userRole === 'viewer'"
+              class="w-full text-xl sm:text-2xl font-black text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white rounded-xl px-2 -mx-2 py-1 placeholder-slate-400 border border-transparent focus:border-[#00A3C4] focus:outline-none transition disabled:cursor-default"
+              placeholder="Aufgabentitel eingeben..."
+            />
           </div>
 
-          <!-- Drawer Scrollable Body -->
-          <div v-if="drawerTask" class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <!-- Close button -->
+          <button
+            type="button"
+            @click="closeTaskDrawer"
+            class="text-slate-400 hover:text-slate-800 w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center shrink-0 transition text-lg font-bold"
+            title="Schliessen"
+          >
+            ✕
+          </button>
+        </div>
 
-            <!-- Meta Row: Assignee, Due Date -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">👤 Zuweisung</label>
-                <select
-                  v-model="drawerTask.assigned_to"
-                  @change="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default"
-                >
-                  <option value="">Nicht zugewiesen</option>
-                  <option v-for="m in members" :key="m.user_id" :value="m.user_id">
-                    {{ m.name || m.email }}
-                  </option>
-                </select>
+        <!-- Body: 2 Columns Grid -->
+        <div v-if="drawerTask" class="flex-1 overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200">
+          
+          <!-- LEFT COLUMN: Main Content (Description, Checklist, Subtasks, Comments) -->
+          <div class="flex-1 p-6 sm:p-7 space-y-6 overflow-y-auto">
+            
+            <!-- Description -->
+            <div>
+              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+                <span>📋</span>
+                <span>Beschreibung</span>
+              </label>
+              <textarea
+                v-model="drawerTask.description"
+                @blur="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                rows="4"
+                placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
+                class="w-full px-4 py-3 bg-slate-50 hover:bg-slate-50/80 focus:bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20 transition resize-none disabled:cursor-default"
+              ></textarea>
+            </div>
+
+            <!-- Checklist -->
+            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                  <span>✅</span>
+                  <span>Checkliste</span>
+                </label>
+                <span v-if="drawerTask.checklist?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
+                  {{ drawerTask.checklist.filter((c:any) => c.done).length }} / {{ drawerTask.checklist.length }} erledigt
+                  ({{ Math.round(drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) }}%)
+                </span>
               </div>
-              <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">📅 Fälligkeitsdatum</label>
+
+              <!-- Progress bar -->
+              <div v-if="drawerTask.checklist?.length" class="w-full bg-slate-200 rounded-full h-2 mb-3 overflow-hidden">
+                <div
+                  class="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                  :style="{width: (drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) + '%'}"
+                ></div>
+              </div>
+
+              <div class="space-y-1.5 mb-3">
+                <div
+                  v-for="(item, i) in drawerTask.checklist"
+                  :key="item.id || i"
+                  class="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 group/cl shadow-xs hover:border-slate-300 transition"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="item.done"
+                    @change="toggleChecklistItem(i)"
+                    :disabled="userRole === 'viewer'"
+                    class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-0 shrink-0 cursor-pointer"
+                  />
+                  <input
+                    v-model="item.text"
+                    @blur="autoSaveDrawer"
+                    :disabled="userRole === 'viewer'"
+                    class="flex-1 text-xs sm:text-sm bg-transparent focus:outline-none focus:bg-slate-50 rounded px-1 disabled:cursor-default"
+                    :class="item.done ? 'line-through text-slate-400 font-normal' : 'text-slate-800 font-semibold'"
+                  />
+                  <button
+                    v-if="userRole !== 'viewer'"
+                    @click="removeChecklistItem(i)"
+                    class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
+                    title="Punkt löschen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
                 <input
-                  v-model="drawerTask.due_date"
-                  @change="autoSaveDrawer"
-                  type="date"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default"
+                  v-model="newChecklistInput"
+                  @keyup.enter="addChecklistItem"
+                  type="text"
+                  placeholder="+ Neuer Checklisten-Punkt..."
+                  class="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20"
                 />
+                <button
+                  @click="addChecklistItem"
+                  type="button"
+                  class="taskster_button px-4 text-xs h-[36px] rounded-lg"
+                >
+                  + Hinzufügen
+                </button>
               </div>
             </div>
 
-            <!-- Color + Tags -->
+            <!-- Subtasks -->
+            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                  <span>📎</span>
+                  <span>Unteraufgaben</span>
+                </label>
+                <span v-if="drawerSubtasks?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
+                  {{ drawerSubtasks.filter((s:any) => s.is_done).length }} / {{ drawerSubtasks.length }} erledigt
+                </span>
+              </div>
+
+              <div class="space-y-1.5 mb-3">
+                <div
+                  v-for="sub in drawerSubtasks"
+                  :key="sub.id"
+                  class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 group/sub shadow-xs hover:border-slate-300 transition"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="Boolean(sub.is_done)"
+                    @change="toggleSubtask(sub)"
+                    :disabled="userRole === 'viewer'"
+                    class="w-4 h-4 rounded-full border-slate-300 text-cyan-600 focus:ring-0 shrink-0 cursor-pointer"
+                  />
+                  <span
+                    class="flex-1 text-xs sm:text-sm"
+                    :class="sub.is_done ? 'line-through text-slate-400' : 'text-slate-800 font-semibold'"
+                  >
+                    {{ sub.title }}
+                  </span>
+                  <button
+                    v-if="userRole !== 'viewer'"
+                    @click="deleteSubtask(sub.id)"
+                    class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
+                    title="Unteraufgabe löschen"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
+                <input
+                  v-model="newSubtaskInput"
+                  @keyup.enter="addSubtask"
+                  type="text"
+                  placeholder="+ Unteraufgabe hinzufügen..."
+                  class="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20"
+                />
+                <button
+                  @click="addSubtask"
+                  type="button"
+                  class="taskster_button px-4 text-xs h-[36px] rounded-lg"
+                >
+                  + Hinzufügen
+                </button>
+              </div>
+            </div>
+
+            <!-- Comments & Feed -->
             <div>
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">🎨 Farbmarkierung</label>
-              <div class="flex items-center flex-wrap gap-2 mb-4">
+              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                <span>💬</span>
+                <span>Kommentare & Besprechungsnotizen</span>
+              </label>
+
+              <!-- Feed of comments -->
+              <div class="space-y-3 mb-4">
+                <div v-if="drawerComments.length === 0" class="text-xs text-slate-500 italic text-center py-6 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                  Noch keine Kommentare oder Notizen vorhanden.
+                </div>
+                <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
+                    {{ (c.author_name || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm p-3.5 border border-slate-200 shadow-xs">
+                    <div class="flex items-baseline justify-between gap-2 mb-1.5">
+                      <span class="text-xs font-black text-slate-900">{{ c.author_name }}</span>
+                      <span class="text-[10px] text-slate-500 font-medium">
+                        {{ new Date(c.created_at).toLocaleString('de-CH', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) }}
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ c.content }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- New comment textarea -->
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
+                  {{ (user?.name || '?').charAt(0).toUpperCase() }}
+                </div>
+                <div class="flex-1">
+                  <textarea
+                    v-model="newCommentInput"
+                    @keydown.ctrl.enter="addComment"
+                    rows="2"
+                    placeholder="Kommentar schreiben... (Strg+Enter zum Senden)"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20 resize-none transition"
+                  ></textarea>
+                  <div class="flex items-center justify-between mt-1.5">
+                    <span class="text-[10px] text-slate-500 font-medium hidden sm:inline">Tipp: Mit Strg+Enter absenden</span>
+                    <button
+                      @click="addComment"
+                      :disabled="!newCommentInput.trim()"
+                      type="button"
+                      class="taskster_button px-4 text-xs h-[34px] rounded-lg"
+                    >
+                      Senden
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Sidebar (Status, Prio, Assignee, Date, Color, Tags, Fields, Delete) -->
+          <div class="w-full md:w-80 bg-slate-50/90 p-6 space-y-5 shrink-0 overflow-y-auto">
+            
+            <!-- Section / List mover -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Abschnitt</label>
+              <select
+                v-model="drawerTask.list_id"
+                @change="onDrawerSectionChange"
+                :disabled="userRole === 'viewer'"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+              >
+                <option v-for="l in lists" :key="l.id" :value="l.id">
+                  {{ l.title }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Status Dropdown -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Status</label>
+              <select
+                v-model="drawerTask.status"
+                @change="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                class="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default shadow-xs"
+                :class="{
+                  'bg-emerald-50 text-emerald-800 border-emerald-300': drawerTask.status === 'done',
+                  'bg-cyan-50 text-cyan-800 border-cyan-300': drawerTask.status === 'in_progress',
+                  'bg-amber-50 text-amber-800 border-amber-300': drawerTask.status === 'review',
+                  'bg-white text-slate-800 border-slate-300': drawerTask.status === 'todo'
+                }"
+              >
+                <option value="todo">📋 Zu erledigen (Todo)</option>
+                <option value="in_progress">🔄 In Arbeit (In Progress)</option>
+                <option value="review">🔍 In Prüfung (Review)</option>
+                <option value="done">✅ Abgeschlossen (Done)</option>
+              </select>
+            </div>
+
+            <!-- Priority Dropdown -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Priorität</label>
+              <select
+                v-model="drawerTask.priority"
+                @change="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                class="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default shadow-xs"
+                :class="{
+                  'bg-rose-50 text-rose-800 border-rose-300': drawerTask.priority === 'dringend',
+                  'bg-amber-50 text-amber-800 border-amber-300': drawerTask.priority === 'hoch',
+                  'bg-white text-slate-800 border-slate-300': drawerTask.priority === 'normal',
+                  'bg-emerald-50 text-emerald-800 border-emerald-300': drawerTask.priority === 'niedrig'
+                }"
+              >
+                <option value="niedrig">🟢 Niedrig</option>
+                <option value="normal">🔵 Normal</option>
+                <option value="hoch">🟠 Hoch</option>
+                <option value="dringend">🔴 Dringend</option>
+              </select>
+            </div>
+
+            <!-- Assignee Dropdown -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">👤 Zuweisung</label>
+              <select
+                v-model="drawerTask.assigned_to"
+                @change="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+              >
+                <option value="">-- Nicht zugewiesen --</option>
+                <option v-for="m in members" :key="m.user_id" :value="m.user_id">
+                  {{ m.name || m.email }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Due Date -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">📅 Fälligkeitsdatum</label>
+              <input
+                v-model="drawerTask.due_date"
+                @change="autoSaveDrawer"
+                type="date"
+                :disabled="userRole === 'viewer'"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+              />
+            </div>
+
+            <!-- Color Palette Chips -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-2">🎨 Farbmarkierung</label>
+              <div class="flex items-center flex-wrap gap-2">
                 <button
                   v-for="col in taskColors"
                   :key="col.value"
@@ -1150,148 +1403,121 @@
                   @click="setTaskColor(col.value)"
                   :disabled="userRole === 'viewer'"
                   class="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 disabled:cursor-default"
-                  :style="{backgroundColor: col.value}"
-                  :class="drawerTask.color === col.value ? 'border-slate-900 ring-2 ring-offset-1 ring-slate-400 scale-110' : 'border-white shadow-sm'"
+                  :style="{ backgroundColor: col.value }"
+                  :class="drawerTask.color === col.value ? 'border-slate-900 ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white shadow-sm'"
                   :title="col.label"
                 />
-                <button v-if="drawerTask.color" type="button" @click="setTaskColor('')" class="text-xs text-slate-400 hover:text-slate-700 underline ml-1">Entfernen</button>
+                <button
+                  v-if="drawerTask.color"
+                  type="button"
+                  @click="setTaskColor('')"
+                  class="text-[11px] text-slate-500 hover:text-slate-800 underline ml-1 font-bold"
+                >
+                  Entfernen
+                </button>
               </div>
+            </div>
 
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">🏷️ Tags</label>
+            <!-- Tags -->
+            <div>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">🏷️ Tags</label>
               <div class="flex flex-wrap gap-1.5 mb-2">
                 <span
                   v-for="(tag, i) in drawerTask.tags"
                   :key="i"
-                  class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200"
+                  class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300 shadow-xs"
                 >
                   <span>{{ tag }}</span>
-                  <button v-if="userRole !== 'viewer'" @click="removeTag(i)" class="text-cyan-500 hover:text-cyan-900 ml-0.5">✕</button>
+                  <button v-if="userRole !== 'viewer'" @click="removeTag(i)" class="text-cyan-600 hover:text-cyan-950 ml-0.5">✕</button>
                 </span>
+                <span v-if="!drawerTask.tags?.length" class="text-[11px] text-slate-400 italic">Keine Tags</span>
               </div>
-              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
-                <input v-model="newTagInput" @keyup.enter="addTag" type="text" placeholder="Tag hinzufügen..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
-                <button @click="addTag" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">📋 Beschreibung</label>
-              <textarea
-                v-model="drawerTask.description"
-                @blur="autoSaveDrawer"
-                :disabled="userRole === 'viewer'"
-                rows="4"
-                placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
-                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-500 resize-none disabled:cursor-default"
-              ></textarea>
-            </div>
-
-            <!-- Checklist -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">✅ Checkliste</label>
-                <span v-if="drawerTask.checklist?.length" class="text-[10px] font-bold text-slate-600">
-                  {{ drawerTask.checklist.filter((c:any) => c.done).length }} / {{ drawerTask.checklist.length }}
-                </span>
-              </div>
-              <div v-if="drawerTask.checklist?.length" class="w-full bg-slate-200 rounded-full h-1.5 mb-3">
-                <div
-                  class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
-                  :style="{width: (drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) + '%'}"
-                ></div>
-              </div>
-              <div class="space-y-1.5 mb-3">
-                <div v-for="(item, i) in drawerTask.checklist" :key="item.id" class="flex items-center gap-2 group/cl">
-                  <input type="checkbox" :checked="item.done" @change="toggleChecklistItem(i)" :disabled="userRole === 'viewer'" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-0 shrink-0" />
-                  <input v-model="item.text" @blur="autoSaveDrawer" :disabled="userRole === 'viewer'" class="flex-1 text-xs bg-transparent focus:outline-none focus:bg-slate-50 rounded px-1 disabled:cursor-default" :class="item.done ? 'line-through text-slate-400' : 'text-slate-800'" />
-                  <button v-if="userRole !== 'viewer'" @click="removeChecklistItem(i)" class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 transition text-xs">✕</button>
-                </div>
-              </div>
-              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
-                <input v-model="newChecklistInput" @keyup.enter="addChecklistItem" type="text" placeholder="+ Neuer Punkt..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
-                <button @click="addChecklistItem" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
-              </div>
-            </div>
-
-            <!-- Subtasks -->
-            <div>
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">📎 Unteraufgaben</label>
-              <div class="space-y-1.5 mb-3">
-                <div v-for="sub in drawerSubtasks" :key="sub.id" class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 group/sub">
-                  <input type="checkbox" :checked="Boolean(sub.is_done)" @change="toggleSubtask(sub)" :disabled="userRole === 'viewer'" class="w-4 h-4 rounded-full border-slate-300 text-cyan-600 focus:ring-0 shrink-0" />
-                  <span class="flex-1 text-xs" :class="sub.is_done ? 'line-through text-slate-400' : 'text-slate-800'">{{ sub.title }}</span>
-                  <button v-if="userRole !== 'viewer'" @click="deleteSubtask(sub.id)" class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 transition text-xs">🗑️</button>
-                </div>
-              </div>
-              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
-                <input v-model="newSubtaskInput" @keyup.enter="addSubtask" type="text" placeholder="+ Unteraufgabe hinzufügen..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500" />
-                <button @click="addSubtask" type="button" class="taskster_button px-3 text-xs h-[32px] rounded-lg">+</button>
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-1.5">
+                <input
+                  v-model="newTagInput"
+                  @keyup.enter="addTag"
+                  type="text"
+                  placeholder="Tag + Enter..."
+                  class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] shadow-xs"
+                />
+                <button @click="addTag" type="button" class="taskster_button px-3 text-xs h-[30px] rounded-lg">+</button>
               </div>
             </div>
 
             <!-- Custom Fields -->
-            <div v-if="taskCustomFields.length > 0">
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">⚙️ Zusatzfelder</label>
-              <div class="space-y-3">
-                <div v-for="f in visibleDrawerFields" :key="f.id">
-                  <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span></label>
-                  <select v-if="f.field_type === 'select'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-500 disabled:cursor-default">
-                    <option value="">-- Nicht ausgewählt --</option>
-                    <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
-                  </select>
-                  <input v-else-if="f.field_type === 'date'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" type="date" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
-                  <input v-else-if="f.field_type === 'number'" v-model="drawerTask.custom_data[f.field_key]" @change="autoSaveDrawer" type="number" :disabled="userRole === 'viewer'" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
-                  <input v-else v-model="drawerTask.custom_data[f.field_key]" @blur="autoSaveDrawer" :disabled="userRole === 'viewer'" type="text" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-cyan-500 disabled:cursor-default" />
-                </div>
+            <div v-if="taskCustomFields.length > 0" class="pt-3 border-t border-slate-200 space-y-3">
+              <label class="block text-[11px] font-black text-cyan-800 uppercase tracking-wider">⚙️ Zusatzfelder</label>
+              <div v-for="f in visibleDrawerFields" :key="f.id">
+                <label class="block text-xs font-bold text-slate-700 mb-1">
+                  {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
+                </label>
+                <select
+                  v-if="f.field_type === 'select'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+                >
+                  <option value="">-- Nicht ausgewählt --</option>
+                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <input
+                  v-else-if="f.field_type === 'date'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  type="date"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+                />
+                <input
+                  v-else-if="f.field_type === 'number'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  type="number"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+                />
+                <input
+                  v-else
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @blur="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  type="text"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
+                />
               </div>
             </div>
 
-            <!-- Comments Feed -->
-            <div>
-              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">💬 Kommentare & Notizen</label>
-              <div class="space-y-3 mb-4">
-                <div v-if="drawerComments.length === 0" class="text-xs text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-2xl">
-                  Noch keine Kommentare. Sei der Erste!
-                </div>
-                <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
-                  <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">
-                    {{ (c.author_name || '?').charAt(0).toUpperCase() }}
-                  </div>
-                  <div class="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm px-3.5 py-2.5 border border-slate-200">
-                    <div class="flex items-baseline justify-between gap-2 mb-1">
-                      <span class="text-[11px] font-black text-slate-900">{{ c.author_name }}</span>
-                      <span class="text-[10px] text-slate-400">{{ new Date(c.created_at).toLocaleString('de-CH', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) }}</span>
-                    </div>
-                    <p class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{{ c.content }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-start gap-3">
-                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">
-                  {{ (user?.name || '?').charAt(0).toUpperCase() }}
-                </div>
-                <div class="flex-1">
-                  <textarea v-model="newCommentInput" @keydown.ctrl.enter="addComment" rows="2" placeholder="Kommentar schreiben... (Strg+Enter zum Senden)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-sm text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-500 resize-none"></textarea>
-                  <div class="flex justify-end mt-1.5">
-                    <button @click="addComment" :disabled="!newCommentInput.trim()" type="button" class="taskster_button px-4 text-xs h-[34px] rounded-lg">Senden</button>
-                  </div>
-                </div>
-              </div>
+            <!-- Delete Button -->
+            <div v-if="userRole !== 'viewer'" class="pt-4 border-t border-slate-200">
+              <button
+                @click="deleteTaskFromDrawer"
+                type="button"
+                class="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 transition flex items-center justify-center space-x-1.5"
+              >
+                <span>🗑️</span>
+                <span>Aufgabe löschen</span>
+              </button>
             </div>
-          </div>
-
-          <!-- Drawer Footer -->
-          <div class="flex-shrink-0 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-            <button v-if="userRole !== 'viewer'" @click="deleteTaskFromDrawer" type="button" class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg">
-              🗑️ Aufgabe löschen
-            </button>
-            <div v-else></div>
-            <button @click="closeTaskDrawer" type="button" class="taskster_button_light px-6 text-xs h-[42px] rounded-lg">Schliessen</button>
           </div>
         </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3.5 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div class="text-[11px] text-slate-600 font-semibold flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Änderungen werden automatisch gespeichert</span>
+          </div>
+          <button
+            @click="closeTaskDrawer"
+            type="button"
+            class="taskster_button_light px-6 text-xs h-[38px] rounded-lg"
+          >
+            Schliessen
+          </button>
+        </div>
       </div>
-    </transition>
+    </div>
 
     <!-- Modal: New Custom Field (Inside Settings) -->
 
@@ -2023,6 +2249,18 @@ const openNewTaskModal = (listId: string) => {
   showTaskModal.value = true
 }
 
+const getTaskSectionTitle = (listId?: string) => {
+  if (!listId) return ''
+  const l = lists.value.find((item: any) => item.id === listId)
+  return l ? l.title : ''
+}
+
+const onDrawerSectionChange = async () => {
+  if (!drawerTask.value?.id || userRole.value === 'viewer') return
+  await autoSaveDrawer()
+  await loadProjectData()
+}
+
 const openTaskDrawer = async (task: any) => {
   drawerTask.value = {
     ...task,
@@ -2291,25 +2529,5 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Drawer slide-in animation from right */
-.drawer-enter-active,
-.drawer-leave-active {
-  transition: opacity 0.25s ease;
-}
-.drawer-enter-active > div:last-child,
-.drawer-leave-active > div:last-child {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.drawer-enter-from {
-  opacity: 0;
-}
-.drawer-enter-from > div:last-child {
-  transform: translateX(100%);
-}
-.drawer-leave-to {
-  opacity: 0;
-}
-.drawer-leave-to > div:last-child {
-  transform: translateX(100%);
-}
+/* Scoped styles */
 </style>
