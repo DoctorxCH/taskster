@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS folder_field_definitions (
   field_key TEXT NOT NULL,
   label TEXT NOT NULL,
   field_type TEXT NOT NULL DEFAULT 'text',
+  entity_type TEXT NOT NULL DEFAULT 'task',
   is_pro_only INTEGER NOT NULL DEFAULT 0,
   formula TEXT,
   logic_rules TEXT NOT NULL DEFAULT '{}',
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS projects (
   folder_id TEXT NOT NULL REFERENCES project_folders(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
+  custom_data TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -390,6 +390,59 @@ try {
         ]);
     }
 
+    // 3b. PATCH auth/profile (Update user settings: name, password)
+    if ($path === 'auth/profile' && ($method === 'PATCH' || $method === 'PUT')) {
+        $authUser = requireAuth();
+        $name = trim($body['name'] ?? '');
+        $currentPassword = $body['current_password'] ?? '';
+        $newPassword = $body['new_password'] ?? '';
+
+        if (!$name) errorResponse('Name erforderlich', 400);
+
+        // Fetch current user hash
+        $stmt = $db->prepare("SELECT password_hash FROM users WHERE id = ?");
+        $stmt->execute([$authUser['id']]);
+        $row = $stmt->fetch();
+
+        if ($newPassword) {
+            if (!$currentPassword || !password_verify($currentPassword, $row['password_hash'])) {
+                errorResponse('Das aktuelle Passwort ist nicht korrekt', 400);
+            }
+            if (strlen($newPassword) < 8) {
+                errorResponse('Das neue Passwort muss mindestens 8 Zeichen lang sein', 400);
+            }
+            $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+            $db->prepare("UPDATE users SET name = ?, password_hash = ? WHERE id = ?")->execute([$name, $newHash, $authUser['id']]);
+        } else {
+            $db->prepare("UPDATE users SET name = ? WHERE id = ?")->execute([$name, $authUser['id']]);
+        }
+
+        // Return updated user
+        $uStmt = $db->prepare("
+            SELECT u.*, c.name as company_name, c.subscription_plan as company_plan
+            FROM users u
+            LEFT JOIN companies c ON c.id = u.company_id
+            WHERE u.id = ?
+        ");
+        $uStmt->execute([$authUser['id']]);
+        $u = $uStmt->fetch();
+
+        jsonResponse([
+            'success' => true,
+            'user' => [
+                'id' => $u['id'],
+                'name' => $u['name'],
+                'email' => $u['email'],
+                'company_id' => $u['company_id'],
+                'company_role' => $u['company_role'],
+                'company_name' => $u['company_name'],
+                'company_plan' => $u['company_plan'],
+                'is_superadmin' => (bool)$u['is_superadmin'],
+                'is_pro' => (bool)$u['is_pro']
+            ]
+        ]);
+    }
+
     // 4. GET folders
     if ($path === 'folders' && $method === 'GET') {
         $user = requireAuth();
@@ -469,6 +522,7 @@ try {
         $fields = array_map(function($f) {
             $f['options'] = !empty($f['options']) ? (is_string($f['options']) ? json_decode($f['options'], true) : $f['options']) : [];
             $f['logic_rules'] = !empty($f['logic_rules']) ? (is_string($f['logic_rules']) ? json_decode($f['logic_rules'], true) : $f['logic_rules']) : [];
+            $f['entity_type'] = $f['entity_type'] ?? 'task';
             return $f;
         }, $fStmt->fetchAll());
 
@@ -482,7 +536,10 @@ try {
             ORDER BY p.created_at DESC
         ");
         $pStmt->execute([$fldId]);
-        $projects = $pStmt->fetchAll();
+        $projects = array_map(function($p) {
+            $p['custom_data'] = !empty($p['custom_data']) ? (is_string($p['custom_data']) ? json_decode($p['custom_data'], true) : $p['custom_data']) : [];
+            return $p;
+        }, $pStmt->fetchAll());
 
         jsonResponse(['folder' => $folder, 'fields' => $fields, 'projects' => $projects]);
     }
@@ -494,14 +551,25 @@ try {
         $label = trim($body['label'] ?? '');
         $key = strtolower(preg_replace('/[^a-z0-9_]/', '_', $label));
         $type = $body['field_type'] ?? 'text';
+        $entityType = in_array($body['entity_type'] ?? '', ['project', 'task']) ? $body['entity_type'] : 'task';
         $options = $body['options'] ?? [];
+        $logicRules = $body['logic_rules'] ?? null;
 
         $fieldId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, options) VALUES (?, ?, ?, ?, ?, ?)")->execute([
-            $fieldId, $fldId, $key, $label, $type, json_encode($options)
+        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+            $fieldId, $fldId, $key, $label, $type, $entityType, json_encode($options), $logicRules ? json_encode($logicRules) : null
         ]);
 
         jsonResponse(['success' => true, 'fieldId' => $fieldId]);
+    }
+
+    // 7b. DELETE folders/:id/fields/:fieldId
+    if (preg_match('#^folders/([^/]+)/fields/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $fieldId = $m[2];
+        $db->prepare("DELETE FROM folder_field_definitions WHERE id = ? AND folder_id = ?")->execute([$fieldId, $fldId]);
+        jsonResponse(['success' => true]);
     }
 
     // 8. POST projects
@@ -509,10 +577,13 @@ try {
         $user = requireAuth();
         $folderId = $body['folder_id'] ?? '';
         $title = trim($body['title'] ?? '');
+        $customData = $body['custom_data'] ?? [];
         if (!$folderId || !$title) errorResponse('Ordner und Titel erforderlich', 400);
 
         $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO projects (id, folder_id, title, status) VALUES (?, ?, ?, 'active')")->execute([$prjId, $folderId, $title]);
+        $db->prepare("INSERT INTO projects (id, folder_id, title, status, custom_data) VALUES (?, ?, ?, 'active', ?)")->execute([
+            $prjId, $folderId, $title, json_encode($customData)
+        ]);
 
         $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
@@ -535,12 +606,17 @@ try {
         ");
         $pStmt->execute([$projectId]);
         $project = $pStmt->fetch();
+        if ($project) {
+            $project['custom_data'] = !empty($project['custom_data']) ? (is_string($project['custom_data']) ? json_decode($project['custom_data'], true) : $project['custom_data']) : [];
+        }
 
         // Fields
         $fStmt = $db->prepare("SELECT * FROM folder_field_definitions WHERE folder_id = ? ORDER BY sort_order ASC");
         $fStmt->execute([$context['folderId']]);
         $fields = array_map(function($f) {
             $f['options'] = !empty($f['options']) ? (is_string($f['options']) ? json_decode($f['options'], true) : $f['options']) : [];
+            $f['logic_rules'] = !empty($f['logic_rules']) ? (is_string($f['logic_rules']) ? json_decode($f['logic_rules'], true) : $f['logic_rules']) : [];
+            $f['entity_type'] = $f['entity_type'] ?? 'task';
             return $f;
         }, $fStmt->fetchAll());
 
@@ -590,6 +666,28 @@ try {
             'lists' => $accessibleLists,
             'members' => $members
         ]);
+    }
+
+    // 9b. PUT / PATCH projects/:id (Update project details & custom fields)
+    if (preg_match('#^projects/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $projectId = $m[1];
+        evaluateProjectAccess($user, $projectId, 'write');
+
+        $pStmt = $db->prepare("SELECT * FROM projects WHERE id = ?");
+        $pStmt->execute([$projectId]);
+        $project = $pStmt->fetch();
+        if (!$project) errorResponse('Projekt nicht gefunden', 404);
+
+        $title = isset($body['title']) ? trim($body['title']) : $project['title'];
+        $status = isset($body['status']) ? trim($body['status']) : $project['status'];
+        $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $project['custom_data'];
+
+        $db->prepare("UPDATE projects SET title = ?, status = ?, custom_data = ? WHERE id = ?")->execute([
+            $title, $status, $customData, $projectId
+        ]);
+
+        jsonResponse(['success' => true]);
     }
 
     // 10. POST projects/:id/members

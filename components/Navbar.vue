@@ -65,12 +65,27 @@
           </span>
         </div>
 
-        <!-- User profile & Logout -->
+        <!-- User profile, Settings & Logout -->
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-slate-200">
-            {{ user.name.charAt(0).toUpperCase() }}
-          </div>
-          <span class="hidden lg:inline text-sm font-medium text-slate-200">{{ user.name }}</span>
+          <NuxtLink
+            to="/settings"
+            class="flex items-center space-x-2 text-slate-200 hover:text-emerald-400 transition group"
+            title="Benutzer-Einstellungen"
+          >
+            <div class="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-slate-200 group-hover:border-emerald-500 transition">
+              {{ user.name.charAt(0).toUpperCase() }}
+            </div>
+            <span class="hidden lg:inline text-sm font-medium">{{ user.name }}</span>
+          </NuxtLink>
+
+          <NuxtLink
+            to="/settings"
+            class="p-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded border border-slate-800 transition"
+            title="Einstellungen"
+          >
+            ⚙️
+          </NuxtLink>
+
           <button
             @click="logout"
             class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded border border-slate-800 hover:border-rose-900 transition-colors"
