@@ -15,8 +15,8 @@
 
       <div class="flex items-center space-x-3">
         <button
-          @click="showNewFolderModal = true"
-          class="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition flex items-center space-x-2 shadow-lg shadow-emerald-500/10"
+          @click="openNewFolderModal"
+          class="taskster_button px-6 text-xs h-[42px] rounded-lg"
         >
           <span>+ Neuer Projektordner</span>
         </button>
@@ -40,7 +40,7 @@
       <NuxtLink
         to="/admin"
         v-if="user?.is_superadmin"
-        class="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 transition"
+        class="taskster_button px-6 text-xs h-[42px] rounded-lg"
       >
         Plan verwalten
       </NuxtLink>
@@ -93,10 +93,10 @@
           Erstelle deinen ersten Ordner, um Unterprojekte, Bauvorhaben und Meilensteine zu organisieren.
         </p>
         <button
-          @click="showNewFolderModal = true"
-          class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+          @click="openNewFolderModal"
+          class="taskster_button px-6 text-xs h-[42px] rounded-lg"
         >
-          + Ordner erstellen
+          <span>+ Ordner erstellen</span>
         </button>
       </div>
 
@@ -109,18 +109,21 @@
         >
           <div>
             <div class="flex items-start justify-between mb-3">
-              <span class="text-2xl">📂</span>
+              <span class="text-2xl">{{ folder.icon || '📁' }}</span>
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                 {{ folder.project_count }} {{ folder.project_count === 1 ? 'Projekt' : 'Projekte' }}
               </span>
             </div>
 
-            <h3 class="text-base font-bold text-white group-hover:text-emerald-400 transition mb-1">
+            <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition mb-1">
               {{ folder.name }}
             </h3>
             <p class="text-xs text-slate-400 flex items-center space-x-1">
               <span>Owner:</span>
               <span class="text-slate-300 font-medium">{{ folder.owner_name }}</span>
+              <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800 font-bold ml-1">
+                Du (Owner)
+              </span>
             </p>
             <p v-if="folder.company_name" class="text-[11px] text-emerald-400/80 mt-1">
               🏢 {{ folder.company_name }}
@@ -131,12 +134,23 @@
             <span class="text-[11px] text-slate-500">
               Erstellt {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}
             </span>
-            <NuxtLink
-              :to="`/folders/${folder.id}`"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-200 transition"
-            >
-              Öffnen →
-            </NuxtLink>
+            <div class="flex items-center space-x-2">
+              <button
+                v-if="user?.id === folder.owner_id || user?.is_superadmin"
+                @click="openEditFolderModal(folder)"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center space-x-1"
+                title="Projektordner anpassen (Name & Icon)"
+              >
+                <span>✏️</span>
+                <span>Bearbeiten</span>
+              </button>
+              <NuxtLink
+                :to="`/folders/${folder.id}`"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-200 transition"
+              >
+                Öffnen →
+              </NuxtLink>
+            </div>
           </div>
         </div>
       </div>
@@ -144,7 +158,7 @@
 
     <!-- Modal: New Folder -->
     <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
         <h3 class="text-lg font-bold text-white mb-2">Neuen Projektordner anlegen</h3>
         <p class="text-xs text-slate-400 mb-4">
           Projektordner bilden die oberste Organisationsebene für Bauträger, Standorte oder Großvorhaben.
@@ -161,25 +175,107 @@
               v-model="newFolderName"
               type="text"
               required
-              placeholder="z.B. Marketing & Kampagnen 2026"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              placeholder="z.B. FTTH Glasfaserausbau Region Nord"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4">
+          <!-- Icon Selector -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Icon auswählen</label>
+            <div class="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-950 rounded-xl border border-slate-800">
+              <button
+                v-for="item in availableFolderIcons"
+                :key="item.icon"
+                type="button"
+                @click="newFolderIcon = item.icon"
+                class="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition border"
+                :class="newFolderIcon === item.icon ? 'bg-blue-950 border-blue-500 ring-2 ring-blue-500/50 scale-110' : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900'"
+                :title="item.label"
+              >
+                {{ item.icon }}
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Ausgewählt: <span class="text-white text-sm mr-1">{{ newFolderIcon }}</span></p>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               @click="showNewFolderModal = false; folderModalError = ''"
-              class="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              :disabled="creatingFolder"
-              class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition disabled:opacity-50"
+              :disabled="creatingFolder || !newFolderName.trim()"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              {{ creatingFolder ? 'Erstelle...' : 'Ordner erstellen' }}
+              <span>{{ creatingFolder ? 'Erstelle...' : 'Ordner erstellen' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Edit Folder (Owner only) -->
+    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+        <h3 class="text-lg font-bold text-white mb-2">Projektordner bearbeiten</h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Passe den Namen und das Erkennungs-Icon dieses Projektordners an.
+        </p>
+
+        <div v-if="editFolderError" class="mb-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+          {{ editFolderError }}
+        </div>
+
+        <form @submit.prevent="updateFolder" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Name des Projektordners</label>
+            <input
+              v-model="editFolderName"
+              type="text"
+              required
+              placeholder="z.B. Peters Privates Renovationsprojekt"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Icon Selector -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Icon aus Liste auswählen</label>
+            <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-950 rounded-xl border border-slate-800">
+              <button
+                v-for="item in availableFolderIcons"
+                :key="item.icon"
+                type="button"
+                @click="editFolderIcon = item.icon"
+                class="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition border"
+                :class="editFolderIcon === item.icon ? 'bg-blue-950 border-blue-500 ring-2 ring-blue-500/50 scale-110' : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900'"
+                :title="item.label"
+              >
+                {{ item.icon }}
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Ausgewähltes Icon: <span class="text-white text-base mr-1">{{ editFolderIcon }}</span></p>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+            <button
+              type="button"
+              @click="showEditFolderModal = false; editFolderError = ''"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="savingFolder || !editFolderName.trim()"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              <span>{{ savingFolder ? 'Wird gespeichert...' : 'Änderungen speichern' }}</span>
             </button>
           </div>
         </form>
@@ -193,14 +289,66 @@ const { user, authHeaders } = useAuth()
 
 const folders = ref<any[]>([])
 const loading = ref(true)
+
+// New Folder
 const showNewFolderModal = ref(false)
 const newFolderName = ref('')
+const newFolderIcon = ref('📁')
 const creatingFolder = ref(false)
 const folderModalError = ref('')
+
+// Edit Folder
+const showEditFolderModal = ref(false)
+const editFolderId = ref('')
+const editFolderName = ref('')
+const editFolderIcon = ref('📁')
+const savingFolder = ref(false)
+const editFolderError = ref('')
+
+const availableFolderIcons = [
+  // Job & Gewerbe
+  { icon: '📁', label: 'Standard Ordner' },
+  { icon: '🏗️', label: 'Bau & Tiefbau' },
+  { icon: '💻', label: 'IT & Software' },
+  { icon: '⚡', label: 'Elektro & Handwerk' },
+  { icon: '🌐', label: 'Netzwerk & LWL' },
+  { icon: '🏢', label: 'Unternehmen & B2B' },
+  { icon: '📊', label: 'Finanzen & Analyse' },
+  { icon: '🛠️', label: 'Werkstatt & Service' },
+  { icon: '🚀', label: 'Projekte & Launch' },
+  { icon: '🚚', label: 'Logistik & Transport' },
+  { icon: '🔒', label: 'Sicherheit & Audit' },
+  // Privat & Freizeit
+  { icon: '🏠', label: 'Haus & Umbau' },
+  { icon: '🏡', label: 'Garten & Aussen' },
+  { icon: '🛋️', label: 'Wohnen & Interior' },
+  { icon: '🎂', label: 'Event & Feier' },
+  { icon: '✈️', label: 'Reisen & Urlaub' },
+  { icon: '🚗', label: 'Fahrzeuge & Garage' },
+  { icon: '📑', label: 'Privat & Steuern' },
+  { icon: '🎯', label: 'Ziele & Pläne' },
+  { icon: '📦', label: 'Umzug & Lager' },
+  { icon: '🎨', label: 'Kreativ & Hobby' }
+]
 
 const totalProjects = computed(() => {
   return folders.value.reduce((acc, f) => acc + (f.project_count || 0), 0)
 })
+
+const openNewFolderModal = () => {
+  newFolderName.value = ''
+  newFolderIcon.value = '📁'
+  folderModalError.value = ''
+  showNewFolderModal.value = true
+}
+
+const openEditFolderModal = (folder: any) => {
+  editFolderId.value = folder.id
+  editFolderName.value = folder.name
+  editFolderIcon.value = folder.icon || '📁'
+  editFolderError.value = ''
+  showEditFolderModal.value = true
+}
 
 const loadFolders = async () => {
   loading.value = true
@@ -225,15 +373,40 @@ const createFolder = async () => {
     await $fetch('/api/folders', {
       method: 'POST',
       headers: authHeaders(),
-      body: { name: newFolderName.value }
+      body: {
+        name: newFolderName.value,
+        icon: newFolderIcon.value
+      }
     })
     showNewFolderModal.value = false
     newFolderName.value = ''
+    newFolderIcon.value = '📁'
     await loadFolders()
   } catch (err: any) {
     folderModalError.value = err.data?.statusMessage || 'Ordner konnte nicht erstellt werden'
   } finally {
     creatingFolder.value = false
+  }
+}
+
+const updateFolder = async () => {
+  editFolderError.value = ''
+  savingFolder.value = true
+  try {
+    await $fetch(`/api/folders/${editFolderId.value}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        name: editFolderName.value,
+        icon: editFolderIcon.value
+      }
+    })
+    showEditFolderModal.value = false
+    await loadFolders()
+  } catch (err: any) {
+    editFolderError.value = err.data?.statusMessage || 'Ordner konnte nicht aktualisiert werden'
+  } finally {
+    savingFolder.value = false
   }
 }
 

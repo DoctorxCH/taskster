@@ -19,6 +19,12 @@ export function initDatabase() {
   const schemaPath = join(process.cwd(), 'server', 'db', 'schema.sql')
   const schemaSql = readFileSync(schemaPath, 'utf8')
   db.exec(schemaSql)
+
+  try {
+    db.exec("ALTER TABLE project_folders ADD COLUMN icon TEXT DEFAULT '📁'")
+  } catch (e) {
+    // Column already exists
+  }
 }
 
 initDatabase()

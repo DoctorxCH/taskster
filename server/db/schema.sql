@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS project_folders (
   owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  icon TEXT DEFAULT '📁',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
