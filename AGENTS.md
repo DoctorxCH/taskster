@@ -21,3 +21,8 @@
   - Primary / Save: `taskster_button` (Blau)
   - Destructive / Accent: `taskster_button_accent` (Rot)
   - Ghost / Cancel: `taskster_button_light` (Weiß + blauer 3px Rand)
+
+## 4. Deployment & Sync (Verbindlich)
+- **Kein SFTP-Upload mehr:** Dateien niemals direkt über SFTP auf den Server synchronisieren, da dies zu Konflikten und untracked files in Git führt.
+- **Git als Single Source of Truth:** Deployments / Updates ausschließlich via `git commit & push origin main`.
+- **Server-Befehle:** Falls auf dem Server `npm run ...` (z.B. Build) oder Datenbank-Migrationen ausgeführt werden müssen, den User direkt informieren, damit er dies im SSH-Terminal ausführen kann.
