@@ -59,6 +59,22 @@ CREATE TABLE IF NOT EXISTS project_members (
   UNIQUE(project_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS project_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'job',
+  subcategory TEXT,
+  description TEXT,
+  icon TEXT DEFAULT 'Folder',
+  is_system INTEGER NOT NULL DEFAULT 1,
+  company_id TEXT REFERENCES companies(id) ON DELETE SET NULL,
+  lists TEXT NOT NULL DEFAULT '[]',
+  fields TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+
 CREATE TABLE IF NOT EXISTS lists (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
