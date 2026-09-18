@@ -7,7 +7,7 @@
           T
         </div>
         <h2 class="text-2xl font-bold text-white tracking-tight">Taskster Authentifizierung</h2>
-        <p class="text-xs text-slate-400 mt-1">Enterprise Projekt- & Bauleitungsplattform</p>
+        <p class="text-xs text-slate-400 mt-1">Moderne Projekt- & Aufgabenmanagement Plattform</p>
       </div>
 
       <!-- Tabs -->
@@ -132,8 +132,8 @@
             class="flex items-center justify-between px-3 py-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/60 text-left transition group"
           >
             <div>
-              <span class="text-xs font-bold text-purple-300">Plattform Superadmin</span>
-              <p class="text-[10px] text-purple-400">admin@taskster.io (Voller Admin- & Policy-Zugriff)</p>
+              <span class="text-xs font-bold text-purple-300">Site Superadmin</span>
+              <p class="text-[10px] text-purple-400">admin@taskster.io (Voller Plattform- & Systemzugriff)</p>
             </div>
             <span class="text-xs text-purple-300 group-hover:translate-x-0.5 transition-transform">→</span>
           </button>
@@ -143,8 +143,8 @@
             class="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 text-left transition group"
           >
             <div>
-              <span class="text-xs font-bold text-emerald-300">Company Admin (Swisscom Infra AG)</span>
-              <p class="text-[10px] text-emerald-400">marc@swissinfra.ch (Projektleitung & Enterprise)</p>
+              <span class="text-xs font-bold text-emerald-300">Company Admin</span>
+              <p class="text-[10px] text-emerald-400">marc@swissinfra.ch (Unternehmens- & Teamverwaltung)</p>
             </div>
             <span class="text-xs text-emerald-300 group-hover:translate-x-0.5 transition-transform">→</span>
           </button>
@@ -155,7 +155,7 @@
           >
             <div>
               <span class="text-xs font-bold text-teal-300">Projekt Editor</span>
-              <p class="text-[10px] text-teal-400">sarah.editor@swissinfra.ch (Kann Aufgaben erstellen & bearbeiten)</p>
+              <p class="text-[10px] text-teal-400">sarah.editor@swissinfra.ch (Aufgaben erstellen & bearbeiten)</p>
             </div>
             <span class="text-xs text-teal-300 group-hover:translate-x-0.5 transition-transform">→</span>
           </button>
@@ -165,8 +165,8 @@
             class="flex items-center justify-between px-3 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 text-left transition group"
           >
             <div>
-              <span class="text-xs font-bold text-amber-300">Subunternehmer (Viewer - Zero Trust)</span>
-              <p class="text-[10px] text-amber-400">lukas.viewer@subunternehmer.ch (Read-only, vertrauliche Listen 404)</p>
+              <span class="text-xs font-bold text-amber-300">Projekt Viewer</span>
+              <p class="text-[10px] text-amber-400">lukas.viewer@subunternehmer.ch (Read-Only / Leserechte)</p>
             </div>
             <span class="text-xs text-amber-300 group-hover:translate-x-0.5 transition-transform">→</span>
           </button>

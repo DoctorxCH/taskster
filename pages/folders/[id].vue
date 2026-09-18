@@ -116,7 +116,7 @@
               <span>Benutzerdefinierte Felder (Ordner-Vererbung)</span>
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">
-              Alle hier definierten Felder werden automatisch an alle Aufgaben in diesem Ordner vererbt (z.B. Gewerke, Bauleiter, Status, CHF-Budget).
+              Alle hier definierten Felder werden automatisch an alle Aufgaben in diesem Ordner vererbt (z.B. Priorität, Verantwortlicher, Status, Budget).
             </p>
           </div>
           <button
@@ -165,7 +165,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
         <h3 class="text-lg font-bold text-white mb-2">Neues Projekt anlegen</h3>
         <p class="text-xs text-slate-400 mb-4">
-          Das Projekt wird innerhalb des Ordners "{{ folder?.name }}" erstellt und erbt dessen Richtlinien und Felddefinitionen.
+          Das Projekt wird innerhalb des Ordners "{{ folder?.name }}" erstellt und erbt dessen Einstellungen und Felddefinitionen.
         </p>
 
         <div v-if="projectModalError" class="mb-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
@@ -174,12 +174,12 @@
 
         <form @submit.prevent="createProject" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Projekttitel / Bauabschnitt</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Projekttitel / Name</label>
             <input
               v-model="newProjectTitle"
               type="text"
               required
-              placeholder="z.B. Los 4 – Glasfaser Trasse West"
+              placeholder="z.B. Website Relaunch Q3"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -216,7 +216,7 @@
               v-model="newFieldLabel"
               type="text"
               required
-              placeholder="z.B. Messprotokoll OTDR"
+              placeholder="z.B. Priorität oder Kostenstelle"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>

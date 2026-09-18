@@ -73,8 +73,8 @@
             class="py-3 text-xs font-bold border-b-2 transition flex items-center space-x-1.5"
             :class="currentView === 'journal' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
-            <span>🎙️</span>
-            <span>Bautagebuch & Journal ({{ journalEntries.length }})</span>
+            <span>📝</span>
+            <span>Aktivitätsjournal & Notizen ({{ journalEntries.length }})</span>
           </button>
 
           <button
@@ -96,14 +96,14 @@
           class="mb-6 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-300 text-xs flex items-center space-x-2"
         >
           <span>👁️</span>
-          <span><strong>Viewer-Modus aktiv:</strong> Du hast Leserechte für dieses Projekt. Vertrauliche Listen sind gemäss Zero-Trust Stufe 3 maskiert.</span>
+          <span><strong>Viewer-Modus aktiv:</strong> Du hast Leserechte für dieses Projekt.</span>
         </div>
 
         <!-- Lists Container -->
         <div v-if="lists.length === 0" class="text-center py-16 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
           <span class="text-3xl">📋</span>
           <h3 class="text-base font-bold text-slate-200 mt-2">Noch keine Listen in diesem Projekt</h3>
-          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle jetzt die erste Aufgabenliste (z.B. "Tiefbau", "LWL Spleissung").</p>
+          <p class="text-xs text-slate-400 mt-1 mb-4">Erstelle jetzt die erste Aufgabenliste (z.B. "Geplant", "In Bearbeitung", "Erledigt").</p>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewListModal = true"
@@ -199,22 +199,11 @@
                 <!-- Custom Fields Chips -->
                 <div v-if="task.custom_data && Object.keys(task.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-3">
                   <span
-                    v-if="task.custom_data.gewerk"
-                    class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-300"
-                  >
-                    🔨 {{ task.custom_data.gewerk }}
-                  </span>
-                  <span
-                    v-if="task.custom_data.bauleiter"
+                    v-for="(val, key) in task.custom_data"
+                    :key="key"
                     class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300"
                   >
-                    👤 {{ task.custom_data.bauleiter }}
-                  </span>
-                  <span
-                    v-if="task.custom_data.kosten_chf"
-                    class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300"
-                  >
-                    CHF {{ Number(task.custom_data.kosten_chf).toLocaleString('de-CH') }}
+                    {{ key }}: {{ val }}
                   </span>
                 </div>
 
@@ -250,19 +239,19 @@
         </div>
       </div>
 
-      <!-- VIEW 2: JOURNAL / BAUTAGEBUCH -->
+      <!-- VIEW 2: JOURNAL / AKTIVITÄTSNOTIZEN -->
       <div v-else-if="currentView === 'journal'" class="space-y-6">
         <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-xl">
           <div>
-            <h3 class="text-sm font-bold text-white">Rechtssicheres Projektjournal & Baustellenprotokoll</h3>
-            <p class="text-xs text-slate-400">Sprachnotizen, Vor-Ort-Begehungen, E-Mail-Nachweise und SUVA-relevante Logs.</p>
+            <h3 class="text-sm font-bold text-white">Projektjournal & Notizen</h3>
+            <p class="text-xs text-slate-400">Chronologische Protokollierung, Besprechungsnotizen und wichtige Updates.</p>
           </div>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewJournalModal = true"
             class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
           >
-            + Neuer Journaleintrag / Sprachnotiz
+            + Neue Notiz erfassen
           </button>
         </div>
 
@@ -383,13 +372,13 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Zugriffsmodus (Zero-Trust Stufe 3)</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Zugriffsmodus</label>
             <select
               v-model="newListAccessMode"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
             >
-              <option value="inherit">Geerbt (Alle Projektmitglieder haben Zugriff)</option>
-              <option value="custom">Vertraulich / Custom (Nur Owner & explizit berechtigte Personen)</option>
+              <option value="inherit">Standard (Alle Projektmitglieder haben Zugriff)</option>
+              <option value="custom">Eingeschränkt (Nur Owner & explizit berechtigte Personen)</option>
             </select>
           </div>
 
@@ -432,18 +421,18 @@
               :disabled="userRole === 'viewer'"
               type="text"
               required
-              placeholder="z.B. Muffe M-42 spleissen"
+              placeholder="z.B. Konzeptentwurf finalisieren"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Beschreibung / Bauanweisung</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Beschreibung</label>
             <textarea
               v-model="taskForm.description"
               :disabled="userRole === 'viewer'"
               rows="3"
-              placeholder="Detaillierte Anweisungen, Sicherheitsvorschriften oder Plannummern..."
+              placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 disabled:opacity-60"
             ></textarea>
           </div>
@@ -549,7 +538,7 @@
     <!-- Modal: New Journal Entry -->
     <div v-if="showNewJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-2">Bautagebuch-Eintrag / Sprachnotiz</h3>
+        <h3 class="text-lg font-bold text-white mb-2">Neuer Journaleintrag / Notiz</h3>
 
         <form @submit.prevent="createJournalEntry" class="space-y-4">
           <div>
@@ -558,10 +547,10 @@
               v-model="journalForm.entry_type"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
             >
-              <option value="voice">🎙️ Sprachnotiz (Audio Vor-Ort Begehung)</option>
-              <option value="manual">📝 Manuelles Bautagebuch</option>
-              <option value="email">✉️ E-Mail Ablage (Outlook Drag & Drop)</option>
-              <option value="system">⚙️ Systemprotokoll</option>
+              <option value="manual">📝 Besprechung / Notiz</option>
+              <option value="voice">🎙️ Sprachnotiz</option>
+              <option value="email">✉️ E-Mail Ablage</option>
+              <option value="system">⚙️ Systemnotiz</option>
             </select>
           </div>
 
@@ -571,18 +560,18 @@
               v-model="journalForm.title"
               type="text"
               required
-              placeholder="z.B. Begehung Schacht 14 Hindernis Gasleitung"
+              placeholder="z.B. Zwischenstand Meeting mit Kunden"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Inhalt / Protokoll / Notiz</label>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Inhalt / Notiz</label>
             <textarea
               v-model="journalForm.content"
               required
               rows="4"
-              placeholder="Genaue Beschreibung des Sachverhalts vor Ort..."
+              placeholder="Genaue Beschreibung oder Zusammenfassung..."
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             ></textarea>
           </div>
@@ -621,7 +610,7 @@
               v-model="inviteEmail"
               type="email"
               required
-              placeholder="lukas.viewer@subunternehmer.ch"
+              placeholder="kollege@domain.ch"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -633,7 +622,7 @@
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
             >
               <option value="editor">Editor (Darf Aufgaben erstellen & bearbeiten)</option>
-              <option value="viewer">Viewer (Nur Leserechte, Zero-Trust Restriktionen)</option>
+              <option value="viewer">Viewer (Nur Leserechte)</option>
             </select>
           </div>
 
@@ -785,7 +774,7 @@ const loadProjectData = async () => {
     members.value = res.members || []
   } catch (err: any) {
     if (err.statusCode === 404) {
-      alert('Zugriff verweigert oder Projekt nicht gefunden (Zero-Trust Schutz aktiv).')
+      alert('Zugriff verweigert oder Projekt nicht gefunden.')
       navigateTo('/dashboard')
     }
   } finally {

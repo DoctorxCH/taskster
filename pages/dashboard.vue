@@ -9,7 +9,7 @@
         <p class="text-sm text-slate-400 mt-1">
           <span v-if="user?.company_name" class="text-emerald-400 font-semibold">{{ user.company_name }}</span>
           <span v-else class="text-slate-300 font-medium">Privater Arbeitsbereich</span>
-          – Zentrale Übersicht deiner Projektordner & Bauvorhaben
+          – Übersicht deiner Projektordner & Initiativen
         </p>
       </div>
 
@@ -51,22 +51,22 @@
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
         <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Projektordner</div>
         <div class="text-3xl font-black text-white mt-2">{{ folders.length }}</div>
-        <div class="text-xs text-slate-500 mt-1">Ebene 1 der Taskster-Hierarchie</div>
+        <div class="text-xs text-slate-500 mt-1">Übergeordnete Ordner</div>
       </div>
 
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
         <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Aktive Projekte</div>
         <div class="text-3xl font-black text-emerald-400 mt-2">{{ totalProjects }}</div>
-        <div class="text-xs text-slate-500 mt-1">Über alle Ordner hinweg</div>
+        <div class="text-xs text-slate-500 mt-1">In deinen Arbeitsbereichen</div>
       </div>
 
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Zero-Trust Status</div>
-        <div class="text-sm font-bold text-teal-300 mt-3 flex items-center space-x-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-ping"></span>
-          <span>4-Stufen Pipeline Aktiv</span>
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</div>
+        <div class="text-sm font-bold text-emerald-400 mt-3 flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span>Synchronisiert & Bereit</span>
         </div>
-        <div class="text-xs text-slate-500 mt-1">Server-side Policy Enforcement</div>
+        <div class="text-xs text-slate-500 mt-1">Echtzeit-Datenbank aktiv</div>
       </div>
     </div>
 
@@ -161,7 +161,7 @@
               v-model="newFolderName"
               type="text"
               required
-              placeholder="z.B. A1 Raststätte Ausbau 2026"
+              placeholder="z.B. Marketing & Kampagnen 2026"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
