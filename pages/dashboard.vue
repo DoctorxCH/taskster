@@ -218,14 +218,14 @@
             <div
               v-for="folder in filteredFolders"
               :key="folder.id"
-              class="group/card bg-white/90 border border-slate-200/90 hover:border-[#00A3C4] rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-lg"
+              class="group/card liquid_glass_card hover:border-[#00A3C4] rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-lg"
             >
               <div>
                 <div class="flex items-start justify-between mb-3">
                   <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-200 flex items-center justify-center text-2xl group-hover/card:scale-105 transition-transform shadow-xs">
                     {{ folder.icon || '📁' }}
                   </div>
-                  <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                  <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-700">
                     {{ folder.project_count }} {{ folder.project_count === 1 ? 'Projekt' : 'Projekte' }}
                   </span>
                 </div>
@@ -253,7 +253,7 @@
                   <button
                     v-if="user?.id === folder.owner_id || user?.is_superadmin"
                     @click="openEditFolderModal(folder)"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/80 hover:bg-white border border-slate-200 text-slate-700 transition cursor-pointer"
                     title="Projektordner anpassen (Name & Icon)"
                   >
                     ✏️
@@ -331,22 +331,22 @@
           </h3>
 
           <div class="space-y-3.5">
-            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+            <div class="flex items-center justify-between p-3 rounded-xl liquid_glass_pill">
               <span class="text-xs text-slate-700 font-bold">Projektordner</span>
               <span class="text-sm font-black text-slate-900">{{ folders.length }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+            <div class="flex items-center justify-between p-3 rounded-xl liquid_glass_pill">
               <span class="text-xs text-slate-700 font-bold">Aktive Projekte</span>
               <span class="text-sm font-black text-[#00A3C4]">{{ totalProjects }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+            <div class="flex items-center justify-between p-3 rounded-xl liquid_glass_pill">
               <span class="text-xs text-slate-700 font-bold">Offene Aufgaben</span>
               <span class="text-sm font-black text-slate-900">{{ tasks.length }}</span>
             </div>
 
-            <div class="p-3 rounded-xl bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
+            <div class="p-3 rounded-xl bg-emerald-100/80 border border-emerald-300 flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span class="text-xs font-bold text-emerald-950">Zero-Trust Pipeline</span>
@@ -359,52 +359,52 @@
     </div>
 
     <!-- Modal: New Folder -->
-    <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
+    <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-white/80">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-black text-slate-900">Neuen Projektordner anlegen</h3>
-          <button @click="showNewFolderModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+          <button @click="showNewFolderModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
-        <p class="text-xs text-slate-500 mb-5">
+        <p class="text-xs text-slate-600 font-medium mb-5">
           Projektordner bilden die oberste Organisationsebene für Bauträger, Standorte oder Großvorhaben.
         </p>
 
-        <div v-if="folderModalError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+        <div v-if="folderModalError" class="mb-4 p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
           {{ folderModalError }}
         </div>
 
         <form @submit.prevent="createFolder" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Name des Projektordners</label>
             <input
               v-model="newFolderName"
               type="text"
               required
               placeholder="z.B. FTTH Glasfaserausbau Region Nord"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs transition"
             />
           </div>
 
           <!-- Icon Selector -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon auswählen</label>
-            <div class="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">Icon auswählen</label>
+            <div class="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-2.5 bg-white/60 rounded-2xl border border-white/80">
               <button
                 v-for="item in availableFolderIcons"
                 :key="item.icon"
                 type="button"
                 @click="newFolderIcon = item.icon"
-                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border"
-                :class="newFolderIcon === item.icon ? 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
+                :class="newFolderIcon === item.icon ? 'bg-cyan-100 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white/80 hover:bg-white'"
                 :title="item.label"
               >
                 {{ item.icon }}
               </button>
             </div>
-            <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewählt: <span class="text-slate-900 text-sm font-bold mr-1">{{ newFolderIcon }}</span></p>
+            <p class="text-[11px] text-slate-600 mt-1 font-medium">Ausgewählt: <span class="text-slate-900 text-sm font-bold mr-1">{{ newFolderIcon }}</span></p>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
             <button
               type="button"
               @click="showNewFolderModal = false; folderModalError = ''"
@@ -425,52 +425,52 @@
     </div>
 
     <!-- Modal: Edit Folder (Owner only) -->
-    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
+    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-white/80">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-black text-slate-900">Projektordner anpassen</h3>
-          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
-        <p class="text-xs text-slate-500 mb-5">
+        <p class="text-xs text-slate-600 font-medium mb-5">
           Passe den Namen und das Erkennungs-Icon dieses Projektordners an.
         </p>
 
-        <div v-if="editFolderError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+        <div v-if="editFolderError" class="mb-4 p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
           {{ editFolderError }}
         </div>
 
         <form @submit.prevent="updateFolder" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Name des Projektordners</label>
             <input
               v-model="editFolderName"
               type="text"
               required
               placeholder="z.B. Peters Privates Renovationsprojekt"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs transition"
             />
           </div>
 
           <!-- Icon Selector -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon aus Liste auswählen</label>
-            <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">Icon aus Liste auswählen</label>
+            <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-white/60 rounded-2xl border border-white/80">
               <button
                 v-for="item in availableFolderIcons"
                 :key="item.icon"
                 type="button"
                 @click="editFolderIcon = item.icon"
-                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border"
-                :class="editFolderIcon === item.icon ? 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
+                :class="editFolderIcon === item.icon ? 'bg-cyan-100 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white/80 hover:bg-white'"
                 :title="item.label"
               >
                 {{ item.icon }}
               </button>
             </div>
-            <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-sm font-bold mr-1">{{ editFolderIcon }}</span></p>
+            <p class="text-[11px] text-slate-600 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-sm font-bold mr-1">{{ editFolderIcon }}</span></p>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
             <button
               type="button"
               @click="showEditFolderModal = false; editFolderError = ''"
@@ -483,7 +483,7 @@
               :disabled="savingFolder || !editFolderName.trim()"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span>{{ savingFolder ? 'Wird gespeichert...' : 'Änderungen speichern' }}</span>
+              <span>{{ savingFolder ? 'Speichern...' : 'Änderungen speichern' }}</span>
             </button>
           </div>
         </form>
