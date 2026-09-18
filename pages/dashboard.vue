@@ -42,23 +42,22 @@
     <!-- Free-Plan Info Alert if applicable -->
     <div
       v-if="!user?.is_pro && !user?.company_id && !user?.is_superadmin"
-      class="mb-8 p-4 rounded-3xl bg-amber-500/90 backdrop-blur-md text-white border border-amber-300/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+      class="mb-8 p-4 rounded-3xl liquid_glass border border-amber-300/50 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
     >
       <div class="flex items-center space-x-3">
         <span class="text-2xl">⚡</span>
         <div>
-          <h4 class="text-xs font-bold text-white">Taskster Free Plan aktiv</h4>
-          <p class="text-[11px] text-amber-100 mt-0.5">
+          <h4 class="text-xs font-black text-amber-900">Taskster Free Plan aktiv</h4>
+          <p class="text-[11px] text-slate-700 font-medium mt-0.5">
             Maximal 1 Projektordner, max. in 3 Projekten gleichzeitig mitarbeiten.
           </p>
         </div>
       </div>
       <NuxtLink
-        to="/admin"
-        v-if="user?.is_superadmin"
-        class="taskster_button px-6 text-xs h-[42px] rounded-lg bg-white text-amber-900 hover:bg-amber-50"
+        to="/settings"
+        class="taskster_button px-6 text-xs h-[42px] rounded-lg"
       >
-        Plan verwalten
+        Auf PRO upgraden
       </NuxtLink>
     </div>
 

@@ -196,28 +196,28 @@ onMounted(async () => {
   @apply bg-white hover:bg-slate-50 text-slate-800 border-[3px] border-[#00A3C4] font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
 }
 
-/* Liquid Glass Design System */
+/* Liquid Glass Design System – optimised for wallpaper visibility */
 .liquid_glass {
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 10px 32px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.6) inset;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+  -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 10px 32px 0 rgba(0, 0, 0, 0.10), 0 1px 0 0 rgba(255, 255, 255, 0.55) inset;
 }
 
 .liquid_glass_pill {
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1px 0 0 rgba(255, 255, 255, 0.6) inset;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(18px) saturate(200%) brightness(1.06);
+  -webkit-backdrop-filter: blur(18px) saturate(200%) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.07), 0 1px 0 0 rgba(255, 255, 255, 0.55) inset;
 }
 
 .liquid_glass_card {
-  background: rgba(255, 255, 255, 0.48);
-  backdrop-filter: blur(26px) saturate(200%);
-  -webkit-backdrop-filter: blur(26px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 14px 34px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.65) inset;
+  background: rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 14px 34px 0 rgba(0, 0, 0, 0.09), 0 1px 0 0 rgba(255, 255, 255, 0.60) inset;
 }
 </style>
