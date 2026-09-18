@@ -1,44 +1,53 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-xs text-slate-500 mb-6 font-medium">
-      <NuxtLink to="/dashboard" class="hover:text-cyan-600 transition">Dashboard</NuxtLink>
-      <span>/</span>
-      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-600 transition">
-        {{ project?.folder_name || 'Ordner' }}
-      </NuxtLink>
-      <span>/</span>
-      <span class="text-slate-900 font-bold">{{ project?.title || 'Projekt' }}</span>
+    <!-- Breadcrumb in Liquid Glass Pill -->
+    <div class="mb-6">
+      <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
+        <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition flex items-center space-x-1">
+          <span>🏠</span>
+          <span>Dashboard</span>
+        </NuxtLink>
+        <span class="text-slate-400">/</span>
+        <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-700 transition flex items-center space-x-1">
+          <span>📁</span>
+          <span>{{ project?.folder_name || 'Ordner' }}</span>
+        </NuxtLink>
+        <span class="text-slate-400">/</span>
+        <span class="text-slate-900 font-bold flex items-center space-x-1">
+          <span>📋</span>
+          <span>{{ project?.title || 'Projekt' }}</span>
+        </span>
+      </div>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-center py-16 text-slate-400 text-xs">
+    <div v-if="loading" class="text-center py-16 text-slate-700 font-bold text-xs liquid_glass rounded-3xl max-w-sm mx-auto">
       Lade Projektdaten...
     </div>
 
     <div v-else-if="project">
-      <!-- Project Header (MeisterTask Clean White Card with Pastel Highlights) -->
-      <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 mb-6 shadow-sm">
+      <!-- Project Header (Liquid Glass Card) -->
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-6 shadow-xl">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex flex-wrap items-center gap-2.5 mb-1.5">
               <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ project.title }}</h1>
               <span
                 class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider"
-                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-cyan-50 text-cyan-800 border border-cyan-200'"
+                :class="userRole === 'viewer' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-cyan-100 text-cyan-900 border border-cyan-300'"
               >
                 {{ userRole }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700"
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-slate-800 border border-slate-200"
               >
                 Status: {{ project.status }}
               </span>
             </div>
 
-            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-cyan-700 font-bold hover:underline">{{ project.folder_name }}</NuxtLink></span>
-              <span v-if="project.company_name" class="text-teal-700 font-semibold">• {{ project.company_name }}</span>
+            <p class="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-cyan-800 font-bold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="project.company_name" class="text-teal-800 font-semibold">• {{ project.company_name }}</span>
             </p>
 
             <!-- Project-level custom fields display in header -->
@@ -46,7 +55,7 @@
               <span
                 v-for="(val, key) in project.custom_data"
                 :key="key"
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded-xl bg-white/80 border border-slate-200 text-slate-800 shadow-xs"
               >
                 <span class="text-cyan-700 font-bold mr-1.5">{{ getFieldLabel(key) }}:</span>
                 <span class="text-slate-900 font-bold">{{ val }}</span>
@@ -84,11 +93,11 @@
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-200 mt-6 -mb-6 sm:-mb-8 space-x-6 overflow-x-auto">
+        <div class="flex border-b border-slate-200/80 mt-6 -mb-6 sm:-mb-8 space-x-6 overflow-x-auto">
           <button
             @click="currentView = 'tasks'"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
           >
             <span>📋</span>
             <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
@@ -96,8 +105,8 @@
 
           <button
             @click="currentView = 'journal'; loadJournals()"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
           >
             <span>📝</span>
             <span>Aktivitätsjournal ({{ journalEntries.length }})</span>
@@ -105,8 +114,8 @@
 
           <button
             @click="currentView = 'team'"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
           >
             <span>👥</span>
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
@@ -115,8 +124,8 @@
           <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="currentView = 'settings'; initSettingsTab()"
-            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap"
-            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+            class="py-3.5 text-xs font-bold border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-600 hover:text-slate-900'"
           >
             <span>⚙️</span>
             <span>Projekt-Einstellungen</span>
@@ -126,23 +135,23 @@
 
       <!-- VIEW 1: TASKS & ABSCHNITTE -->
       <div v-if="currentView === 'tasks'">
-        <!-- View controls: Board vs Table/List -->
-        <div class="flex items-center justify-between mb-5">
+        <!-- View controls in Liquid Glass Pill Bar -->
+        <div class="liquid_glass_pill rounded-2xl px-4 py-2.5 flex items-center justify-between mb-5 shadow-sm">
           <div class="flex items-center space-x-2">
-            <span class="text-xs font-bold text-slate-500">Ansicht:</span>
-            <div class="bg-white border border-slate-200 rounded-xl p-0.5 flex items-center space-x-1 shadow-sm">
+            <span class="text-xs font-bold text-slate-600">Ansicht:</span>
+            <div class="bg-white/90 border border-slate-200/80 rounded-xl p-0.5 flex items-center space-x-1 shadow-xs">
               <button
                 @click="taskViewMode = 'board'"
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1"
-                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-700 font-extrabold shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
               >
                 <span>▦</span>
                 <span>Kacheln (Board)</span>
               </button>
               <button
                 @click="taskViewMode = 'table'"
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1"
-                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-700 font-extrabold shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
               >
                 <span>☰</span>
                 <span>Liste</span>
@@ -150,7 +159,7 @@
             </div>
           </div>
 
-          <span class="text-xs text-slate-400 font-medium">
+          <span class="text-xs text-slate-600 font-bold">
             {{ lists.length }} Abschnitte • {{ totalTasks }} Aufgaben
           </span>
         </div>
@@ -183,9 +192,9 @@
           <div
             v-for="(list, listIdx) in lists"
             :key="list.id"
-            class="bg-slate-100/80 border rounded-3xl p-4 flex flex-col transition-all duration-150"
+            class="liquid_glass rounded-3xl p-4 flex flex-col transition-all duration-150 shadow-lg"
             :class="[
-              dragOverListId === list.id ? 'border-cyan-500 bg-cyan-50/50 ring-2 ring-cyan-500/20' : 'border-slate-200/80',
+              dragOverListId === list.id ? 'border-cyan-500 ring-2 ring-cyan-500/30' : '',
               draggedBoardSection?.id === list.id ? 'opacity-40 border-dashed border-cyan-600 scale-[0.99]' : ''
             ]"
             @dragover.prevent="onDragOverList(list.id)"

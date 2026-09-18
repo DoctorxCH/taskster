@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white/80 backdrop-blur-xl border-b border-white/40 sticky top-0 z-40 text-slate-800 shadow-sm transition-colors">
+  <header class="liquid_glass sticky top-0 z-40 text-slate-900 shadow-md transition-colors border-b border-white/60">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <!-- Brand Logo & Quick Action -->
       <div class="flex items-center space-x-6">

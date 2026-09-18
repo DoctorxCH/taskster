@@ -2,23 +2,24 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
     <!-- MeisterTask-Style Hero Section (Centered Date, Greeting, and Floating Search) -->
     <div class="flex flex-col items-center justify-center text-center mb-10 select-none">
-      <!-- Formatted German Date (e.g. Freitag, 18. September) -->
-      <div class="inline-flex items-center space-x-2 text-xs sm:text-sm font-semibold tracking-wide text-white/90 drop-shadow-md mb-2">
+      <!-- Formatted German Date in Liquid Glass Pill -->
+      <div class="inline-flex items-center space-x-2 text-xs sm:text-sm font-bold tracking-wide text-slate-900 mb-3 px-4 py-1.5 rounded-full liquid_glass_pill shadow-md">
         <span>📅</span>
         <span>{{ formattedDate }}</span>
       </div>
 
-      <!-- Personalized MeisterTask Motivational Greeting -->
-      <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg flex items-center justify-center flex-wrap gap-2.5">
-        <span>{{ greetingPrefix }}, {{ user?.name || 'Martin' }}</span>
-        <span class="inline-block animate-bounce text-2xl sm:text-4xl">🫡</span>
-      </h1>
-
-      <p class="text-xs sm:text-sm text-white/80 font-medium drop-shadow-md max-w-lg mt-2">
-        <span v-if="user?.company_name" class="font-bold text-cyan-200">{{ user.company_name }}</span>
-        <span v-else>Privater Workspace</span>
-        – Deine aktuellen Aufgaben, Projektordner und Meilensteine im Überblick.
-      </p>
+      <!-- Personalized MeisterTask Motivational Greeting with subtle glass backing for 100% legibility -->
+      <div class="px-6 py-2 rounded-3xl liquid_glass_pill mb-2 shadow-lg max-w-2xl">
+        <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center justify-center flex-wrap gap-2.5">
+          <span>{{ greetingPrefix }}, {{ user?.name || 'Martin' }}</span>
+          <span class="inline-block animate-bounce text-xl sm:text-3xl">🫡</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-700 font-semibold mt-1">
+          <span v-if="user?.company_name" class="font-extrabold text-cyan-800">{{ user.company_name }}</span>
+          <span v-else>Privater Workspace</span>
+          – Deine aktuellen Aufgaben, Projektordner und Meilensteine im Überblick.
+        </p>
+      </div>
 
       <!-- Centered Floating Search Pill (MeisterTask Style) -->
       <div class="w-full max-w-xl mt-6 relative">
@@ -66,21 +67,21 @@
       <!-- LEFT / CENTER COLUMN: Aufgaben & Projekte (8 Cols on LG) -->
       <div class="lg:col-span-8 space-y-6">
         <!-- WIDGET 1: Aufgaben (Tasks Overview) -->
-        <section class="bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all">
-          <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <section class="liquid_glass rounded-3xl p-6 sm:p-7 shadow-xl transition-all">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200/70 mb-5">
             <div class="flex items-center space-x-3">
               <span class="text-xl">📋</span>
               <h2 class="text-base font-black text-slate-900 tracking-tight">Aufgaben</h2>
-              <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold border border-cyan-200">
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-bold border border-cyan-300">
                 {{ filteredTasks.length }}
               </span>
             </div>
 
             <div class="flex items-center space-x-2">
-              <span class="text-[11px] text-slate-400 font-medium hidden sm:inline">Sortierung: Aktuell</span>
+              <span class="text-[11px] text-slate-500 font-medium hidden sm:inline">Sortierung: Aktuell</span>
               <button
                 @click="loadTasks"
-                class="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition text-xs"
+                class="p-1.5 rounded-xl hover:bg-white/80 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer"
                 title="Aktualisieren"
               >
                 🔄
@@ -89,7 +90,7 @@
           </div>
 
           <!-- Loading Tasks -->
-          <div v-if="loadingTasks" class="py-10 text-center text-xs text-slate-400">
+          <div v-if="loadingTasks" class="py-10 text-center text-xs text-slate-500 font-medium">
             Lade offene Aufgaben...
           </div>
 
@@ -98,11 +99,11 @@
             v-else-if="filteredTasks.length === 0"
             class="py-10 px-4 text-center flex flex-col items-center justify-center"
           >
-            <div class="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-700 flex items-center justify-center text-xl mb-3 shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-800 flex items-center justify-center text-xl mb-3 shadow-xs border border-cyan-200">
               ✨
             </div>
-            <h3 class="text-sm font-bold text-slate-800">Du hast keine anstehenden Aufgaben</h3>
-            <p class="text-xs text-slate-500 mt-1 mb-5">
+            <h3 class="text-sm font-bold text-slate-900">Du hast keine anstehenden Aufgaben</h3>
+            <p class="text-xs text-slate-600 mt-1 mb-5">
               Deine zugewiesenen Aufgaben aus den Projekten erscheinen hier.
             </p>
             <NuxtLink
@@ -126,7 +127,7 @@
             <div
               v-for="task in filteredTasks"
               :key="task.id"
-              class="group/task flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-cyan-300 bg-slate-50/70 hover:bg-white shadow-xs hover:shadow-md transition-all"
+              class="group/task flex items-center justify-between p-3.5 rounded-2xl border border-white/60 hover:border-cyan-300 bg-white/70 hover:bg-white shadow-xs hover:shadow-md transition-all"
             >
               <div class="flex items-center space-x-3 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#00A3C4] shrink-0"></span>
@@ -169,13 +170,13 @@
         </section>
 
         <!-- WIDGET 2: Projekte & Projektordner (MeisterTask Style) -->
-        <section class="bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all">
-          <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+        <section class="liquid_glass rounded-3xl p-6 sm:p-7 shadow-xl transition-all">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200/70 mb-6">
             <div class="flex items-center space-x-3">
               <span class="text-xl">📁</span>
               <div>
                 <h2 class="text-base font-black text-slate-900 tracking-tight">Projektordner & Initiativen</h2>
-                <p class="text-[11px] text-slate-500">Übergeordnete Bereiche für Teams und Projekte</p>
+                <p class="text-[11px] text-slate-600 font-medium">Übergeordnete Bereiche für Teams und Projekte</p>
               </div>
             </div>
 
@@ -188,20 +189,20 @@
           </div>
 
           <!-- Loading Folders -->
-          <div v-if="loadingFolders" class="py-10 text-center text-xs text-slate-400">
+          <div v-if="loadingFolders" class="py-10 text-center text-xs text-slate-500 font-medium">
             Lade Projektordner...
           </div>
 
           <!-- Empty Folders State -->
           <div
             v-else-if="filteredFolders.length === 0"
-            class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-2xl"
+            class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-2xl bg-white/50"
           >
-            <div class="w-14 h-14 rounded-2xl bg-cyan-50 flex items-center justify-center text-2xl mb-3 shadow-xs">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/15 flex items-center justify-center text-2xl mb-3 shadow-xs border border-cyan-200">
               📁
             </div>
-            <h3 class="text-sm font-bold text-slate-800">Keine Projektordner gefunden</h3>
-            <p class="text-xs text-slate-500 mt-1 mb-5 max-w-sm">
+            <h3 class="text-sm font-bold text-slate-900">Keine Projektordner gefunden</h3>
+            <p class="text-xs text-slate-600 mt-1 mb-5 max-w-sm">
               {{ searchQuery ? 'Keine Treffer für deine Suche.' : 'Erstelle deinen ersten Ordner, um Projekte und Teams zu strukturieren.' }}
             </p>
             <button
@@ -212,16 +213,16 @@
             </button>
           </div>
 
-          <!-- Folders Grid (MeisterTask Clean White Tiles) -->
+          <!-- Folders Grid (MeisterTask Clean Liquid Glass Tiles) -->
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
               v-for="folder in filteredFolders"
               :key="folder.id"
-              class="group/card bg-white border border-slate-200/90 hover:border-[#00A3C4] rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md"
+              class="group/card bg-white/90 border border-slate-200/90 hover:border-[#00A3C4] rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between shadow-sm hover:shadow-lg"
             >
               <div>
                 <div class="flex items-start justify-between mb-3">
-                  <div class="w-11 h-11 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-2xl group-hover/card:scale-105 transition-transform">
+                  <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-200 flex items-center justify-center text-2xl group-hover/card:scale-105 transition-transform shadow-xs">
                     {{ folder.icon || '📁' }}
                   </div>
                   <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
@@ -232,27 +233,27 @@
                 <h3 class="text-sm font-black text-slate-900 group-hover/card:text-[#00A3C4] transition mb-1">
                   {{ folder.name }}
                 </h3>
-                <p class="text-xs text-slate-500 flex items-center space-x-1">
+                <p class="text-xs text-slate-600 flex items-center space-x-1">
                   <span>Inhaber:</span>
-                  <span class="text-slate-700 font-semibold">{{ folder.owner_name }}</span>
+                  <span class="text-slate-800 font-bold">{{ folder.owner_name }}</span>
                   <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-bold ml-1">
                     Du
                   </span>
                 </p>
-                <p v-if="folder.company_name" class="text-[11px] text-teal-700 mt-1 font-medium">
+                <p v-if="folder.company_name" class="text-[11px] text-teal-800 mt-1 font-semibold">
                   🏢 {{ folder.company_name }}
                 </p>
               </div>
 
-              <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-[11px] text-slate-400 font-medium">
+              <div class="mt-5 pt-3.5 border-t border-slate-200/80 flex items-center justify-between">
+                <span class="text-[11px] text-slate-500 font-semibold">
                   {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}
                 </span>
                 <div class="flex items-center space-x-2">
                   <button
                     v-if="user?.id === folder.owner_id || user?.is_superadmin"
                     @click="openEditFolderModal(folder)"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
                     title="Projektordner anpassen (Name & Icon)"
                   >
                     ✏️
@@ -273,8 +274,8 @@
       <!-- RIGHT COLUMN: Benachrichtigungen & Schnellzugriff (4 Cols on LG) -->
       <div class="lg:col-span-4 space-y-6">
         <!-- WIDGET 3: Benachrichtigungen / Activity Feed (MeisterTask Style) -->
-        <section class="bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all">
-          <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+        <section class="liquid_glass rounded-3xl p-6 sm:p-7 shadow-xl transition-all">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200/70 mb-4">
             <div class="flex items-center space-x-2.5">
               <span class="text-xl">🔔</span>
               <h2 class="text-base font-black text-slate-900 tracking-tight">Benachrichtigungen</h2>
@@ -285,24 +286,24 @@
           </div>
 
           <!-- Notification Filter Tabs (MeisterTask exact tabs) -->
-          <div class="flex items-center space-x-3 text-xs font-bold border-b border-slate-100 pb-2 mb-4 text-slate-500">
+          <div class="flex items-center space-x-3 text-xs font-bold border-b border-slate-200/70 pb-2 mb-4 text-slate-500">
             <button
               @click="activeNotificationTab = 'all'"
-              class="pb-1 transition border-b-2"
+              class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'all' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               Alle
             </button>
             <button
               @click="activeNotificationTab = 'mentions'"
-              class="pb-1 transition border-b-2"
+              class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'mentions' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               Erwähnungen
             </button>
             <button
               @click="activeNotificationTab = 'projects'"
-              class="pb-1 transition border-b-2"
+              class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'projects' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               Projekte
@@ -311,7 +312,7 @@
 
           <!-- Notification Feed or MeisterTask Empty State -->
           <div class="py-8 text-center">
-            <p class="text-xs text-slate-500 mb-4">
+            <p class="text-xs text-slate-600 font-medium mb-4">
               Sie haben keine ungelesenen Benachrichtigungen.
             </p>
             <button
@@ -324,33 +325,33 @@
         </section>
 
         <!-- WIDGET 4: Quick Summary / Stats (MeisterTask Style Compact Card) -->
-        <section class="bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl p-6 shadow-2xl transition-all">
-          <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">
+        <section class="liquid_glass rounded-3xl p-6 shadow-xl transition-all">
+          <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider mb-4">
             System & Workspace Status
           </h3>
 
           <div class="space-y-3.5">
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-              <span class="text-xs text-slate-600 font-medium">Projektordner</span>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+              <span class="text-xs text-slate-700 font-bold">Projektordner</span>
               <span class="text-sm font-black text-slate-900">{{ folders.length }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-              <span class="text-xs text-slate-600 font-medium">Aktive Projekte</span>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+              <span class="text-xs text-slate-700 font-bold">Aktive Projekte</span>
               <span class="text-sm font-black text-[#00A3C4]">{{ totalProjects }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-              <span class="text-xs text-slate-600 font-medium">Offene Aufgaben</span>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80">
+              <span class="text-xs text-slate-700 font-bold">Offene Aufgaben</span>
               <span class="text-sm font-black text-slate-900">{{ tasks.length }}</span>
             </div>
 
-            <div class="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200/60 flex items-center justify-between">
+            <div class="p-3 rounded-xl bg-emerald-100/70 border border-emerald-300 flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="text-xs font-bold text-emerald-800">Zero-Trust Pipeline</span>
+                <span class="text-xs font-bold text-emerald-950">Zero-Trust Pipeline</span>
               </div>
-              <span class="text-[10px] font-bold text-emerald-600">Aktiv</span>
+              <span class="text-[10px] font-bold text-emerald-800">Aktiv</span>
             </div>
           </div>
         </section>
