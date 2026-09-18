@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto'
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { list_id, title, description, status, custom_data, due_date } = body
+  const { list_id, title, description, status, custom_data, due_date, assigned_to, priority, color, tags, checklist } = body
 
   if (!list_id || !title || !title.trim()) {
     throw createError({ statusCode: 400, statusMessage: 'Listen-ID und Aufgabentitel erforderlich' })
@@ -19,8 +19,8 @@ export default defineEventHandler(async (event) => {
   const count = (db.prepare('SELECT COUNT(*) as c FROM tasks WHERE list_id = ?').get(list_id) as any).c
 
   db.prepare(`
-    INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order, assigned_to, priority, color, tags, checklist)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     taskId,
     list_id,
@@ -29,7 +29,12 @@ export default defineEventHandler(async (event) => {
     status || 'todo',
     JSON.stringify(custom_data || {}),
     due_date || null,
-    count + 1
+    count + 1,
+    assigned_to || null,
+    priority || 'normal',
+    color || null,
+    JSON.stringify(tags || []),
+    JSON.stringify(checklist || [])
   )
 
   return {
@@ -41,7 +46,12 @@ export default defineEventHandler(async (event) => {
       status: status || 'todo',
       custom_data: custom_data || {},
       due_date: due_date || null,
-      sort_order: count + 1
+      sort_order: count + 1,
+      assigned_to: assigned_to || null,
+      priority: priority || 'normal',
+      color: color || null,
+      tags: tags || [],
+      checklist: checklist || []
     }
   }
 })
