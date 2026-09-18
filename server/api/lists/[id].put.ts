@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const listId = getRouterParam(event, 'id')
   const body = await readBody(event)
-  const { title, access_mode, sort_order } = body
+  const { title, access_mode, sort_order, color } = body
 
   // Checks Stage 1-4. Viewer receives 403, unauthorized receives 404!
   const { list } = evaluateListAccess(user, listId, event, 'write')
@@ -14,12 +14,13 @@ export default defineEventHandler(async (event) => {
   const newTitle = title !== undefined ? title.trim() : list.title
   const newMode = access_mode !== undefined ? access_mode : list.access_mode
   const newSort = sort_order !== undefined ? sort_order : list.sort_order
+  const newColor = color !== undefined ? (color || null) : list.color
 
   db.prepare(`
     UPDATE lists
-    SET title = ?, access_mode = ?, sort_order = ?
+    SET title = ?, access_mode = ?, sort_order = ?, color = ?
     WHERE id = ?
-  `).run(newTitle, newMode, newSort, listId)
+  `).run(newTitle, newMode, newSort, newColor, listId)
 
   return { success: true }
 })

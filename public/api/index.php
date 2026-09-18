@@ -1174,13 +1174,14 @@ try {
 
         $lists = $body['lists'] ?? [];
         if (is_array($lists)) {
-            $upStmt = $db->prepare("UPDATE lists SET sort_order = ?, title = COALESCE(?, title) WHERE id = ? AND project_id = ?");
+            $upStmt = $db->prepare("UPDATE lists SET sort_order = ?, title = COALESCE(?, title), color = ? WHERE id = ? AND project_id = ?");
             foreach ($lists as $idx => $item) {
                 $lid = is_string($item) ? $item : ($item['id'] ?? '');
                 $title = (is_array($item) && !empty($item['title'])) ? trim($item['title']) : null;
                 $sort = (is_array($item) && isset($item['sort_order'])) ? (int)$item['sort_order'] : ($idx + 1);
+                $color = (is_array($item) && array_key_exists('color', $item)) ? ($item['color'] ?: null) : null;
                 if ($lid) {
-                    $upStmt->execute([$sort, $title, $lid, $projectId]);
+                    $upStmt->execute([$sort, $title, $color, $lid, $projectId]);
                 }
             }
         }
@@ -1219,15 +1220,40 @@ try {
         $status = $body['status'] ?? 'todo';
         $dueDate = $body['due_date'] ?? null;
         $customData = $body['custom_data'] ?? [];
+        $assignedTo = !empty($body['assigned_to']) ? $body['assigned_to'] : null;
+        $priority = !empty($body['priority']) ? $body['priority'] : 'normal';
+        $color = !empty($body['color']) ? $body['color'] : null;
+        $tags = isset($body['tags']) ? json_encode($body['tags']) : '[]';
+        $checklist = isset($body['checklist']) ? json_encode($body['checklist']) : '[]';
 
         evaluateListAccess($user, $listId, 'write');
 
         $taskId = 'tsk_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, 1)")->execute([
-            $taskId, $listId, $title, $desc, $status, json_encode($customData), $dueDate
+        $db->prepare("
+            INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order, assigned_to, priority, color, tags, checklist)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+        ")->execute([
+            $taskId, $listId, $title, $desc, $status, json_encode($customData), $dueDate,
+            $assignedTo, $priority, $color, $tags, $checklist
         ]);
 
-        jsonResponse(['success' => true, 'task' => ['id' => $taskId, 'title' => $title, 'status' => $status]]);
+        jsonResponse([
+            'success' => true,
+            'task' => [
+                'id' => $taskId,
+                'list_id' => $listId,
+                'title' => $title,
+                'description' => $desc,
+                'status' => $status,
+                'due_date' => $dueDate,
+                'custom_data' => $customData,
+                'assigned_to' => $assignedTo,
+                'priority' => $priority,
+                'color' => $color,
+                'tags' => isset($body['tags']) ? $body['tags'] : [],
+                'checklist' => isset($body['checklist']) ? $body['checklist'] : []
+            ]
+        ]);
     }
 
     // 13. PUT tasks/:id

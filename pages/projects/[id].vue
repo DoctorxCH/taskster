@@ -63,29 +63,64 @@
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex items-center space-x-2">
+          <!-- Actions & View Mode Toggle -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- View Mode Switcher -->
+            <div class="bg-white/90 border border-slate-200/80 rounded-xl p-0.5 flex items-center space-x-1 shadow-xs h-[42px]">
+              <button
+                @click="taskViewMode = 'board'"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[34px]"
+                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>▦</span>
+                <span>Kacheln</span>
+              </button>
+              <button
+                @click="taskViewMode = 'table'"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[34px]"
+                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>☰</span>
+                <span>Liste</span>
+              </button>
+            </div>
+
+            <!-- Manage Sections (Zahnrad) -->
             <button
               v-if="userRole !== 'viewer'"
               @click="openManageSectionsModal"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
-              title="Abschnitte bearbeiten, umbenennen, per Drag & Drop sortieren"
+              class="taskster_button_light px-3.5 text-xs h-[42px] rounded-lg"
+              title="Abschnitte verwalten & Farben definieren"
             >
-              <span>✏️</span>
-              <span>Abschnitte bearbeiten</span>
+              <span class="text-base">⚙️</span>
             </button>
+
+            <!-- Excel/CSV Import -->
+            <button
+              v-if="userRole !== 'viewer'"
+              @click="openImportModal"
+              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5"
+              title="Aufgaben aus Excel oder CSV importieren"
+            >
+              <span>📊</span>
+              <span>Import (Excel/CSV)</span>
+            </button>
+
+            <!-- New Section -->
             <button
               v-if="userRole !== 'viewer'"
               @click="showNewListModal = true"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button_light px-5 text-xs h-[42px] rounded-lg"
             >
               <span>+ Neuer Abschnitt</span>
             </button>
+
+            <!-- New Task -->
             <button
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(lists[0]?.id)"
               :disabled="lists.length === 0"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-5 text-xs h-[42px] rounded-lg"
             >
               <span>+ Aufgabe erfassen</span>
             </button>
@@ -135,35 +170,6 @@
 
       <!-- VIEW 1: TASKS & ABSCHNITTE -->
       <div v-if="currentView === 'tasks'">
-        <!-- View controls in Liquid Glass Pill Bar -->
-        <div class="liquid_glass_pill rounded-2xl px-4 py-2.5 flex items-center justify-between mb-5 shadow-sm">
-          <div class="flex items-center space-x-2">
-            <span class="text-xs font-bold text-slate-600">Ansicht:</span>
-            <div class="bg-white/90 border border-slate-200/80 rounded-xl p-0.5 flex items-center space-x-1 shadow-xs">
-              <button
-                @click="taskViewMode = 'board'"
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
-                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-              >
-                <span>▦</span>
-                <span>Kacheln (Board)</span>
-              </button>
-              <button
-                @click="taskViewMode = 'table'"
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
-                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-              >
-                <span>☰</span>
-                <span>Liste</span>
-              </button>
-            </div>
-          </div>
-
-          <span class="text-xs text-slate-600 font-bold">
-            {{ lists.length }} Abschnitte • {{ totalTasks }} Aufgaben
-          </span>
-        </div>
-
         <!-- Viewer Notice Banner -->
         <div
           v-if="userRole === 'viewer'"
@@ -193,6 +199,7 @@
             v-for="(list, listIdx) in lists"
             :key="list.id"
             class="liquid_glass rounded-3xl p-4 flex flex-col transition-all duration-150 shadow-lg"
+            :style="list.color ? { backgroundColor: list.color } : {}"
             :class="[
               dragOverListId === list.id ? 'border-cyan-500 ring-2 ring-cyan-500/30' : '',
               draggedBoardSection?.id === list.id ? 'opacity-40 border-dashed border-cyan-600 scale-[0.99]' : ''
@@ -203,7 +210,7 @@
           >
             <!-- Column Header Color Bar / Title -->
             <div
-              class="flex items-center justify-between mb-3 pb-3 border-b border-slate-200 select-none group/hdr"
+              class="flex items-center justify-between mb-3 pb-3 border-b border-slate-200/80 select-none group/hdr"
               :draggable="userRole !== 'viewer'"
               @dragstart="onSectionDragStart(list, $event)"
               @dragover.prevent="onSectionDragOver(list, $event)"
@@ -217,26 +224,18 @@
                 >
                   ⋮⋮
                 </span>
-                <span class="w-3 h-3 rounded-full" :class="[
+                <span class="w-3 h-3 rounded-full shadow-xs" :class="[
                   listIdx % 4 === 0 ? 'bg-[#00A3C4]' :
                   listIdx % 4 === 1 ? 'bg-amber-400' :
                   listIdx % 4 === 2 ? 'bg-purple-500' : 'bg-emerald-500'
                 ]"></span>
-                <h3 class="text-sm font-black text-slate-800">{{ list.title }}</h3>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 shadow-sm">
+                <h3 class="text-sm font-black text-slate-900">{{ list.title }}</h3>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-xs border border-slate-200/60">
                   {{ list.tasks?.length || 0 }}
                 </span>
               </div>
 
               <div class="flex items-center space-x-1">
-                <button
-                  v-if="userRole !== 'viewer'"
-                  @click.stop="openManageSectionsModal"
-                  class="p-1 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-white text-xs transition"
-                  title="Abschnitte bearbeiten & sortieren"
-                >
-                  ✏️
-                </button>
                 <span
                   v-if="list.access_mode === 'custom'"
                   class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200"
@@ -811,14 +810,37 @@
               </div>
 
               <!-- Title Input -->
-              <div class="flex-1">
+              <div class="flex-1 flex items-center gap-2">
                 <input
                   v-model="sec.title"
                   type="text"
                   required
                   placeholder="Abschnittsbezeichnung"
-                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                  class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
+
+                <!-- Pastel Color Picker for Section -->
+                <div class="flex items-center space-x-1 shrink-0">
+                  <button
+                    v-for="pc in sectionPastelColors"
+                    :key="pc.value"
+                    type="button"
+                    @click="sec.color = sec.color === pc.value ? null : pc.value"
+                    class="w-5 h-5 rounded-full border transition-transform hover:scale-115"
+                    :style="{ backgroundColor: pc.value }"
+                    :class="sec.color === pc.value ? 'border-slate-800 ring-2 ring-cyan-500 ring-offset-1 scale-110' : 'border-slate-300'"
+                    :title="pc.label"
+                  />
+                  <button
+                    v-if="sec.color"
+                    type="button"
+                    @click="sec.color = null"
+                    class="text-[10px] text-slate-400 hover:text-slate-700 px-1"
+                    title="Farbe zurücksetzen"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               <!-- Task Count Badge -->
@@ -1067,6 +1089,9 @@
               <span v-if="getTaskSectionTitle(drawerTask?.list_id)">/</span>
               <span v-if="getTaskSectionTitle(drawerTask?.list_id)" class="text-cyan-800 font-extrabold">
                 🏷️ {{ getTaskSectionTitle(drawerTask?.list_id) }}
+              </span>
+              <span v-if="isCreatingTaskInDrawer" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">
+                Neu
               </span>
             </div>
 
@@ -1567,14 +1592,204 @@
         <div class="px-6 py-3.5 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div class="text-[11px] text-slate-600 font-semibold flex items-center space-x-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Änderungen werden automatisch gespeichert</span>
+            <span>{{ isCreatingTaskInDrawer ? 'Aufgabe wird beim Speichern/Schliessen angelegt' : 'Änderungen werden automatisch gespeichert' }}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              v-if="isCreatingTaskInDrawer && userRole !== 'viewer'"
+              @click="saveNewTaskFromDrawer"
+              type="button"
+              class="taskster_button px-6 text-xs h-[38px] rounded-lg"
+            >
+              Aufgabe erstellen
+            </button>
+            <button
+              @click="closeTaskDrawer"
+              type="button"
+              class="taskster_button_light px-6 text-xs h-[38px] rounded-lg"
+            >
+              Schliessen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Excel / CSV Import (Komplex mit konfigurierbarem Spalten-Mapping) -->
+    <div v-if="showImportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col my-8 max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-6 shrink-0">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-2xl">📊</span>
+              <h3 class="text-lg font-black text-slate-900">Aufgaben aus Excel / CSV importieren</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Lade eine CSV- oder Tabellendatei hoch und weise die Spalten flexibel den Feldern in Taskster zu.
+            </p>
           </div>
           <button
-            @click="closeTaskDrawer"
             type="button"
-            class="taskster_button_light px-6 text-xs h-[38px] rounded-lg"
+            @click="closeImportModal"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
           >
-            Schliessen
+            ✕
+          </button>
+        </div>
+
+        <!-- Step 1: File Upload -->
+        <div v-if="importStep === 1" class="space-y-4">
+          <div
+            class="p-8 border-2 border-dashed border-slate-300 hover:border-cyan-500 rounded-3xl bg-slate-50 hover:bg-cyan-50/30 transition text-center cursor-pointer flex flex-col items-center justify-center"
+            @click="$refs.csvFileInput?.click()"
+            @dragover.prevent
+            @drop.prevent="onCsvDrop"
+          >
+            <input
+              ref="csvFileInput"
+              type="file"
+              accept=".csv,.txt,.tsv"
+              class="hidden"
+              @change="onCsvFileSelected"
+            />
+            <span class="text-4xl mb-3">📁</span>
+            <p class="text-sm font-bold text-slate-800">CSV- oder Textdatei auswählen oder hierher ziehen</p>
+            <p class="text-xs text-slate-500 mt-1">Unterstützt Trennzeichen: Komma (,), Semikolon (;), Tab</p>
+          </div>
+
+          <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
+            {{ importError }}
+          </div>
+        </div>
+
+        <!-- Step 2: Column Mapping & Section Target -->
+        <div v-else-if="importStep === 2" class="space-y-6 overflow-y-auto pr-1">
+          <div class="p-3 bg-cyan-50 border border-cyan-200 rounded-2xl flex items-center justify-between text-xs">
+            <span class="text-cyan-900 font-bold">
+              📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Zeilen gefunden)
+            </span>
+            <button @click="importStep = 1" type="button" class="text-cyan-700 underline font-bold hover:text-cyan-950">
+              Andere Datei wählen
+            </button>
+          </div>
+
+          <!-- Target section -->
+          <div>
+            <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">
+              Ziel-Abschnitt für importierte Aufgaben:
+            </label>
+            <select
+              v-model="importTargetListId"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            >
+              <option v-for="l in lists" :key="l.id" :value="l.id">{{ l.title }}</option>
+            </select>
+          </div>
+
+          <!-- Column Mapping Table -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
+                Spaltenzuweisung (Mapping):
+              </label>
+              <span class="text-[11px] text-slate-500 font-medium">Titel-Spalte ist Pflichtfeld</span>
+            </div>
+
+            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-4">Spalte in CSV</th>
+                    <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
+                    <th class="py-2.5 px-4">Wird zugewiesen an Feld</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr v-for="(header, hIdx) in importHeaders" :key="hIdx" class="hover:bg-slate-50">
+                    <td class="py-2.5 px-4 font-bold text-slate-900">{{ header }}</td>
+                    <td class="py-2.5 px-4 text-slate-500 font-mono text-[11px] truncate max-w-xs">
+                      {{ importParsedRows[0]?.[hIdx] || '-' }}
+                    </td>
+                    <td class="py-2.5 px-4">
+                      <select
+                        v-model="importColumnMapping[hIdx]"
+                        class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-cyan-600"
+                        :class="importColumnMapping[hIdx] === 'title' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : ''"
+                      >
+                        <option value="">-- Ignorieren --</option>
+                        <optgroup label="Standard-Felder">
+                          <option value="title">📌 Aufgabentitel (Pflicht)</option>
+                          <option value="description">📋 Beschreibung</option>
+                          <option value="status">Status (todo/in_progress/done)</option>
+                          <option value="due_date">📅 Fälligkeitsdatum</option>
+                          <option value="priority">Priorität (niedrig/normal/hoch/dringend)</option>
+                          <option value="tags">🏷️ Tags</option>
+                        </optgroup>
+                        <optgroup v-if="taskCustomFields.length > 0" label="Zusatzfelder">
+                          <option
+                            v-for="f in taskCustomFields"
+                            :key="f.id"
+                            :value="'custom:' + f.field_key"
+                          >
+                            ⚙️ {{ f.label }} ({{ f.field_key }})
+                          </option>
+                        </optgroup>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Preview of First 3 Rows -->
+          <div>
+            <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">
+              Vorschau der ersten Zeilen:
+            </label>
+            <div class="border border-slate-200 rounded-2xl overflow-x-auto max-h-40 bg-slate-50 p-2 text-[11px] font-mono">
+              <div v-for="(row, rIdx) in importParsedRows.slice(0, 3)" :key="rIdx" class="py-1 border-b border-slate-200 last:border-0 flex gap-2">
+                <span class="text-slate-400 font-bold">#{{ rIdx + 1 }}:</span>
+                <span class="text-slate-800 truncate">{{ row.join(' | ') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
+            {{ importError }}
+          </div>
+        </div>
+
+        <!-- Step 3: Success -->
+        <div v-else-if="importStep === 3" class="py-8 text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl font-black flex items-center justify-center mx-auto">
+            ✓
+          </div>
+          <h4 class="text-lg font-black text-slate-900">Import erfolgreich abgeschlossen!</h4>
+          <p class="text-xs text-slate-600">
+            Es wurden <strong>{{ importSuccessCount }}</strong> Aufgaben erfolgreich in den Abschnitt eingepflegt.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between pt-5 mt-4 border-t border-slate-200 shrink-0">
+          <button
+            type="button"
+            @click="closeImportModal"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+          >
+            {{ importStep === 3 ? 'Schliessen' : 'Abbrechen' }}
+          </button>
+
+          <button
+            v-if="importStep === 2"
+            type="button"
+            @click="executeImport"
+            :disabled="importingTasks"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
+          >
+            <span>{{ importingTasks ? 'Importiere...' : 'Import starten (' + importParsedRows.length + ' Aufgaben)' }}</span>
           </button>
         </div>
       </div>
@@ -1884,8 +2099,9 @@ const showInviteMemberModal = ref(false)
 const inviteEmail = ref('')
 const inviteRole = ref('editor')
 
-// Task Detail Drawer
+// Task Detail Drawer / Modal
 const showTaskDrawer = ref(false)
+const isCreatingTaskInDrawer = ref(false)
 const drawerTask = ref<any>(null)
 const drawerSubtasks = ref<any[]>([])
 const drawerComments = ref<any[]>([])
@@ -1897,6 +2113,30 @@ const newTagInput = ref('')
 const newChecklistInput = ref('')
 const newSubtaskInput = ref('')
 const newCommentInput = ref('')
+
+// Section Pastel Colors
+const sectionPastelColors = [
+  { value: 'rgba(238, 242, 255, 0.95)', label: 'Indigo Soft' },
+  { value: 'rgba(236, 253, 245, 0.95)', label: 'Mint Soft' },
+  { value: 'rgba(254, 243, 199, 0.95)', label: 'Amber Soft' },
+  { value: 'rgba(255, 241, 242, 0.95)', label: 'Rose Soft' },
+  { value: 'rgba(243, 232, 255, 0.95)', label: 'Lila Soft' },
+  { value: 'rgba(240, 253, 250, 0.95)', label: 'Cyan Soft' },
+  { value: 'rgba(241, 245, 249, 0.95)', label: 'Slate Soft' },
+]
+
+// CSV / Excel Import State
+const showImportModal = ref(false)
+const importStep = ref(1)
+const importFileName = ref('')
+const importHeaders = ref<string[]>([])
+const importParsedRows = ref<string[][]>([])
+const importColumnMapping = ref<Record<number, string>>({})
+const importTargetListId = ref('')
+const importingTasks = ref(false)
+const importError = ref('')
+const importSuccessCount = ref(0)
+const csvFileInput = ref<HTMLInputElement | null>(null)
 
 const taskColors = [
   { value: '#00A3C4', label: 'Cyan' },
@@ -2231,7 +2471,8 @@ const saveSectionsReorder = async () => {
     const payload = managingSections.value.map((sec, idx) => ({
       id: sec.id,
       title: sec.title ? sec.title.trim() : `Abschnitt ${idx + 1}`,
-      sort_order: idx + 1
+      sort_order: idx + 1,
+      color: sec.color || null
     }))
     await $fetch('/api/lists/reorder', {
       method: 'POST',
@@ -2302,16 +2543,58 @@ const onSectionDrop = async (targetList: any, e: DragEvent) => {
 }
 
 const openNewTaskModal = (listId: string) => {
-  isEditingTask.value = false
-  targetListId.value = listId
-  taskForm.value = {
+  const chosenListId = listId || lists.value[0]?.id || ''
+  isCreatingTaskInDrawer.value = true
+  drawerTask.value = {
+    id: null,
+    list_id: chosenListId,
     title: '',
     description: '',
     status: 'todo',
     due_date: '',
-    custom_data: {}
+    custom_data: {},
+    assigned_to: '',
+    priority: 'normal',
+    color: '',
+    tags: [],
+    checklist: []
   }
-  showTaskModal.value = true
+  drawerSubtasks.value = []
+  drawerComments.value = []
+  drawerDocuments.value = []
+  uploadingFiles.value = []
+  showTaskDrawer.value = true
+}
+
+const saveNewTaskFromDrawer = async () => {
+  if (!drawerTask.value?.title?.trim()) {
+    alert('Bitte gib mindestens einen Aufgabentitel ein.')
+    return
+  }
+  try {
+    const res = await $fetch<any>('/api/tasks', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        list_id: drawerTask.value.list_id,
+        title: drawerTask.value.title.trim(),
+        description: drawerTask.value.description || '',
+        status: drawerTask.value.status || 'todo',
+        due_date: drawerTask.value.due_date || null,
+        custom_data: drawerTask.value.custom_data || {},
+        assigned_to: drawerTask.value.assigned_to || null,
+        priority: drawerTask.value.priority || 'normal',
+        color: drawerTask.value.color || null,
+        tags: drawerTask.value.tags || [],
+        checklist: drawerTask.value.checklist || []
+      }
+    })
+    isCreatingTaskInDrawer.value = false
+    drawerTask.value.id = res.task.id
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Aufgabe')
+  }
 }
 
 const getTaskSectionTitle = (listId?: string) => {
@@ -2327,6 +2610,7 @@ const onDrawerSectionChange = async () => {
 }
 
 const openTaskDrawer = async (task: any) => {
+  isCreatingTaskInDrawer.value = false
   drawerTask.value = {
     ...task,
     due_date: task.due_date ? task.due_date.substring(0, 10) : '',
@@ -2621,6 +2905,222 @@ const getFileIconClass = (mime: string) => {
   if (mime.includes('word') || mime.includes('document')) return 'bg-blue-50 text-blue-700'
   if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')) return 'bg-emerald-50 text-emerald-700'
   return 'bg-slate-100 text-slate-700'
+}
+
+// CSV / Excel Import Functions
+const openImportModal = () => {
+  importStep.value = 1
+  importFileName.value = ''
+  importHeaders.value = []
+  importParsedRows.value = []
+  importColumnMapping.value = {}
+  importTargetListId.value = lists.value[0]?.id || ''
+  importError.value = ''
+  importSuccessCount.value = 0
+  showImportModal.value = true
+}
+
+const closeImportModal = () => {
+  showImportModal.value = false
+  if (importStep.value === 3) {
+    loadProjectData()
+  }
+}
+
+const onCsvDrop = (e: DragEvent) => {
+  if (e.dataTransfer?.files?.[0]) {
+    parseCsvFile(e.dataTransfer.files[0])
+  }
+}
+
+const onCsvFileSelected = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files?.[0]) {
+    parseCsvFile(target.files[0])
+  }
+}
+
+const parseCsvFile = (file: File) => {
+  importFileName.value = file.name
+  importError.value = ''
+
+  const reader = new FileReader()
+  reader.onload = (evt) => {
+    try {
+      const text = evt.target?.result as string
+      if (!text || !text.trim()) {
+        importError.value = 'Die ausgewählte Datei ist leer.'
+        return
+      }
+
+      // Detect delimiter: comma, semicolon, tab
+      const firstLine = text.split(/\r\n|\n|\r/)[0] || ''
+      let delimiter = ','
+      if ((firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length) {
+        delimiter = ';'
+      } else if ((firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length) {
+        delimiter = '\t'
+      }
+
+      const rows = parseCSVString(text, delimiter)
+      if (rows.length < 2) {
+        importError.value = 'Die CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.'
+        return
+      }
+
+      importHeaders.value = rows[0].map(h => h.trim())
+      importParsedRows.value = rows.slice(1).filter(r => r.some(cell => cell.trim().length > 0))
+
+      // Auto-guess mapping
+      const mapping: Record<number, string> = {}
+      importHeaders.value.forEach((header, idx) => {
+        const hLow = header.toLowerCase()
+        if (hLow.includes('titel') || hLow.includes('title') || hLow.includes('aufgabe') || hLow.includes('task') || hLow.includes('name')) {
+          if (!Object.values(mapping).includes('title')) mapping[idx] = 'title'
+        } else if (hLow.includes('beschreib') || hLow.includes('desc') || hLow.includes('notiz')) {
+          mapping[idx] = 'description'
+        } else if (hLow.includes('status')) {
+          mapping[idx] = 'status'
+        } else if (hLow.includes('fällig') || hLow.includes('due') || hLow.includes('datum') || hLow.includes('date')) {
+          mapping[idx] = 'due_date'
+        } else if (hLow.includes('prio') || hLow.includes('dring')) {
+          mapping[idx] = 'priority'
+        } else if (hLow.includes('tag')) {
+          mapping[idx] = 'tags'
+        } else {
+          // Check custom fields
+          const matchField = taskCustomFields.value.find(f =>
+            f.label.toLowerCase() === hLow || f.field_key.toLowerCase() === hLow
+          )
+          if (matchField) {
+            mapping[idx] = 'custom:' + matchField.field_key
+          } else {
+            mapping[idx] = ''
+          }
+        }
+      })
+
+      importColumnMapping.value = mapping
+      importStep.value = 2
+    } catch (err: any) {
+      importError.value = 'Fehler beim Parsen der CSV-Datei: ' + (err.message || err)
+    }
+  }
+  reader.readAsText(file)
+}
+
+const parseCSVString = (text: string, delimiter: string): string[][] => {
+  const lines = text.split(/\r\n|\n|\r/)
+  const result: string[][] = []
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const row: string[] = []
+    let inQuotes = false
+    let currentCell = ''
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"' || char === "'") {
+        inQuotes = !inQuotes
+      } else if (char === delimiter && !inQuotes) {
+        row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
+        currentCell = ''
+      } else {
+        currentCell += char
+      }
+    }
+    row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
+    result.push(row)
+  }
+  return result
+}
+
+const executeImport = async () => {
+  // Validate that title is mapped
+  const hasTitle = Object.values(importColumnMapping.value).includes('title')
+  if (!hasTitle) {
+    importError.value = 'Bitte weise mindestens einer Spalte das Pflichtfeld "Aufgabentitel" zu.'
+    return
+  }
+
+  if (!importTargetListId.value) {
+    importError.value = 'Bitte wähle einen Ziel-Abschnitt für die Aufgaben aus.'
+    return
+  }
+
+  importingTasks.value = true
+  importError.value = ''
+  let successCount = 0
+
+  try {
+    for (const row of importParsedRows.value) {
+      const taskPayload: any = {
+        list_id: importTargetListId.value,
+        title: '',
+        description: '',
+        status: 'todo',
+        due_date: null,
+        priority: 'normal',
+        tags: [],
+        custom_data: {}
+      }
+
+      Object.entries(importColumnMapping.value).forEach(([colIdxStr, targetField]) => {
+        const colIdx = parseInt(colIdxStr)
+        const cellVal = row[colIdx]?.trim() || ''
+        if (!targetField || !cellVal) return
+
+        if (targetField === 'title') {
+          taskPayload.title = cellVal
+        } else if (targetField === 'description') {
+          taskPayload.description = cellVal
+        } else if (targetField === 'status') {
+          const s = cellVal.toLowerCase()
+          if (s.includes('done') || s.includes('erledigt') || s.includes('abgeschlossen')) taskPayload.status = 'done'
+          else if (s.includes('prog') || s.includes('arbeit') || s.includes('lauf')) taskPayload.status = 'in_progress'
+          else if (s.includes('rev') || s.includes('prüf')) taskPayload.status = 'review'
+          else taskPayload.status = 'todo'
+        } else if (targetField === 'priority') {
+          const p = cellVal.toLowerCase()
+          if (p.includes('dring') || p.includes('urgent')) taskPayload.priority = 'dringend'
+          else if (p.includes('hoch') || p.includes('high')) taskPayload.priority = 'hoch'
+          else if (p.includes('niedrig') || p.includes('low')) taskPayload.priority = 'niedrig'
+          else taskPayload.priority = 'normal'
+        } else if (targetField === 'due_date') {
+          // Normalise Date DD.MM.YYYY to YYYY-MM-DD if applicable
+          if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(cellVal)) {
+            const parts = cellVal.split('.')
+            taskPayload.due_date = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+          } else {
+            taskPayload.due_date = cellVal
+          }
+        } else if (targetField === 'tags') {
+          taskPayload.tags = cellVal.split(/[,;|]/).map(t => t.trim()).filter(Boolean)
+        } else if (targetField.startsWith('custom:')) {
+          const key = targetField.replace('custom:', '')
+          taskPayload.custom_data[key] = cellVal
+        }
+      })
+
+      if (taskPayload.title) {
+        await $fetch('/api/tasks', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: taskPayload
+        })
+        successCount++
+      }
+    }
+
+    importSuccessCount.value = successCount
+    importStep.value = 3
+    await loadProjectData()
+  } catch (err: any) {
+    importError.value = 'Fehler während des Imports: ' + (err.data?.statusMessage || err.message || err)
+  } finally {
+    importingTasks.value = false
+  }
 }
 
 const saveTask = async () => {

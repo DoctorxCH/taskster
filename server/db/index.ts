@@ -28,6 +28,7 @@ export function initDatabase() {
     "ALTER TABLE tasks ADD COLUMN color TEXT",
     "ALTER TABLE tasks ADD COLUMN tags TEXT DEFAULT '[]'",
     "ALTER TABLE tasks ADD COLUMN checklist TEXT DEFAULT '[]'",
+    "ALTER TABLE lists ADD COLUMN color TEXT DEFAULT NULL",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
