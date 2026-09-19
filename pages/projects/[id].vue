@@ -350,14 +350,28 @@
                 <!-- Drag handle & Task Header -->
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <div class="flex items-start space-x-2">
+                    <!-- Checkbox to toggle done (Viewer & everyone can toggle!) -->
+                    <button
+                      type="button"
+                      @click.stop="toggleTaskCompleted(task)"
+                      class="w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0 mt-0.5"
+                      :class="task.status === 'done' ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs' : 'border-slate-300 hover:border-cyan-500 bg-white'"
+                      title="Aufgabe abhaken / Status ändern"
+                    >
+                      <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
+                    </button>
+
                     <span
                       v-if="userRole !== 'viewer'"
-                      class="text-slate-300 group-hover:text-slate-500 text-xs mt-0.5"
+                      class="text-slate-300 group-hover:text-slate-500 text-xs mt-0.5 cursor-grab"
                       title="Ziehen zum Verschieben"
                     >
                       ⋮⋮
                     </span>
-                    <span class="text-xs font-bold text-slate-800 group-hover:text-cyan-700 transition leading-snug">
+                    <span
+                      class="text-xs font-bold group-hover:text-cyan-700 transition leading-snug"
+                      :class="task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800'"
+                    >
                       {{ task.title }}
                     </span>
                   </div>
@@ -395,14 +409,23 @@
                       <span>📅</span>
                       <span>{{ new Date(task.due_date).toLocaleDateString('de-CH') }}</span>
                     </span>
-                    <!-- Assignee Avatar -->
-                    <span
-                      v-if="task.assigned_to"
-                      class="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-teal-400 text-white text-[9px] font-black flex items-center justify-center"
-                      :title="task.assignee_name || 'Zugewiesen'"
-                    >
-                      {{ (task.assignee_name || '?').charAt(0).toUpperCase() }}
-                    </span>
+                    <!-- Assignee Avatar Stack (Mehrfachzuweisung) -->
+                    <div v-if="getTaskAssignees(task).length > 0" class="flex -space-x-1.5 overflow-hidden">
+                      <span
+                        v-for="u in getTaskAssignees(task).slice(0, 3)"
+                        :key="u.user_id"
+                        class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[9px] font-black flex items-center justify-center shrink-0"
+                        :title="u.name || u.email"
+                      >
+                        {{ (u.name || u.email || '?').charAt(0).toUpperCase() }}
+                      </span>
+                      <span
+                        v-if="getTaskAssignees(task).length > 3"
+                        class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-slate-200 text-slate-700 text-[8px] font-black flex items-center justify-center shrink-0"
+                      >
+                        +{{ getTaskAssignees(task).length - 3 }}
+                      </span>
+                    </div>
                     <!-- Priority Badge -->
                     <span
                       v-if="task.priority && task.priority !== 'normal'"
@@ -518,9 +541,24 @@
                     @click="openEditTaskModal(task)"
                   >
                     <td class="py-3 px-4">
-                      <div class="font-bold text-slate-900">{{ task.title }}</div>
-                      <div v-if="task.description" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                        {{ task.description }}
+                      <div class="flex items-center space-x-2.5">
+                        <button
+                          type="button"
+                          @click.stop="toggleTaskCompleted(task)"
+                          class="w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0"
+                          :class="task.status === 'done' ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs' : 'border-slate-300 hover:border-cyan-500 bg-white'"
+                          title="Aufgabe abhaken / Status ändern"
+                        >
+                          <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
+                        </button>
+                        <div class="min-w-0">
+                          <div class="font-bold truncate" :class="task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900'">
+                            {{ task.title }}
+                          </div>
+                          <div v-if="task.description" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                            {{ task.description }}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td class="py-3 px-4">
@@ -1474,7 +1512,7 @@
 
           <div class="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
-              v-if="isEditingTask && userRole !== 'viewer'"
+              v-if="isEditingTask && (userRole === 'owner' || userRole === 'admin' || user?.is_superadmin)"
               type="button"
               @click="deleteTask"
               class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg"
@@ -2063,14 +2101,13 @@
               </select>
             </div>
 
-            <!-- Status Dropdown -->
+            <!-- Status Dropdown (Viewer darf abhaken!) -->
             <div>
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Status</label>
               <select
                 v-model="drawerTask.status"
                 @change="autoSaveDrawer"
-                :disabled="userRole === 'viewer'"
-                class="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-default shadow-xs"
+                class="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-xs cursor-pointer"
                 :class="{
                   'bg-emerald-50 text-emerald-800 border-emerald-300': drawerTask.status === 'done',
                   'bg-cyan-50 text-cyan-800 border-cyan-300': drawerTask.status === 'in_progress',
@@ -2107,20 +2144,80 @@
               </select>
             </div>
 
-            <!-- Assignee Dropdown -->
+            <!-- Mehrfach-Zuweisung (Aus den Eingeladenen im Ordner/Projekt) -->
             <div>
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">👤 Zuweisung</label>
-              <select
-                v-model="drawerTask.assigned_to"
-                @change="autoSaveDrawer"
-                :disabled="userRole === 'viewer'"
-                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
-              >
-                <option value="">-- Nicht zugewiesen --</option>
-                <option v-for="m in members" :key="m.user_id" :value="m.user_id">
-                  {{ m.name || m.email }} {{ m.user_id === user?.id ? '(Du)' : '' }} {{ m.role === 'owner' ? '• Inhaber' : (m.company_role ? `• ${m.company_role}` : '') }}
-                </option>
-              </select>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                  👥 Zuweisung ({{ drawerTaskAssignedUsers.length }})
+                </label>
+                <span class="text-[10px] text-slate-400 font-semibold">Mehrfachauswahl möglich</span>
+              </div>
+
+              <!-- Selected assignees chips -->
+              <div v-if="drawerTaskAssignedUsers.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+                <span
+                  v-for="uId in drawerTaskAssignedUsers"
+                  :key="uId"
+                  class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-900 text-xs font-bold"
+                >
+                  <span class="w-4 h-4 rounded-full bg-cyan-700 text-white text-[9px] flex items-center justify-center font-black">
+                    {{ (getMemberName(uId) || 'U').charAt(0).toUpperCase() }}
+                  </span>
+                  <span>{{ getMemberName(uId) }}</span>
+                  <button
+                    v-if="userRole !== 'viewer'"
+                    type="button"
+                    @click="removeAssignee(uId)"
+                    class="text-cyan-600 hover:text-cyan-900 ml-0.5 text-xs font-black cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </span>
+              </div>
+
+              <!-- Dropdown selector to toggle members -->
+              <div v-if="userRole !== 'viewer'" class="relative">
+                <button
+                  type="button"
+                  @click="showAssigneeDropdown = !showAssigneeDropdown"
+                  class="w-full px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-between shadow-xs transition"
+                >
+                  <span>+ Mitglied zuweisen / ändern...</span>
+                  <span class="text-xs">▼</span>
+                </button>
+
+                <div
+                  v-if="showAssigneeDropdown"
+                  class="absolute left-0 right-0 mt-1 z-30 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-56 overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-100"
+                >
+                  <div
+                    v-for="m in members"
+                    :key="m.user_id"
+                    @click="toggleAssignee(m.user_id)"
+                    class="flex items-center justify-between p-2 rounded-xl hover:bg-cyan-50 transition cursor-pointer text-xs"
+                  >
+                    <div class="flex items-center space-x-2">
+                      <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">
+                        {{ (m.name || m.email || '?').charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="font-bold text-slate-900 truncate">
+                          {{ m.name || m.email }} {{ m.user_id === user?.id ? '(Du)' : '' }}
+                        </div>
+                        <div class="text-[10px] text-slate-500">
+                          {{ m.role === 'owner' ? 'Inhaber' : (m.role === 'editor' ? 'Editor' : 'Viewer') }}
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      class="w-5 h-5 rounded-md border flex items-center justify-center text-xs font-black"
+                      :class="drawerTaskAssignedUsers.includes(m.user_id) ? 'bg-[#00A3C4] border-[#00A3C4] text-white' : 'border-slate-300 bg-white text-transparent'"
+                    >
+                      ✓
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Due Date -->
@@ -2231,8 +2328,8 @@
               </div>
             </div>
 
-            <!-- Delete Button -->
-            <div v-if="userRole !== 'viewer'" class="pt-4 border-t border-slate-200">
+            <!-- Delete Button (Only owner, admin, or superadmin) -->
+            <div v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin" class="pt-4 border-t border-slate-200">
               <button
                 @click="deleteTaskFromDrawer"
                 type="button"
@@ -3632,9 +3729,77 @@ const onSectionDrop = async (targetList: any, e: DragEvent) => {
   }
 }
 
+const drawerTaskAssignedUsers = ref<string[]>([])
+const showAssigneeDropdown = ref(false)
+
+const parseAssignedUsers = (assignedTo: any): string[] => {
+  if (!assignedTo) return []
+  if (Array.isArray(assignedTo)) return assignedTo
+  if (typeof assignedTo === 'string') {
+    const trimmed = assignedTo.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) return parsed
+      } catch (_) {}
+    }
+    return [trimmed]
+  }
+  return []
+}
+
+const toggleAssignee = (userId: string) => {
+  const idx = drawerTaskAssignedUsers.value.indexOf(userId)
+  if (idx === -1) {
+    drawerTaskAssignedUsers.value.push(userId)
+  } else {
+    drawerTaskAssignedUsers.value.splice(idx, 1)
+  }
+  autoSaveDrawer()
+}
+
+const removeAssignee = (userId: string) => {
+  const idx = drawerTaskAssignedUsers.value.indexOf(userId)
+  if (idx !== -1) {
+    drawerTaskAssignedUsers.value.splice(idx, 1)
+    autoSaveDrawer()
+  }
+}
+
+const getMemberName = (userId: string): string => {
+  const m = members.value.find((mem: any) => mem.user_id === userId)
+  return m ? (m.name || m.email) : 'Benutzer'
+}
+
+const getTaskAssignees = (task: any): any[] => {
+  const userIds = parseAssignedUsers(task.assigned_users || task.assigned_to)
+  return userIds.map(uid => {
+    const m = members.value.find((mem: any) => mem.user_id === uid)
+    return m || { user_id: uid, name: 'Zugewiesen', email: '' }
+  })
+}
+
+const toggleTaskCompleted = async (task: any) => {
+  const previousStatus = task.status
+  const newStatus = previousStatus === 'done' ? 'todo' : 'done'
+  task.status = newStatus
+  try {
+    await $fetch(`/api/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { status: newStatus }
+    })
+  } catch (err: any) {
+    task.status = previousStatus
+    alert(err.data?.statusMessage || 'Fehler beim Ändern des Aufgabenstatus')
+  }
+}
+
 const openNewTaskModal = (listId: string) => {
   const chosenListId = listId || lists.value[0]?.id || ''
   isCreatingTaskInDrawer.value = true
+  drawerTaskAssignedUsers.value = []
+  showAssigneeDropdown.value = false
   drawerTask.value = {
     id: null,
     list_id: chosenListId,
@@ -3672,7 +3837,7 @@ const saveNewTaskFromDrawer = async () => {
         status: drawerTask.value.status || 'todo',
         due_date: drawerTask.value.due_date || null,
         custom_data: drawerTask.value.custom_data || {},
-        assigned_to: drawerTask.value.assigned_to || null,
+        assigned_to: drawerTaskAssignedUsers.value.length > 0 ? drawerTaskAssignedUsers.value : null,
         priority: drawerTask.value.priority || 'normal',
         color: drawerTask.value.color || null,
         tags: drawerTask.value.tags || [],
@@ -3701,6 +3866,8 @@ const onDrawerSectionChange = async () => {
 
 const openTaskDrawer = async (task: any) => {
   isCreatingTaskInDrawer.value = false
+  showAssigneeDropdown.value = false
+  drawerTaskAssignedUsers.value = parseAssignedUsers(task.assigned_users || task.assigned_to)
   drawerTask.value = {
     ...task,
     due_date: task.due_date ? task.due_date.substring(0, 10) : '',
@@ -3721,6 +3888,7 @@ const openTaskDrawer = async (task: any) => {
   try {
     const res = await $fetch<any>(`/api/tasks/${task.id}`, { headers: authHeaders() })
     const t = res.task
+    drawerTaskAssignedUsers.value = parseAssignedUsers(t.assigned_users || t.assigned_to)
     drawerTask.value = {
       ...t,
       due_date: t.due_date ? t.due_date.substring(0, 10) : '',
@@ -3758,7 +3926,20 @@ const closeTaskDrawer = () => {
 }
 
 const autoSaveDrawer = async () => {
-  if (!drawerTask.value?.id || userRole.value === 'viewer') return
+  if (!drawerTask.value?.id) return
+  if (userRole.value === 'viewer') {
+    // Viewer darf Status abhaken
+    try {
+      await $fetch(`/api/tasks/${drawerTask.value.id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: { status: drawerTask.value.status }
+      })
+    } catch (err) {
+      console.error('Status update failed', err)
+    }
+    return
+  }
   try {
     await $fetch(`/api/tasks/${drawerTask.value.id}`, {
       method: 'PUT',
@@ -3769,7 +3950,7 @@ const autoSaveDrawer = async () => {
         status: drawerTask.value.status,
         due_date: drawerTask.value.due_date || null,
         custom_data: drawerTask.value.custom_data,
-        assigned_to: drawerTask.value.assigned_to || null,
+        assigned_to: drawerTaskAssignedUsers.value.length > 0 ? drawerTaskAssignedUsers.value : null,
         priority: drawerTask.value.priority,
         color: drawerTask.value.color || null,
         tags: drawerTask.value.tags,
@@ -3879,10 +4060,15 @@ const addComment = async () => {
 }
 
 const deleteTaskFromDrawer = async () => {
+  if (userRole.value === 'editor' || userRole.value === 'viewer') {
+    alert('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.')
+    return
+  }
   if (!confirm('Möchtest du diese Aufgabe wirklich löschen?')) return
   try {
     await $fetch(`/api/tasks/${drawerTask.value.id}`, { method: 'DELETE', headers: authHeaders() })
     closeTaskDrawer()
+    await loadProjectData()
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Löschen')
   }
@@ -4262,6 +4448,10 @@ const saveTask = async () => {
 }
 
 const deleteTask = async () => {
+  if (userRole.value === 'editor' || userRole.value === 'viewer') {
+    alert('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.')
+    return
+  }
   if (!confirm('Möchtest du diese Aufgabe wirklich löschen?')) return
   try {
     await $fetch(`/api/tasks/${currentEditingTaskId.value}`, {

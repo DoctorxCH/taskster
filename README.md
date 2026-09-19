@@ -26,9 +26,9 @@ Alle Konten sind mit dem Passwort `password123` vorkonfiguriert:
 | Rolle | E-Mail | Berechtigungen & Fokus |
 | :--- | :--- | :--- |
 | **Plattform Superadmin** | `admin@taskster.io` | Vollzugriff auf Admin-Zentrale, alle Mandanten, Kunden, Pläne & globale Richtlinien |
-| **Company Admin** | `marc@swissinfra.ch` | Bauleitung Swisscom Infra Partner AG, Ordner-Owner, Teamverwaltung |
-| **Projekt Editor** | `sarah.editor@swissinfra.ch` | Projektleiterin, volles CRUD auf Aufgaben und verknüpfte Listen |
-| **Viewer (Zero-Trust)** | `lukas.viewer@subunternehmer.ch` | Subunternehmer: nur Leserechte, vertrauliche Listen erhalten serverseitig 404 |
+| **Company Admin** | `marc@kurka.ch` | Bauleitung Swisscom Infra Partner AG, Ordner-Owner, Teamverwaltung |
+| **Projekt Editor** | `sarah.editor@kurka.ch` | Projektleiterin, volles CRUD auf Aufgaben und verknüpfte Listen |
+| **Viewer (Zero-Trust)** | `lukas.viewer@kurka.ch` | Subunternehmer: nur Leserechte, vertrauliche Listen erhalten serverseitig 404 |
 | **Free-Plan Kunde** | `peter@muster.ch` | Privater Nutzer mit 1-Ordner-Limit und max. 5 Mitgliedern |
 
 ---

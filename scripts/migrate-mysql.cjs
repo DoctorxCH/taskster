@@ -73,10 +73,15 @@ async function migrate() {
       folder_id VARCHAR(64) NOT NULL,
       title VARCHAR(255) NOT NULL,
       status VARCHAR(64) NOT NULL DEFAULT 'active',
+      is_default TINYINT(1) NOT NULL DEFAULT 0,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_projects_folder (folder_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
+
+  try {
+    await conn.query(`ALTER TABLE projects ADD COLUMN is_default TINYINT(1) NOT NULL DEFAULT 0;`)
+  } catch (e) { }
 
   await conn.query(`
     CREATE TABLE IF NOT EXISTS project_members (
@@ -265,9 +270,10 @@ async function migrate() {
     "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE users ADD COLUMN admin_permissions JSON NULL",
+    "ALTER TABLE tasks MODIFY COLUMN assigned_to TEXT NULL",
   ]
   for (const sql of colMigrations) {
-    try { await conn.query(sql) } catch (_) {}
+    try { await conn.query(sql) } catch (_) { }
   }
 
   console.log('Tables created. Seeding initial data...')
@@ -297,9 +303,9 @@ async function migrate() {
   `
 
   await conn.query(insertUserSql, ['user-superadmin-01', null, null, 1, 1, 'Taskster Admin', 'admin@taskster.io', pwHash])
-  await conn.query(insertUserSql, ['user-marc-01', 'comp-swiss-infra-01', 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@swissinfra.ch', pwHash])
-  await conn.query(insertUserSql, ['user-sarah-02', 'comp-swiss-infra-01', 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@swissinfra.ch', pwHash])
-  await conn.query(insertUserSql, ['user-lukas-03', null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@subunternehmer.ch', pwHash])
+  await conn.query(insertUserSql, ['user-marc-01', 'comp-swiss-infra-01', 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@kurka.ch', pwHash])
+  await conn.query(insertUserSql, ['user-sarah-02', 'comp-swiss-infra-01', 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@kurka.ch', pwHash])
+  await conn.query(insertUserSql, ['user-lukas-03', null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@kurka.ch', pwHash])
   await conn.query(insertUserSql, ['user-peter-free-04', null, null, 0, 0, 'Peter Muster (Free Plan)', 'peter@muster.ch', pwHash])
 
   await conn.query(`
