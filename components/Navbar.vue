@@ -34,13 +34,23 @@
           </NuxtLink>
 
           <NuxtLink
-            v-if="user.is_superadmin || (user.admin_permissions && user.admin_permissions.length > 0)"
+            v-if="isPlatformAdmin"
             to="/admin"
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
             :class="$route.path.startsWith('/admin') ? 'bg-white text-purple-700 shadow-sm border border-purple-200' : 'text-slate-600 hover:text-purple-700 hover:bg-white/60'"
           >
             <span class="w-2 h-2 rounded-full bg-purple-500"></span>
             <span>Admin-Bereich</span>
+          </NuxtLink>
+
+          <NuxtLink
+            v-else-if="isCompanyAdmin"
+            to="/company"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            :class="$route.path.startsWith('/company') ? 'bg-white text-emerald-700 shadow-sm border border-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-white/60'"
+          >
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>🏢 Firmen-Admin</span>
           </NuxtLink>
         </nav>
       </div>
@@ -188,10 +198,30 @@ defineEmits<{
   (e: 'toggle-wallpaper'): void
 }>()
 
-const { user, logout } = useAuth()
+const { user, logout, initAuth } = useAuth()
 const { state: stopwatchState, initStopwatch, openStopModal, formatSeconds } = useStopwatch()
 
-onMounted(() => {
+// Plattform-Admin: Superadmin ODER explizite Plattform-Permissions
+const isPlatformAdmin = computed(() => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  let perms = user.value.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  return Array.isArray(perms) && perms.length > 0
+})
+
+// Firmen-Admin: company_role === 'admin' mit zugewiesenem Unternehmen (und kein Plattform-Admin)
+const isCompanyAdmin = computed(() => {
+  if (!user.value || isPlatformAdmin.value) return false
+  return Boolean(user.value.company_id && user.value.company_role === 'admin')
+})
+
+onMounted(async () => {
   initStopwatch()
+  if (!user.value) {
+    await initAuth()
+  }
 })
 </script>

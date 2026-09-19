@@ -67,7 +67,7 @@
             </NuxtLink>
 
             <NuxtLink
-              v-if="user?.is_superadmin"
+              v-if="isPlatformAdmin"
               to="/admin"
               class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-purple-700 hover:bg-purple-50/80"
               :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-700 font-bold shadow-xs' : ''"
@@ -75,6 +75,17 @@
             >
               <span class="text-xl">⚙️</span>
               <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Administration</span>
+            </NuxtLink>
+
+            <NuxtLink
+              v-else-if="isCompanyAdmin"
+              to="/company"
+              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80"
+              :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-700 font-bold shadow-xs' : ''"
+              title="Firmen-Administration"
+            >
+              <span class="text-xl">🏢</span>
+              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Firmen-Admin</span>
             </NuxtLink>
 
             <NuxtLink
@@ -184,6 +195,23 @@ const showWallpaperPicker = ref(false)
 
 const isLoginPage = computed(() => route.path === '/login')
 
+// Plattform-Admin (Superadmin oder explizite Plattform-Permissions)
+const isPlatformAdmin = computed(() => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  let perms = user.value.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  return Array.isArray(perms) && perms.length > 0
+})
+
+// Firmen-Admin (company_role === 'admin' mit Unternehmen, kein Plattform-Admin)
+const isCompanyAdmin = computed(() => {
+  if (!user.value || isPlatformAdmin.value) return false
+  return Boolean(user.value.company_id && user.value.company_role === 'admin')
+})
+
 const selectWallpaper = (file: string) => {
   setWallpaper(file)
 }
@@ -208,11 +236,11 @@ onMounted(async () => {
 
 /* Liquid Glass Design System – balanced for maximum legibility on all wallpapers */
 .liquid_glass {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.30);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;
+ /* border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;*/
 }
 
 .liquid_glass_pill {

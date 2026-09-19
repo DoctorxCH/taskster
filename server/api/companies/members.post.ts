@@ -1,48 +1,59 @@
 import { db } from '~/server/db'
-import { requireAuth, hashPassword } from '~/server/utils/auth'
-import { randomUUID } from 'crypto'
+import { requireAuth } from '~/server/utils/auth'
+import { randomUUID, randomBytes } from 'crypto'
 
+/**
+ * POST /api/companies/members
+ * Lädt einen Mitarbeiter ein:
+ *  - Bereits registriert -> sofort dem Unternehmen zuordnen (action: 'added')
+ *  - Nicht registriert   -> Einladung mit Token anlegen (action: 'invited')
+ */
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { email, name, role } = body
+  const email = String(body?.email || '').trim().toLowerCase()
+  const role = body?.role === 'admin' ? 'admin' : 'member'
 
-  if (!email || !name) {
-    throw createError({ statusCode: 400, statusMessage: 'Name und E-Mail erforderlich' })
+  if (!email) {
+    throw createError({ statusCode: 400, statusMessage: 'E-Mail erforderlich' })
   }
 
-  // Must be company admin or superadmin
-  if (!user.is_superadmin && (!user.company_id || user.company_role !== 'admin')) {
+  // Nur Company Admin (company_role === 'admin') oder Superadmin
+  const isSuperadmin = Boolean(user.is_superadmin)
+  const isCompanyAdmin = Boolean(user.company_id) && user.company_role === 'admin'
+  if (!isSuperadmin && !isCompanyAdmin) {
     throw createError({ statusCode: 403, statusMessage: 'Nur Company-Admins dürfen Mitarbeiter einladen' })
   }
 
-  const companyId = user.company_id
-  if (!companyId && !user.is_superadmin) {
-    throw createError({ statusCode: 400, statusMessage: 'Keine Company zugewiesen' })
+  const companyId = user.company_id || body?.company_id
+  if (!companyId) {
+    throw createError({ statusCode: 400, statusMessage: 'Kein Unternehmen zugewiesen' })
   }
 
-  const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(email) as any
+  const existing = db.prepare('SELECT id, email, name FROM users WHERE LOWER(email) = ?').get(email) as any
 
   if (existing) {
-    // Member joins company and inherits company paid tier
-    db.prepare(`
-      UPDATE users
-      SET company_id = ?, company_role = ?, is_pro = 1
-      WHERE id = ?
-    `).run(companyId, role || 'member', existing.id)
-    return { success: true, user: { id: existing.id, email, name, updated: true } }
-  } else {
-    const newUserId = 'usr_' + randomUUID().substring(0, 8)
-    const initialPw = hashPassword('taskster2026!')
-    db.prepare(`
-      INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash)
-      VALUES (?, ?, ?, 0, 1, ?, ?, ?)
-    `).run(newUserId, companyId, role || 'member', name.trim(), email.trim().toLowerCase(), initialPw)
-
+    // Bereits registriert -> direkt dem Unternehmen zuordnen
+    db.prepare('UPDATE users SET company_id = ?, company_role = ?, is_pro = 1 WHERE id = ?')
+      .run(companyId, role, existing.id)
     return {
       success: true,
-      user: { id: newUserId, email, name, temp_password: 'taskster2026!' }
+      action: 'added',
+      user: { id: existing.id, email: existing.email, name: existing.name }
     }
   }
+
+  // Nicht registriert -> Einladung mit Token
+  const token = randomBytes(24).toString('hex')
+  const invId = 'inv_' + randomUUID().substring(0, 8)
+
+  db.prepare('DELETE FROM company_invitations WHERE company_id = ? AND LOWER(email) = ?')
+    .run(companyId, email)
+  db.prepare(`
+    INSERT INTO company_invitations (id, company_id, email, role, token, invited_by, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+  `).run(invId, companyId, email, role, token, user.id)
+
+  return { success: true, action: 'invited', token, email }
 })
 

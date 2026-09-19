@@ -13,6 +13,7 @@ export interface AuthUser {
   company_role: string | null
   is_superadmin: number
   is_pro: number
+  admin_permissions?: string | string[] | null
 }
 
 export function hashPassword(password: string): string {
@@ -42,7 +43,7 @@ export function generateToken(user: AuthUser): string {
 export function getUserFromToken(token: string): AuthUser | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any
-    const row = db.prepare('SELECT id, name, email, company_id, company_role, is_superadmin, is_pro FROM users WHERE id = ?').get(decoded.id) as AuthUser | undefined
+    const row = db.prepare('SELECT id, name, email, company_id, company_role, is_superadmin, is_pro, admin_permissions FROM users WHERE id = ?').get(decoded.id) as AuthUser | undefined
     return row || null
   } catch {
     return null
@@ -76,6 +77,34 @@ export function requireSuperadmin(event: H3Event): AuthUser {
     throw createError({
       statusCode: 403,
       statusMessage: 'Nur Plattform-Superadmins haben Zugriff auf diesen Bereich'
+    })
+  }
+  return user
+}
+
+/**
+ * Prüft Plattform-Admin-Rechte.
+ * WICHTIG: Company Admins (company_role === 'admin') haben hier KEINEN Zugriff –
+ * sie verwalten ihre Firma ausschließlich über das /company Portal.
+ * Plattform-Rechte müssen explizit in users.admin_permissions stehen.
+ */
+export function checkAdminPermission(user: AuthUser, permission: string): boolean {
+  if (user.is_superadmin) return true
+  let perms: any = (user as any).admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  if (!Array.isArray(perms) || perms.length === 0) return false
+  if (permission === 'any_admin') return true
+  return perms.includes(permission) || perms.includes('all')
+}
+
+export function requireAdminPermission(event: H3Event, permission = 'any_admin'): AuthUser {
+  const user = requireAuth(event)
+  if (!checkAdminPermission(user, permission)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: `Keine Berechtigung für diese Administrator-Aktion (${permission})`
     })
   }
   return user
