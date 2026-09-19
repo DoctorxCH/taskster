@@ -105,10 +105,16 @@
             SUPERADMIN
           </span>
           <span
-            v-else-if="user.company_role === 'admin' || (user.admin_permissions && user.admin_permissions.length > 0)"
+            v-else-if="user.admin_permissions && user.admin_permissions.length > 0"
             class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200"
           >
-            ADMIN
+            PLATFORM ADMIN
+          </span>
+          <span
+            v-else-if="user.company_role === 'admin'"
+            class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"
+          >
+            COMPANY ADMIN
           </span>
           <span
             v-else-if="user.company_name"
