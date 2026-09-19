@@ -1,106 +1,105 @@
 <template>
-  <div v-if="isAnyAdmin" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header in Liquid Glass Card for guaranteed legibility on any wallpaper -->
-    <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+  <div v-if="isAnyAdmin" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Header -->
+    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-300/50 text-purple-900 text-xs font-bold mb-2">
-            <span>⚙️</span>
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold mb-2">
+            <ShieldCheck class="w-3.5 h-3.5 text-purple-600" />
             <span>Zentrale Site-Administration</span>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
             Taskster Plattform-Administration
           </h1>
-          <p class="text-xs text-slate-600 font-medium mt-1">
+          <p class="text-sm text-slate-600 mt-1">
             Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.
           </p>
         </div>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-3">
           <button
             @click="showCreateCompanyModal = true"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm"
+            class="taskster_button"
           >
-            <span>+ Neues Unternehmen anlegen</span>
+            <Plus class="w-4 h-4" />
+            <span>Neues Unternehmen</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Admin Metrics (Liquid Glass Pills) -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-      <div class="p-4 rounded-2xl liquid_glass_card text-center">
-        <div class="text-[11px] font-bold text-slate-600 uppercase">Kunden & User</div>
-        <div class="text-2xl font-black text-slate-900 mt-1">{{ overview?.metrics?.users || 0 }}</div>
-        <div class="text-[10px] text-slate-500 font-medium">Registriert</div>
+    <!-- Admin Metrics -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
+        <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
+        <div class="text-xs text-slate-500">Registriert</div>
       </div>
 
-      <div class="p-4 rounded-2xl liquid_glass_card text-center">
-        <div class="text-[11px] font-bold text-purple-700 uppercase">Unternehmen</div>
-        <div class="text-2xl font-black text-purple-900 mt-1">{{ overview?.metrics?.companies || 0 }}</div>
-        <div class="text-[10px] text-slate-500 font-medium">Organisationen</div>
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ overview?.metrics?.companies || 0 }}</div>
+        <div class="text-xs text-slate-500">Organisationen</div>
       </div>
 
-      <div class="p-4 rounded-2xl liquid_glass_card text-center">
-        <div class="text-[11px] font-bold text-emerald-700 uppercase">Projekte</div>
-        <div class="text-2xl font-black text-emerald-900 mt-1">{{ overview?.metrics?.projects || 0 }}</div>
-        <div class="text-[10px] text-slate-500 font-medium">Aktiv</div>
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Projekte</div>
+        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ overview?.metrics?.projects || 0 }}</div>
+        <div class="text-xs text-slate-500">Aktiv</div>
       </div>
 
-      <div class="p-4 rounded-2xl liquid_glass_card text-center">
-        <div class="text-[11px] font-bold text-cyan-700 uppercase">Aufgaben</div>
-        <div class="text-2xl font-black text-[#00A3C4] mt-1">{{ overview?.metrics?.tasks || 0 }}</div>
-        <div class="text-[10px] text-slate-500 font-medium">In Listen gepflegt</div>
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
+        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
+        <div class="text-xs text-slate-500">In Listen gepflegt</div>
       </div>
 
-      <div class="p-4 rounded-2xl liquid_glass_card text-center">
-        <div class="text-[11px] font-bold text-amber-700 uppercase">Journal-Einträge</div>
-        <div class="text-2xl font-black text-amber-900 mt-1">{{ overview?.metrics?.journals || 0 }}</div>
-        <div class="text-[10px] text-slate-500 font-medium">Aktivitätsnotizen</div>
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
+        <div class="text-xl font-bold text-amber-900 mt-1 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
+        <div class="text-xs text-slate-500">Aktivitätsnotizen</div>
       </div>
     </div>
 
-    <!-- Admin Tabs inside Liquid Glass Bar for 100% visibility -->
-    <div class="liquid_glass_pill rounded-2xl px-4 py-1.5 mb-6 flex items-center space-x-3 overflow-x-auto shadow-sm">
+    <!-- Admin Tabs (Design v2 standard) -->
+    <div class="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
       <button
         v-if="hasPermission('manage_users')"
         @click="activeTab = 'users'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
-        :class="activeTab === 'users' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
+        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        :class="activeTab === 'users' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
-        <span>👤</span>
-        <span>Kunden- & Benutzerverwaltung</span>
+        <Users class="w-4 h-4" />
+        <span>Benutzerverwaltung</span>
       </button>
 
       <button
         v-if="hasPermission('company_settings')"
         @click="activeTab = 'companies'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
-        :class="activeTab === 'companies' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
+        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        :class="activeTab === 'companies' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
-        <span>🏢</span>
-        <span>Unternehmen & Organisationen</span>
+        <Building2 class="w-4 h-4" />
+        <span>Unternehmen</span>
       </button>
 
       <button
         v-if="hasPermission('finance')"
         @click="activeTab = 'finance'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
-        :class="activeTab === 'finance' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
+        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        :class="activeTab === 'finance' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
-        <span>💳</span>
-        <span>Finanzen & Bestellungen</span>
+        <CreditCard class="w-4 h-4" />
+        <span>Finanzen & Lizenzen</span>
       </button>
-
-
 
       <button
         v-if="hasPermission('manage_templates')"
         @click="activeTab = 'templates'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
-        :class="activeTab === 'templates' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
+        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        :class="activeTab === 'templates' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
-        <span>📋</span>
+        <ClipboardList class="w-4 h-4" />
         <span>Projekt-Vorlagen (Job & Privat)</span>
       </button>
     </div>
@@ -1420,6 +1419,21 @@
 </template>
 
 <script setup lang="ts">
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+  CreditCard,
+  ClipboardList,
+  Plus,
+  Pencil,
+  Trash2,
+  Lock,
+  Search,
+  Check,
+  X
+} from 'lucide-vue-next'
+
 definePageMeta({
   middleware: [
     async function () {

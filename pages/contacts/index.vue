@@ -1,86 +1,87 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-    <!-- Header with MeisterTask Liquid Glass Styling -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
-        <div class="inline-flex items-center space-x-2 text-xs font-bold text-slate-800 px-3.5 py-1.5 rounded-full liquid_glass_pill mb-2 shadow-xs">
-          <span>📇</span>
+        <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-sm border border-cyan-200 mb-2">
+          <BookUser class="w-3.5 h-3.5 text-[#0891B2]" />
           <span>Baustellen- & Projektverzeichnis</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-          <span>Kontakte & Ansprechpartner</span>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+          Kontakte & Ansprechpartner
         </h1>
-        <p class="text-xs sm:text-sm text-slate-700 font-medium mt-1">
+        <p class="text-sm text-slate-600 mt-1">
           Verwalte Handwerker, Bauleiter, Planer und Behörden. Geteilte Kontakte stehen deinem Team und Projektmitgliedern sofort zur Verfügung.
         </p>
       </div>
 
       <!-- Action Button -->
-      <div class="flex items-center space-x-3 shrink-0">
+      <div class="flex items-center gap-3 shrink-0">
         <button
           @click="openCreateModal()"
           type="button"
-          class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-md"
+          class="taskster_button"
         >
-          <span>+ Neuer Kontakt</span>
+          <Plus class="w-4 h-4" />
+          <span>Neuer Kontakt</span>
         </button>
       </div>
     </div>
 
     <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-      <div class="liquid_glass_card p-4 rounded-2xl shadow-xs flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-cyan-100 text-cyan-800 flex items-center justify-center text-lg font-black shrink-0">
-          👥
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+          <Users class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Gesamt</p>
-          <p class="text-lg font-black text-slate-900">{{ contacts.length }}</p>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gesamt</p>
+          <p class="text-xl font-bold text-slate-900 tabular-nums">{{ contacts.length }}</p>
         </div>
       </div>
 
-      <div class="liquid_glass_card p-4 rounded-2xl shadow-xs flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg font-black shrink-0">
-          🏢
+      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-md bg-cyan-50 text-cyan-800 flex items-center justify-center shrink-0">
+          <Building2 class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Firma geteilt</p>
-          <p class="text-lg font-black text-emerald-900">{{ sharedCompanyCount }}</p>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Firma geteilt</p>
+          <p class="text-xl font-bold text-cyan-900 tabular-nums">{{ sharedCompanyCount }}</p>
         </div>
       </div>
 
-      <div class="liquid_glass_card p-4 rounded-2xl shadow-xs flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-lg font-black shrink-0">
-          🏗️
+      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-md bg-blue-50 text-blue-800 flex items-center justify-center shrink-0">
+          <HardHat class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mit Projektbezug</p>
-          <p class="text-lg font-black text-blue-900">{{ projectLinkedCount }}</p>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mit Projektbezug</p>
+          <p class="text-xl font-bold text-blue-900 tabular-nums">{{ projectLinkedCount }}</p>
         </div>
       </div>
 
-      <div class="liquid_glass_card p-4 rounded-2xl shadow-xs flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-lg font-black shrink-0">
-          🔒
+      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+          <Lock class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Privat / Eigene</p>
-          <p class="text-lg font-black text-purple-900">{{ privateCount }}</p>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Privat / Eigene</p>
+          <p class="text-xl font-bold text-slate-900 tabular-nums">{{ privateCount }}</p>
         </div>
       </div>
     </div>
 
     <!-- Filter & Search Toolbar -->
-    <div class="liquid_glass_card p-4 sm:p-5 rounded-3xl mb-6 shadow-md">
+    <div class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <!-- Search Input -->
         <div class="relative flex-1 min-w-[240px]">
-          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             v-model="searchFilter"
             type="text"
             placeholder="Nach Name, Firma, Funktion, Telefon oder E-Mail suchen..."
-            class="w-full pl-10 pr-4 py-2.5 bg-white/95 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            class="w-full pl-9 pr-3 h-9 text-sm rounded-md bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 transition-shadow"
           />
         </div>
 
@@ -90,7 +91,7 @@
           <div class="relative">
             <select
               v-model="selectedGroup"
-              class="px-3 py-2 bg-white/95 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00A3C4] cursor-pointer"
+              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 cursor-pointer"
             >
               <option value="">Alle Gruppen</option>
               <option v-for="g in groupOptions" :key="g" :value="g">{{ g }}</option>
@@ -101,7 +102,7 @@
           <div class="relative max-w-[200px]">
             <select
               v-model="selectedProjectId"
-              class="w-full px-3 py-2 bg-white/95 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00A3C4] truncate cursor-pointer"
+              class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 truncate cursor-pointer"
             >
               <option value="">Alle Projekte</option>
               <option v-for="p in availableProjects" :key="p.id" :value="p.id">{{ p.title }}</option>
@@ -112,32 +113,32 @@
           <div class="relative">
             <select
               v-model="selectedScope"
-              class="px-3 py-2 bg-white/95 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00A3C4] cursor-pointer"
+              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 cursor-pointer"
             >
               <option value="">Alle Freigaben</option>
-              <option value="company">🏢 Im Unternehmen geteilt</option>
-              <option value="private">🔒 Nur Privat / Eigene</option>
+              <option value="company">Im Unternehmen geteilt</option>
+              <option value="private">Nur Privat / Eigene</option>
             </select>
           </div>
 
           <!-- View Mode Toggle -->
-          <div class="bg-white/90 border border-slate-200/80 rounded-xl p-0.5 flex items-center space-x-1 shadow-xs h-[38px]">
+          <div class="bg-slate-100 border border-slate-200 rounded-md p-0.5 flex items-center gap-0.5 h-9">
             <button
               @click="viewMode = 'cards'"
-              class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[32px]"
-              :class="viewMode === 'cards' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              class="px-2.5 h-8 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+              :class="viewMode === 'cards' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
               title="Kartenansicht"
             >
-              <span>▦</span>
+              <LayoutGrid class="w-3.5 h-3.5" />
               <span class="hidden sm:inline">Karten</span>
             </button>
             <button
               @click="viewMode = 'table'"
-              class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[32px]"
-              :class="viewMode === 'table' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              class="px-2.5 h-8 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+              :class="viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
               title="Tabellenansicht"
             >
-              <span>☰</span>
+              <List class="w-3.5 h-3.5" />
               <span class="hidden sm:inline">Tabelle</span>
             </button>
           </div>
@@ -146,25 +147,28 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-20 liquid_glass_card rounded-3xl">
-      <div class="inline-block animate-spin text-3xl mb-3">📇</div>
-      <p class="text-xs font-bold text-slate-700">Kontakte werden geladen...</p>
+    <div v-if="loading" class="text-center py-20 bg-white border border-slate-200 rounded-lg">
+      <div class="inline-block animate-spin text-slate-400 mb-3">
+        <BookUser class="w-8 h-8" />
+      </div>
+      <p class="text-sm font-semibold text-slate-700">Kontakte werden geladen...</p>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredContacts.length === 0" class="text-center py-16 px-6 liquid_glass_card rounded-3xl">
-      <div class="w-16 h-16 rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center text-3xl font-black mx-auto mb-3 shadow-xs">
-        📇
+    <div v-else-if="filteredContacts.length === 0" class="text-center py-16 px-6 bg-white border border-slate-200 rounded-lg">
+      <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+        <BookUser class="w-6 h-6" />
       </div>
-      <h3 class="text-base font-black text-slate-900">Keine Kontakte gefunden</h3>
-      <p class="text-xs text-slate-600 max-w-md mx-auto mt-1 mb-6">
+      <h3 class="text-sm font-semibold text-slate-900">Keine Kontakte gefunden</h3>
+      <p class="text-sm text-slate-500 max-w-xs mx-auto mt-1 mb-5">
         {{ searchFilter || selectedGroup || selectedProjectId || selectedScope ? 'Für die ausgewählten Filterkriterien wurden keine Kontakte gefunden.' : 'Erfasse deine Handwerker, Bauleiter, Partner und Behörden, um sie schnell griffbereit zu haben.' }}
       </p>
       <button
         @click="openCreateModal()"
-        class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+        class="taskster_button"
       >
-        + Ersten Kontakt anlegen
+        <Plus class="w-4 h-4" />
+        <span>Ersten Kontakt anlegen</span>
       </button>
     </div>
 
@@ -173,47 +177,49 @@
       <div
         v-for="c in filteredContacts"
         :key="c.id"
-        class="liquid_glass_card rounded-3xl p-5 shadow-md flex flex-col justify-between hover:shadow-xl transition group"
+        class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-sm transition-all"
       >
         <div>
           <!-- Card Top: Avatar, Name, Company, Function -->
           <div class="flex items-start justify-between gap-3 mb-3">
-            <div class="flex items-start space-x-3 min-w-0">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0">
+            <div class="flex items-start gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
                 {{ getInitials(c) }}
               </div>
               <div class="min-w-0">
-                <h3 class="text-sm font-black text-slate-900 truncate leading-tight">
+                <h3 class="text-sm font-semibold text-slate-900 truncate leading-tight">
                   {{ formatFullName(c) }}
                 </h3>
-                <p v-if="c.company_name" class="text-xs font-bold text-cyan-800 truncate mt-0.5">
-                  🏢 {{ c.company_name }}
+                <p v-if="c.company_name" class="text-xs font-medium text-cyan-800 truncate mt-0.5 flex items-center gap-1">
+                  <Building2 class="w-3 h-3 text-cyan-600 shrink-0" />
+                  <span>{{ c.company_name }}</span>
                 </p>
-                <p v-if="c.role_function" class="text-[11px] font-semibold text-slate-600 truncate mt-0.5">
-                  👷 {{ c.role_function }}
+                <p v-if="c.role_function" class="text-xs text-slate-600 truncate mt-0.5 flex items-center gap-1">
+                  <HardHat class="w-3 h-3 text-slate-400 shrink-0" />
+                  <span>{{ c.role_function }}</span>
                 </p>
               </div>
             </div>
 
             <!-- Scope / Sharing Badge -->
             <span
-              class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border"
-              :class="c.share_scope === 'company' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'"
+              class="shrink-0 px-2 py-0.5 rounded-sm text-xs font-medium border"
+              :class="c.share_scope === 'company' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
               :title="c.share_scope === 'company' ? 'Im Unternehmen freigegeben' : 'Nur für mich und zugewiesene Projektmitglieder'"
             >
-              {{ c.share_scope === 'company' ? '🏢 Team' : '🔒 Privat' }}
+              {{ c.share_scope === 'company' ? 'Team' : 'Privat' }}
             </span>
           </div>
 
           <!-- Group & Tags Badges -->
           <div class="flex flex-wrap items-center gap-1.5 mb-3">
-            <span v-if="c.category_group" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
-              🏷️ {{ c.category_group }}
+            <span v-if="c.category_group" class="px-2 py-0.5 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+              {{ c.category_group }}
             </span>
             <span
               v-for="(tag, idx) in c.tags"
               :key="idx"
-              class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-50 text-cyan-900 border border-cyan-200"
+              class="px-2 py-0.5 rounded-sm text-xs font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
             >
               #{{ tag }}
             </span>
@@ -223,129 +229,74 @@
           <div v-if="c.project_id" class="mb-3">
             <NuxtLink
               :to="`/projects/${c.project_id}`"
-              class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 transition"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors"
               title="Zum Projekt wechseln"
             >
-              <span>📋</span>
+              <BookUser class="w-3.5 h-3.5 text-slate-500" />
               <span class="truncate max-w-[190px]">{{ c.project_title || 'Projekt' }}</span>
-              <span class="text-blue-500">→</span>
             </NuxtLink>
           </div>
 
           <!-- Contact Details (Phone, Mobile, Email) -->
-          <div class="space-y-1.5 text-xs text-slate-700 bg-white/70 p-3 rounded-2xl border border-white/80 mb-3">
-            <div v-if="c.mobile" class="flex items-center space-x-2">
-              <span class="text-slate-400">📱</span>
-              <a :href="`tel:${c.mobile}`" class="font-bold text-[#00A3C4] hover:underline truncate">
+          <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
+            <div v-if="c.mobile" class="flex items-center gap-2">
+              <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
                 {{ c.mobile }}
               </a>
-              <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold ml-auto" title="WhatsApp Chat öffnen">
+              <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold ml-auto" title="WhatsApp Chat öffnen">
                 WhatsApp
               </a>
             </div>
 
-            <div v-if="c.phone" class="flex items-center space-x-2">
-              <span class="text-slate-400">📞</span>
-              <a :href="`tel:${c.phone}`" class="font-semibold text-slate-800 hover:underline truncate">
+            <div v-if="c.phone" class="flex items-center gap-2">
+              <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <a :href="`tel:${c.phone}`" class="font-medium text-slate-800 hover:underline truncate">
                 {{ c.phone }}
               </a>
             </div>
 
-            <div v-if="c.email" class="flex items-center space-x-2">
-              <span class="text-slate-400">✉️</span>
-              <a :href="`mailto:${c.email}`" class="font-semibold text-cyan-800 hover:underline truncate">
+            <div v-if="c.email" class="flex items-center gap-2">
+              <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <a :href="`mailto:${c.email}`" class="font-medium text-[#0891B2] hover:underline truncate">
                 {{ c.email }}
               </a>
             </div>
 
-            <div v-if="!c.mobile && !c.phone && !c.email" class="text-[11px] text-slate-400 italic">
+            <div v-if="!c.mobile && !c.phone && !c.email" class="text-xs text-slate-400 italic">
               Keine Telefonnummer oder E-Mail hinterlegt
             </div>
           </div>
 
-          <!-- Website & Address with Miniature Map -->
-          <div v-if="c.website || c.address" class="space-y-2 text-xs text-slate-700 bg-white/70 p-3 rounded-2xl border border-white/80 mb-3">
+          <!-- Website & Address -->
+          <div v-if="c.website || c.address" class="space-y-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
             <!-- Website -->
-            <div v-if="c.website" class="flex items-center space-x-2">
-              <span class="text-slate-400">🌐</span>
+            <div v-if="c.website" class="flex items-center gap-2">
+              <Globe class="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <a
                 :href="formatUrl(c.website)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="font-bold text-[#00A3C4] hover:underline truncate"
+                class="font-medium text-[#0891B2] hover:underline truncate"
                 title="Webseite im neuen Tab öffnen"
               >
                 {{ displayWebsite(c.website) }}
               </a>
-              <span class="text-[10px] text-slate-400 ml-auto">↗</span>
             </div>
 
             <!-- Address -->
             <div v-if="c.address" class="pt-0.5">
-              <div class="flex items-start space-x-2">
-                <span class="text-slate-400 shrink-0 mt-0.5">📍</span>
-                <span class="font-medium text-slate-800 text-[11px] leading-tight">
+              <div class="flex items-start gap-2">
+                <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                <span class="font-medium text-slate-800 text-xs leading-snug">
                   {{ c.address }}
                 </span>
-              </div>
-
-              <!-- Action Chips & Miniaturkarte Toggle -->
-              <div class="flex flex-wrap items-center gap-1.5 mt-2 pl-5">
-                <a
-                  :href="getOsmSearchUrl(c.address)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition"
-                  title="In OpenStreetMap öffnen (Open Source, ohne API-Key)"
-                >
-                  <span>🗺️</span>
-                  <span>OpenStreetMap</span>
-                </a>
-                <a
-                  :href="getGoogleMapsUrl(c.address)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition"
-                  title="In Google Maps öffnen"
-                >
-                  <span>Google Maps</span>
-                </a>
-                <button
-                  @click="toggleMap(c)"
-                  type="button"
-                  class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 underline ml-auto cursor-pointer"
-                >
-                  {{ openMaps[c.id] ? 'Karte einklappen ▴' : 'Miniaturkarte ▾' }}
-                </button>
-              </div>
-
-              <!-- Miniature Map (OpenStreetMap Embed - 100% Open Source, no API key) -->
-              <div
-                v-if="openMaps[c.id]"
-                class="mt-2.5 rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative h-[140px]"
-              >
-                <div v-if="mapLoading[c.id]" class="absolute inset-0 flex items-center justify-center bg-slate-50/90 text-xs font-bold text-slate-600">
-                  <span class="animate-spin mr-1.5">⏳</span> Lade OpenStreetMap...
-                </div>
-                <iframe
-                  v-if="getOsmEmbedUrl(c)"
-                  :src="getOsmEmbedUrl(c)"
-                  class="w-full h-full border-0"
-                  loading="lazy"
-                  title="OpenStreetMap Miniaturkarte"
-                ></iframe>
-                <div v-else-if="!mapLoading[c.id]" class="p-3 text-center text-[11px] text-slate-500">
-                  <span>Standort konnte nicht auf OSM geocodiert werden.</span>
-                  <a :href="getOsmSearchUrl(c.address)" target="_blank" rel="noopener noreferrer" class="block font-bold text-[#00A3C4] underline mt-1">
-                    Auf OpenStreetMap suchen →
-                  </a>
-                </div>
               </div>
             </div>
           </div>
 
           <!-- Notes -->
-          <p v-if="c.notes" class="text-[11px] text-slate-600 line-clamp-2 italic mb-3">
+          <p v-if="c.notes" class="text-xs text-slate-500 line-clamp-2 italic mb-3">
             "{{ c.notes }}"
           </p>
         </div>
@@ -356,32 +307,32 @@
           <button
             @click="exportSingleVCard(c)"
             type="button"
-            class="text-[11px] font-bold text-slate-600 hover:text-[#00A3C4] flex items-center space-x-1 py-1 px-2 rounded-lg hover:bg-cyan-50 transition cursor-pointer"
+            class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-100 transition-colors"
             title="Als digitale Visitenkarte (.vcf) herunterladen"
           >
-            <span>📥</span>
+            <Download class="w-3.5 h-3.5" />
             <span>vCard</span>
           </button>
 
           <!-- Edit & Delete -->
-          <div class="flex items-center space-x-1.5">
+          <div class="flex items-center gap-1">
             <button
               v-if="c.can_edit"
               @click="openEditModal(c)"
               type="button"
-              class="p-1.5 text-slate-500 hover:text-[#00A3C4] hover:bg-cyan-50 rounded-lg transition text-xs font-bold"
+              class="p-1.5 text-slate-500 hover:text-[#0891B2] hover:bg-slate-100 rounded transition-colors"
               title="Kontakt bearbeiten"
             >
-              ✏️
+              <Pencil class="w-3.5 h-3.5" />
             </button>
             <button
               v-if="c.can_edit"
               @click="deleteContact(c)"
               type="button"
-              class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition text-xs font-bold"
+              class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
               title="Kontakt löschen"
             >
-              🗑️
+              <Trash2 class="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -862,6 +813,27 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import {
+  BookUser,
+  Users,
+  Building2,
+  HardHat,
+  Lock,
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  Download,
+  Share2,
+  X,
+  Check,
+  LayoutGrid,
+  List
+} from 'lucide-vue-next'
 
 const { user, token } = useAuth()
 

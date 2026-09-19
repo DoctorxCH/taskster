@@ -1,70 +1,68 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb in Liquid Glass Pill -->
-    <div class="mb-6">
-      <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
-        <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition flex items-center space-x-1">
-          <span>🏠</span>
-          <span>Dashboard</span>
-        </NuxtLink>
-        <span class="text-slate-400">/</span>
-        <span class="text-slate-900 font-bold flex items-center space-x-1">
-          <span>⚙️</span>
-          <span>Benutzer-Einstellungen</span>
-        </span>
-      </div>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
+      <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+        <LayoutDashboard class="w-3.5 h-3.5" />
+        <span>Dashboard</span>
+      </NuxtLink>
+      <span>/</span>
+      <span class="text-slate-800 font-medium flex items-center gap-1">
+        <Settings class="w-3.5 h-3.5 text-[#0891B2]" />
+        <span>Benutzer-Einstellungen</span>
+      </span>
     </div>
 
-    <!-- Header in Liquid Glass Card -->
-    <div class="mb-8 liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
-      <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Benutzer-Einstellungen</h1>
-      <p class="text-xs text-slate-600 mt-1 font-medium">Verwalte dein Profil, deine Zugangsdaten und deinen Tarifplan.</p>
+    <!-- Header -->
+    <div class="mb-6 bg-white border border-slate-200 rounded-lg p-5">
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Benutzer-Einstellungen</h1>
+      <p class="text-sm text-slate-600 mt-1">Verwalte dein Profil, deine Zugangsdaten und deinen Tarifplan.</p>
     </div>
 
     <!-- Feedback messages -->
-    <div v-if="successMsg" class="mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-300 text-emerald-950 text-xs font-bold liquid_glass_pill">
+    <div v-if="successMsg" class="mb-6 p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
       {{ successMsg }}
     </div>
-    <div v-if="errorMsg" class="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-300 text-rose-950 text-xs font-bold liquid_glass_pill">
+    <div v-if="errorMsg" class="mb-6 p-4 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium">
       {{ errorMsg }}
     </div>
 
-    <div class="space-y-8">
+    <div class="space-y-6">
       <!-- Card 1: Profil-Informationen -->
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
-        <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
-          <span>👤</span>
+      <div class="bg-white border border-slate-200 rounded-lg p-5">
+        <h2 class="text-base font-semibold text-slate-900 mb-1 flex items-center gap-2">
+          <User class="w-4 h-4 text-[#0891B2]" />
           <span>Persönliche Daten</span>
         </h2>
-        <p class="text-xs text-slate-600 mb-6">Aktualisiere deinen Anzeigenamen in Taskster.</p>
+        <p class="text-xs text-slate-500 mb-5">Aktualisiere deinen Anzeigenamen in Taskster.</p>
 
         <form @submit.prevent="updateProfile" class="space-y-4 max-w-lg">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Vollständiger Name</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Vollständiger Name</label>
             <input
               v-model="profileName"
               type="text"
               required
-              class="w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm"
+              class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 transition-shadow"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">E-Mail-Adresse</label>
             <input
               :value="user?.email"
               type="email"
               disabled
-              class="w-full px-3.5 py-2.5 bg-white/30 border border-white/40 rounded-xl text-xs text-slate-600 cursor-not-allowed font-medium backdrop-blur-sm"
+              class="w-full h-9 px-3 text-sm rounded-md bg-slate-50 border border-slate-200 text-slate-500 cursor-not-allowed font-medium"
             />
-            <p class="text-[11px] text-slate-500 mt-1">Die E-Mail dient als Login-Kennung und kann aus Sicherheitsgründen nicht direkt geändert werden.</p>
+            <p class="text-xs text-slate-500 mt-1.5">Die E-Mail dient als Login-Kennung und kann nicht geändert werden.</p>
           </div>
 
           <div class="pt-2">
             <button
               type="submit"
               :disabled="savingProfile"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button"
             >
               {{ savingProfile ? 'Speichern...' : 'Profil speichern' }}
             </button>
@@ -73,17 +71,17 @@
       </div>
 
       <!-- Card 2: Zeiterfassung & Abrechnung -->
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
-        <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
-          <span>⏱️</span>
+      <div class="bg-white border border-slate-200 rounded-lg p-5">
+        <h2 class="text-base font-semibold text-slate-900 mb-1 flex items-center gap-2">
+          <Clock class="w-4 h-4 text-[#0891B2]" />
           <span>Zeiterfassung & Abrechnung</span>
         </h2>
-        <p class="text-xs text-slate-600 mb-6">Lege deinen Standard-Stundenlohn und deine Abrechnungswährung für Zeiterfassungen fest.</p>
+        <p class="text-xs text-slate-500 mb-5">Lege deinen Standard-Stundenlohn und deine Abrechnungswährung fest.</p>
 
         <form @submit.prevent="updateProfile" class="space-y-4 max-w-lg">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Standard-Stundenlohn</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Stundenlohn</label>
               <div class="relative">
                 <input
                   v-model="hourlyRate"
@@ -92,19 +90,19 @@
                   min="0"
                   required
                   placeholder="120.00"
-                  class="w-full pl-3.5 pr-14 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs font-bold text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm"
+                  class="w-full h-9 pl-3 pr-14 text-sm rounded-md bg-white border border-slate-300 text-slate-900 font-semibold focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 transition-shadow"
                 />
-                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">
+                <span class="absolute right-3 top-2 text-xs text-slate-400 font-semibold pointer-events-none">
                   / Std.
                 </span>
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Standard-Währung</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Währung</label>
               <select
                 v-model="userCurrency"
-                class="w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs font-bold text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm"
+                class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 cursor-pointer"
               >
                 <option value="CHF">CHF (Schweizer Franken)</option>
                 <option value="EUR">EUR (Euro)</option>
@@ -114,15 +112,15 @@
             </div>
           </div>
 
-          <p class="text-[11px] text-slate-500">
-            💡 Dieser Stundensatz wird bei der Erfassung von Projekt- und Aufgabenzeiten standardmäßig als Berechnungsgrundlage herangezogen.
+          <p class="text-xs text-slate-500">
+            Dieser Stundensatz wird bei der Erfassung von Projekt- und Aufgabenzeiten standardmäßig herangezogen.
           </p>
 
           <div class="pt-2">
             <button
               type="submit"
               :disabled="savingProfile"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button"
             >
               {{ savingProfile ? 'Speichern...' : 'Abrechnungs-Daten speichern' }}
             </button>
@@ -390,6 +388,19 @@
 </template>
 
 <script setup lang="ts">
+import {
+  LayoutDashboard,
+  Settings,
+  User,
+  Clock,
+  Lock,
+  Zap,
+  Building2,
+  Check,
+  X,
+  ShieldCheck
+} from 'lucide-vue-next'
+
 const { user, authHeaders } = useAuth()
 
 const profileName = ref('')

@@ -1,53 +1,51 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb with Liquid Glass Pill for Crisp Contrast -->
-    <div class="mb-6">
-      <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
-        <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition flex items-center space-x-1">
-          <span>🏠</span>
-          <span>Dashboard</span>
-        </NuxtLink>
-        <span class="text-slate-400">/</span>
-        <span class="text-slate-900 font-bold flex items-center space-x-1">
-          <span>{{ folder?.icon || '📁' }}</span>
-          <span>{{ folder?.name || 'Ordner' }}</span>
-        </span>
-      </div>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
+      <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+        <LayoutDashboard class="w-3.5 h-3.5" />
+        <span>Dashboard</span>
+      </NuxtLink>
+      <span>/</span>
+      <span class="text-slate-800 font-medium flex items-center gap-1">
+        <Folder class="w-3.5 h-3.5 text-[#0891B2]" />
+        <span>{{ folder?.name || 'Ordner' }}</span>
+      </span>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-center py-16 text-slate-700 font-bold text-xs liquid_glass rounded-3xl max-w-sm mx-auto">
+    <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
       Lade Ordnerdetails und Projekte...
     </div>
 
     <div v-else-if="folder">
-      <!-- Folder Header Banner (Liquid Glass Card) -->
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+      <!-- Folder Header Banner -->
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex items-center space-x-3 mb-2">
-              <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-300/40 flex items-center justify-center text-2xl shadow-xs">
-                {{ folder.icon || '📁' }}
+            <div class="flex items-center gap-2.5 mb-1.5">
+              <div class="w-10 h-10 rounded-md bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0">
+                <Folder class="w-5 h-5" />
               </div>
-              <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ folder.name }}</h1>
+              <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ folder.name }}</h1>
             </div>
-            <p class="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>Owner: <strong class="text-slate-900">{{ folder.owner_name }}</strong></span>
-              <span v-if="user?.id === folder.owner_id" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold">
+              <span v-if="user?.id === folder.owner_id" class="px-2 py-0.5 rounded-sm bg-cyan-50 text-cyan-800 border border-cyan-200 text-xs font-medium">
                 Du (Owner)
               </span>
               <span
-                class="text-[10px] px-2 py-0.5 rounded-full border font-bold"
-                :class="folder.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                class="px-2 py-0.5 rounded-sm border text-xs font-medium"
+                :class="folder.visibility === 'company' ? 'bg-cyan-50 border-cyan-200 text-cyan-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
               >
-                {{ folder.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+                {{ folder.visibility === 'company' ? 'Unternehmen' : 'Privat' }}
               </span>
-              <span v-if="folder.company_name" class="text-teal-800 font-semibold">• {{ folder.company_name }}</span>
+              <span v-if="folder.company_name" class="text-slate-700 font-medium">• {{ folder.company_name }}</span>
               <span>• Erstellt am {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
             </p>
           </div>
 
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center gap-3">
             <button
               v-if="user?.id === folder.owner_id || user?.is_superadmin"
               @click="openShareFolderModal"
@@ -964,6 +962,24 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Folder,
+  LayoutDashboard,
+  Plus,
+  Pencil,
+  Trash2,
+  Share2,
+  Users,
+  CheckCircle2,
+  Clock,
+  Search,
+  X,
+  Check,
+  Building2,
+  Lock,
+  ClipboardList
+} from 'lucide-vue-next'
+
 const route = useRoute()
 const { user, authHeaders } = useAuth()
 const folderId = route.params.id as string
