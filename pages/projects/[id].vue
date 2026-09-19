@@ -1201,6 +1201,151 @@
       </div>
     </div>
 
+    <!-- VIEW 6: PROJEKT-KONTAKTE & BAUSTELLEN-ANSPRECHPARTNER -->
+    <div v-else-if="currentView === 'contacts'" class="space-y-6">
+      <div class="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <span>📇</span>
+              <span>Kontakte & Ansprechpartner für dieses Projekt</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Handwerker, Bauleiter, Behörden und Planer, die diesem Projekt zugeordnet sind. Alle Projekt- und Ordnermitglieder haben automatisch Zugriff.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3 shrink-0">
+            <button
+              v-if="userRole !== 'viewer'"
+              @click="openAddProjectContactModal"
+              type="button"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-md"
+            >
+              <span>+ Kontakt anlegen</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contact List / Cards -->
+        <div v-if="loadingProjectContacts" class="py-16 text-center">
+          <div class="inline-block animate-spin text-2xl mb-2">📇</div>
+          <p class="text-xs font-bold text-slate-500">Lade Projektkontakte...</p>
+        </div>
+
+        <div v-else-if="projectContacts.length === 0" class="py-16 px-6 text-center">
+          <div class="w-14 h-14 rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center text-2xl font-black mx-auto mb-3 shadow-xs">
+            📇
+          </div>
+          <h4 class="text-sm font-black text-slate-800">Noch keine Kontakte für dieses Projekt</h4>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+            Hinterlege Poliere, Architekten oder Subunternehmer direkt für dieses Projekt. Sobald du das Projekt teilst, sehen alle Projektmitglieder diese Kontakte.
+          </p>
+          <button
+            v-if="userRole !== 'viewer'"
+            @click="openAddProjectContactModal"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2"
+          >
+            <span>+ Kontakt anlegen</span>
+          </button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+          <div
+            v-for="c in projectContacts"
+            :key="c.id"
+            class="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:bg-white hover:shadow-md transition group"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex items-start space-x-2.5 min-w-0">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+                    {{ (c.first_name?.charAt(0) || '') + (c.last_name?.charAt(0) || '') }}
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-black text-slate-900 truncate">
+                      {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }}
+                    </h4>
+                    <p v-if="c.company_name" class="text-[11px] font-bold text-cyan-800 truncate">
+                      🏢 {{ c.company_name }}
+                    </p>
+                    <p v-if="c.role_function" class="text-[10px] font-semibold text-slate-600 truncate">
+                      👷 {{ c.role_function }}
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  class="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold border"
+                  :class="c.share_scope === 'company' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'"
+                >
+                  {{ c.share_scope === 'company' ? '🏢 Team' : '🔒 Projekt' }}
+                </span>
+              </div>
+
+              <!-- Details (Phone, Mobile, Email) -->
+              <div class="space-y-1 text-[11px] bg-white p-2.5 rounded-xl border border-slate-100 mb-2">
+                <div v-if="c.mobile" class="flex items-center space-x-1.5">
+                  <span class="text-slate-400">📱</span>
+                  <a :href="`tel:${c.mobile}`" class="font-bold text-[#00A3C4] hover:underline truncate">
+                    {{ c.mobile }}
+                  </a>
+                </div>
+                <div v-if="c.phone" class="flex items-center space-x-1.5">
+                  <span class="text-slate-400">📞</span>
+                  <a :href="`tel:${c.phone}`" class="text-slate-700 hover:underline truncate">
+                    {{ c.phone }}
+                  </a>
+                </div>
+                <div v-if="c.email" class="flex items-center space-x-1.5">
+                  <span class="text-slate-400">✉️</span>
+                  <a :href="`mailto:${c.email}`" class="text-cyan-800 font-semibold hover:underline truncate">
+                    {{ c.email }}
+                  </a>
+                </div>
+                <div v-if="!c.mobile && !c.phone && !c.email" class="text-[10px] text-slate-400 italic">
+                  Keine Kontaktdaten hinterlegt
+                </div>
+              </div>
+
+              <p v-if="c.notes" class="text-[10px] text-slate-500 line-clamp-2 italic mb-2">
+                "{{ c.notes }}"
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+              <button
+                @click="exportContactVCard(c)"
+                type="button"
+                class="text-[10px] font-bold text-slate-600 hover:text-[#00A3C4] flex items-center space-x-1 py-0.5 px-1.5 rounded hover:bg-cyan-50"
+                title="vCard herunterladen"
+              >
+                <span>📥</span>
+                <span>vCard</span>
+              </button>
+              <div v-if="c.can_edit && userRole !== 'viewer'" class="flex items-center space-x-1">
+                <button
+                  @click="openEditProjectContactModal(c)"
+                  type="button"
+                  class="p-1 text-slate-400 hover:text-[#00A3C4] rounded transition text-xs font-bold"
+                  title="Bearbeiten"
+                >
+                  ✏️
+                </button>
+                <button
+                  @click="deleteProjectContact(c)"
+                  type="button"
+                  class="p-1 text-slate-400 hover:text-rose-600 rounded transition text-xs font-bold"
+                  title="Löschen"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: New Section (Abschnitt) -->
     <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
@@ -2948,6 +3093,152 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal: Projektkontakt anlegen / bearbeiten -->
+    <div
+      v-if="showProjectContactModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in"
+    >
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
+          <div>
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <span>{{ isEditingProjectContact ? '✏️' : '📇' }}</span>
+              <span>{{ isEditingProjectContact ? 'Projektkontakt bearbeiten' : 'Neuen Kontakt für dieses Projekt' }}</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Dieser Kontakt ist automatisch für alle Projekt- und Ordnermitglieder sichtbar.
+            </p>
+          </div>
+          <button
+            @click="showProjectContactModal = false"
+            type="button"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="saveProjectContact" class="space-y-3.5 overflow-y-auto pr-1 flex-1">
+          <div v-if="projectContactError" class="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
+            {{ projectContactError }}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">
+                Nachname / Name <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="projectContactForm.last_name"
+                type="text"
+                required
+                placeholder="z.B. Keller"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Vorname</label>
+              <input
+                v-model="projectContactForm.first_name"
+                type="text"
+                placeholder="z.B. Stefan"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Firma / Unternehmen</label>
+              <input
+                v-model="projectContactForm.company_name"
+                type="text"
+                placeholder="z.B. Elektro Meier AG"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Funktion / Gewerk</label>
+              <input
+                v-model="projectContactForm.role_function"
+                type="text"
+                placeholder="z.B. Polier, Vorarbeiter, Bauleiter"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Mobile (Handy)</label>
+              <input
+                v-model="projectContactForm.mobile"
+                type="tel"
+                placeholder="+41 79 ..."
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Telefon Festnetz</label>
+              <input
+                v-model="projectContactForm.phone"
+                type="tel"
+                placeholder="+41 44 ..."
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">E-Mail</label>
+            <input
+              v-model="projectContactForm.email"
+              type="email"
+              placeholder="keller@elektromeier.ch"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Gruppe / Kategorie</label>
+            <input
+              v-model="projectContactForm.category_group"
+              type="text"
+              placeholder="z.B. Handwerker, Planer, Behörde"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Notizen</label>
+            <textarea
+              v-model="projectContactForm.notes"
+              rows="2"
+              placeholder="Notizen zur Baustelle, Schlüsselzugang, etc."
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100 shrink-0">
+            <button
+              @click="showProjectContactModal = false"
+              type="button"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="savingProjectContact"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ savingProjectContact ? 'Speichert...' : (isEditingProjectContact ? 'Änderungen speichern' : 'Kontakt speichern') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2964,8 +3255,29 @@ const members = ref<any[]>([])
 const journalEntries = ref<any[]>([])
 const loading = ref(true)
 
-const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time'>('tasks')
+const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time' | 'contacts'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
+
+// Projekt-Kontakte State
+const projectContacts = ref<any[]>([])
+const loadingProjectContacts = ref(false)
+const showProjectContactModal = ref(false)
+const isEditingProjectContact = ref(false)
+const savingProjectContact = ref(false)
+const projectContactError = ref('')
+
+const projectContactForm = ref({
+  id: '',
+  first_name: '',
+  last_name: '',
+  company_name: '',
+  role_function: '',
+  phone: '',
+  mobile: '',
+  email: '',
+  category_group: 'Handwerker',
+  notes: ''
+})
 
 // Live Stopwatch Integration
 const {
@@ -3297,6 +3609,7 @@ const loadProjectData = async () => {
     if (currentView.value === 'time') {
       await loadProjectTimeEntries()
     }
+    loadProjectContacts()
   } catch (err: any) {
     if (err.statusCode === 404) {
       alert('Zugriff verweigert oder Projekt nicht gefunden.')
@@ -3305,6 +3618,142 @@ const loadProjectData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const loadProjectContacts = async () => {
+  loadingProjectContacts.value = true
+  try {
+    const res = await $fetch<any>(`/api/contacts?project_id=${projectId}`, { headers: authHeaders() })
+    projectContacts.value = res.contacts || []
+  } catch (err) {
+    projectContacts.value = []
+  } finally {
+    loadingProjectContacts.value = false
+  }
+}
+
+const openAddProjectContactModal = () => {
+  isEditingProjectContact.value = false
+  projectContactError.value = ''
+  projectContactForm.value = {
+    id: '',
+    first_name: '',
+    last_name: '',
+    company_name: '',
+    role_function: '',
+    phone: '',
+    mobile: '',
+    email: '',
+    category_group: 'Handwerker',
+    notes: ''
+  }
+  showProjectContactModal.value = true
+}
+
+const openEditProjectContactModal = (contact: any) => {
+  isEditingProjectContact.value = true
+  projectContactError.value = ''
+  projectContactForm.value = {
+    id: contact.id,
+    first_name: contact.first_name || '',
+    last_name: contact.last_name || '',
+    company_name: contact.company_name || '',
+    role_function: contact.role_function || '',
+    phone: contact.phone || '',
+    mobile: contact.mobile || '',
+    email: contact.email || '',
+    category_group: contact.category_group || 'Handwerker',
+    notes: contact.notes || ''
+  }
+  showProjectContactModal.value = true
+}
+
+const saveProjectContact = async () => {
+  if (!projectContactForm.value.last_name.trim()) {
+    projectContactError.value = 'Bitte mindestens einen Nachnamen eingeben.'
+    return
+  }
+
+  savingProjectContact.value = true
+  projectContactError.value = ''
+
+  const payload = {
+    first_name: projectContactForm.value.first_name.trim(),
+    last_name: projectContactForm.value.last_name.trim(),
+    company_name: projectContactForm.value.company_name.trim(),
+    role_function: projectContactForm.value.role_function.trim(),
+    phone: projectContactForm.value.phone.trim(),
+    mobile: projectContactForm.value.mobile.trim(),
+    email: projectContactForm.value.email.trim(),
+    project_id: projectId,
+    category_group: projectContactForm.value.category_group,
+    notes: projectContactForm.value.notes.trim(),
+    share_scope: 'private'
+  }
+
+  try {
+    if (isEditingProjectContact.value) {
+      await $fetch(`/api/contacts/${projectContactForm.value.id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: payload
+      })
+    } else {
+      await $fetch('/api/contacts', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: payload
+      })
+    }
+    showProjectContactModal.value = false
+    await loadProjectContacts()
+  } catch (err: any) {
+    projectContactError.value = err.data?.statusMessage || 'Fehler beim Speichern des Kontakts'
+  } finally {
+    savingProjectContact.value = false
+  }
+}
+
+const deleteProjectContact = async (c: any) => {
+  const name = (c.first_name ? c.first_name + ' ' : '') + c.last_name
+  if (!confirm(`Möchtest du den Kontakt "${name}" wirklich löschen?`)) return
+  try {
+    await $fetch(`/api/contacts/${c.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    projectContacts.value = projectContacts.value.filter(item => item.id !== c.id)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
+  }
+}
+
+const exportContactVCard = (c: any) => {
+  const fullName = (c.first_name ? c.first_name + ' ' : '') + c.last_name
+  const vcardLines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `N:${c.last_name || ''};${c.first_name || ''};;;`,
+    `FN:${fullName}`,
+    c.company_name ? `ORG:${c.company_name}` : '',
+    c.role_function ? `TITLE:${c.role_function}` : '',
+    c.phone ? `TEL;TYPE=WORK,VOICE:${c.phone}` : '',
+    c.mobile ? `TEL;TYPE=CELL,VOICE:${c.mobile}` : '',
+    c.email ? `EMAIL;TYPE=WORK,INTERNET:${c.email}` : '',
+    c.notes ? `NOTE:${c.notes.replace(/\n/g, '\\n')}` : '',
+    'END:VCARD'
+  ].filter(Boolean)
+
+  const vcfContent = vcardLines.join('\r\n')
+  const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${fullName.replace(/\s+/g, '_')}.vcf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 const loadProjectTimeEntries = async () => {
