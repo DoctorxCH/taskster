@@ -258,6 +258,32 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS contacts (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL,
+      company_id VARCHAR(64) NULL,
+      project_id VARCHAR(64) NULL,
+      first_name VARCHAR(255) NULL,
+      last_name VARCHAR(255) NOT NULL,
+      company_name VARCHAR(255) NULL,
+      role_function VARCHAR(255) NULL,
+      phone VARCHAR(64) NULL,
+      mobile VARCHAR(64) NULL,
+      email VARCHAR(255) NULL,
+      category_group VARCHAR(128) NULL,
+      tags JSON NULL,
+      notes TEXT NULL,
+      share_scope VARCHAR(32) NOT NULL DEFAULT 'private',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_contacts_user (user_id),
+      INDEX idx_contacts_company (company_id),
+      INDEX idx_contacts_project (project_id),
+      INDEX idx_contacts_group (category_group)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   // Column migrations for MySQL
   const colMigrations = [
     "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",

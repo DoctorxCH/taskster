@@ -34,7 +34,7 @@
 ## 3. Tech-Stack & Design-System
 - **Stack:** Vue.js/Nuxt 3, Tailwind CSS, API-First (PHP/TypeScript), MariaDB/PostgreSQL (JSONB), Capacitor.
 - **Security:** Zero-Trust serverseitig; unberechtigt = `404 Not Found` (kein Info-Leak); Company-Policy überschreibt alles.
-- **Design:** Palette verbindlich aus `palette_preview.html`.
+- **Design (VERBINDLICH):** [99_anweisungen/design-system.md](file:///c:/Users/marti/Taskster/99_anweisungen/design-system.md) + [design-tokens.json](file:///c:/Users/marti/Taskster/99_anweisungen/design-tokens.json). **Vor jeder UI-Änderung lesen.** Primärfarbe `#00A3C4` (nicht das ungenutzte `brand`-Grün in `tailwind.config.ts`).
 - **Buttons (Standard: `px-6 text-xs h-[42px] rounded-lg`):**
   - Primary / Save: `taskster_button` (Blau)
   - Destructive / Accent: `taskster_button_accent` (Rot)

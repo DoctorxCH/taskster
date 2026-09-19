@@ -1,0 +1,401 @@
+{
+  "$schema": "https://taskster.local/design-tokens.schema.json",
+  "name": "Taskster Design System",
+  "version": "1.0.0",
+  "description": "Verbindliche Design-Tokens für Taskster. Quelle: app.vue, tailwind.config.ts, pages/*.vue, components/*.vue. Bei Design-Änderungen IMMER diese Datei mitaktualisieren.",
+
+  "meta": {
+    "designLanguage": "MeisterTask-inspiriert + Liquid Glass",
+    "baseFramework": "Tailwind CSS 3.4",
+    "darkMode": "class (definiert, aktuell nicht genutzt)",
+    "wallpaperDriven": true,
+    "wallpaperNote": "Alle Flächen liegen über einem wechselnden Hintergrundbild. Deshalb sind Transparenz + backdrop-blur + Liquid-Glass-Klassen Pflicht für Lesbarkeit."
+  },
+
+  "colors": {
+    "brand": {
+      "primary": "#00A3C4",
+      "primaryHover": "#008ba8",
+      "primarySoft": "#f0fdff",
+      "note": "Das ist die ECHTE Markenfarbe. NICHT mit tailwind.config.ts 'brand' (grün) verwechseln – das ist ungenutzt."
+    },
+    "accent": {
+      "destructive": "#e11d48",
+      "destructiveHover": "#f43f5e",
+      "note": "rose-600 / rose-500 – für Löschen, Stoppen, Warnungen"
+    },
+    "gradient": {
+      "avatar": "linear-gradient(to top right, #0891b2, #14b8a6)",
+      "avatarClasses": "bg-gradient-to-tr from-cyan-600 to-teal-500",
+      "loginPanel": "linear-gradient(to bottom right, #0891b2, #0f766e)",
+      "loginPanelClasses": "bg-gradient-to-br from-cyan-600 to-teal-700"
+    },
+    "text": {
+      "heading": "slate-900",
+      "body": "slate-700",
+      "secondary": "slate-600",
+      "meta": "slate-500",
+      "muted": "slate-400",
+      "onDark": "white",
+      "link": "#00A3C4"
+    },
+    "surface": {
+      "page": "transparent (Wallpaper scheint durch)",
+      "card": "white",
+      "cardSoft": "slate-50",
+      "input": "white/70",
+      "inputDisabled": "white/30",
+      "border": "slate-200",
+      "borderSoft": "slate-200/80",
+      "divider": "slate-100"
+    },
+    "status": {
+      "todo": { "bg": "slate-100", "text": "slate-600", "border": "slate-200", "label": "Zu erledigen" },
+      "in_progress": { "bg": "cyan-50", "text": "cyan-700", "border": "cyan-200", "label": "In Arbeit" },
+      "review": { "bg": "amber-50", "text": "amber-700", "border": "amber-200", "label": "In Prüfung" },
+      "done": { "bg": "emerald-50", "text": "emerald-700", "border": "emerald-200", "label": "Abgeschlossen" }
+    },
+    "priority": {
+      "niedrig": { "bg": "emerald-50", "text": "emerald-800", "border": "emerald-300", "emoji": "🟢" },
+      "normal": { "bg": "white", "text": "slate-800", "border": "slate-300", "emoji": "🔵" },
+      "hoch": { "bg": "amber-50", "text": "amber-800", "border": "amber-300", "emoji": "🟠" },
+      "dringend": { "bg": "rose-50", "text": "rose-800", "border": "rose-300", "emoji": "🔴" }
+    },
+    "semantic": {
+      "success": { "bg": "emerald-500/15", "border": "emerald-300", "text": "emerald-950" },
+      "error": { "bg": "rose-500/15", "border": "rose-300", "text": "rose-950" },
+      "warning": { "bg": "amber-50", "border": "amber-200", "text": "amber-800" },
+      "info": { "bg": "cyan-50", "border": "cyan-200", "text": "cyan-900" }
+    },
+    "roleBadges": {
+      "superadmin": { "bg": "purple-100", "text": "purple-700", "border": "purple-200", "label": "SUPERADMIN" },
+      "platformAdmin": { "bg": "purple-100", "text": "purple-700", "border": "purple-200", "label": "PLATFORM ADMIN" },
+      "companyAdmin": { "bg": "emerald-100", "text": "emerald-800", "border": "emerald-300", "label": "COMPANY ADMIN" },
+      "companyMember": { "bg": "emerald-50", "text": "emerald-700", "border": "emerald-200", "label": "<Firmenname>" },
+      "pro": { "bg": "amber-50", "text": "amber-700", "border": "amber-200", "label": "PRO PLAN" },
+      "free": { "bg": "slate-100", "text": "slate-600", "border": "slate-200", "label": "FREE PLAN" }
+    },
+    "taskColorPalette": [
+      { "value": "#00A3C4", "label": "Cyan" },
+      { "value": "#8B5CF6", "label": "Lila" },
+      { "value": "#F59E0B", "label": "Amber" },
+      { "value": "#10B981", "label": "Smaragd" },
+      { "value": "#EF4444", "label": "Rot" },
+      { "value": "#EC4899", "label": "Pink" },
+      { "value": "#6366F1", "label": "Indigo" },
+      { "value": "#64748B", "label": "Slate" }
+    ],
+    "sectionPastelColors": [
+      { "value": "rgba(238, 242, 255, 0.95)", "label": "Indigo Soft" },
+      { "value": "rgba(236, 253, 245, 0.95)", "label": "Mint Soft" },
+      { "value": "rgba(254, 243, 199, 0.95)", "label": "Amber Soft" },
+      { "value": "rgba(255, 241, 242, 0.95)", "label": "Rose Soft" },
+      { "value": "rgba(243, 232, 255, 0.95)", "label": "Lila Soft" },
+      { "value": "rgba(240, 253, 250, 0.95)", "label": "Cyan Soft" },
+      { "value": "rgba(241, 245, 249, 0.95)", "label": "Slate Soft" }
+    ]
+  },
+
+  "typography": {
+    "fontFamily": "font-sans (Tailwind default: ui-sans-serif, system-ui, …)",
+    "antialiased": true,
+    "scale": {
+      "pageTitle": { "classes": "text-2xl sm:text-3xl font-black tracking-tight", "usage": "Seiten-H1" },
+      "heroTitle": { "classes": "text-2xl sm:text-4xl font-black tracking-tight", "usage": "Dashboard-Hero" },
+      "sectionTitle": { "classes": "text-base font-black tracking-tight", "usage": "Karten-Überschrift" },
+      "cardTitle": { "classes": "text-sm font-black", "usage": "Karten-/Spalten-Titel" },
+      "body": { "classes": "text-xs", "usage": "Standard-Fließtext" },
+      "bodyLarge": { "classes": "text-xs sm:text-sm", "usage": "Drawer/Modal-Inhalte" },
+      "meta": { "classes": "text-[11px]", "usage": "Sekundärinfos, Hilfetexte" },
+      "micro": { "classes": "text-[10px]", "usage": "Tabellen-Header, Badges" },
+      "nano": { "classes": "text-[9px]", "usage": "Chips, Mini-Badges" },
+      "metric": { "classes": "text-2xl sm:text-3xl font-black tracking-tight", "usage": "KPI-Zahlen" },
+      "mono": { "classes": "font-mono font-black", "usage": "Timer, IDs, E-Mails" }
+    },
+    "weights": {
+      "black": "font-black (900) – Überschriften, KPI, Badges",
+      "bold": "font-bold (700) – Labels, Tabellen-Header",
+      "semibold": "font-semibold (600) – Buttons, Fließtext-Betonung",
+      "medium": "font-medium (500) – Hilfstexte"
+    },
+    "tracking": {
+      "tight": "tracking-tight – Überschriften",
+      "wider": "tracking-wider – UPPERCASE-Labels",
+      "widest": "tracking-widest – Brand-Tagline"
+    },
+    "uppercaseLabels": "text-[10px] font-black uppercase tracking-wider text-slate-500"
+  },
+
+  "spacing": {
+    "pageContainer": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+    "cardPadding": "p-6 sm:p-8",
+    "cardPaddingCompact": "p-4 sm:p-6",
+    "cardPaddingSmall": "p-5",
+    "sectionGap": "space-y-6 / space-y-8",
+    "gridGap": "gap-4 / gap-5 / gap-6",
+    "navbarHeight": "h-16",
+    "sidebarWidth": "w-16 hover:w-56",
+    "sidebarHeight": "h-[calc(100vh-4rem)]",
+    "controlHeight": {
+      "standard": "h-[42px]",
+      "compact": "h-[38px]",
+      "small": "h-[36px]",
+      "tiny": "h-[34px]",
+      "micro": "h-[30px]"
+    }
+  },
+
+  "radius": {
+    "card": "rounded-3xl",
+    "inner": "rounded-2xl",
+    "control": "rounded-xl",
+    "small": "rounded-lg",
+    "chip": "rounded-md",
+    "pill": "rounded-full"
+  },
+
+  "shadows": {
+    "card": "shadow-xl",
+    "cardSoft": "shadow-lg",
+    "cardSubtle": "shadow-md",
+    "control": "shadow-sm",
+    "micro": "shadow-xs",
+    "modal": "shadow-2xl",
+    "buttonPrimary": "shadow-sm shadow-cyan-900/10",
+    "buttonAccent": "shadow-sm shadow-rose-900/10"
+  },
+
+  "components": {
+    "buttons": {
+      "$comment": "VERBINDLICHER STANDARD: px-6 text-xs h-[42px] rounded-lg. Abweichungen nur bei Icon-Buttons oder Tabellen-Aktionen.",
+      "primary": {
+        "class": "taskster_button",
+        "definition": "@apply bg-[#00A3C4] hover:bg-[#008ba8] text-white font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm shadow-cyan-900/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]",
+        "usage": "Speichern, Erstellen, Bestätigen",
+        "size": "px-6 text-xs h-[42px] rounded-lg"
+      },
+      "accent": {
+        "class": "taskster_button_accent",
+        "definition": "@apply bg-rose-600 hover:bg-rose-500 text-white font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm shadow-rose-900/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]",
+        "usage": "Löschen, Entfernen, Stoppen",
+        "size": "px-6 text-xs h-[42px] rounded-lg"
+      },
+      "light": {
+        "class": "taskster_button_light",
+        "definition": "@apply bg-white hover:bg-slate-50 text-slate-800 border-[3px] border-[#00A3C4] font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]",
+        "usage": "Abbrechen, Sekundär-Aktionen, Filter",
+        "size": "px-6 text-xs h-[42px] rounded-lg"
+      },
+      "tableAction": "taskster_button_light px-4 text-xs h-[34px] rounded-lg shadow-xs",
+      "iconOnly": "taskster_button_light px-3.5 text-xs h-[42px] rounded-lg"
+    },
+
+    "liquidGlass": {
+      "$comment": "Drei Varianten. Auswahl nach Lesbarkeits-Anforderung: je höher die Deckkraft, desto besser lesbar.",
+      "liquid_glass": {
+        "background": "rgba(255, 255, 255, 0.30)",
+        "backdropFilter": "blur(28px) saturate(180%)",
+        "border": "none (auskommentiert)",
+        "usage": "Große Seiten-Container, Hero-Karten, Board-Spalten"
+      },
+      "liquid_glass_pill": {
+        "background": "rgba(255, 255, 255, 0.88)",
+        "backdropFilter": "blur(20px) saturate(180%)",
+        "border": "1px solid rgba(255, 255, 255, 0.80)",
+        "boxShadow": "0 4px 16px 0 rgba(0,0,0,0.06), 0 1px 0 0 rgba(255,255,255,0.95) inset",
+        "usage": "Breadcrumbs, Tab-Leisten, Feedback-Banner"
+      },
+      "liquid_glass_card": {
+        "background": "rgba(255, 255, 255, 0.90)",
+        "backdropFilter": "blur(24px) saturate(180%)",
+        "border": "1px solid rgba(255, 255, 255, 0.85)",
+        "boxShadow": "0 10px 24px 0 rgba(0,0,0,0.07), 0 1px 0 0 rgba(255,255,255,0.98) inset",
+        "usage": "KPI-Kacheln, Vorlagen-Karten, kleine Info-Boxen"
+      }
+    },
+
+    "navbar": {
+      "element": "header",
+      "classes": "liquid_glass sticky top-0 z-40 text-slate-900 shadow-md transition-colors border-b border-white/60",
+      "inner": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between",
+      "navLink": "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all",
+      "navLinkActive": "bg-white text-[#00A3C4] shadow-sm font-extrabold",
+      "navLinkIdle": "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+    },
+
+    "sidebar": {
+      "classes": "hidden md:flex flex-col w-16 hover:w-56 bg-white/80 hover:bg-white/95 backdrop-blur-xl border-l border-white/50 shadow-2xl transition-all duration-300 ease-in-out group/sidebar z-30 sticky top-16 h-[calc(100vh-4rem)] select-none shrink-0",
+      "item": "flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80",
+      "itemActive": "bg-cyan-50 text-[#00A3C4] font-bold shadow-xs",
+      "label": "hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap"
+    },
+
+    "cards": {
+      "glassCard": "liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl",
+      "solidCard": "bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm",
+      "kpiCard": "p-4 rounded-2xl liquid_glass_card text-center",
+      "kpiCardColored": "p-4 rounded-2xl bg-cyan-50/50 border border-cyan-100",
+      "hoverCard": "liquid_glass_card hover:border-[#00A3C4] rounded-3xl p-6 shadow-md hover:shadow-xl transition"
+    },
+
+    "inputs": {
+      "text": "w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm",
+      "textSolid": "w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600",
+      "disabled": "w-full px-3.5 py-2.5 bg-white/30 border border-white/40 rounded-xl text-xs text-slate-600 cursor-not-allowed font-medium backdrop-blur-sm",
+      "select": "w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-cyan-600",
+      "textarea": "w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600 resize-y",
+      "label": "block text-xs font-bold text-slate-700 mb-1",
+      "hint": "text-[11px] text-slate-500 mt-1",
+      "checkbox": "w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-0 cursor-pointer"
+    },
+
+    "tables": {
+      "wrapper": "overflow-x-auto",
+      "table": "w-full text-left text-xs",
+      "thead": "bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80",
+      "th": "py-3.5 px-4",
+      "tbody": "divide-y divide-slate-200/60 text-slate-800",
+      "row": "hover:bg-white/60 transition",
+      "td": "py-3.5 px-4"
+    },
+
+    "badges": {
+      "pill": "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+      "chip": "px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/90 border border-slate-200 text-slate-700",
+      "countBadge": "text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-xs border border-slate-200/60"
+    },
+
+    "tabs": {
+      "bar": "liquid_glass_pill rounded-2xl px-4 py-1.5 mb-6 flex items-center space-x-3 overflow-x-auto shadow-sm",
+      "button": "py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0",
+      "active": "bg-white text-purple-800 shadow-sm",
+      "idle": "text-slate-700 hover:text-slate-900 hover:bg-white/50",
+      "underlineTab": "py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer",
+      "underlineActive": "border-[#00A3C4] text-[#00A3C4] font-black",
+      "underlineIdle": "border-transparent text-slate-700 hover:text-slate-950 font-bold"
+    },
+
+    "modals": {
+      "overlay": "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm",
+      "overlayStrong": "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md overflow-y-auto",
+      "panel": "bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl",
+      "panelLarge": "bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden",
+      "header": "flex items-center justify-between pb-4 border-b border-slate-100 mb-6",
+      "title": "text-lg font-black text-slate-900",
+      "subtitle": "text-xs text-slate-500 mt-0.5",
+      "closeButton": "text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg",
+      "footer": "flex items-center justify-end space-x-3 pt-4 border-t border-slate-100"
+    },
+
+    "breadcrumb": {
+      "classes": "inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill",
+      "link": "hover:text-cyan-700 transition flex items-center space-x-1",
+      "separator": "text-slate-400",
+      "current": "text-slate-900 font-bold flex items-center space-x-1"
+    },
+
+    "feedback": {
+      "success": "mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-300 text-emerald-950 text-xs font-bold liquid_glass_pill",
+      "error": "mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-300 text-rose-950 text-xs font-bold liquid_glass_pill"
+    },
+
+    "avatars": {
+      "gradient": "w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-xs font-black shadow-sm",
+      "stack": "inline-block w-5 h-5 rounded-full ring-1 ring-white bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[9px] font-black flex items-center justify-center",
+      "initials": "w-9 h-9 rounded-full bg-cyan-100 text-cyan-800 font-bold flex items-center justify-center text-xs border border-cyan-200"
+    },
+
+    "progressBar": {
+      "track": "w-full bg-slate-200 rounded-full h-1.5 overflow-hidden",
+      "fill": "h-1.5 rounded-full transition-all",
+      "fillOk": "bg-cyan-600",
+      "fillWarn": "bg-amber-500",
+      "fillOver": "bg-rose-500"
+    },
+
+    "stopwatch": {
+      "pill": "flex items-center space-x-2.5 px-3.5 py-1.5 rounded-2xl bg-slate-900/90 border border-cyan-500/50 text-white shadow-lg backdrop-blur-md",
+      "dot": "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse",
+      "time": "font-mono font-black text-xs sm:text-sm tracking-wider text-cyan-300",
+      "stopButton": "px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center space-x-1 shadow-xs transition transform hover:scale-105 cursor-pointer"
+    },
+
+    "emptyState": {
+      "wrapper": "text-center py-16 px-6",
+      "icon": "w-16 h-16 rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center text-2xl font-black mx-auto mb-3 shadow-xs",
+      "title": "text-sm font-black text-slate-800",
+      "text": "text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6"
+    }
+  },
+
+  "layout": {
+    "appShell": "min-h-screen relative flex flex-col font-sans antialiased text-slate-900 selection:bg-cyan-500 selection:text-white",
+    "wallpaperLayer": "fixed inset-0 pointer-events-none z-0 overflow-hidden",
+    "wallpaperImage": "w-full h-full object-cover object-center filter brightness-[0.92] contrast-[1.03] transition-all duration-700 ease-out",
+    "wallpaperOverlay": "absolute inset-0 bg-slate-900/15 backdrop-blur-[0.5px]",
+    "contentLayer": "relative z-10 flex flex-col min-h-screen",
+    "mainArea": "flex-1 min-w-0 transition-all",
+    "zIndex": {
+      "wallpaper": "z-0",
+      "content": "z-10",
+      "sidebar": "z-30",
+      "navbar": "z-40",
+      "modal": "z-50"
+    }
+  },
+
+  "wallpapers": {
+    "storageKey": "taskster_wallpaper",
+    "default": "/wallpapers/mountain-lake.jpg",
+    "count": 15,
+    "categories": ["nature", "abstract", "space"],
+    "note": "Nutzer kann Wallpaper wechseln. Design MUSS auf allen 15 Bildern lesbar bleiben."
+  },
+
+  "rules": {
+    "must": [
+      "Buttons immer mit Standardgröße px-6 text-xs h-[42px] rounded-lg (außer Icon-/Tabellen-Buttons).",
+      "Primärfarbe ist #00A3C4 – niemals eine andere Blau/Cyan-Nuance als Hauptfarbe.",
+      "Alle Flächen über dem Wallpaper brauchen Liquid-Glass-Klasse ODER bg-white mit ausreichender Deckkraft.",
+      "Überschriften: font-black + tracking-tight. Labels: uppercase + tracking-wider.",
+      "Status-Farben exakt aus colors.status verwenden (todo/in_progress/review/done).",
+      "Priorität exakt aus colors.priority verwenden (niedrig/normal/hoch/dringend).",
+      "Modals: Overlay bg-slate-900/50 backdrop-blur-sm, Panel bg-white rounded-3xl shadow-2xl.",
+      "Abbrechen-Button ist IMMER taskster_button_light, Bestätigen IMMER taskster_button.",
+      "Löschen-Button ist IMMER taskster_button_accent (rose).",
+      "Deutsche UI-Texte, Schweizer Zahlenformat (de-CH), Währung CHF als Default."
+    ],
+    "mustNot": [
+      "Keine neuen Farben erfinden – nur die definierten Paletten nutzen.",
+      "Kein bg-white ohne Liquid-Glass auf großen Flächen (Lesbarkeit auf Wallpaper).",
+      "Keine eckigen Ecken (rounded-none) – Minimum rounded-lg.",
+      "Keine Schriftgrößen unter text-[9px].",
+      "Kein font-normal für Überschriften oder Badges.",
+      "Keine Inline-Styles für Farben außer bei dynamischen Werten (task.color, section.color).",
+      "Kein Dark-Mode-Code (darkMode ist definiert, aber nicht implementiert)."
+    ],
+    "accessibility": [
+      "Kontrast: Text auf Liquid Glass immer slate-900/slate-700 (nicht slate-400).",
+      "Interaktive Elemente brauchen cursor-pointer.",
+      "Disabled-Zustände: disabled:opacity-50 disabled:cursor-not-allowed.",
+      "Fokus: focus:outline-none focus:border-cyan-600 (Inputs) bzw. focus:ring-2 focus:ring-[#00A3C4].",
+      "Icon-Buttons brauchen title-Attribut."
+    ]
+  },
+
+  "sourceFiles": {
+    "globalStyles": "app.vue (<style> Block – taskster_button*, liquid_glass*)",
+    "tailwindConfig": "tailwind.config.ts (brand/taskster – brand ist ungenutzt)",
+    "wallpapers": "composables/useWallpaper.ts",
+    "referencePages": [
+      "pages/dashboard.vue",
+      "pages/projects/[id].vue",
+      "pages/time.vue",
+      "pages/settings.vue",
+      "pages/admin/index.vue",
+      "pages/company/index.vue",
+      "pages/login.vue",
+      "components/Navbar.vue"
+    ]
+  }
+}

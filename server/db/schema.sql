@@ -198,3 +198,23 @@ CREATE TABLE IF NOT EXISTS notifications (
   is_read INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  company_id TEXT REFERENCES companies(id) ON DELETE SET NULL,
+  project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+  first_name TEXT,
+  last_name TEXT NOT NULL,
+  company_name TEXT,
+  role_function TEXT,
+  phone TEXT,
+  mobile TEXT,
+  email TEXT,
+  category_group TEXT,
+  tags TEXT DEFAULT '[]',
+  notes TEXT,
+  share_scope TEXT NOT NULL DEFAULT 'private',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT
+);
