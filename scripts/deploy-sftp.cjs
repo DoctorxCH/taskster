@@ -22,8 +22,19 @@ async function syncDir(sftp, localDir, remoteDir) {
     } else {
       await new Promise((resolve, reject) => {
         sftp.fastPut(localPath, remotePath, (err) => {
-          if (err) reject(err)
-          else {
+          if (err) {
+            // Fallback to simple streaming put
+            const readStream = fs.createReadStream(localPath)
+            const writeStream = sftp.createWriteStream(remotePath)
+            writeStream.on('close', () => {
+              sftp.chmod(remotePath, 0o644, () => resolve())
+            })
+            writeStream.on('error', (streamErr) => {
+              console.error(`Failed to upload ${remotePath}:`, streamErr.message || streamErr)
+              reject(streamErr)
+            })
+            readStream.pipe(writeStream)
+          } else {
             sftp.chmod(remotePath, 0o644, () => resolve())
           }
         })
