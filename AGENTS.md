@@ -22,11 +22,12 @@
   - Destructive / Accent: `taskster_button_accent` (Rot)
   - Ghost / Cancel: `taskster_button_light` (Weiß + blauer 3px Rand)
 
-## 4. Deployment & Sync (Verbindlich)
-- **Git als Single Source of Truth:** Alle Quellcode-Änderungen werden committed und nach `origin/main` gepusht.
+## 4. Deployment & Sync (Git Only - Verbindlich)
+- **Git als Single Source of Truth:** Sowohl Quellcode als auch der lokal gebaute Produktions-Build (`index.html`, `200.html`, `_nuxt/`, etc.) werden direkt in Git committed und nach `origin/main` gepusht.
 - **Server-Umgebung (Hostcreators Shared-Hosting):** Der Server besitzt keinen C-Compiler (`cc`) und ein inkompatibles GLIBC für native Module (`better-sqlite3`). Daher kann auf dem Server **kein** `npm install` oder `npm run build` ausgeführt werden.
 - **Verbindlicher Deployment-Ablauf:**
-  1. Änderungen lokal testen und committen (`git commit & push origin main`).
-  2. Lokaler statischer Build: `npm run generate` (erstellt `.output/public/` mit allen Assets und `api/index.php`).
-  3. Automatisches Deployment: `node scripts/deploy-sftp.cjs` synchronisiert `.output/public` direkt nach `/sub/taskster`.
-  4. Bei DB-Schema-Änderungen: `node scripts/migrate-mysql.cjs` remote gegen MySQL ausführen.
+  1. Änderungen lokal testen.
+  2. Lokaler statischer Build & Sync: `npm run build:dist` (führt `nuxt generate` aus und synchronisiert `.output/public` direkt in das Git-Root-Verzeichnis).
+  3. Git Commit & Push: `git add -A; git commit -m "..."; git push origin main`.
+  4. Server-Sync: Auf dem Server wird einfach `git pull origin main` ausgeführt! (Kein SFTP nötig).
+  5. Bei DB-Schema-Änderungen: `node scripts/migrate-mysql.cjs` remote gegen MySQL ausführen.
