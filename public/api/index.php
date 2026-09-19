@@ -457,6 +457,137 @@ function errorResponse($message, $status = 400) {
     exit;
 }
 
+// ---------------------------------------------------------------------------
+// AI (OpenRouter / DeepSeek V4 Flash) — serverseitig, Key bleibt in .env
+// ---------------------------------------------------------------------------
+
+/**
+ * Liest die zentrale AI-Konfiguration aus ai.config.json (Single Source of Truth).
+ * Faellt auf sichere Defaults zurueck, falls die Datei fehlt.
+ */
+function getAiConfig() {
+    static $config = null;
+    if ($config !== null) return $config;
+
+    $defaults = [
+        'model' => 'deepseek/deepseek-v4-flash-0731',
+        'provider' => ['only' => ['baidu/fp8'], 'allow_fallbacks' => false],
+        'temperature' => 0.3,
+        'max_tokens' => 4096,
+        'timeout_seconds' => 120,
+        'system_prompt' => 'Du bist ein praeziser technischer Assistent fuer das Taskster-Projekt.'
+    ];
+
+    $path = dirname(__DIR__, 2) . '/ai.config.json';
+    if (!is_file($path)) {
+        $config = $defaults;
+        return $config;
+    }
+
+    $raw = @file_get_contents($path);
+    $parsed = $raw ? json_decode($raw, true) : null;
+    $config = is_array($parsed) ? array_merge($defaults, $parsed) : $defaults;
+    return $config;
+}
+
+/**
+ * Liest einen Wert aus der .env im Projekt-Root (ohne externe Abhaengigkeit).
+ * Echte Umgebungsvariablen (getenv) haben Vorrang.
+ */
+function getEnvValue($key, $default = null) {
+    $value = getenv($key);
+    if ($value !== false && $value !== '') return $value;
+
+    static $dotenv = null;
+    if ($dotenv === null) {
+        $dotenv = [];
+        $path = dirname(__DIR__, 2) . '/.env';
+        if (is_file($path)) {
+            foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                $line = trim($line);
+                if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
+                list($k, $v) = explode('=', $line, 2);
+                $k = trim($k);
+                $v = trim($v);
+                if (strlen($v) >= 2 && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
+                    $v = substr($v, 1, -1);
+                }
+                $dotenv[$k] = $v;
+            }
+        }
+    }
+    return $dotenv[$key] ?? $default;
+}
+
+/**
+ * Ruft OpenRouter auf und liefert den Antworttext.
+ * Endpoint-Pinning via provider.only + allow_fallbacks=false (siehe ai.config.json).
+ *
+ * @throws Exception bei Netzwerk-, Auth- oder Upstream-Fehlern.
+ */
+function callOpenRouter($messages, $overrides = []) {
+    $config = getAiConfig();
+    $apiKey = getEnvValue('OPENROUTER_API_KEY');
+    if (!$apiKey) {
+        throw new Exception('OPENROUTER_API_KEY fehlt (bitte in .env setzen)', 500);
+    }
+
+    $payload = [
+        'model' => $overrides['model'] ?? $config['model'],
+        'messages' => $messages,
+        'temperature' => $overrides['temperature'] ?? $config['temperature'],
+        'max_tokens' => $overrides['max_tokens'] ?? $config['max_tokens'],
+        'provider' => $config['provider']
+    ];
+
+    $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+            'HTTP-Referer: https://taskster.ch',
+            'X-Title: Taskster'
+        ],
+        CURLOPT_TIMEOUT => (int)($config['timeout_seconds'] ?? 120),
+        CURLOPT_CONNECTTIMEOUT => 15
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        throw new Exception('Netzwerkfehler zu OpenRouter: ' . $curlError, 502);
+    }
+
+    $data = json_decode($response, true);
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $upstream = $data['error']['message'] ?? substr((string)$response, 0, 400);
+        $hint = '';
+        if ($httpCode === 401) $hint = ' (API-Key ungueltig)';
+        if ($httpCode === 402) $hint = ' (kein Guthaben)';
+        if ($httpCode === 404) $hint = ' (Modell/Endpoint nicht verfuegbar - baidu/fp8 gepinnt)';
+        if ($httpCode === 429) $hint = ' (Rate-Limit)';
+        throw new Exception('OpenRouter ' . $httpCode . $hint . ': ' . $upstream, 502);
+    }
+
+    $text = $data['choices'][0]['message']['content'] ?? '';
+    if ($text === '') {
+        throw new Exception('Leere Antwort von OpenRouter', 502);
+    }
+
+    return [
+        'text' => $text,
+        'usage' => $data['usage'] ?? null,
+        'model' => $data['model'] ?? $payload['model']
+    ];
+}
+
 function getAuthUser() {
     global $jwtSecret;
     $headers = getallheaders();
@@ -2472,8 +2603,7 @@ try {
     }
 
     // 16k. POST company/support (Support-Ticket an Taskster senden)
-    if ($path === 'company/support' && $method === 'POST') {
-        $user = requireCompanyAdmin();
+    if ($path === 'company/support' && $method === 'POST') {        $user = requireCompanyAdmin();
         $companyId = $user['company_id'];
         if (!$companyId && !empty($user['is_superadmin'])) {
             $companyId = $body['company_id'] ?? null;
@@ -2513,6 +2643,85 @@ try {
         }
 
         jsonResponse(['success' => true, 'ticket_id' => $ticketId]);
+    }
+
+    // ==========================================
+    // AI ENDPOINTS (OpenRouter / DeepSeek V4 Flash)
+    // Serverseitig: API-Key bleibt in .env, nie im Client.
+    // ==========================================
+
+    // AI-1. POST ai/chat (Prompt + optionale Nachrichtenhistorie)
+    if ($path === 'ai/chat' && $method === 'POST') {
+        $user = requireAuth();
+
+        $prompt = trim($body['prompt'] ?? '');
+        $history = $body['messages'] ?? [];
+        $systemOverride = isset($body['system']) ? trim($body['system']) : null;
+        $jsonMode = !empty($body['json']);
+
+        if ($prompt === '' && empty($history)) {
+            errorResponse('Prompt erforderlich', 400);
+        }
+
+        $config = getAiConfig();
+        $messages = [[
+            'role' => 'system',
+            'content' => $systemOverride ?: $config['system_prompt']
+        ]];
+
+        // Optionale Historie (nur user/assistant, max 20 Nachrichten)
+        if (is_array($history)) {
+            foreach (array_slice($history, -20) as $msg) {
+                $role = $msg['role'] ?? '';
+                $content = trim($msg['content'] ?? '');
+                if (in_array($role, ['user', 'assistant'], true) && $content !== '') {
+                    $messages[] = ['role' => $role, 'content' => $content];
+                }
+            }
+        }
+
+        $userContent = $prompt;
+        if ($jsonMode) {
+            $userContent .= "\n\nAntworte AUSSCHLIESSLICH mit gueltigem JSON, ohne Markdown-Codeblock und ohne Erklaerung.";
+        }
+        $messages[] = ['role' => 'user', 'content' => $userContent];
+
+        try {
+            $result = callOpenRouter($messages, [
+                'model' => $body['model'] ?? null,
+                'temperature' => isset($body['temperature']) ? floatval($body['temperature']) : null,
+                'max_tokens' => isset($body['max_tokens']) ? intval($body['max_tokens']) : null
+            ]);
+        } catch (Exception $e) {
+            errorResponse($e->getMessage(), $e->getCode() >= 400 ? $e->getCode() : 502);
+        }
+
+        $text = $result['text'];
+        if ($jsonMode) {
+            $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
+            $text = preg_replace('/```$/', '', trim($text));
+        }
+
+        jsonResponse([
+            'success' => true,
+            'text' => $text,
+            'model' => $result['model'],
+            'usage' => $result['usage']
+        ]);
+    }
+
+    // AI-2. GET ai/config (Konfiguration fuer Debug/Transparenz, ohne Key)
+    if ($path === 'ai/config' && $method === 'GET') {
+        requireAuth();
+        $config = getAiConfig();
+        jsonResponse([
+            'model' => $config['model'],
+            'provider' => $config['provider'],
+            'temperature' => $config['temperature'],
+            'max_tokens' => $config['max_tokens'],
+            'timeout_seconds' => $config['timeout_seconds'],
+            'key_configured' => (bool)getEnvValue('OPENROUTER_API_KEY')
+        ]);
     }
 
     // 17. GET admin/overview
