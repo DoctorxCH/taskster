@@ -34,12 +34,12 @@ User können Kontakte für Baustellen, Gewerke und Projekte erfassen und pflegen
   - Filterleiste: Textsuche, Gruppe, Projekt-Dropdown, Freigabe-Filter.
   - Umschaltung: Kartenansicht (Cards) und Tabellenansicht (Table).
   - Aktionen: Direktanruf (`tel:`), WhatsApp-Link, Mail (`mailto:`), Projekt-Verknüpfung, vCard-Download (.vcf), Bearbeiten, Löschen.
-  - Modal für Neuer Kontakt / Bearbeiten mit Tag-Chip-Eingabe und Unternehmens-Freigabeschalter.
+  - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene DeepSeek V4 Flash API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
   - Standard Taskster-Buttons: `taskster_button`, `taskster_button_light`, `taskster_button_accent` (`px-6 text-xs h-[42px] rounded-lg`).
 - **Projekt-Detailseite (`pages/projects/[id].vue`):**
   - Neuer Tab `📇 Kontakte (X)` im Projektheader.
   - Listet alle Kontakte der Baustelle/des Projekts.
-  - Modal zum direkten Anlegen von Projektkontakten.
+  - Eigenes Modal mit KI-Autofill zum direkten Anlegen von Projektkontakten vor Ort.
 - **Navigation (`components/Navbar.vue`, `app.vue`):**
   - Neuer Link `📇 Kontakte` in der oberen Navigationsleiste und der ausklappbaren rechten MeisterTask-Sidebar.
 

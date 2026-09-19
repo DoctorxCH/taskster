@@ -314,9 +314,10 @@ async function main() {
   }
 
   // --- Prompt zusammenbauen ---------------------------------------------
-  const stdin = readStdin()
   let prompt = opts.promptParts.join(' ').trim()
-  if (!prompt) prompt = stdin
+  if (!prompt) {
+    prompt = readStdin()
+  }
   if (!prompt) {
     fail('Kein Prompt uebergeben. Nutzung: node scripts/ai.cjs "Deine Frage"')
   }
