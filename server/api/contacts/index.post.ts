@@ -31,6 +31,57 @@ export default defineEventHandler(async (event) => {
     evaluateProjectAccess(user, projectId, event, 'write')
   }
 
+  // Duplicate check
+  const forceDuplicate = Boolean(body.force_duplicate)
+  if (!forceDuplicate) {
+    const dupConditions: string[] = []
+    const dupParams: any[] = [user.id]
+    let companyPart = ''
+    if (user.company_id) {
+      companyPart = ' OR company_id = ?'
+      dupParams.push(user.company_id)
+    }
+
+    if (email) {
+      dupConditions.push("(email IS NOT NULL AND email != '' AND LOWER(email) = LOWER(?))")
+      dupParams.push(email)
+    }
+    if (mobile) {
+      const cleanMob = mobile.replace(/\D+/g, '')
+      if (cleanMob.length >= 6) {
+        dupConditions.push("(mobile IS NOT NULL AND mobile != '' AND mobile LIKE ?)")
+        dupParams.push(`%${cleanMob.slice(-7)}`)
+      }
+    }
+    if (lastName && firstName) {
+      dupConditions.push("(LOWER(last_name) = LOWER(?) AND LOWER(first_name) = LOWER(?))")
+      dupParams.push(lastName, firstName)
+    }
+
+    if (dupConditions.length > 0) {
+      const dupQuery = `
+        SELECT id, first_name, last_name, company_name, email, mobile, phone, category_group
+        FROM contacts
+        WHERE (user_id = ?${companyPart})
+          AND (${dupConditions.join(' OR ')})
+        LIMIT 1
+      `
+      const existingDup = db.prepare(dupQuery).get(...dupParams) as any
+      if (existingDup) {
+        const name = [existingDup.first_name, existingDup.last_name].filter(Boolean).join(' ')
+        const extra = existingDup.company_name ? ` (${existingDup.company_name})` : ''
+        throw createError({
+          statusCode: 409,
+          statusMessage: `Mögliches Duplikat erkannt: ${name}${extra}`,
+          data: {
+            error: 'duplicate_found',
+            existing_contact: existingDup
+          }
+        })
+      }
+    }
+  }
+
   const insertStmt = db.prepare(`
     INSERT INTO contacts (
       id, user_id, company_id, project_id, first_name, last_name,
