@@ -39,6 +39,12 @@
                 {{ userRole }}
               </span>
               <span
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+              >
+                {{ project.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+              </span>
+              <span
                 class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-slate-800 border border-slate-200"
               >
                 Status: {{ project.status }}
@@ -742,6 +748,30 @@
                 <option value="on_hold">Pausiert (On Hold)</option>
                 <option value="completed">Abgeschlossen (Completed)</option>
               </select>
+            </div>
+
+            <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
+            <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Projekts</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="settingsForm.visibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="private" v-model="settingsForm.visibility" class="sr-only" />
+                  <span>🔒 Privat (Standard)</span>
+                </label>
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="settingsForm.visibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="company" v-model="settingsForm.visibility" class="sr-only" />
+                  <span>🏢 Unternehmen</span>
+                </label>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                {{ settingsForm.visibility === 'private' ? 'Privates Projekt. Nur für dich und explizit zugewiesene Mitglieder sichtbar (auch Admins sehen dieses Projekt nicht).' : 'Für alle Mitglieder im Unternehmen sichtbar.' }}
+              </p>
             </div>
 
             <!-- Währung & Budget-Einstellungen -->
@@ -2967,6 +2997,7 @@ const settingsForm = ref<any>({
   currency: 'CHF',
   budget_hours: null,
   budget_amount: null,
+  visibility: 'private',
   custom_data: {}
 })
 const savingProjectSettings = ref(false)
@@ -3322,6 +3353,7 @@ const initSettingsTab = () => {
       currency: project.value.currency || 'CHF',
       budget_hours: project.value.budget_hours ?? null,
       budget_amount: project.value.budget_amount ?? null,
+      visibility: project.value.visibility || 'private',
       custom_data: { ...(project.value.custom_data || {}) }
     }
   }
@@ -3339,6 +3371,7 @@ const saveProjectSettings = async () => {
         currency: settingsForm.value.currency || 'CHF',
         budget_hours: settingsForm.value.budget_hours ? Number(settingsForm.value.budget_hours) : null,
         budget_amount: settingsForm.value.budget_amount ? Number(settingsForm.value.budget_amount) : null,
+        visibility: settingsForm.value.visibility || 'private',
         custom_data: settingsForm.value.custom_data
       }
     })

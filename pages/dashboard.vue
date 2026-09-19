@@ -251,9 +251,17 @@
                   <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-200 flex items-center justify-center text-2xl group-hover/card:scale-105 transition-transform shadow-xs">
                     {{ folder.icon || '📁' }}
                   </div>
-                  <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-700">
-                    {{ folder.project_count }} {{ folder.project_count === 1 ? 'Projekt' : 'Projekte' }}
-                  </span>
+                  <div class="flex items-center space-x-1.5">
+                    <span
+                      class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                      :class="folder.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                    >
+                      {{ folder.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+                    </span>
+                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-700">
+                      {{ folder.project_count }} {{ folder.project_count === 1 ? 'Projekt' : 'Projekte' }}
+                    </span>
+                  </div>
                 </div>
 
                 <h3 class="text-sm font-black text-slate-900 group-hover/card:text-[#00A3C4] transition mb-1">
@@ -430,6 +438,30 @@
             <p class="text-[11px] text-slate-600 mt-1 font-medium">Ausgewählt: <span class="text-slate-900 text-sm font-bold mr-1">{{ newFolderIcon }}</span></p>
           </div>
 
+          <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
+          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="newFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="private" v-model="newFolderVisibility" class="sr-only" />
+                <span>🔒 Privat (Standard)</span>
+              </label>
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="newFolderVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="company" v-model="newFolderVisibility" class="sr-only" />
+                <span>🏢 Unternehmen</span>
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              {{ newFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar (auch Admins sehen diesen Ordner nicht automatisch).' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+            </p>
+          </div>
+
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
             <button
               type="button"
@@ -494,6 +526,30 @@
               </button>
             </div>
             <p class="text-[11px] text-slate-600 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-sm font-bold mr-1">{{ editFolderIcon }}</span></p>
+          </div>
+
+          <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
+          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="editFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
+                <span>🔒 Privat (Standard)</span>
+              </label>
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="editFolderVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
+                <span>🏢 Unternehmen</span>
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+            </p>
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
@@ -564,6 +620,7 @@ const greetingPrefix = computed(() => {
 const showNewFolderModal = ref(false)
 const newFolderName = ref('')
 const newFolderIcon = ref('📁')
+const newFolderVisibility = ref('private')
 const creatingFolder = ref(false)
 const folderModalError = ref('')
 
@@ -572,6 +629,7 @@ const showEditFolderModal = ref(false)
 const editFolderId = ref('')
 const editFolderName = ref('')
 const editFolderIcon = ref('📁')
+const editFolderVisibility = ref('private')
 const savingFolder = ref(false)
 const editFolderError = ref('')
 
@@ -624,6 +682,7 @@ const filteredTasks = computed(() => {
 const openNewFolderModal = () => {
   newFolderName.value = ''
   newFolderIcon.value = '📁'
+  newFolderVisibility.value = 'private'
   folderModalError.value = ''
   showNewFolderModal.value = true
 }
@@ -632,6 +691,7 @@ const openEditFolderModal = (folder: any) => {
   editFolderId.value = folder.id
   editFolderName.value = folder.name
   editFolderIcon.value = folder.icon || '📁'
+  editFolderVisibility.value = folder.visibility || 'private'
   editFolderError.value = ''
   showEditFolderModal.value = true
 }
@@ -676,12 +736,14 @@ const createFolder = async () => {
       headers: authHeaders(),
       body: {
         name: newFolderName.value,
-        icon: newFolderIcon.value
+        icon: newFolderIcon.value,
+        visibility: newFolderVisibility.value
       }
     })
     showNewFolderModal.value = false
     newFolderName.value = ''
     newFolderIcon.value = '📁'
+    newFolderVisibility.value = 'private'
     await loadFolders()
   } catch (err: any) {
     folderModalError.value = err.data?.statusMessage || 'Ordner konnte nicht erstellt werden'
@@ -699,7 +761,8 @@ const updateFolder = async () => {
       headers: authHeaders(),
       body: {
         name: editFolderName.value,
-        icon: editFolderIcon.value
+        icon: editFolderIcon.value,
+        visibility: editFolderVisibility.value
       }
     })
     showEditFolderModal.value = false

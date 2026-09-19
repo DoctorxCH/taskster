@@ -72,6 +72,8 @@ function ensureTables($pdo) {
             "ALTER TABLE projects ADD COLUMN budget_amount DECIMAL(12,2) DEFAULT NULL",
             "ALTER TABLE tasks ADD COLUMN budget_hours DECIMAL(10,2) DEFAULT NULL",
             "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) DEFAULT NULL",
+            "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
+            "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -481,7 +483,7 @@ function requireSuperadmin() {
 function evaluateProjectAccess($user, $projectId, $action = 'read') {
     $db = getDb();
     if (!empty($user['is_superadmin'])) {
-        $stmt = $db->prepare("SELECT p.id, p.folder_id, pf.owner_id, pf.company_id FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
+        $stmt = $db->prepare("SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
         $stmt->execute([$projectId]);
         $prj = $stmt->fetch();
         if (!$prj) errorResponse('Projekt nicht gefunden', 404);
@@ -494,7 +496,7 @@ function evaluateProjectAccess($user, $projectId, $action = 'read') {
         ];
     }
 
-    $stmt = $db->prepare("SELECT p.id, p.folder_id, pf.owner_id, pf.company_id FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
+    $stmt = $db->prepare("SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
     $stmt->execute([$projectId]);
     $prj = $stmt->fetch();
     if (!$prj) errorResponse('Projekt nicht gefunden', 404);
@@ -512,17 +514,23 @@ function evaluateProjectAccess($user, $projectId, $action = 'read') {
         }
     }
 
-    // Stufe 2: Project Membership Check
+    // Stufe 2: Project Membership & Visibility Check
+    // WICHTIG: Kein automatischer Company-Admin-Bypass. Projekte sind privat, ausser geteilt oder Owner/Member.
     $role = null;
     if ($prj['owner_id'] === $user['id']) {
         $role = 'owner';
-    } elseif (!empty($user['company_id']) && $user['company_id'] === $prj['company_id'] && $user['company_role'] === 'admin') {
-        $role = 'admin';
     } else {
         $mStmt = $db->prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?");
         $mStmt->execute([$projectId, $user['id']]);
         $m = $mStmt->fetch();
-        if ($m) $role = $m['role'];
+        if ($m) {
+            $role = $m['role'];
+        } elseif (
+            !empty($user['company_id']) && $user['company_id'] === $prj['company_id'] &&
+            ($prj['project_visibility'] ?? 'private') === 'company'
+        ) {
+            $role = 'editor';
+        }
     }
 
     if (!$role) {
@@ -817,36 +825,44 @@ try {
     // 4. GET folders
     if ($path === 'folders' && $method === 'GET') {
         $user = requireAuth();
-        // Personal workspace dashboard: users (including superadmin) only see their company or owned folders,
-        // or folders where they are a project member. System-wide administrative views belong in /admin.
-        if (!empty($user['company_id'])) {
-            $stmt = $db->prepare("
-                SELECT pf.*, u.name as owner_name, c.name as company_name,
-                  (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
-                FROM project_folders pf
-                JOIN users u ON u.id = pf.owner_id
-                LEFT JOIN companies c ON c.id = pf.company_id
-                WHERE pf.company_id = ? OR pf.owner_id = ?
-                ORDER BY pf.created_at DESC
-            ");
-            $stmt->execute([$user['company_id'], $user['id']]);
-            $folders = $stmt->fetchAll();
-        } else {
-            $stmt = $db->prepare("
-                SELECT pf.*, u.name as owner_name, NULL as company_name,
-                  (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
-                FROM project_folders pf
-                JOIN users u ON u.id = pf.owner_id
-                WHERE pf.owner_id = ? OR pf.id IN (
-                  SELECT p.folder_id FROM projects p
-                  JOIN project_members pm ON pm.project_id = p.id
-                  WHERE pm.user_id = ?
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+
+        // Strikte Privatsphäre: Der Nutzer sieht nur:
+        // 1. Eigene Ordner (owner_id = user.id)
+        // 2. Ordner, in denen er Projektmitglied ist (project_members)
+        // 3. Ordner mit visibility = 'company' des eigenen Unternehmens
+        // Company Admins haben KEINEN automatischen Zugriff auf private Ordner!
+        $stmt = $db->prepare("
+            SELECT pf.*, u.name as owner_name, c.name as company_name,
+              (
+                SELECT COUNT(*) FROM projects p
+                WHERE p.folder_id = pf.id AND (
+                  pf.owner_id = ?
+                  OR (p.visibility = 'company' AND pf.company_id = ?)
+                  OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
                 )
-                ORDER BY pf.created_at DESC
-            ");
-            $stmt->execute([$user['id'], $user['id']]);
-            $folders = $stmt->fetchAll();
-        }
+              ) as project_count
+            FROM project_folders pf
+            JOIN users u ON u.id = pf.owner_id
+            LEFT JOIN companies c ON c.id = pf.company_id
+            WHERE pf.owner_id = ?
+               OR pf.id IN (
+                   SELECT p.folder_id FROM projects p
+                   JOIN project_members pm ON pm.project_id = p.id
+                   WHERE pm.user_id = ?
+               )
+               OR (pf.visibility = 'company' AND pf.company_id = ?)
+            ORDER BY pf.created_at DESC
+        ");
+        $stmt->execute([
+            $user['id'], $companyId, $user['id'],
+            $user['id'], $user['id'], $companyId
+        ]);
+        $folders = $stmt->fetchAll();
+        $folders = array_map(function($f) {
+            $f['visibility'] = $f['visibility'] ?? 'private';
+            return $f;
+        }, $folders);
         jsonResponse(['folders' => $folders]);
     }
 
@@ -867,9 +883,13 @@ try {
 
         $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $icon = trim($body['icon'] ?? '📁');
-        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon) VALUES (?, ?, ?, ?, ?)")->execute([$fldId, $user['id'], $user['company_id'], $name, $icon]);
+        // Standard ist verbindlich 'private', ausser bei Unternehmensmitgliedern explizit 'company' gewählt
+        $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
-        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'owner_id' => $user['id'], 'company_id' => $user['company_id']]]);
+        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, ?, ?, ?)")
+           ->execute([$fldId, $user['id'], $user['company_id'], $name, $icon, $visibility]);
+
+        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'visibility' => $visibility, 'owner_id' => $user['id'], 'company_id' => $user['company_id']]]);
     }
 
     // 5b. PUT folders/:id
@@ -887,9 +907,13 @@ try {
 
         $name = trim($body['name'] ?? $folder['name']);
         $icon = trim($body['icon'] ?? ($folder['icon'] ?? '📁'));
+        $visibility = $folder['visibility'] ?? 'private';
+        if (isset($body['visibility'])) {
+            $visibility = (!empty($user['company_id']) && $body['visibility'] === 'company') ? 'company' : 'private';
+        }
         if (!$name) errorResponse('Name erforderlich', 400);
 
-        $db->prepare("UPDATE project_folders SET name = ?, icon = ? WHERE id = ?")->execute([$name, $icon, $fldId]);
+        $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ? WHERE id = ?")->execute([$name, $icon, $visibility, $fldId]);
 
         $uStmt = $db->prepare("SELECT pf.*, u.name as owner_name, c.name as company_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
         $uStmt->execute([$fldId]);
@@ -905,6 +929,26 @@ try {
         $folder = $stmt->fetch();
         if (!$folder) errorResponse('Ordner nicht gefunden', 404);
 
+        // Zero-Trust Zugriffsprüfung:
+        $canAccessFolder = false;
+        if (!empty($user['is_superadmin']) || $folder['owner_id'] === $user['id']) {
+            $canAccessFolder = true;
+        } elseif (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && ($folder['visibility'] ?? 'private') === 'company') {
+            $canAccessFolder = true;
+        } else {
+            $chkStmt = $db->prepare("SELECT 1 FROM projects p JOIN project_members pm ON pm.project_id = p.id WHERE p.folder_id = ? AND pm.user_id = ? LIMIT 1");
+            $chkStmt->execute([$fldId, $user['id']]);
+            if ($chkStmt->fetch()) {
+                $canAccessFolder = true;
+            }
+        }
+
+        if (!$canAccessFolder) {
+            errorResponse('Ordner nicht gefunden', 404);
+        }
+
+        $folder['visibility'] = $folder['visibility'] ?? 'private';
+
         $fStmt = $db->prepare("SELECT * FROM folder_field_definitions WHERE folder_id = ? ORDER BY sort_order ASC");
         $fStmt->execute([$fldId]);
         $fields = array_map(function($f) {
@@ -914,21 +958,46 @@ try {
             return $f;
         }, $fStmt->fetchAll());
 
-        $pStmt = $db->prepare("
-            SELECT p.*,
-              (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
-              (SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = p.id) as task_count,
-              (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
-            FROM projects p
-            WHERE p.folder_id = ?
-            ORDER BY p.created_at DESC
-        ");
-        $pStmt->execute([$fldId]);
+        // Projekte im Ordner filtern:
+        // Ordner-Inhaber & Superadmins sehen alle Projekte des Ordners.
+        // Andere Nutzer sehen nur Projekte, die auf company stehen (im selben Unternehmen) oder bei denen sie Mitglied sind.
+        if ($folder['owner_id'] === $user['id'] || !empty($user['is_superadmin'])) {
+            $pStmt = $db->prepare("
+                SELECT p.*,
+                  (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
+                  (SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = p.id) as task_count,
+                  (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
+                FROM projects p
+                WHERE p.folder_id = ?
+                ORDER BY p.created_at DESC
+            ");
+            $pStmt->execute([$fldId]);
+        } else {
+            $userCompany = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+            $pStmt = $db->prepare("
+                SELECT p.*,
+                  (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
+                  (SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = p.id) as task_count,
+                  (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
+                FROM projects p
+                WHERE p.folder_id = ? AND (
+                    (p.visibility = 'company' AND ? = ?)
+                    OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
+                )
+                ORDER BY p.created_at DESC
+            ");
+            $pStmt->execute([
+                $fldId,
+                $userCompany, $folder['company_id'],
+                $user['id']
+            ]);
+        }
         $folderTotalMinutes = 0;
         $folderTotalBudgetHours = 0;
         $folderTotalBudgetAmount = 0;
         $projects = array_map(function($p) use ($db, &$folderTotalMinutes, &$folderTotalBudgetHours, &$folderTotalBudgetAmount) {
             $p['custom_data'] = !empty($p['custom_data']) ? (is_string($p['custom_data']) ? json_decode($p['custom_data'], true) : $p['custom_data']) : [];
+            $p['visibility'] = $p['visibility'] ?? 'private';
             $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = ?");
             $tHoursStmt->execute([$p['id']]);
             $pMinutes = (int)($tHoursStmt->fetchColumn() ?: 0);
@@ -984,11 +1053,34 @@ try {
         $title = trim($body['title'] ?? '');
         $customData = $body['custom_data'] ?? [];
         $templateId = $body['template_id'] ?? null;
+        $currency = !empty($body['currency']) ? trim($body['currency']) : 'CHF';
+        $budgetHours = array_key_exists('budget_hours', $body) && $body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : null;
+        $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : null;
+        $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
+
         if (!$folderId || !$title) errorResponse('Ordner und Titel erforderlich', 400);
 
+        // Folder access check
+        $fCheckStmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+        $fCheckStmt->execute([$folderId]);
+        $folder = $fCheckStmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        if ($folder['owner_id'] !== $user['id'] && empty($user['is_superadmin'])) {
+            if ($folder['visibility'] !== 'company' || empty($user['company_id']) || $user['company_id'] !== $folder['company_id']) {
+                errorResponse('Ordner nicht gefunden', 404);
+            }
+        }
+
         $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO projects (id, folder_id, title, status, custom_data) VALUES (?, ?, ?, 'active', ?)")->execute([
-            $prjId, $folderId, $title, json_encode($customData)
+        $db->prepare("INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)")->execute([
+            $prjId, $folderId, $title, $visibility, $currency, $budgetHours, $budgetAmount, json_encode($customData)
+        ]);
+
+        // Add creator to project_members as owner
+        $pmId = 'pm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("INSERT INTO project_members (id, project_id, user_id, role) VALUES (?, ?, ?, 'owner')")->execute([
+            $pmId, $prjId, $user['id']
         ]);
 
         if ($templateId) {
@@ -1066,6 +1158,7 @@ try {
         $pStmt->execute([$projectId]);
         $project = $pStmt->fetch();
         if ($project) {
+            $project['visibility'] = $project['visibility'] ?? 'private';
             $project['custom_data'] = !empty($project['custom_data']) ? (is_string($project['custom_data']) ? json_decode($project['custom_data'], true) : $project['custom_data']) : [];
             $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = ?");
             $tHoursStmt->execute([$projectId]);
@@ -1158,10 +1251,11 @@ try {
         $currency = isset($body['currency']) ? trim($body['currency']) : ($project['currency'] ?? 'CHF');
         $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null ? floatval($body['budget_hours']) : null) : ($project['budget_hours'] ?? null);
         $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null ? floatval($body['budget_amount']) : null) : ($project['budget_amount'] ?? null);
+        $visibility = isset($body['visibility']) ? ((!empty($user['company_id']) && $body['visibility'] === 'company') ? 'company' : 'private') : ($project['visibility'] ?? 'private');
         $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $project['custom_data'];
 
-        $db->prepare("UPDATE projects SET title = ?, status = ?, currency = ?, budget_hours = ?, budget_amount = ?, custom_data = ? WHERE id = ?")->execute([
-            $title, $status, $currency, $budgetHours, $budgetAmount, $customData, $projectId
+        $db->prepare("UPDATE projects SET title = ?, status = ?, currency = ?, budget_hours = ?, budget_amount = ?, visibility = ?, custom_data = ? WHERE id = ?")->execute([
+            $title, $status, $currency, $budgetHours, $budgetAmount, $visibility, $customData, $projectId
         ]);
 
         jsonResponse(['success' => true]);
