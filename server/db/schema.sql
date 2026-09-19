@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  hourly_rate REAL DEFAULT NULL,
+  currency TEXT DEFAULT 'CHF',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -24,6 +26,7 @@ CREATE TABLE IF NOT EXISTS project_folders (
   company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   icon TEXT DEFAULT '📁',
+  visibility TEXT NOT NULL DEFAULT 'private',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -48,6 +51,10 @@ CREATE TABLE IF NOT EXISTS projects (
   title TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
   custom_data TEXT NOT NULL DEFAULT '{}',
+  currency TEXT DEFAULT 'CHF',
+  budget_hours REAL DEFAULT NULL,
+  budget_amount REAL DEFAULT NULL,
+  visibility TEXT NOT NULL DEFAULT 'private',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -75,7 +82,6 @@ CREATE TABLE IF NOT EXISTS project_templates (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-
 CREATE TABLE IF NOT EXISTS lists (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -101,7 +107,27 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT NOT NULL DEFAULT 'todo',
   custom_data TEXT NOT NULL DEFAULT '{}',
   due_date TEXT,
+  assigned_to TEXT REFERENCES users(id) ON DELETE SET NULL,
+  priority TEXT DEFAULT 'normal',
+  color TEXT DEFAULT NULL,
+  tags TEXT DEFAULT '[]',
+  checklist TEXT DEFAULT '[]',
+  budget_hours REAL DEFAULT NULL,
+  budget_amount REAL DEFAULT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  duration_minutes INTEGER NOT NULL,
+  entry_date TEXT NOT NULL,
+  hourly_rate REAL DEFAULT NULL,
+  is_manual INTEGER NOT NULL DEFAULT 1,
+  description TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -113,36 +139,17 @@ CREATE TABLE IF NOT EXISTS project_journals (
   entry_type TEXT NOT NULL DEFAULT 'manual',
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  metadata TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS project_documents (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  task_id REFERENCES tasks(id) ON DELETE SET NULL,
-  journal_id TEXT REFERENCES project_journals(id) ON DELETE SET NULL,
+  task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
   file_name TEXT NOT NULL,
-  mime_type TEXT NOT NULL,
   file_size INTEGER NOT NULL,
-  storage_path TEXT NOT NULL,
-  version INTEGER NOT NULL DEFAULT 1,
+  file_type TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  uploaded_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS time_entries (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  task_id REFERENCES tasks(id) ON DELETE SET NULL,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  duration_minutes INTEGER NOT NULL,
-  hourly_rate REAL NOT NULL DEFAULT 0,
-  currency TEXT NOT NULL DEFAULT 'CHF',
-  description TEXT,
-  entry_date TEXT NOT NULL,
-  is_manual INTEGER NOT NULL DEFAULT 1,
-  started_at TEXT,
-  ended_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT
 );

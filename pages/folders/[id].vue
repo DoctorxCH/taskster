@@ -36,6 +36,12 @@
               <span v-if="user?.id === folder.owner_id" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold">
                 Du (Owner)
               </span>
+              <span
+                class="text-[10px] px-2 py-0.5 rounded-full border font-bold"
+                :class="folder.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+              >
+                {{ folder.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+              </span>
               <span v-if="folder.company_name" class="text-teal-800 font-semibold">• {{ folder.company_name }}</span>
               <span>• Erstellt am {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
             </p>
@@ -220,12 +226,20 @@
             <div>
               <div class="flex items-start justify-between mb-3">
                 <span class="text-2xl">📋</span>
-                <span
-                  class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-                  :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
-                >
-                  {{ project.status }}
-                </span>
+                <div class="flex items-center space-x-1.5">
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                    :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                  >
+                    {{ project.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+                  </span>
+                  <span
+                    class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+                    :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
+                  >
+                    {{ project.status }}
+                  </span>
+                </div>
               </div>
 
               <h3 class="text-base font-black text-slate-900 group-hover:text-cyan-600 transition mb-2">
@@ -298,12 +312,20 @@
                     </NuxtLink>
                   </td>
                   <td class="py-3.5 px-4">
-                    <span
-                      class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                      :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
-                    >
-                      {{ project.status }}
-                    </span>
+                    <div class="flex items-center space-x-1.5">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                        :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                      >
+                        {{ project.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+                      </span>
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                        :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
+                      >
+                        {{ project.status }}
+                      </span>
+                    </div>
                   </td>
                   <td class="py-3.5 px-4">
                     <span class="text-slate-900 font-bold">{{ project.task_count }} Aufgaben</span>
@@ -573,6 +595,30 @@
               </p>
             </div>
 
+            <!-- Sichtbarkeit des Projekts im Unternehmen (Default: Privat) -->
+            <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Projekts</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="newProjectVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="private" v-model="newProjectVisibility" class="sr-only" />
+                  <span>🔒 Privat (Standard)</span>
+                </label>
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="newProjectVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="company" v-model="newProjectVisibility" class="sr-only" />
+                  <span>🏢 Unternehmen</span>
+                </label>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                {{ newProjectVisibility === 'private' ? 'Privates Projekt. Nur für dich und explizit hinzugefügte Mitglieder sichtbar (auch Admins sehen dieses Projekt nicht).' : 'Für alle Mitglieder im Unternehmen sichtbar.' }}
+              </p>
+            </div>
+
             <!-- If Blanko Mode and folder has existing project fields -->
             <div v-if="!useTemplateMode && projectFields.length > 0" class="space-y-3 pt-3 border-t border-slate-100">
               <h4 class="text-xs font-bold text-cyan-700 uppercase tracking-wider">
@@ -665,6 +711,30 @@
             <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
           </div>
 
+          <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
+          <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="editFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
+                <span>🔒 Privat (Standard)</span>
+              </label>
+              <label
+                class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                :class="editFolderVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
+              >
+                <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
+                <span>🏢 Unternehmen</span>
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+            </p>
+          </div>
+
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
@@ -703,6 +773,7 @@ const timeSummary = ref<any>(null)
 const showEditFolderModal = ref(false)
 const editFolderName = ref('')
 const editFolderIcon = ref('📁')
+const editFolderVisibility = ref('private')
 const savingFolder = ref(false)
 const editFolderError = ref('')
 
@@ -736,6 +807,7 @@ const openEditFolderModal = () => {
   if (!folder.value) return
   editFolderName.value = folder.value.name
   editFolderIcon.value = folder.value.icon || '📁'
+  editFolderVisibility.value = folder.value.visibility || 'private'
   editFolderError.value = ''
   showEditFolderModal.value = true
 }
@@ -749,12 +821,14 @@ const updateFolder = async () => {
       headers: authHeaders(),
       body: {
         name: editFolderName.value,
-        icon: editFolderIcon.value
+        icon: editFolderIcon.value,
+        visibility: editFolderVisibility.value
       }
     })
     if (res?.folder) {
       folder.value.name = res.folder.name
       folder.value.icon = res.folder.icon
+      folder.value.visibility = res.folder.visibility
     }
     showEditFolderModal.value = false
     await loadFolderData()
@@ -768,6 +842,7 @@ const updateFolder = async () => {
 // Project creation & Template state
 const showNewProjectModal = ref(false)
 const newProjectTitle = ref('')
+const newProjectVisibility = ref('private')
 const newProjectCustomData = ref<Record<string, any>>({})
 const creatingProject = ref(false)
 const projectModalError = ref('')
@@ -832,6 +907,9 @@ const selectTemplate = (tmpl: any) => {
 
 const openNewProjectModal = () => {
   showNewProjectModal.value = true
+  newProjectTitle.value = ''
+  newProjectVisibility.value = 'private'
+  newProjectCustomData.value = {}
   projectModalError.value = ''
   fetchTemplates()
 }
@@ -867,6 +945,7 @@ const createProject = async () => {
     const payload: any = {
       folder_id: folderId,
       title: newProjectTitle.value,
+      visibility: newProjectVisibility.value,
       custom_data: newProjectCustomData.value
     }
     if (useTemplateMode.value && selectedTemplateId.value) {
@@ -879,6 +958,7 @@ const createProject = async () => {
     })
     showNewProjectModal.value = false
     newProjectTitle.value = ''
+    newProjectVisibility.value = 'private'
     newProjectCustomData.value = {}
     selectedTemplateId.value = null
     await loadFolderData()

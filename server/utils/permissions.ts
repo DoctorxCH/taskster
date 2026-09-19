@@ -47,7 +47,7 @@ export function evaluateProjectAccess(
 
   // Find project and folder
   const prj = db.prepare(`
-    SELECT p.id, p.folder_id, pf.owner_id, pf.company_id
+    SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility
     FROM projects p
     JOIN project_folders pf ON pf.id = p.folder_id
     WHERE p.id = ?
@@ -73,17 +73,20 @@ export function evaluateProjectAccess(
   }
 
   // --- STAGE 2: Project Membership Check ---
-  // Owner of the folder has full project ownership
+  // Owner of the folder has full project ownership. No automatic company admin bypass.
   let role: 'owner' | 'admin' | 'editor' | 'viewer' | null = null
 
   if (prj.owner_id === user.id) {
     role = 'owner'
-  } else if (user.company_id && user.company_id === prj.company_id && user.company_role === 'admin') {
-    role = 'admin'
   } else {
     const member = db.prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?').get(projectId, user.id) as any
     if (member) {
-      role = member.role as 'editor' | 'viewer'
+      role = member.role as 'owner' | 'admin' | 'editor' | 'viewer'
+    } else if (
+      user.company_id && user.company_id === prj.company_id &&
+      prj.project_visibility === 'company'
+    ) {
+      role = 'editor'
     }
   }
 
