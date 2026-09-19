@@ -4,7 +4,16 @@ export default <Partial<Config>>{
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+      },
       colors: {
+        accent: {
+          DEFAULT: '#0891B2',
+          hover: '#0E7490',
+          subtle: '#ECFEFF',
+          border: '#A5F3FC'
+        },
         brand: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -19,11 +28,29 @@ export default <Partial<Config>>{
           950: '#052e16'
         },
         taskster: {
-          dark: '#0f172a',
-          card: '#1e293b',
-          border: '#334155'
+          bg: '#F8FAFC',
+          surface: '#FFFFFF',
+          sunken: '#F1F5F9',
+          border: '#E2E8F0',
+          'border-strong': '#CBD5E1',
+          text: '#0F172A',
+          body: '#334155',
+          muted: '#64748B',
+          subtle: '#94A3B8',
+          accent: '#0891B2',
+          'accent-hover': '#0E7490'
         }
+      },
+      borderRadius: {
+        'sm': '6px',
+        'md': '10px',
+        'lg': '14px'
+      },
+      boxShadow: {
+        'sm': '0 1px 2px rgba(15, 23, 42, 0.06)',
+        'md': '0 4px 12px rgba(15, 23, 42, 0.10)'
       }
     }
   }
 }
+
