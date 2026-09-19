@@ -503,8 +503,21 @@ function getAiConfig() {
         'system_prompt' => 'Du bist ein praeziser technischer Assistent fuer das Taskster-Projekt.'
     ];
 
-    $path = dirname(__DIR__, 2) . '/ai.config.json';
-    if (!is_file($path)) {
+    $candidates = [
+        dirname(__DIR__) . '/ai.config.json',
+        dirname(__DIR__, 2) . '/ai.config.json',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/ai.config.json',
+        __DIR__ . '/ai.config.json'
+    ];
+    $path = null;
+    foreach ($candidates as $c) {
+        if (!empty($c) && is_file($c)) {
+            $path = $c;
+            break;
+        }
+    }
+
+    if (!$path) {
         $config = $defaults;
         return $config;
     }
@@ -526,8 +539,21 @@ function getEnvValue($key, $default = null) {
     static $dotenv = null;
     if ($dotenv === null) {
         $dotenv = [];
-        $path = dirname(__DIR__, 2) . '/.env';
-        if (is_file($path)) {
+        $candidates = [
+            dirname(__DIR__) . '/.env',
+            dirname(__DIR__, 2) . '/.env',
+            dirname(__DIR__, 3) . '/.env',
+            ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/.env',
+            __DIR__ . '/.env'
+        ];
+        $path = null;
+        foreach ($candidates as $c) {
+            if (!empty($c) && is_file($c)) {
+                $path = $c;
+                break;
+            }
+        }
+        if ($path && is_file($path)) {
             foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
                 $line = trim($line);
                 if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;

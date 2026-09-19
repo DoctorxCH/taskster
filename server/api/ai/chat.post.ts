@@ -21,11 +21,19 @@ function getAiConfig() {
 
 function getApiKey(): string {
   if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY
-  const envPath = join(process.cwd(), '.env')
-  if (existsSync(envPath)) {
-    const content = readFileSync(envPath, 'utf8')
-    const match = content.match(/OPENROUTER_API_KEY\s*=\s*(.+)/)
-    if (match) return match[1].trim()
+  const candidates = [
+    join(process.cwd(), '.env'),
+    join(process.cwd(), '..', '.env'),
+    join(__dirname, '..', '..', '..', '.env')
+  ]
+  for (const envPath of candidates) {
+    if (existsSync(envPath)) {
+      const content = readFileSync(envPath, 'utf8')
+      const match = content.match(/^OPENROUTER_API_KEY\s*=\s*(.+)$/m)
+      if (match) {
+        return match[1].trim().replace(/^["']|["']$/g, '').trim()
+      }
+    }
   }
   return ''
 }
