@@ -305,6 +305,86 @@
           Für Änderungen wende dich an den Support oder deinen Administrator.
         </div>
       </div>
+
+      <!-- Card 4: Unternehmens-Verwaltung (nur für Company Admins) -->
+      <div v-if="user?.company_role === 'admin' && user?.company_name" class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
+              <span>🏢</span>
+              <span>Unternehmens-Verwaltung ({{ user.company_name }})</span>
+            </h2>
+            <p class="text-xs text-slate-600">Lade Mitarbeiter in dein Unternehmen ein und verwalte die Firmenmitglieder.</p>
+          </div>
+          <span class="px-3 py-1 rounded-xl bg-purple-100 border border-purple-300 text-purple-900 font-bold text-xs">
+            Company Admin
+          </span>
+        </div>
+
+        <!-- Invite employee form -->
+        <form @submit.prevent="inviteCompanyMember" class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-6 space-y-3">
+          <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Mitarbeiter einladen</h3>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              v-model="companyInviteEmail"
+              type="email"
+              required
+              placeholder="mitarbeiter@firma.ch"
+              class="flex-1 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
+            />
+            <select
+              v-model="companyInviteRole"
+              class="px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-cyan-600 shadow-xs"
+            >
+              <option value="member">Mitarbeiter</option>
+              <option value="admin">Company Admin</option>
+            </select>
+            <button
+              type="submit"
+              :disabled="sendingCompanyInvite || !companyInviteEmail.trim()"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg shrink-0"
+            >
+              {{ sendingCompanyInvite ? 'Sendet...' : '+ Einladen' }}
+            </button>
+          </div>
+          <div v-if="companyInviteLink" class="mt-2 p-3 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-900">
+            <span class="font-bold">Einladungslink generiert:</span>
+            <input readonly :value="companyInviteLink" @click="($event.target as HTMLInputElement).select()" class="mt-1 w-full bg-white px-2.5 py-1.5 rounded-lg border text-xs font-mono" />
+          </div>
+        </form>
+
+        <!-- Company Members List -->
+        <div>
+          <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2">
+            Aktuelle Mitarbeiter ({{ companyMembers.length }})
+          </h3>
+          <div v-if="loadingCompanyMembers" class="text-xs text-slate-500 py-3">Lade Mitglieder...</div>
+          <div v-else-if="companyMembers.length === 0" class="text-xs text-slate-500 py-3 italic">Noch keine weiteren Mitarbeiter vorhanden.</div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="m in companyMembers"
+              :key="m.id"
+              class="flex items-center justify-between p-3 rounded-2xl bg-white/60 border border-slate-200/80 text-xs shadow-xs"
+            >
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-black text-xs">
+                  {{ (m.name || m.email || '?').charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <div class="font-bold text-slate-900">{{ m.name }} <span v-if="m.id === user?.id" class="text-slate-400 font-normal">(Du)</span></div>
+                  <div class="text-[11px] text-slate-500">{{ m.email }}</div>
+                </div>
+              </div>
+              <span
+                class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"
+                :class="m.company_role === 'admin' ? 'bg-purple-100 text-purple-900 border-purple-300 font-black' : 'bg-slate-100 text-slate-700 border-slate-200'"
+              >
+                {{ m.company_role === 'admin' ? '👑 Company Admin' : 'Mitarbeiter' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -411,4 +491,61 @@ const requestUpgrade = async () => {
   upgradeSent.value = true
   successMsg.value = 'Upgrade-Anfrage gesendet! Wir werden uns in Kürze bei dir melden.'
 }
+
+// Company Admin Management
+const companyInviteEmail = ref('')
+const companyInviteRole = ref('member')
+const companyInviteLink = ref('')
+const sendingCompanyInvite = ref(false)
+const companyMembers = ref<any[]>([])
+const loadingCompanyMembers = ref(false)
+
+const loadCompanyMembers = async () => {
+  if (user.value?.company_role !== 'admin' || !user.value?.company_name) return
+  loadingCompanyMembers.value = true
+  try {
+    const res = await $fetch<{ members: any[] }>('/api/companies/members', {
+      headers: authHeaders()
+    })
+    companyMembers.value = res.members || []
+  } catch (err) {
+    console.error('Failed to load company members', err)
+  } finally {
+    loadingCompanyMembers.value = false
+  }
+}
+
+const inviteCompanyMember = async () => {
+  if (!companyInviteEmail.value.trim()) return
+  sendingCompanyInvite.value = true
+  companyInviteLink.value = ''
+  try {
+    const res = await $fetch<any>('/api/companies/members', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        email: companyInviteEmail.value.trim(),
+        role: companyInviteRole.value
+      }
+    })
+    if (res.action === 'added') {
+      successMsg.value = `Benutzer ${companyInviteEmail.value} war bereits registriert und wurde dem Unternehmen direkt zugewiesen!`
+    } else if (res.action === 'invited') {
+      companyInviteLink.value = `${window.location.origin}/login?token=${res.token}`
+      successMsg.value = `Einladung für ${companyInviteEmail.value} generiert!`
+    }
+    companyInviteEmail.value = ''
+    await loadCompanyMembers()
+  } catch (err: any) {
+    errorMsg.value = err.data?.statusMessage || 'Fehler beim Einladen des Mitarbeiters'
+  } finally {
+    sendingCompanyInvite.value = false
+  }
+}
+
+watch(() => user.value, (u) => {
+  if (u?.company_role === 'admin') {
+    loadCompanyMembers()
+  }
+}, { immediate: true })
 </script>

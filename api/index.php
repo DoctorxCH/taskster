@@ -483,9 +483,9 @@ function requireSuperadmin() {
 
 function checkAdminPermission($user, $permission) {
     if (!empty($user['is_superadmin'])) return true;
-    if (empty($user['company_role']) || $user['company_role'] !== 'admin') return false;
+    // Platform-Admin-Rechte müssen explizit in users.admin_permissions vorliegen (Company Admins allein haben keinen Plattform-Zugriff)
     $perms = !empty($user['admin_permissions']) ? (is_string($user['admin_permissions']) ? json_decode($user['admin_permissions'], true) : $user['admin_permissions']) : [];
-    if (!is_array($perms)) $perms = [];
+    if (!is_array($perms) || empty($perms)) return false;
     if ($permission === 'any_admin') return true;
     return in_array($permission, $perms) || in_array('all', $perms);
 }
@@ -2175,6 +2175,21 @@ try {
         }
     }
 
+    // 16d. GET companies/members (List members of company for Company Admin)
+    if ($path === 'companies/members' && $method === 'GET') {
+        $user = requireAuth();
+        $companyId = $user['company_id'] ?? null;
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $_GET['company_id'] ?? null;
+        }
+        if (!$companyId) {
+            jsonResponse(['members' => []]);
+        }
+        $stmt = $db->prepare("SELECT id, name, email, company_role, is_pro, created_at FROM users WHERE company_id = ? ORDER BY (company_role = 'admin') DESC, name ASC");
+        $stmt->execute([$companyId]);
+        jsonResponse(['members' => $stmt->fetchAll()]);
+    }
+
     // 16b. GET companies/invitations (List pending invitations for current company)
     if ($path === 'companies/invitations' && $method === 'GET') {
         $user = requireAuth();
@@ -2983,8 +2998,21 @@ try {
             $query .= " AND te.project_id IN (SELECT id FROM projects WHERE folder_id = ?)";
             $params[] = $folderId;
         } else {
-            // Global query: Zero-Trust scoping
-            if (empty($user['is_superadmin'])) {
+            // Scoping:
+            // 1. Company Admin: Sieht alle Zeiteinträge seiner Firmenmitarbeiter & Firmenprojekte
+            if (!empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin') {
+                $cId = $user['company_id'];
+                $query .= " AND (
+                    u.company_id = ?
+                    OR p.folder_id IN (SELECT id FROM project_folders WHERE company_id = ?)
+                    OR te.user_id = ?
+                )";
+                $params[] = $cId;
+                $params[] = $cId;
+                $params[] = $user['id'];
+            } else {
+                // 2. Regulärer Benutzer & Plattform-Admin (persönliche Arbeitszeiten):
+                // Sieht nur eigene Einträge oder Einträge in Projekten/Ordnern, an denen er mitwirkt
                 $uid = $user['id'];
                 $query .= " AND (
                     te.user_id = ?
