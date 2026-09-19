@@ -1,9 +1,10 @@
 <template>
-  <div
-    v-if="showStopModal"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150"
-    @click.self="closeStopModal"
-  >
+  <Teleport to="body">
+    <div
+      v-if="showStopModal"
+      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150"
+      @click.self="closeStopModal"
+    >
     <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
       <!-- Header -->
       <div class="flex items-start justify-between">
@@ -93,6 +94,7 @@
       </div>
     </div>
   </div>
+</Teleport>
 </template>
 
 <script setup lang="ts">

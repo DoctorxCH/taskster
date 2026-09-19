@@ -1292,6 +1292,39 @@ try {
         jsonResponse(['success' => true]);
     }
 
+    // 8b. GET projects (List all accessible projects for dropdowns & time reporting)
+    if ($path === 'projects' && $method === 'GET') {
+        $user = requireAuth();
+        if (!empty($user['is_superadmin'])) {
+            $stmt = $db->prepare("
+                SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
+                       pf.name as folder_name, pf.icon as folder_icon, pf.owner_id
+                FROM projects p
+                JOIN project_folders pf ON pf.id = p.folder_id
+                ORDER BY p.title ASC
+            ");
+            $stmt->execute();
+        } else {
+            $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+            $stmt = $db->prepare("
+                SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
+                       pf.name as folder_name, pf.icon as folder_icon, pf.owner_id
+                FROM projects p
+                JOIN project_folders pf ON pf.id = p.folder_id
+                WHERE pf.owner_id = ?
+                   OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+                   OR pf.id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
+                   OR (p.visibility = 'company' AND pf.company_id = ?)
+                   OR (pf.visibility = 'company' AND pf.company_id = ?)
+                GROUP BY p.id
+                ORDER BY p.title ASC
+            ");
+            $stmt->execute([$user['id'], $user['id'], $user['id'], $companyId, $companyId]);
+        }
+        $projects = $stmt->fetchAll();
+        jsonResponse(['projects' => $projects]);
+    }
+
     // 8. POST projects
     if ($path === 'projects' && $method === 'POST') {
         $user = requireAuth();
@@ -1645,13 +1678,13 @@ try {
             JOIN lists l ON l.id = t.list_id
             JOIN projects p ON p.id = l.project_id
             JOIN project_folders pf ON pf.id = p.folder_id
-            WHERE p.owner_id = ? OR pf.owner_id = ? OR p.id IN (
+            WHERE pf.owner_id = ? OR p.id IN (
               SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?
             )
             ORDER BY t.created_at DESC
             LIMIT 20
         ");
-        $tStmt->execute([$user['id'], $user['id'], $user['id']]);
+        $tStmt->execute([$user['id'], $user['id']]);
         $tasks = array_map(function($t) {
             $t['custom_data'] = !empty($t['custom_data']) ? (is_string($t['custom_data']) ? json_decode($t['custom_data'], true) : $t['custom_data']) : [];
             return $t;
@@ -1924,10 +1957,11 @@ try {
 
         // Benachrichtigung an Zuweiser und Projekt-Inhaber
         $tInfoStmt = $db->prepare("
-            SELECT t.assigned_to, t.title, p.id as project_id, p.title as project_title, p.owner_id as project_owner_id
+            SELECT t.assigned_to, t.title, p.id as project_id, p.title as project_title, pf.owner_id as project_owner_id
             FROM tasks t
             JOIN lists l ON l.id = t.list_id
             JOIN projects p ON p.id = l.project_id
+            JOIN project_folders pf ON pf.id = p.folder_id
             WHERE t.id = ?
         ");
         $tInfoStmt->execute([$taskId]);
@@ -2663,7 +2697,7 @@ try {
             SELECT p.id, p.title, pf.name as folder_name, pf.icon as folder_icon
             FROM projects p
             JOIN project_folders pf ON pf.id = p.folder_id
-            WHERE p.owner_id = ? OR pf.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+            WHERE pf.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?) OR pf.id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
             ORDER BY p.title ASC
         ");
         $pStmt->execute([$user['id'], $user['id'], $user['id']]);
@@ -2797,7 +2831,8 @@ try {
             FROM tasks t
             JOIN lists l ON l.id = t.list_id
             JOIN projects p ON p.id = l.project_id
-            WHERE (t.assigned_to = ? OR p.owner_id = ?)
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE (t.assigned_to = ? OR pf.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
               AND t.status != 'done'
               AND t.due_date IS NOT NULL
               AND t.due_date != ''
@@ -2806,7 +2841,7 @@ try {
             ORDER BY t.due_date ASC
             LIMIT 10
         ");
-        $dStmt->execute([$user['id'], $user['id']]);
+        $dStmt->execute([$user['id'], $user['id'], $user['id']]);
         $dueTasks = $dStmt->fetchAll();
 
         foreach ($dueTasks as $dt) {
@@ -2833,10 +2868,10 @@ try {
                    COALESCE((SELECT SUM(duration_minutes * hourly_rate / 60) FROM time_entries WHERE project_id = p.id), 0) as tracked_cost
             FROM projects p
             JOIN project_folders pf ON pf.id = p.folder_id
-            WHERE (p.owner_id = ? OR pf.owner_id = ?)
+            WHERE pf.owner_id = ?
               AND ((p.budget_hours > 0) OR (p.budget_amount > 0))
         ");
-        $bStmt->execute([$user['id'], $user['id']]);
+        $bStmt->execute([$user['id']]);
         $budgetProjects = $bStmt->fetchAll();
 
         foreach ($budgetProjects as $bp) {
@@ -2953,12 +2988,10 @@ try {
                 $uid = $user['id'];
                 $query .= " AND (
                     te.user_id = ?
-                    OR p.owner_id = ?
                     OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
                     OR p.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?)
                     OR p.folder_id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
                 )";
-                $params[] = $uid;
                 $params[] = $uid;
                 $params[] = $uid;
                 $params[] = $uid;
