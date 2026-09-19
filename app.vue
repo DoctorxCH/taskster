@@ -57,6 +57,16 @@
             </NuxtLink>
 
             <NuxtLink
+              to="/time"
+              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
+              :class="$route.path === '/time' ? 'bg-cyan-50 text-[#00A3C4] font-bold shadow-xs' : ''"
+              title="Zeitrapportierung & Controlling"
+            >
+              <span class="text-xl">⏱️</span>
+              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Zeitrapporte</span>
+            </NuxtLink>
+
+            <NuxtLink
               v-if="user?.is_superadmin"
               to="/admin"
               class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-purple-700 hover:bg-purple-50/80"
