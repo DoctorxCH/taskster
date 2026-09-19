@@ -3124,6 +3124,53 @@
             {{ projectContactError }}
           </div>
 
+          <!-- KI-Autofill Assistent Box -->
+          <div class="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-50 via-teal-50 to-blue-50 border border-cyan-200 shadow-xs">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-base">✨</span>
+                <span class="text-xs font-black text-slate-900">KI-Autofill Assistent</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#00A3C4] text-white">DeepSeek V4</span>
+              </div>
+              <button
+                @click="showAiInputProject = !showAiInputProject"
+                type="button"
+                class="text-[11px] font-bold text-cyan-800 hover:text-cyan-950 underline cursor-pointer"
+              >
+                {{ showAiInputProject ? 'Eingabe schließen' : 'Freitext / Signatur einfügen' }}
+              </button>
+            </div>
+
+            <div v-if="showAiInputProject" class="space-y-2.5 mt-3 pt-3 border-t border-cyan-200/60">
+              <p class="text-[11px] text-slate-600">
+                Füge Text, Visitenkartendaten oder eine E-Mail-Signatur ein. Die KI trägt die Daten automatisch ins Formular ein:
+              </p>
+              <textarea
+                v-model="aiRawTextProject"
+                rows="3"
+                placeholder="Beispiel: Hans Peter, Bauleiter bei Steiner Tiefbau AG in Zürich, Tel 044 123 45 67, Mobile 079 987 65 43, h.peter@steiner.ch"
+                class="w-full px-3 py-2 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              ></textarea>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span v-if="aiStatusMessageProject" class="text-[11px] font-bold" :class="aiStatusSuccessProject ? 'text-emerald-700' : 'text-rose-600'">
+                  {{ aiStatusMessageProject }}
+                </span>
+                <span v-else class="text-[10px] text-slate-400">Texte werden sicher verarbeitet</span>
+
+                <button
+                  @click="runAiExtractionProject"
+                  type="button"
+                  :disabled="aiLoadingProject || !aiRawTextProject.trim()"
+                  class="taskster_button px-4 text-xs h-[36px] rounded-lg self-end sm:self-auto"
+                >
+                  <span v-if="aiLoadingProject" class="animate-spin text-sm">⏳</span>
+                  <span v-else>✨</span>
+                  <span>{{ aiLoadingProject ? 'KI analysiert...' : 'Automatisch ausfüllen' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-800 mb-1">
@@ -3265,6 +3312,11 @@ const showProjectContactModal = ref(false)
 const isEditingProjectContact = ref(false)
 const savingProjectContact = ref(false)
 const projectContactError = ref('')
+const showAiInputProject = ref(false)
+const aiRawTextProject = ref('')
+const aiLoadingProject = ref(false)
+const aiStatusMessageProject = ref('')
+const aiStatusSuccessProject = ref(false)
 
 const projectContactForm = ref({
   id: '',
@@ -3635,6 +3687,10 @@ const loadProjectContacts = async () => {
 const openAddProjectContactModal = () => {
   isEditingProjectContact.value = false
   projectContactError.value = ''
+  showAiInputProject.value = false
+  aiRawTextProject.value = ''
+  aiStatusMessageProject.value = ''
+  aiStatusSuccessProject.value = false
   projectContactForm.value = {
     id: '',
     first_name: '',
@@ -3653,6 +3709,10 @@ const openAddProjectContactModal = () => {
 const openEditProjectContactModal = (contact: any) => {
   isEditingProjectContact.value = true
   projectContactError.value = ''
+  showAiInputProject.value = false
+  aiRawTextProject.value = ''
+  aiStatusMessageProject.value = ''
+  aiStatusSuccessProject.value = false
   projectContactForm.value = {
     id: contact.id,
     first_name: contact.first_name || '',
@@ -3666,6 +3726,75 @@ const openEditProjectContactModal = (contact: any) => {
     notes: contact.notes || ''
   }
   showProjectContactModal.value = true
+}
+
+const runAiExtractionProject = async () => {
+  if (!aiRawTextProject.value.trim()) return
+  aiLoadingProject.value = true
+  aiStatusMessageProject.value = 'KI extrahiert Daten...'
+  aiStatusSuccessProject.value = false
+
+  try {
+    const res = await $fetch<{ success: boolean; text: string }>('/api/ai/chat', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        prompt: `Extrahiere alle Kontaktdaten aus folgendem Text und gib ein valides JSON-Objekt mit genau folgenden Feldern zurück:
+- first_name: string (Vorname, falls vorhanden)
+- last_name: string (Nachname oder Firmenname falls kein Personenname)
+- company_name: string (Firma/Organisation)
+- role_function: string (Funktion/Gewerk/Berufsbezeichnung)
+- phone: string (Festnetznummer)
+- mobile: string (Mobilfunknummer)
+- email: string (E-Mail)
+- category_group: string (wähle passend aus: 'Handwerker', 'Bauleitung', 'Planer & Architekten', 'Ingenieure & Geometer', 'Behörden & Ämter', 'Bauträger & Eigentümer', 'Lieferanten & Logistik', 'Sicherheitsbeauftragte', 'Sonstige')
+- notes: string (Zusätzliche nützliche Notizen)
+
+Text:
+"""
+${aiRawTextProject.value.trim()}
+"""`,
+        json: true,
+        system: 'Du bist ein intelligenter Assistent für Baudokumentation und Kontaktmanagement. Antworte ausschliesslich mit einem JSON-Objekt ohne Markdown-Formatierung.'
+      }
+    })
+
+    if (!res || !res.text) {
+      throw new Error('Keine Antwort von der KI erhalten.')
+    }
+
+    let parsed: any = null
+    try {
+      const clean = res.text.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim()
+      parsed = JSON.parse(clean)
+    } catch {
+      throw new Error('KI-Rückgabe konnte nicht als JSON interpretiert werden.')
+    }
+
+    if (parsed) {
+      if (parsed.first_name) projectContactForm.value.first_name = String(parsed.first_name).trim()
+      if (parsed.last_name) projectContactForm.value.last_name = String(parsed.last_name).trim()
+      if (parsed.company_name) projectContactForm.value.company_name = String(parsed.company_name).trim()
+      if (parsed.role_function) projectContactForm.value.role_function = String(parsed.role_function).trim()
+      if (parsed.phone) projectContactForm.value.phone = String(parsed.phone).trim()
+      if (parsed.mobile) projectContactForm.value.mobile = String(parsed.mobile).trim()
+      if (parsed.email) projectContactForm.value.email = String(parsed.email).trim()
+      if (parsed.category_group) projectContactForm.value.category_group = String(parsed.category_group).trim()
+      if (parsed.notes) {
+        projectContactForm.value.notes = projectContactForm.value.notes
+          ? `${projectContactForm.value.notes}\n${parsed.notes}`
+          : parsed.notes
+      }
+
+      aiStatusSuccessProject.value = true
+      aiStatusMessageProject.value = '✓ Daten erfolgreich erkannt und ins Formular übertragen!'
+    }
+  } catch (err: any) {
+    aiStatusSuccessProject.value = false
+    aiStatusMessageProject.value = err.data?.statusMessage || err.message || 'Fehler bei der KI-Erkennung.'
+  } finally {
+    aiLoadingProject.value = false
+  }
 }
 
 const saveProjectContact = async () => {
