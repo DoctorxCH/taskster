@@ -217,6 +217,42 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS daily_todos (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL,
+      project_id VARCHAR(64) NULL,
+      title VARCHAR(512) NOT NULL,
+      target_date DATE NOT NULL,
+      is_completed TINYINT(1) NOT NULL DEFAULT 0,
+      completed_at DATETIME NULL,
+      original_date DATE NULL,
+      rollover_count INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_dt_user (user_id),
+      INDEX idx_dt_target (target_date),
+      INDEX idx_dt_project (project_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL,
+      type VARCHAR(64) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      reference_type VARCHAR(64) NULL,
+      reference_id VARCHAR(64) NULL,
+      project_id VARCHAR(64) NULL,
+      is_read TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_notif_user (user_id),
+      INDEX idx_notif_type (type),
+      INDEX idx_notif_read (is_read)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   // Column migrations for MySQL
   const colMigrations = [
     "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",

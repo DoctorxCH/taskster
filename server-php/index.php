@@ -498,6 +498,21 @@ function requireAdminPermission($permission) {
     return $user;
 }
 
+function createNotification($userId, $type, $title, $message, $refType = null, $refId = null, $projectId = null) {
+    if (!$userId) return;
+    try {
+        $db = getDb();
+        $id = 'notif_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $stmt = $db->prepare("
+            INSERT INTO notifications (id, user_id, type, title, message, reference_type, reference_id, project_id, is_read, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+        ");
+        $stmt->execute([$id, $userId, $type, $title, $message, $refType, $refId, $projectId]);
+    } catch (Exception $e) {
+        // Notification creation should not block primary action
+    }
+}
+
 function evaluateProjectAccess($user, $projectId, $action = 'read') {
     $db = getDb();
     if (!empty($user['is_superadmin'])) {
@@ -1196,6 +1211,10 @@ try {
         ");
         $ins->execute([$fmId, $fldId, $targetUser['id'], $role]);
 
+        if ($targetUser['id'] !== $user['id']) {
+            createNotification($targetUser['id'], 'invitation', 'Neue Ordner-Einladung', "{$user['name']} hat dich zum Ordner \"{$folder['name']}\" eingeladen.", 'folder', $fldId, null);
+        }
+
         jsonResponse([
             'success' => true,
             'member' => [
@@ -1513,6 +1532,11 @@ try {
             ON DUPLICATE KEY UPDATE role = VALUES(role)
         ")->execute(['pm_' . substr(bin2hex(random_bytes(6)), 0, 8), $projectId, $target['id'], $role]);
 
+        if ($target['id'] !== $user['id']) {
+            $pTitle = $db->query("SELECT title FROM projects WHERE id = " . $db->quote($projectId))->fetchColumn() ?: 'Projekt';
+            createNotification($target['id'], 'invitation', 'Neue Projekt-Einladung', "{$user['name']} hat dich zum Projekt \"{$pTitle}\" eingeladen.", 'project', $projectId, $projectId);
+        }
+
         jsonResponse(['success' => true]);
     }
 
@@ -1688,6 +1712,11 @@ try {
             $assignedTo, $priority, $color, $tags, $checklist, $budgetHours, $budgetAmount, $taskId
         ]);
 
+        // Benachrichtigung an Zuweiser bei Bearbeitung durch Teammitglied
+        if (!empty($assignedTo) && $assignedTo !== $user['id']) {
+            createNotification($assignedTo, 'task_updated', 'Aufgabe aktualisiert', "{$user['name']} hat die Aufgabe \"{$title}\" bearbeitet.", 'task', $taskId, null);
+        }
+
         jsonResponse(['success' => true]);
     }
 
@@ -1814,6 +1843,27 @@ try {
 
         $cId = 'cmt_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $db->prepare("INSERT INTO task_comments (id, task_id, author_id, content) VALUES (?, ?, ?, ?)")->execute([$cId, $taskId, $user['id'], $content]);
+
+        // Benachrichtigung an Zuweiser und Projekt-Inhaber
+        $tInfoStmt = $db->prepare("
+            SELECT t.assigned_to, t.title, p.id as project_id, p.title as project_title, p.owner_id as project_owner_id
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            WHERE t.id = ?
+        ");
+        $tInfoStmt->execute([$taskId]);
+        $tInfo = $tInfoStmt->fetch();
+        if ($tInfo) {
+            if (!empty($tInfo['assigned_to']) && $tInfo['assigned_to'] !== $user['id']) {
+                $snippet = mb_strlen($content) > 60 ? mb_substr($content, 0, 60) . '...' : $content;
+                createNotification($tInfo['assigned_to'], 'new_comment', 'Neuer Kommentar', "{$user['name']} kommentierte \"{$tInfo['title']}\": \"{$snippet}\"", 'task', $taskId, $tInfo['project_id']);
+            }
+            if (!empty($tInfo['project_owner_id']) && $tInfo['project_owner_id'] !== $user['id'] && $tInfo['project_owner_id'] !== ($tInfo['assigned_to'] ?? '')) {
+                createNotification($tInfo['project_owner_id'], 'new_comment', 'Neuer Kommentar im Projekt', "{$user['name']} kommentierte die Aufgabe \"{$tInfo['title']}\" in \"{$tInfo['project_title']}\".", 'task', $taskId, $tInfo['project_id']);
+            }
+        }
+
         jsonResponse(['comment' => ['id' => $cId, 'task_id' => $taskId, 'author_id' => $user['id'], 'author_name' => $user['name'], 'content' => $content, 'created_at' => date('Y-m-d H:i:s')]]);
     }
 
@@ -2489,6 +2539,291 @@ try {
         }
         $tmplId = $m[1];
         $db->prepare("DELETE FROM project_templates WHERE id = ?")->execute([$tmplId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // ==========================================
+    // DAILY TODOS ("Mein Tag" / 1-Tages-Fokus mit automatischem Rollover)
+    // ==========================================
+
+    // GET daily-todos (Rollover durchführen und heutige Todos abrufen)
+    if ($path === 'daily-todos' && $method === 'GET') {
+        $user = requireAuth();
+
+        // Rollover Automatik: unvollendete Todos von Vortagen wandern automatisch auf heute
+        try {
+            $db->prepare("
+                UPDATE daily_todos
+                SET rollover_count = rollover_count + GREATEST(DATEDIFF(CURRENT_DATE(), target_date), 1),
+                    original_date = COALESCE(original_date, target_date),
+                    target_date = CURRENT_DATE()
+                WHERE user_id = ? AND is_completed = 0 AND target_date < CURRENT_DATE()
+            ")->execute([$user['id']]);
+        } catch (Exception $e) {}
+
+        // Heutige Todos laden
+        $stmt = $db->prepare("
+            SELECT dt.*, p.title as project_title, pf.name as folder_name, pf.icon as folder_icon
+            FROM daily_todos dt
+            LEFT JOIN projects p ON p.id = dt.project_id
+            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE dt.user_id = ?
+              AND (dt.target_date = CURRENT_DATE() OR (dt.is_completed = 1 AND DATE(dt.completed_at) = CURRENT_DATE()))
+            ORDER BY dt.is_completed ASC, dt.created_at DESC
+        ");
+        $stmt->execute([$user['id']]);
+        $rawTodos = $stmt->fetchAll();
+
+        $todos = array_map(function($t) {
+            $t['is_completed'] = (bool)$t['is_completed'];
+            $t['rollover_count'] = (int)$t['rollover_count'];
+            return $t;
+        }, $rawTodos);
+
+        // Verfügbare Projekte für das Dropdown laden
+        $pStmt = $db->prepare("
+            SELECT p.id, p.title, pf.name as folder_name, pf.icon as folder_icon
+            FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE p.owner_id = ? OR pf.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+            ORDER BY p.title ASC
+        ");
+        $pStmt->execute([$user['id'], $user['id'], $user['id']]);
+        $availableProjects = $pStmt->fetchAll();
+
+        jsonResponse([
+            'todos' => $todos,
+            'date' => date('Y-m-d'),
+            'availableProjects' => $availableProjects
+        ]);
+    }
+
+    // POST daily-todos (Neues Tages-Todo anlegen)
+    if ($path === 'daily-todos' && $method === 'POST') {
+        $user = requireAuth();
+        $title = trim($body['title'] ?? '');
+        $projectId = !empty($body['project_id']) ? trim($body['project_id']) : null;
+
+        if (!$title) {
+            errorResponse('Titel darf nicht leer sein', 400);
+        }
+
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'read');
+        }
+
+        $id = 'dt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $today = date('Y-m-d');
+
+        $ins = $db->prepare("
+            INSERT INTO daily_todos (id, user_id, project_id, title, target_date, is_completed, rollover_count, created_at)
+            VALUES (?, ?, ?, ?, ?, 0, 0, NOW())
+        ");
+        $ins->execute([$id, $user['id'], $projectId, $title, $today]);
+
+        $projectTitle = null;
+        if ($projectId) {
+            $projectTitle = $db->query("SELECT title FROM projects WHERE id = " . $db->quote($projectId))->fetchColumn() ?: null;
+        }
+
+        jsonResponse([
+            'success' => true,
+            'todo' => [
+                'id' => $id,
+                'user_id' => $user['id'],
+                'project_id' => $projectId,
+                'project_title' => $projectTitle,
+                'title' => $title,
+                'target_date' => $today,
+                'is_completed' => false,
+                'rollover_count' => 0,
+                'created_at' => date('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    // PUT daily-todos/:id (Status toggeln / ändern)
+    if (preg_match('#^daily-todos/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $todoId = $m[1];
+
+        $stmt = $db->prepare("SELECT * FROM daily_todos WHERE id = ? AND user_id = ?");
+        $stmt->execute([$todoId, $user['id']]);
+        $existing = $stmt->fetch();
+        if (!$existing) {
+            errorResponse('Tages-Todo nicht gefunden', 404);
+        }
+
+        $isCompleted = isset($body['is_completed']) ? ($body['is_completed'] ? 1 : 0) : $existing['is_completed'];
+        $title = isset($body['title']) ? trim($body['title']) : $existing['title'];
+        $projectId = array_key_exists('project_id', $body) ? ($body['project_id'] ?: null) : $existing['project_id'];
+        $completedAt = $isCompleted ? date('Y-m-d H:i:s') : null;
+
+        $db->prepare("
+            UPDATE daily_todos
+            SET is_completed = ?, completed_at = ?, title = ?, project_id = ?
+            WHERE id = ? AND user_id = ?
+        ")->execute([$isCompleted, $completedAt, $title, $projectId, $todoId, $user['id']]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // DELETE daily-todos/:id
+    if (preg_match('#^daily-todos/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $todoId = $m[1];
+
+        $db->prepare("DELETE FROM daily_todos WHERE id = ? AND user_id = ?")->execute([$todoId, $user['id']]);
+        jsonResponse(['success' => true]);
+    }
+
+    // ==========================================
+    // BENACHRICHTIGUNGEN (5 Event-Typen & Echtzeit-Checks)
+    // ==========================================
+
+    // GET notifications
+    if ($path === 'notifications' && $method === 'GET') {
+        $user = requireAuth();
+
+        // 1. Gespeicherte Benachrichtigungen (Kommentare, Bearbeitungen, Einladungen)
+        $sStmt = $db->prepare("
+            SELECT n.*
+            FROM notifications n
+            WHERE n.user_id = ?
+            ORDER BY n.created_at DESC
+            LIMIT 50
+        ");
+        $sStmt->execute([$user['id']]);
+        $dbNotifs = $sStmt->fetchAll();
+
+        $notifications = [];
+        foreach ($dbNotifs as $dn) {
+            $notifications[] = [
+                'id' => $dn['id'],
+                'type' => $dn['type'],
+                'title' => $dn['title'],
+                'message' => $dn['message'],
+                'reference_type' => $dn['reference_type'],
+                'reference_id' => $dn['reference_id'],
+                'project_id' => $dn['project_id'],
+                'is_read' => (bool)$dn['is_read'],
+                'created_at' => $dn['created_at'],
+                'is_realtime' => false
+            ];
+        }
+
+        // 2. Echtzeit-Ermittlung: Ablaufende Aufgaben in 3 Tagen (due_soon)
+        $dStmt = $db->prepare("
+            SELECT t.id, t.title, t.due_date, p.id as project_id, p.title as project_title,
+                   DATEDIFF(t.due_date, CURRENT_DATE()) as days_left
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            WHERE (t.assigned_to = ? OR p.owner_id = ?)
+              AND t.status != 'done'
+              AND t.due_date IS NOT NULL
+              AND t.due_date != ''
+              AND t.due_date >= CURRENT_DATE()
+              AND t.due_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 3 DAY)
+            ORDER BY t.due_date ASC
+            LIMIT 10
+        ");
+        $dStmt->execute([$user['id'], $user['id']]);
+        $dueTasks = $dStmt->fetchAll();
+
+        foreach ($dueTasks as $dt) {
+            $days = (int)$dt['days_left'];
+            $dayText = $days === 0 ? 'Heute fällig' : ($days === 1 ? 'Morgen fällig' : "Fällig in {$days} Tagen");
+            $notifications[] = [
+                'id' => 'due_' . $dt['id'],
+                'type' => 'due_soon',
+                'title' => "⏰ {$dayText}: {$dt['title']}",
+                'message' => "Aufgabe im Projekt \"{$dt['project_title']}\" ist fällig am " . date('d.m.Y', strtotime($dt['due_date'])) . ".",
+                'reference_type' => 'task',
+                'reference_id' => $dt['id'],
+                'project_id' => $dt['project_id'],
+                'is_read' => false,
+                'created_at' => date('Y-m-d H:i:s', strtotime($dt['due_date'] . ' 08:00:00')),
+                'is_realtime' => true
+            ];
+        }
+
+        // 3. Echtzeit-Ermittlung: Budget erreicht im Projekt / Aufgabe (budget_exceeded)
+        $bStmt = $db->prepare("
+            SELECT p.id, p.title, p.currency, p.budget_hours, p.budget_amount,
+                   COALESCE((SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = p.id), 0) as tracked_minutes,
+                   COALESCE((SELECT SUM(duration_minutes * hourly_rate / 60) FROM time_entries WHERE project_id = p.id), 0) as tracked_cost
+            FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE (p.owner_id = ? OR pf.owner_id = ?)
+              AND ((p.budget_hours > 0) OR (p.budget_amount > 0))
+        ");
+        $bStmt->execute([$user['id'], $user['id']]);
+        $budgetProjects = $bStmt->fetchAll();
+
+        foreach ($budgetProjects as $bp) {
+            $bHours = floatval($bp['budget_hours'] ?? 0);
+            $bAmount = floatval($bp['budget_amount'] ?? 0);
+            $spentHours = round((int)$bp['tracked_minutes'] / 60, 1);
+            $spentCost = round(floatval($bp['tracked_cost'] ?? 0), 2);
+
+            $exceeded = false;
+            $reason = '';
+            if ($bHours > 0 && $spentHours >= $bHours) {
+                $exceeded = true;
+                $reason = "Stundenbudget erreicht: {$spentHours} / {$bHours} h";
+            } elseif ($bAmount > 0 && $spentCost >= $bAmount) {
+                $exceeded = true;
+                $reason = "Kostenbudget erreicht: {$spentCost} / {$bAmount} {$bp['currency']}";
+            }
+
+            if ($exceeded) {
+                $notifications[] = [
+                    'id' => 'budget_' . $bp['id'],
+                    'type' => 'budget_exceeded',
+                    'title' => "💰 Budgetwarnung: {$bp['title']}",
+                    'message' => "{$reason} im Projekt \"{$bp['title']}\".",
+                    'reference_type' => 'project',
+                    'reference_id' => $bp['id'],
+                    'project_id' => $bp['id'],
+                    'is_read' => false,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'is_realtime' => true
+                ];
+            }
+        }
+
+        // Nach Datum sortieren (neueste zuerst)
+        usort($notifications, function($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+
+        $unreadCount = 0;
+        foreach ($notifications as $n) {
+            if (empty($n['is_read'])) $unreadCount++;
+        }
+
+        jsonResponse([
+            'notifications' => $notifications,
+            'unreadCount' => $unreadCount
+        ]);
+    }
+
+    // POST notifications/:id/read
+    if (preg_match('#^notifications/([^/]+)/read$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $notifId = $m[1];
+
+        if (strpos($notifId, 'due_') !== 0 && strpos($notifId, 'budget_') !== 0) {
+            $db->prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?")->execute([$notifId, $user['id']]);
+        }
+        jsonResponse(['success' => true]);
+    }
+
+    // POST notifications/read-all
+    if ($path === 'notifications/read-all' && $method === 'POST') {
+        $user = requireAuth();
+        $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")->execute([$user['id']]);
         jsonResponse(['success' => true]);
     }
 
