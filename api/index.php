@@ -80,6 +80,13 @@ function ensureTables($pdo) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
         }
 
+        // ROOT-CAUSE-FIX: Company Admins duerfen KEINE Plattform-admin_permissions haben.
+        // Frueher wurden sie automatisch gesetzt -> Company Admins landeten im Plattform-Admin.
+        // Sie verwalten ihre Firma jetzt ueber company_role === 'admin' im /company Portal.
+        try {
+            $pdo->exec("UPDATE users SET admin_permissions = NULL WHERE is_superadmin = 0 AND company_role = 'admin'");
+        } catch (Exception $e) {}
+
         // New tables
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS task_comments (
@@ -460,7 +467,9 @@ function getAuthUser() {
     $decoded = jwtDecode($matches[1], $jwtSecret);
     if (!$decoded || empty($decoded['id'])) return null;
     $db = getDb();
-    $stmt = $db->prepare("SELECT id, name, email, company_id, company_role, is_superadmin, is_pro FROM users WHERE id = ?");
+    // admin_permissions MUSS mitgeladen werden, sonst kann checkAdminPermission()
+    // Plattform-Admins (ohne is_superadmin) nie autorisieren.
+    $stmt = $db->prepare("SELECT id, name, email, company_id, company_role, is_superadmin, is_pro, admin_permissions FROM users WHERE id = ?");
     $stmt->execute([$decoded['id']]);
     return $stmt->fetch() ?: null;
 }
@@ -498,7 +507,18 @@ function requireAdminPermission($permission) {
     return $user;
 }
 
+function requireCompanyAdmin() {
+    $user = requireAuth();
+    if (empty($user['is_superadmin'])) {
+        if (empty($user['company_id']) || ($user['company_role'] ?? '') !== 'admin') {
+            errorResponse('Nur Firmen-Administratoren haben Zugriff auf diesen Bereich', 403);
+        }
+    }
+    return $user;
+}
+
 function createNotification($userId, $type, $title, $message, $refType = null, $refId = null, $projectId = null) {
+
     if (!$userId) return;
     try {
         $db = getDb();
@@ -662,10 +682,11 @@ try {
 
         $perms = !empty($u['admin_permissions']) ? (is_string($u['admin_permissions']) ? json_decode($u['admin_permissions'], true) : $u['admin_permissions']) : [];
         if (!is_array($perms)) $perms = [];
+        // Superadmin bekommt automatisch alle Plattform-Rechte.
+        // Company Admins benutzen company_role === 'admin' fuer /company Portal.
+        // Sie bekommen KEINE admin_permissions - sonst landen sie im Plattform-Admin!
         if (!empty($u['is_superadmin'])) {
             $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
-        } elseif (!empty($u['company_role']) && $u['company_role'] === 'admin' && empty($perms)) {
-            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates'];
         }
 
         $token = jwtEncode([
@@ -800,11 +821,11 @@ try {
 
         $perms = !empty($u['admin_permissions']) ? (is_string($u['admin_permissions']) ? json_decode($u['admin_permissions'], true) : $u['admin_permissions']) : [];
         if (!is_array($perms)) $perms = [];
+        // Nur Superadmin bekommt Plattform-Permissions. Company Admins nutzen company_role.
         if (!empty($u['is_superadmin'])) {
             $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
-        } elseif (!empty($u['company_role']) && $u['company_role'] === 'admin' && empty($perms)) {
-            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates'];
         }
+
 
         jsonResponse([
             'user' => [
@@ -2219,6 +2240,281 @@ try {
         jsonResponse(['invitation' => $inv]);
     }
 
+    // ==========================================
+    // COMPANY ADMIN PORTAL ENDPOINTS (/company)
+    // Nur fuer Firmen-Admins (company_role === 'admin') bzw. Superadmin.
+    // ==========================================
+
+    // 16e. GET company/details (Firmendaten, Plan, Statistiken, Anfragen)
+    if ($path === 'company/details' && $method === 'GET') {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $_GET['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $cStmt = $db->prepare("SELECT * FROM companies WHERE id = ?");
+        $cStmt->execute([$companyId]);
+        $company = $cStmt->fetch();
+        if (!$company) errorResponse('Unternehmen nicht gefunden', 404);
+
+        $settings = !empty($company['settings']) ? (is_string($company['settings']) ? json_decode($company['settings'], true) : $company['settings']) : [];
+        if (!is_array($settings)) $settings = [];
+
+        $mStmt = $db->prepare("SELECT COUNT(*) FROM users WHERE company_id = ?");
+        $mStmt->execute([$companyId]);
+        $memberCount = (int)$mStmt->fetchColumn();
+
+        $aStmt = $db->prepare("SELECT COUNT(*) FROM users WHERE company_id = ? AND company_role = 'admin'");
+        $aStmt->execute([$companyId]);
+        $adminCount = (int)$aStmt->fetchColumn();
+
+        $pStmt = $db->prepare("SELECT COUNT(*) FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE pf.company_id = ?");
+        $pStmt->execute([$companyId]);
+        $projectCount = (int)$pStmt->fetchColumn();
+
+        $tStmt = $db->prepare("SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id JOIN projects p ON p.id = l.project_id JOIN project_folders pf ON pf.id = p.folder_id WHERE pf.company_id = ?");
+        $tStmt->execute([$companyId]);
+        $taskCount = (int)$tStmt->fetchColumn();
+
+        $tmplStmt = $db->prepare("SELECT COUNT(*) FROM project_templates WHERE company_id = ? AND is_system = 0");
+        $tmplStmt->execute([$companyId]);
+        $templateCount = (int)$tmplStmt->fetchColumn();
+
+        $planPrices = [
+            'starter' => ['name' => 'Starter Plan', 'monthly' => 0, 'seats' => 5],
+            'pro' => ['name' => 'Pro Business Plan', 'monthly' => 49, 'seats' => 25],
+            'enterprise' => ['name' => 'Enterprise Custom Plan', 'monthly' => 189, 'seats' => 100]
+        ];
+        $planKey = strtolower($company['subscription_plan'] ?? 'starter');
+        $pInfo = $planPrices[$planKey] ?? ['name' => ucfirst($planKey), 'monthly' => 29, 'seats' => 10];
+        $maxSeats = (int)($settings['max_seats'] ?? $pInfo['seats']);
+
+        jsonResponse([
+            'company' => [
+                'id' => $company['id'],
+                'name' => $company['name'],
+                'subscription_plan' => $planKey,
+                'plan_name' => $pInfo['name'],
+                'plan_monthly' => $pInfo['monthly'],
+                'currency' => 'CHF',
+                'settings' => $settings,
+                'created_at' => $company['created_at'],
+                'next_renewal' => date('Y-m-d', strtotime(($company['created_at'] ?? 'now') . ' + 1 month'))
+            ],
+            'stats' => [
+                'members' => $memberCount,
+                'admins' => $adminCount,
+                'projects' => $projectCount,
+                'tasks' => $taskCount,
+                'templates' => $templateCount,
+                'max_seats' => $maxSeats,
+                'seats_used' => $memberCount
+            ],
+            'upgrade_requests' => array_slice(array_reverse($settings['upgrade_requests'] ?? []), 0, 10),
+            'support_tickets' => array_slice(array_reverse($settings['support_tickets'] ?? []), 0, 10)
+        ]);
+    }
+
+    // 16f. PATCH company/details (Firmenname & Zero-Trust Policies aktualisieren)
+    if ($path === 'company/details' && ($method === 'PATCH' || $method === 'PUT')) {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $fields = [];
+        $params = [];
+
+        if (isset($body['name'])) {
+            $name = trim($body['name']);
+            if (!$name) errorResponse('Firmenname darf nicht leer sein', 400);
+            $fields[] = "name = ?";
+            $params[] = $name;
+        }
+
+        if (isset($body['settings']) && is_array($body['settings'])) {
+            $cStmt = $db->prepare("SELECT settings FROM companies WHERE id = ?");
+            $cStmt->execute([$companyId]);
+            $existing = $cStmt->fetchColumn();
+            $existingSettings = !empty($existing) ? (is_string($existing) ? json_decode($existing, true) : $existing) : [];
+            if (!is_array($existingSettings)) $existingSettings = [];
+            $merged = array_merge($existingSettings, $body['settings']);
+            $fields[] = "settings = ?";
+            $params[] = json_encode($merged);
+        }
+
+        if (empty($fields)) errorResponse('Keine Änderungen übergeben', 400);
+
+        $params[] = $companyId;
+        $db->prepare("UPDATE companies SET " . implode(', ', $fields) . " WHERE id = ?")->execute($params);
+        jsonResponse(['success' => true]);
+    }
+
+    // 16g. PATCH company/members/:userId (Co-Admin ernennen / herabstufen)
+    if (preg_match('#^company/members/([^/]+)$#', $path, $m) && ($method === 'PATCH' || $method === 'PUT')) {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $targetId = $m[1];
+        $tStmt = $db->prepare("SELECT id, name, email, company_role, company_id FROM users WHERE id = ?");
+        $tStmt->execute([$targetId]);
+        $target = $tStmt->fetch();
+        if (!$target || $target['company_id'] !== $companyId) {
+            errorResponse('Mitarbeiter nicht gefunden', 404);
+        }
+
+        if (!isset($body['role'])) errorResponse('Keine Änderungen übergeben', 400);
+
+        $role = $body['role'] === 'admin' ? 'admin' : 'member';
+        if ($target['id'] === $user['id'] && $role !== 'admin') {
+            errorResponse('Du kannst dich nicht selbst zum Mitarbeiter herabstufen', 400);
+        }
+
+        $db->prepare("UPDATE users SET company_role = ? WHERE id = ?")->execute([$role, $targetId]);
+        jsonResponse(['success' => true, 'role' => $role]);
+    }
+
+    // 16h. DELETE company/members/:userId (Mitarbeiter aus Unternehmen entfernen)
+    if (preg_match('#^company/members/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $_GET['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $targetId = $m[1];
+        if ($targetId === $user['id']) errorResponse('Du kannst dich nicht selbst entfernen', 400);
+
+        $tStmt = $db->prepare("SELECT id, company_id FROM users WHERE id = ?");
+        $tStmt->execute([$targetId]);
+        $target = $tStmt->fetch();
+        if (!$target || $target['company_id'] !== $companyId) {
+            errorResponse('Mitarbeiter nicht gefunden', 404);
+        }
+
+        $db->prepare("UPDATE users SET company_id = NULL, company_role = NULL, is_pro = 0 WHERE id = ?")->execute([$targetId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 16i. GET company/templates (Nur firmeneigene Vorlagen)
+    if ($path === 'company/templates' && $method === 'GET') {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $_GET['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $stmt = $db->prepare("SELECT * FROM project_templates WHERE company_id = ? AND is_system = 0 ORDER BY category ASC, name ASC");
+        $stmt->execute([$companyId]);
+        $templates = array_map(function($t) {
+            $t['lists'] = !empty($t['lists']) ? (is_string($t['lists']) ? json_decode($t['lists'], true) : $t['lists']) : [];
+            $t['fields'] = !empty($t['fields']) ? (is_string($t['fields']) ? json_decode($t['fields'], true) : $t['fields']) : [];
+            return $t;
+        }, $stmt->fetchAll());
+
+        jsonResponse(['templates' => $templates]);
+    }
+
+    // 16j. POST company/upgrade (Plan-Upgrade / Sitzplätze anfordern)
+    if ($path === 'company/upgrade' && $method === 'POST') {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $requestedPlan = strtolower(trim($body['plan'] ?? ''));
+        if (!in_array($requestedPlan, ['starter', 'pro', 'enterprise'])) {
+            errorResponse('Ungültiger Plan', 400);
+        }
+        $requestedSeats = isset($body['seats']) ? (int)$body['seats'] : null;
+        $note = trim($body['note'] ?? '');
+
+        $cStmt = $db->prepare("SELECT name, settings FROM companies WHERE id = ?");
+        $cStmt->execute([$companyId]);
+        $company = $cStmt->fetch();
+        if (!$company) errorResponse('Unternehmen nicht gefunden', 404);
+
+        $settings = !empty($company['settings']) ? (is_string($company['settings']) ? json_decode($company['settings'], true) : $company['settings']) : [];
+        if (!is_array($settings)) $settings = [];
+        $requests = $settings['upgrade_requests'] ?? [];
+        $requests[] = [
+            'id' => 'req_' . substr(bin2hex(random_bytes(6)), 0, 8),
+            'plan' => $requestedPlan,
+            'seats' => $requestedSeats,
+            'note' => $note,
+            'requested_by' => $user['id'],
+            'requested_by_name' => $user['name'],
+            'requested_at' => date('Y-m-d H:i:s'),
+            'status' => 'pending'
+        ];
+        $settings['upgrade_requests'] = $requests;
+        $db->prepare("UPDATE companies SET settings = ? WHERE id = ?")->execute([json_encode($settings), $companyId]);
+
+        // Plattform-Admins benachrichtigen
+        $saStmt = $db->query("SELECT id FROM users WHERE is_superadmin = 1");
+        foreach ($saStmt->fetchAll() as $sa) {
+            createNotification($sa['id'], 'system', 'Plan-Upgrade-Anfrage', $company['name'] . ' möchte auf ' . ucfirst($requestedPlan) . ' wechseln.', 'company', $companyId);
+        }
+
+        jsonResponse(['success' => true, 'message' => 'Upgrade-Anfrage übermittelt']);
+    }
+
+    // 16k. POST company/support (Support-Ticket an Taskster senden)
+    if ($path === 'company/support' && $method === 'POST') {
+        $user = requireCompanyAdmin();
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $subject = trim($body['subject'] ?? '');
+        $message = trim($body['message'] ?? '');
+        $priority = in_array($body['priority'] ?? '', ['low', 'normal', 'high', 'urgent']) ? $body['priority'] : 'normal';
+        if (!$subject || !$message) errorResponse('Betreff und Nachricht erforderlich', 400);
+
+        $cStmt = $db->prepare("SELECT name, settings FROM companies WHERE id = ?");
+        $cStmt->execute([$companyId]);
+        $company = $cStmt->fetch();
+        if (!$company) errorResponse('Unternehmen nicht gefunden', 404);
+
+        $settings = !empty($company['settings']) ? (is_string($company['settings']) ? json_decode($company['settings'], true) : $company['settings']) : [];
+        if (!is_array($settings)) $settings = [];
+        $tickets = $settings['support_tickets'] ?? [];
+        $ticketId = 'tkt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $tickets[] = [
+            'id' => $ticketId,
+            'subject' => $subject,
+            'message' => $message,
+            'priority' => $priority,
+            'created_by' => $user['id'],
+            'created_by_name' => $user['name'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'status' => 'open'
+        ];
+        $settings['support_tickets'] = $tickets;
+        $db->prepare("UPDATE companies SET settings = ? WHERE id = ?")->execute([json_encode($settings), $companyId]);
+
+        $saStmt = $db->query("SELECT id FROM users WHERE is_superadmin = 1");
+        foreach ($saStmt->fetchAll() as $sa) {
+            createNotification($sa['id'], 'system', 'Support-Anfrage: ' . $subject, $company['name'] . ': ' . substr($message, 0, 120), 'company', $companyId);
+        }
+
+        jsonResponse(['success' => true, 'ticket_id' => $ticketId]);
+    }
+
     // 17. GET admin/overview
     if ($path === 'admin/overview' && $method === 'GET') {
         $user = requireAdminPermission('any_admin');
@@ -2524,9 +2820,10 @@ try {
         if ($adminName && $adminEmail) {
             $adminId = 'usr_' . substr(bin2hex(random_bytes(6)), 0, 8);
             $pwHash = password_hash('taskster2026!', PASSWORD_BCRYPT);
-            $defaultAdminPerms = json_encode(['manage_users', 'finance', 'company_settings', 'manage_templates']);
-            $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash, admin_permissions) VALUES (?, ?, 'admin', 0, 1, ?, ?, ?, ?)")->execute([
-                $adminId, $companyId, $adminName, $adminEmail, $pwHash, $defaultAdminPerms
+            // WICHTIG: Company Admins erhalten KEINE admin_permissions (sonst Plattform-Admin!).
+            // Sie verwalten ihre Firma ueber company_role === 'admin' im /company Portal.
+            $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash) VALUES (?, ?, 'admin', 0, 1, ?, ?, ?)")->execute([
+                $adminId, $companyId, $adminName, $adminEmail, $pwHash
             ]);
             $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name) VALUES (?, ?, ?, ?)")->execute([
                 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8), $adminId, $companyId, "{$name} - Hauptordner"
@@ -2563,8 +2860,10 @@ try {
         $cat = $_GET['category'] ?? null;
         $q = trim($_GET['q'] ?? '');
 
-        $sql = "SELECT * FROM project_templates WHERE 1=1";
-        $params = [];
+        // Zero-Trust: Systemvorlagen (is_system = 1) sind fuer alle sichtbar.
+        // Firmenvorlagen (is_system = 0) NUR fuer das eigene Unternehmen.
+        $sql = "SELECT * FROM project_templates WHERE (is_system = 1 OR company_id = ?)";
+        $params = [$user['company_id'] ?? '__none__'];
         if ($cat && $cat !== 'all') {
             $sql .= " AND category = ?";
             $params[] = $cat;
@@ -2602,10 +2901,12 @@ try {
         jsonResponse(['template' => $t]);
     }
 
-    // 25. POST templates (Admin only)
+    // 25. POST templates (Superadmin = Systemvorlage, Company Admin = Firmenvorlage)
     if ($path === 'templates' && $method === 'POST') {
         $user = requireAuth();
-        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+        $isSuperadmin = !empty($user['is_superadmin']);
+        $isCompanyAdmin = !empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin';
+        if (!$isSuperadmin && !$isCompanyAdmin) {
             errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
         }
 
@@ -2623,8 +2924,8 @@ try {
         $stmt = $db->prepare("INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, company_id, lists, fields) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $tmplId, $name, $category, $subcategory, $description, $icon,
-            !empty($user['is_superadmin']) ? 1 : 0,
-            $user['company_id'] ?? null,
+            $isSuperadmin ? 1 : 0,
+            $isSuperadmin ? null : $user['company_id'],
             json_encode($lists),
             json_encode($fields)
         ]);
@@ -2632,10 +2933,12 @@ try {
         jsonResponse(['success' => true, 'id' => $tmplId]);
     }
 
-    // 26. PUT templates/:id (Admin only)
+    // 26. PUT templates/:id (Eigentümer-Prüfung: Superadmin = alle, Company Admin = nur eigene Firma)
     if (preg_match('#^templates/([^/]+)$#', $path, $m) && $method === 'PUT') {
         $user = requireAuth();
-        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+        $isSuperadmin = !empty($user['is_superadmin']);
+        $isCompanyAdmin = !empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin';
+        if (!$isSuperadmin && !$isCompanyAdmin) {
             errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
         }
         $tmplId = $m[1];
@@ -2643,6 +2946,13 @@ try {
         $stmt->execute([$tmplId]);
         $existing = $stmt->fetch();
         if (!$existing) errorResponse('Vorlage nicht gefunden', 404);
+
+        // Zero-Trust: Company Admin darf nur eigene Firmenvorlagen bearbeiten
+        if (!$isSuperadmin) {
+            if ((int)$existing['is_system'] === 1 || $existing['company_id'] !== $user['company_id']) {
+                errorResponse('Vorlage nicht gefunden', 404);
+            }
+        }
 
         $name = trim($body['name'] ?? $existing['name']);
         $category = in_array($body['category'] ?? '', ['job', 'private']) ? $body['category'] : $existing['category'];
@@ -2658,13 +2968,26 @@ try {
         jsonResponse(['success' => true]);
     }
 
-    // 27. DELETE templates/:id (Admin only)
+    // 27. DELETE templates/:id (Eigentümer-Prüfung: Superadmin = alle, Company Admin = nur eigene Firma)
     if (preg_match('#^templates/([^/]+)$#', $path, $m) && $method === 'DELETE') {
         $user = requireAuth();
-        if (empty($user['is_superadmin']) && ($user['company_role'] ?? '') !== 'admin') {
+        $isSuperadmin = !empty($user['is_superadmin']);
+        $isCompanyAdmin = !empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin';
+        if (!$isSuperadmin && !$isCompanyAdmin) {
             errorResponse('Nur Administratoren können Vorlagen verwalten', 403);
         }
         $tmplId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_templates WHERE id = ?");
+        $stmt->execute([$tmplId]);
+        $existing = $stmt->fetch();
+        if (!$existing) errorResponse('Vorlage nicht gefunden', 404);
+
+        if (!$isSuperadmin) {
+            if ((int)$existing['is_system'] === 1 || $existing['company_id'] !== $user['company_id']) {
+                errorResponse('Vorlage nicht gefunden', 404);
+            }
+        }
+
         $db->prepare("DELETE FROM project_templates WHERE id = ?")->execute([$tmplId]);
         jsonResponse(['success' => true]);
     }

@@ -1,8 +1,8 @@
 import { db } from '~/server/db'
-import { requireSuperadmin } from '~/server/utils/auth'
+import { requireAdminPermission } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
-  requireSuperadmin(event)
+  requireAdminPermission(event, 'manage_users')
   const userId = getRouterParam(event, 'id')
   const body = await readBody(event)
 

@@ -5,6 +5,16 @@
 - **`98_Vorschläge/` (Prio MITTEL):** Verbesserungsvorschläge (`JJJJ-MM-TT_name_prioX.md`).
 - **`97_korrekturen/` (Prio DOKU):** Changelog durchgeführter Fixes (`JJJJ-MM-TT_name.md`).
 
+## 1b. Code-Index (Verbindlich für Agenten)
+- **Skript:** `generate_index.py` (Projekt-Root) erzeugt `.agent_index.json`.
+- **Regel:** Der Agent führt **vor und nach jeder Arbeit** `python generate_index.py` aus, damit der Index aktuell ist.
+- **Inhalt:** API-Endpunkte (Nitro-Routen aus Dateipfaden + PHP-Routen), Klassen, Funktionen, Vue-APIs, referenzierte SQL-Tabellen.
+- **Nutzen:** Der Agent liest zuerst `.agent_index.json` statt das Repo zu durchsuchen (0 Tokens für die Suche).
+- **Befehle:**
+  - `python generate_index.py` — Index neu erzeugen
+  - `python generate_index.py --stats` — zusätzlich Statistik ausgeben
+  - `python generate_index.py --quiet` — ohne Konsolenausgabe
+
 ## 2. Kernrollen
 - **Architekt:** [.agents/rules/martin_persona.md](file:///c:/Users/marti/Taskster/.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)
 - **Delegation Runtime:** [.agents/rules/delegation_runtime.md](file:///c:/Users/marti/Taskster/.agents/rules/delegation_runtime.md)

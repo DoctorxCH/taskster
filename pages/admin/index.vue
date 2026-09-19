@@ -1422,22 +1422,28 @@
 <script setup lang="ts">
 definePageMeta({
   middleware: [
-    function () {
+    async function () {
       if (import.meta.client) {
-        const authData = localStorage.getItem('taskster_auth')
-        if (authData) {
-          try {
-            const parsed = JSON.parse(authData)
-            const u = parsed.user
-            const perms = u?.admin_permissions ? (typeof u.admin_permissions === 'string' ? JSON.parse(u.admin_permissions) : u.admin_permissions) : []
-            if (!u?.is_superadmin && (!Array.isArray(perms) || perms.length === 0)) {
-              return navigateTo('/dashboard')
-            }
-          } catch (_) {
-            return navigateTo('/dashboard')
-          }
-        } else {
+        const token = localStorage.getItem('taskster_token')
+        if (!token) {
           return navigateTo('/login')
+        }
+        const { initAuth, user } = useAuth()
+        if (!user.value) {
+          await initAuth()
+        }
+        const u: any = user.value
+        if (!u) return navigateTo('/login')
+
+        // Plattform-Admin: Superadmin ODER explizite Plattform-Permissions.
+        // Company Admins (company_role === 'admin') gehoeren ins /company Portal.
+        let perms = u.admin_permissions
+        if (typeof perms === 'string') {
+          try { perms = JSON.parse(perms) } catch { perms = [] }
+        }
+        const isPlatformAdmin = Boolean(u.is_superadmin) || (Array.isArray(perms) && perms.length > 0)
+        if (!isPlatformAdmin) {
+          return navigateTo('/dashboard')
         }
       }
     }

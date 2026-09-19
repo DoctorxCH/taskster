@@ -3,7 +3,10 @@ import { requireAuth } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
-  if (!user.is_superadmin && user.company_role !== 'admin') {
+  const isSuperadmin = Boolean(user.is_superadmin)
+  const isCompanyAdmin = Boolean(user.company_id) && user.company_role === 'admin'
+
+  if (!isSuperadmin && !isCompanyAdmin) {
     throw createError({ statusCode: 403, statusMessage: 'Nur Administratoren können Vorlagen bearbeiten' })
   }
 
@@ -13,6 +16,13 @@ export default defineEventHandler(async (event) => {
   const existing = db.prepare('SELECT * FROM project_templates WHERE id = ?').get(id) as any
   if (!existing) {
     throw createError({ statusCode: 404, statusMessage: 'Vorlage nicht gefunden' })
+  }
+
+  // Zero-Trust: Company Admin darf nur eigene Firmenvorlagen bearbeiten
+  if (!isSuperadmin) {
+    if (Number(existing.is_system) === 1 || existing.company_id !== user.company_id) {
+      throw createError({ statusCode: 404, statusMessage: 'Vorlage nicht gefunden' })
+    }
   }
 
   const name = body.name !== undefined ? body.name.trim() : existing.name

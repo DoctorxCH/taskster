@@ -36,10 +36,17 @@ export function initDatabase() {
     "ALTER TABLE projects ADD COLUMN currency TEXT DEFAULT 'CHF'",
     "ALTER TABLE projects ADD COLUMN budget_hours REAL DEFAULT 0",
     "ALTER TABLE projects ADD COLUMN budget_amount REAL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN admin_permissions TEXT DEFAULT '[]'",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
   }
+
+  // ROOT-CAUSE-FIX: Company Admins duerfen KEINE Plattform-admin_permissions haben.
+  // Sie verwalten ihre Firma ueber company_role === 'admin' im /company Portal.
+  try {
+    db.exec("UPDATE users SET admin_permissions = '[]' WHERE is_superadmin = 0 AND company_role = 'admin'")
+  } catch (_) { /* ignore */ }
 
   // New tables (idempotent via IF NOT EXISTS in schema)
   db.exec(`
@@ -75,6 +82,30 @@ export function initDatabase() {
       ended_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS company_invitations (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'member',
+      token TEXT NOT NULL,
+      invited_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL DEFAULT 'system',
+      title TEXT NOT NULL,
+      message TEXT,
+      reference_type TEXT,
+      reference_id TEXT,
+      project_id TEXT,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
 }

@@ -1,14 +1,19 @@
 import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
 
+/**
+ * GET /api/templates
+ * Zero-Trust: Systemvorlagen (is_system = 1) sind für alle sichtbar,
+ * Firmenvorlagen (is_system = 0) NUR für das eigene Unternehmen.
+ */
 export default defineEventHandler((event) => {
-  requireAuth(event)
+  const user = requireAuth(event)
   const query = getQuery(event)
   const cat = query.category as string | undefined
   const q = query.q ? String(query.q).trim() : ''
 
-  let sql = 'SELECT * FROM project_templates WHERE 1=1'
-  const params: any[] = []
+  let sql = 'SELECT * FROM project_templates WHERE (is_system = 1 OR company_id = ?)'
+  const params: any[] = [user.company_id ?? '__none__']
 
   if (cat && cat !== 'all') {
     sql += ' AND category = ?'

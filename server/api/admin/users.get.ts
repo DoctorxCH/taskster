@@ -1,8 +1,8 @@
 import { db } from '~/server/db'
-import { requireSuperadmin } from '~/server/utils/auth'
+import { requireAdminPermission } from '~/server/utils/auth'
 
 export default defineEventHandler((event) => {
-  requireSuperadmin(event)
+  requireAdminPermission(event, 'manage_users')
 
   const users = db.prepare(`
     SELECT u.id, u.name, u.email, u.company_id, u.company_role, u.is_superadmin, u.is_pro, u.created_at,

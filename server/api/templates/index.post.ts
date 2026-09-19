@@ -4,7 +4,10 @@ import { randomUUID } from 'crypto'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
-  if (!user.is_superadmin && user.company_role !== 'admin') {
+  const isSuperadmin = Boolean(user.is_superadmin)
+  const isCompanyAdmin = Boolean(user.company_id) && user.company_role === 'admin'
+
+  if (!isSuperadmin && !isCompanyAdmin) {
     throw createError({ statusCode: 403, statusMessage: 'Nur Administratoren können Vorlagen anlegen' })
   }
 
@@ -26,8 +29,8 @@ export default defineEventHandler(async (event) => {
     subcategory || null,
     description || null,
     icon || 'Folder',
-    user.is_superadmin ? 1 : 0,
-    user.company_id || null,
+    isSuperadmin ? 1 : 0,
+    isSuperadmin ? null : user.company_id,
     JSON.stringify(lists || []),
     JSON.stringify(fields || [])
   )

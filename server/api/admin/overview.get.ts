@@ -1,8 +1,8 @@
 import { db } from '~/server/db'
-import { requireSuperadmin } from '~/server/utils/auth'
+import { requireAdminPermission } from '~/server/utils/auth'
 
 export default defineEventHandler((event) => {
-  requireSuperadmin(event)
+  requireAdminPermission(event, 'any_admin')
 
   const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c
   const companyCount = (db.prepare('SELECT COUNT(*) as c FROM companies').get() as any).c
