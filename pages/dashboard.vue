@@ -150,6 +150,33 @@
               </div>
 
               <div class="flex items-center space-x-2 shrink-0 ml-3">
+                <!-- Live Stopwatch running badge on Dashboard -->
+                <div
+                  v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
+                  class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-950 text-white font-mono font-bold text-[10px] shadow-sm animate-in fade-in"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                  <span class="text-cyan-300">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
+                  <button
+                    type="button"
+                    @click.stop="openStopModal"
+                    class="ml-1 px-1.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-black text-[9px] shadow-xs"
+                    title="Stoppen & buchen"
+                  >
+                    ⏹️
+                  </button>
+                </div>
+
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="startTaskTimer(task)"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-cyan-700 hover:bg-cyan-50 transition text-xs font-bold"
+                  title="Stoppuhr auf diese Aufgabe starten"
+                >
+                  ⏱️
+                </button>
+
                 <span
                   v-if="task.due_date"
                   class="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200"
@@ -493,6 +520,18 @@
 
 <script setup lang="ts">
 const { user, authHeaders } = useAuth()
+const { state: stopwatchState, startTimer, openStopModal, formatSeconds } = useStopwatch()
+
+const startTaskTimer = (task: any) => {
+  if (!task) return
+  startTimer({
+    projectId: task.project_id,
+    projectTitle: task.project_title || 'Projekt',
+    projectCurrency: 'CHF',
+    taskId: task.id,
+    taskTitle: task.title
+  })
+}
 
 const folders = ref<any[]>([])
 const tasks = ref<any[]>([])
@@ -672,6 +711,10 @@ const updateFolder = async () => {
   }
 }
 
+const onGlobalTimeEntrySaved = async () => {
+  await loadTasks()
+}
+
 onMounted(async () => {
   if (!user.value) {
     const { initAuth } = useAuth()
@@ -682,5 +725,14 @@ onMounted(async () => {
     return
   }
   await Promise.all([loadFolders(), loadTasks()])
+  if (import.meta.client) {
+    window.addEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
+  }
+})
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
+  }
 })
 </script>

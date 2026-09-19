@@ -36,6 +36,44 @@
         </nav>
       </div>
 
+      <!-- Center: Live Running Stopwatch Widget -->
+      <div
+        v-if="user && stopwatchState.isRunning"
+        class="flex items-center space-x-2.5 px-3.5 py-1.5 rounded-2xl bg-slate-900/90 border border-cyan-500/50 text-white shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200 select-none shrink-0"
+      >
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+        <span class="font-mono font-black text-xs sm:text-sm tracking-wider text-cyan-300">
+          {{ formatSeconds(stopwatchState.elapsedSeconds) }}
+        </span>
+
+        <span class="text-slate-500 hidden sm:inline">|</span>
+
+        <!-- Task / Project label & navigation -->
+        <NuxtLink
+          :to="'/projects/' + stopwatchState.projectId"
+          class="text-xs font-bold truncate max-w-[130px] sm:max-w-[220px] hover:text-cyan-300 transition flex items-center space-x-1"
+          :title="stopwatchState.taskTitle ? ('Aufgabe: ' + stopwatchState.taskTitle + ' in ' + stopwatchState.projectTitle) : ('Projekt: ' + stopwatchState.projectTitle)"
+        >
+          <span v-if="stopwatchState.taskTitle" class="truncate">
+            <span class="text-cyan-400 font-normal">Aufgabe:</span> {{ stopwatchState.taskTitle }}
+          </span>
+          <span v-else class="truncate">
+            <span class="text-cyan-400 font-normal">Projekt:</span> {{ stopwatchState.projectTitle }}
+          </span>
+        </NuxtLink>
+
+        <!-- Stop Button -->
+        <button
+          type="button"
+          @click="openStopModal"
+          class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center space-x-1 shadow-xs transition transform hover:scale-105"
+          title="Stoppuhr anhalten & Zeit buchen"
+        >
+          <span>⏹️</span>
+          <span class="hidden md:inline">Stoppen</span>
+        </button>
+      </div>
+
       <!-- User & Status Area -->
       <div v-if="user" class="flex items-center space-x-3">
         <!-- MeisterTask-style "Anpassen" (Customize Wallpaper) Button -->
@@ -118,6 +156,9 @@
         </NuxtLink>
       </div>
     </div>
+
+    <!-- Stopwatch Completion Modal -->
+    <StopwatchModal />
   </header>
 </template>
 
@@ -127,4 +168,9 @@ defineEmits<{
 }>()
 
 const { user, logout } = useAuth()
+const { state: stopwatchState, initStopwatch, openStopModal, formatSeconds } = useStopwatch()
+
+onMounted(() => {
+  initStopwatch()
+})
 </script>

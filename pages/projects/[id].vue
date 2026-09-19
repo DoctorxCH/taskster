@@ -103,6 +103,40 @@
               </button>
             </div>
 
+            <!-- Project Stopwatch Control -->
+            <div
+              v-if="userRole !== 'viewer' && stopwatchState.isRunning && stopwatchState.projectId === project?.id"
+              class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-lg border border-cyan-400/60 shadow-md h-[42px] select-none"
+            >
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-[9px] font-bold text-cyan-300 uppercase tracking-wider truncate max-w-[120px]">
+                  {{ stopwatchState.taskId ? ('📋 ' + stopwatchState.taskTitle) : '🏢 Projekt' }}
+                </span>
+                <span class="font-mono font-black text-xs text-white">
+                  {{ formatSeconds(stopwatchState.elapsedSeconds) }}
+                </span>
+              </div>
+              <button
+                @click="openStopModal"
+                type="button"
+                class="ml-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-black shadow-xs transition"
+                title="Stoppuhr stoppen & buchen"
+              >
+                ⏹️ Stoppen
+              </button>
+            </div>
+
+            <button
+              v-else-if="userRole !== 'viewer'"
+              @click="startProjectTimer"
+              class="taskster_button_light px-3.5 text-xs h-[42px] rounded-lg flex items-center space-x-1.5"
+              :title="stopwatchState.isRunning ? 'Stoppuhr für dieses Projekt starten' : 'Stoppuhr auf Projekt starten'"
+            >
+              <span>⏱️</span>
+              <span>Projekt-Stoppuhr</span>
+            </button>
+
             <!-- Manage Sections (Zahnrad) -->
             <button
               v-if="userRole !== 'viewer'"
@@ -280,13 +314,33 @@
                 :draggable="userRole !== 'viewer'"
                 class="relative bg-white border rounded-2xl p-4 transition-all duration-150 shadow-sm group select-none hover:shadow-md overflow-hidden"
                 :class="[
-                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : 'border-slate-200/90 hover:border-cyan-400',
+                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : (stopwatchState.isRunning && stopwatchState.taskId === task.id ? 'ring-2 ring-cyan-500 border-cyan-400 shadow-md bg-cyan-50/20' : 'border-slate-200/90 hover:border-cyan-400'),
                   userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 ]"
                 @dragstart="onDragStart(task, list.id)"
                 @dragend="onDragEnd"
                 @click="openTaskDrawer(task)"
               >
+                <!-- Live Running Stopwatch on this card -->
+                <div
+                  v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
+                  class="mb-2.5 px-2.5 py-1.5 rounded-xl bg-slate-950 text-white flex items-center justify-between shadow-sm animate-in fade-in"
+                >
+                  <div class="flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span class="text-[9px] uppercase font-bold text-cyan-400">Läuft:</span>
+                    <span class="font-mono font-black text-xs text-cyan-200">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    @click.stop="openStopModal"
+                    class="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[9px] font-bold shadow-xs transition"
+                    title="Stoppen & Zeit buchen"
+                  >
+                    ⏹️ Stoppen
+                  </button>
+                </div>
+
                 <!-- Drag handle & Task Header -->
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <div class="flex items-start space-x-2">
@@ -368,7 +422,19 @@
                       <span v-if="task.budget_hours" class="text-slate-400">/{{ task.budget_hours }}h</span>
                     </span>
                   </div>
-                  <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      v-if="userRole !== 'viewer' && (!stopwatchState.isRunning || stopwatchState.taskId !== task.id)"
+                      type="button"
+                      @click.stop="startTaskTimer(task)"
+                      class="text-slate-400 hover:text-cyan-700 font-bold flex items-center space-x-1 px-1.5 py-0.5 rounded hover:bg-cyan-50 transition"
+                      title="Stoppuhr auf diese Aufgabe starten"
+                    >
+                      <span>⏱️</span>
+                      <span class="text-[10px]">Start</span>
+                    </button>
+                    <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
+                  </div>
                 </div>
 
                 <!-- Color stripe at bottom of card -->
@@ -476,6 +542,11 @@
                           :style="{ width: Math.min(100, Math.round(((task.tracked_hours || 0) / task.budget_hours) * 100)) + '%' }"
                         ></div>
                       </div>
+                      <!-- Live Timer in Table row if active -->
+                      <div v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id" class="mt-1.5 inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-slate-950 text-white text-[10px] font-mono font-bold shadow-xs">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span class="text-cyan-300">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
+                      </div>
                     </td>
                     <td class="py-3 px-4">
                       <span v-if="task.due_date" class="text-slate-800 font-medium">
@@ -496,7 +567,27 @@
                       <span v-else class="text-slate-400">-</span>
                     </td>
                     <td class="py-3 px-4 text-right">
-                      <span class="text-xs text-cyan-700 font-bold hover:underline">Öffnen →</span>
+                      <div class="inline-flex items-center space-x-2">
+                        <button
+                          v-if="userRole !== 'viewer' && stopwatchState.isRunning && stopwatchState.taskId === task.id"
+                          type="button"
+                          @click.stop="openStopModal"
+                          class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[10px] font-bold shadow-xs transition"
+                          title="Stoppuhr anhalten & Zeit buchen"
+                        >
+                          ⏹️ Stoppen
+                        </button>
+                        <button
+                          v-else-if="userRole !== 'viewer'"
+                          type="button"
+                          @click.stop="startTaskTimer(task)"
+                          class="p-1 rounded text-slate-400 hover:text-cyan-700 hover:bg-cyan-50 text-xs font-bold transition"
+                          title="Stoppuhr auf diese Aufgabe starten"
+                        >
+                          ⏱️
+                        </button>
+                        <span class="text-xs text-cyan-700 font-bold hover:underline">Öffnen →</span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -813,17 +904,53 @@
               <span>Zeiterfassung & Controlling</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
-              Erfasse Arbeitszeiten auf dieses Gesamtprojekt oder auf konkrete Aufgaben. Manuelle Einträge werden mit einem Stern (*) gekennzeichnet.
+              Erfasse Arbeitszeiten per Live-Stoppuhr oder manuell auf das Gesamtprojekt oder einzelne Aufgaben. Manuelle Einträge werden mit einem Stern (*) gekennzeichnet.
             </p>
           </div>
-          <button
-            v-if="userRole !== 'viewer'"
-            @click="openProjectTimeModal()"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
-          >
-            <span>+</span>
-            <span>Zeit erfassen</span>
-          </button>
+          <div v-if="userRole !== 'viewer'" class="flex flex-wrap items-center gap-2.5">
+            <!-- Active Stopwatch Pill if running for this project -->
+            <div
+              v-if="stopwatchState.isRunning && stopwatchState.projectId === project?.id"
+              class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-lg border border-cyan-400/60 shadow-md h-[42px] select-none"
+            >
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-[9px] font-bold text-cyan-300 uppercase tracking-wider truncate max-w-[130px]">
+                  {{ stopwatchState.taskId ? ('📋 ' + stopwatchState.taskTitle) : '🏢 Projekt' }}
+                </span>
+                <span class="font-mono font-black text-xs text-white">
+                  {{ formatSeconds(stopwatchState.elapsedSeconds) }}
+                </span>
+              </div>
+              <button
+                @click="openStopModal"
+                type="button"
+                class="ml-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-black shadow-xs transition"
+                title="Stoppuhr stoppen & buchen"
+              >
+                ⏹️ Stoppen
+              </button>
+            </div>
+
+            <button
+              v-else
+              type="button"
+              @click="startProjectTimer"
+              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-2"
+              title="Stoppuhr für dieses Projekt starten"
+            >
+              <span>⏱️</span>
+              <span>Stoppuhr starten</span>
+            </button>
+
+            <button
+              @click="openProjectTimeModal()"
+              class="taskster_button px-5 text-xs h-[42px] rounded-lg flex items-center space-x-2"
+            >
+              <span>+</span>
+              <span>Manuell erfassen</span>
+            </button>
+          </div>
         </div>
 
         <!-- KPI Summary Cards -->
@@ -1613,9 +1740,76 @@
                 ></div>
               </div>
 
-              <!-- Quick Time Logging Form -->
+              <!-- Live Stopwatch Section for this Task -->
+              <div
+                v-if="stopwatchState.isRunning && stopwatchState.taskId === drawerTask.id"
+                class="mb-3.5 p-4 rounded-2xl bg-slate-950 text-white border border-cyan-400/50 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in select-none"
+              >
+                <div class="flex items-center space-x-3">
+                  <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                  <div>
+                    <div class="text-[10px] font-black text-cyan-400 uppercase tracking-wider">Stoppuhr läuft aktiv</div>
+                    <div class="text-2xl font-black font-mono text-cyan-200 tracking-tight mt-0.5">
+                      {{ formatSeconds(stopwatchState.elapsedSeconds) }}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    @click="discardTimer"
+                    class="text-xs font-bold text-rose-400 hover:text-rose-200 hover:underline px-2 py-1"
+                  >
+                    Verwerfen
+                  </button>
+                  <button
+                    type="button"
+                    @click="openStopModal"
+                    class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg flex items-center space-x-1.5 shadow-sm"
+                  >
+                    <span>⏹️</span>
+                    <span>Stoppen & Buchen</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Other running timer warning -->
+              <div
+                v-else-if="stopwatchState.isRunning"
+                class="mb-3.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2"
+              >
+                <div class="flex items-center space-x-2">
+                  <span>⚠️</span>
+                  <span>Stoppuhr läuft auf <strong>{{ stopwatchState.taskTitle || stopwatchState.projectTitle }}</strong> ({{ formatSeconds(stopwatchState.elapsedSeconds) }})</span>
+                </div>
+                <button
+                  v-if="userRole !== 'viewer'"
+                  type="button"
+                  @click="startTaskTimer(drawerTask)"
+                  class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs shadow-xs shrink-0"
+                >
+                  Auf diese Aufgabe wechseln
+                </button>
+              </div>
+
+              <!-- Start Stopwatch Button if idle -->
+              <div v-else-if="userRole !== 'viewer'" class="mb-3.5">
+                <button
+                  type="button"
+                  @click="startTaskTimer(drawerTask)"
+                  class="taskster_button w-full px-4 text-xs h-[42px] rounded-lg flex items-center justify-center space-x-2 shadow-sm"
+                >
+                  <span>⏱️</span>
+                  <span>Stoppuhr für diese Aufgabe starten</span>
+                </button>
+              </div>
+
+              <!-- Quick Time Logging Form (Manuell) -->
               <div v-if="userRole !== 'viewer'" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5 mb-3">
-                <div class="text-[11px] font-black uppercase tracking-wider text-slate-600">Zeit auf diese Aufgabe buchen</div>
+                <div class="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center justify-between">
+                  <span>Manuell Zeit auf diese Aufgabe buchen</span>
+                  <span class="text-[10px] text-slate-400 font-normal">Wird mit * markiert</span>
+                </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div>
                     <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Dauer (Std.)</label>
@@ -2636,6 +2830,66 @@ const loading = ref(true)
 
 const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
+
+// Live Stopwatch Integration
+const {
+  state: stopwatchState,
+  startTimer,
+  openStopModal,
+  discardTimer,
+  formatSeconds
+} = useStopwatch()
+
+const startProjectTimer = () => {
+  if (!project.value) return
+  startTimer({
+    projectId: project.value.id,
+    projectTitle: project.value.title,
+    projectCurrency: project.value.currency || 'CHF'
+  })
+}
+
+const startTaskTimer = (task: any) => {
+  if (!project.value || !task) return
+  startTimer({
+    projectId: project.value.id,
+    projectTitle: project.value.title,
+    projectCurrency: project.value.currency || 'CHF',
+    taskId: task.id,
+    taskTitle: task.title
+  })
+}
+
+const onGlobalTimeEntrySaved = async () => {
+  await loadProjectTimeEntries()
+  try {
+    const pRes = await $fetch<any>(`/api/projects/${projectId}`, { headers: authHeaders() })
+    if (pRes.project) {
+      project.value.tracked_hours = pRes.project.tracked_hours
+    }
+  } catch (e) {}
+
+  if (showTaskDrawer.value && drawerTask.value?.id) {
+    try {
+      const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
+      if (res.task) {
+        drawerTask.value.tracked_hours = res.task.tracked_hours
+        for (const l of lists.value) {
+          const found = l.tasks?.find((t: any) => t.id === drawerTask.value.id)
+          if (found) {
+            found.tracked_hours = res.task.tracked_hours
+            break
+          }
+        }
+      }
+      drawerTimeEntries.value = res.timeEntries || []
+    } catch (e) {}
+  } else {
+    try {
+      await loadProjectData()
+    } catch (e) {}
+  }
+}
 
 // Zeiterfassung State
 const projectTimeEntries = ref<any[]>([])
@@ -4037,6 +4291,15 @@ watch(currentView, (val) => {
 
 onMounted(async () => {
   await loadProjectData()
+  if (import.meta.client) {
+    window.addEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
+  }
+})
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
+  }
 })
 </script>
 
