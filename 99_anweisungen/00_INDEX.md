@@ -10,3 +10,5 @@
 | [04_Datenmodelle_und_Berechtigung.md](file:///c:/Users/marti/Taskster/99_anweisungen/04_Datenmodelle_und_Berechtigung.md) | DB-Schema & 4-Stufen-Pipeline |
 | [05_Phasenplan_und_Meilensteine.md](file:///c:/Users/marti/Taskster/99_anweisungen/05_Phasenplan_und_Meilensteine.md) | Meilensteine M1 bis M6 |
 | [06_Multi_Agenten_System.md](file:///c:/Users/marti/Taskster/99_anweisungen/06_Multi_Agenten_System.md) | Rollen & Delegationsprotokoll |
+| [design-system.md](file:///c:/Users/marti/Taskster/99_anweisungen/design-system.md) | **Design-System (verbindlich)** – Farben, Buttons, Liquid Glass, Regeln |
+| [design-tokens.json](file:///c:/Users/marti/Taskster/99_anweisungen/design-tokens.json) | Design-Tokens maschinenlesbar (für KI-Agenten) |

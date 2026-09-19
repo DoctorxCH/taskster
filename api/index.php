@@ -129,6 +129,31 @@ function ensureTables($pdo) {
               INDEX idx_time_date (entry_date)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS contacts (
+              id VARCHAR(64) PRIMARY KEY,
+              user_id VARCHAR(64) NOT NULL,
+              company_id VARCHAR(64) NULL,
+              project_id VARCHAR(64) NULL,
+              first_name VARCHAR(255) NULL,
+              last_name VARCHAR(255) NOT NULL,
+              company_name VARCHAR(255) NULL,
+              role_function VARCHAR(255) NULL,
+              phone VARCHAR(64) NULL,
+              mobile VARCHAR(64) NULL,
+              email VARCHAR(255) NULL,
+              category_group VARCHAR(128) NULL,
+              tags JSON NULL,
+              notes TEXT NULL,
+              share_scope VARCHAR(32) NOT NULL DEFAULT 'private',
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+              INDEX idx_contacts_user (user_id),
+              INDEX idx_contacts_company (company_id),
+              INDEX idx_contacts_project (project_id),
+              INDEX idx_contacts_group (category_group)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
     } catch (Exception $e) {
         // Continue if table exists or migration done
     }
@@ -3702,6 +3727,331 @@ try {
         }
 
         $db->prepare("DELETE FROM time_entries WHERE id = ?")->execute([$entryId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 32. GET contacts
+    if ($path === 'contacts' && $method === 'GET') {
+        $user = requireAuth();
+        $projectId = trim($_GET['project_id'] ?? '');
+        $group = trim($_GET['group'] ?? '');
+        $scope = trim($_GET['scope'] ?? '');
+        $search = trim($_GET['search'] ?? '');
+
+        $params = [];
+        $where = [];
+
+        // Base accessibility check:
+        // Superadmin sees all
+        if (empty($user['is_superadmin'])) {
+            $userWhere = [];
+            
+            // 1. Created by this user
+            $userWhere[] = "c.user_id = :uid_creator";
+            $params[':uid_creator'] = $user['id'];
+
+            // 2. Shared company contacts (if user has company)
+            if (!empty($user['company_id'])) {
+                $userWhere[] = "(c.share_scope = 'company' AND c.company_id = :cid_scope)";
+                $params[':cid_scope'] = $user['company_id'];
+            }
+
+            // 3. Project-linked contacts where user has access to that project
+            $userWhere[] = "(c.project_id IS NOT NULL AND c.project_id IN (
+                SELECT p_acc.id FROM projects p_acc
+                JOIN project_folders pf_acc ON pf_acc.id = p_acc.folder_id
+                WHERE pf_acc.owner_id = :uid_p1
+                   OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p_acc.id AND pm.user_id = :uid_p2)
+                   OR EXISTS (SELECT 1 FROM folder_members fm WHERE fm.folder_id = pf_acc.id AND fm.user_id = :uid_p3)
+                   " . (!empty($user['company_id']) ? "OR (pf_acc.company_id = :cid_p AND (p_acc.visibility = 'company' OR pf_acc.visibility = 'company'))" : "") . "
+            ))";
+            $params[':uid_p1'] = $user['id'];
+            $params[':uid_p2'] = $user['id'];
+            $params[':uid_p3'] = $user['id'];
+            if (!empty($user['company_id'])) {
+                $params[':cid_p'] = $user['company_id'];
+            }
+
+            $where[] = '(' . implode(' OR ', $userWhere) . ')';
+        }
+
+        // Additional filters:
+        if ($projectId !== '') {
+            $where[] = "c.project_id = :f_project_id";
+            $params[':f_project_id'] = $projectId;
+        }
+
+        if ($group !== '') {
+            $where[] = "c.category_group = :f_group";
+            $params[':f_group'] = $group;
+        }
+
+        if ($scope !== '') {
+            $where[] = "c.share_scope = :f_scope";
+            $params[':f_scope'] = $scope;
+        }
+
+        if ($search !== '') {
+            $sTerm = '%' . $search . '%';
+            $where[] = "(c.first_name LIKE :s1 OR c.last_name LIKE :s2 OR c.company_name LIKE :s3 OR c.role_function LIKE :s4 OR c.email LIKE :s5 OR c.phone LIKE :s6 OR c.mobile LIKE :s7 OR c.notes LIKE :s8)";
+            $params[':s1'] = $sTerm;
+            $params[':s2'] = $sTerm;
+            $params[':s3'] = $sTerm;
+            $params[':s4'] = $sTerm;
+            $params[':s5'] = $sTerm;
+            $params[':s6'] = $sTerm;
+            $params[':s7'] = $sTerm;
+            $params[':s8'] = $sTerm;
+        }
+
+        $sql = "
+            SELECT c.*, 
+                   p.title AS project_title,
+                   pf.name AS folder_name,
+                   u.name AS creator_name
+            FROM contacts c
+            LEFT JOIN projects p ON p.id = c.project_id
+            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN users u ON u.id = c.user_id
+        ";
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(' AND ', $where);
+        }
+        $sql .= " ORDER BY c.last_name ASC, c.first_name ASC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$r) {
+            $r['tags'] = !empty($r['tags']) ? (is_string($r['tags']) ? json_decode($r['tags'], true) : $r['tags']) : [];
+            if (!is_array($r['tags'])) $r['tags'] = [];
+            $r['can_edit'] = (!empty($user['is_superadmin']) || $r['user_id'] === $user['id'] || (!empty($user['company_id']) && $user['company_id'] === $r['company_id'] && $user['company_role'] === 'admin'));
+        }
+        unset($r);
+
+        jsonResponse(['contacts' => $rows]);
+    }
+
+    // 33. POST contacts
+    if ($path === 'contacts' && $method === 'POST') {
+        $user = requireAuth();
+        $lastName = trim($body['last_name'] ?? '');
+        if (!$lastName) {
+            errorResponse('Nachname ist erforderlich', 400);
+        }
+
+        $id = 'contact_' . substr(bin2hex(random_bytes(8)), 0, 16);
+        $firstName = trim($body['first_name'] ?? '');
+        $companyName = trim($body['company_name'] ?? '');
+        $roleFunction = trim($body['role_function'] ?? '');
+        $phone = trim($body['phone'] ?? '');
+        $mobile = trim($body['mobile'] ?? '');
+        $email = trim($body['email'] ?? '');
+        $projectId = !empty($body['project_id']) ? trim($body['project_id']) : null;
+        $categoryGroup = trim($body['category_group'] ?? '');
+        $tags = isset($body['tags']) && is_array($body['tags']) ? json_encode(array_values($body['tags'])) : '[]';
+        $notes = trim($body['notes'] ?? '');
+        $shareScope = in_array($body['share_scope'] ?? '', ['company', 'private']) ? $body['share_scope'] : 'private';
+
+        // If project_id provided, verify write access
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
+
+        $stmt = $db->prepare("
+            INSERT INTO contacts (
+                id, user_id, company_id, project_id, first_name, last_name,
+                company_name, role_function, phone, mobile, email,
+                category_group, tags, notes, share_scope, created_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, NOW()
+            )
+        ");
+        $stmt->execute([
+            $id,
+            $user['id'],
+            $user['company_id'] ?? null,
+            $projectId,
+            $firstName ?: null,
+            $lastName,
+            $companyName ?: null,
+            $roleFunction ?: null,
+            $phone ?: null,
+            $mobile ?: null,
+            $email ?: null,
+            $categoryGroup ?: null,
+            $tags,
+            $notes ?: null,
+            $shareScope
+        ]);
+
+        $fetchStmt = $db->prepare("
+            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            FROM contacts c
+            LEFT JOIN projects p ON p.id = c.project_id
+            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.id = ?
+        ");
+        $fetchStmt->execute([$id]);
+        $newContact = $fetchStmt->fetch();
+        if ($newContact) {
+            $newContact['tags'] = !empty($newContact['tags']) ? (is_string($newContact['tags']) ? json_decode($newContact['tags'], true) : $newContact['tags']) : [];
+            $newContact['can_edit'] = true;
+        }
+
+        jsonResponse(['contact' => $newContact], 201);
+    }
+
+    // 34. GET contacts/:id
+    if (preg_match('#^contacts/([^/]+)$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $contactId = $m[1];
+
+        $stmt = $db->prepare("
+            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            FROM contacts c
+            LEFT JOIN projects p ON p.id = c.project_id
+            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.id = ?
+        ");
+        $stmt->execute([$contactId]);
+        $contact = $stmt->fetch();
+        if (!$contact) {
+            errorResponse('Kontakt nicht gefunden', 404);
+        }
+
+        // Accessibility check
+        $hasAccess = false;
+        if (!empty($user['is_superadmin']) || $contact['user_id'] === $user['id']) {
+            $hasAccess = true;
+        } elseif (!empty($user['company_id']) && $contact['share_scope'] === 'company' && $user['company_id'] === $contact['company_id']) {
+            $hasAccess = true;
+        } elseif (!empty($contact['project_id'])) {
+            try {
+                evaluateProjectAccess($user, $contact['project_id'], 'read');
+                $hasAccess = true;
+            } catch (Exception $e) {
+                // not accessible
+            }
+        }
+
+        if (!$hasAccess) {
+            errorResponse('Kontakt nicht gefunden', 404);
+        }
+
+        $contact['tags'] = !empty($contact['tags']) ? (is_string($contact['tags']) ? json_decode($contact['tags'], true) : $contact['tags']) : [];
+        $contact['can_edit'] = (!empty($user['is_superadmin']) || $contact['user_id'] === $user['id'] || (!empty($user['company_id']) && $user['company_id'] === $contact['company_id'] && $user['company_role'] === 'admin'));
+
+        jsonResponse(['contact' => $contact]);
+    }
+
+    // 35. PUT contacts/:id
+    if (preg_match('#^contacts/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $contactId = $m[1];
+
+        $stmt = $db->prepare("SELECT * FROM contacts WHERE id = ?");
+        $stmt->execute([$contactId]);
+        $contact = $stmt->fetch();
+        if (!$contact) {
+            errorResponse('Kontakt nicht gefunden', 404);
+        }
+
+        // Mutation check: creator, superadmin, or company admin if in company
+        $canEdit = (!empty($user['is_superadmin']) || $contact['user_id'] === $user['id'] || (!empty($user['company_id']) && $user['company_id'] === $contact['company_id'] && $user['company_role'] === 'admin'));
+        if (!$canEdit) {
+            errorResponse('Keine Berechtigung zum Bearbeiten dieses Kontakts', 403);
+        }
+
+        $lastName = isset($body['last_name']) ? trim($body['last_name']) : $contact['last_name'];
+        if (!$lastName) {
+            errorResponse('Nachname ist erforderlich', 400);
+        }
+
+        $firstName = array_key_exists('first_name', $body) ? trim($body['first_name']) : $contact['first_name'];
+        $companyName = array_key_exists('company_name', $body) ? trim($body['company_name']) : $contact['company_name'];
+        $roleFunction = array_key_exists('role_function', $body) ? trim($body['role_function']) : $contact['role_function'];
+        $phone = array_key_exists('phone', $body) ? trim($body['phone']) : $contact['phone'];
+        $mobile = array_key_exists('mobile', $body) ? trim($body['mobile']) : $contact['mobile'];
+        $email = array_key_exists('email', $body) ? trim($body['email']) : $contact['email'];
+        $projectId = array_key_exists('project_id', $body) ? (!empty($body['project_id']) ? trim($body['project_id']) : null) : $contact['project_id'];
+        $categoryGroup = array_key_exists('category_group', $body) ? trim($body['category_group']) : $contact['category_group'];
+        $notes = array_key_exists('notes', $body) ? trim($body['notes']) : $contact['notes'];
+        $shareScope = array_key_exists('share_scope', $body) && in_array($body['share_scope'], ['company', 'private']) ? $body['share_scope'] : $contact['share_scope'];
+        
+        $tags = $contact['tags'];
+        if (array_key_exists('tags', $body)) {
+            $tags = is_array($body['tags']) ? json_encode(array_values($body['tags'])) : '[]';
+        }
+
+        if ($projectId && $projectId !== $contact['project_id']) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
+
+        $upStmt = $db->prepare("
+            UPDATE contacts
+            SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
+                phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
+                tags = ?, notes = ?, share_scope = ?
+            WHERE id = ?
+        ");
+        $upStmt->execute([
+            $firstName ?: null,
+            $lastName,
+            $companyName ?: null,
+            $roleFunction ?: null,
+            $phone ?: null,
+            $mobile ?: null,
+            $email ?: null,
+            $projectId,
+            $categoryGroup ?: null,
+            $tags,
+            $notes ?: null,
+            $shareScope,
+            $contactId
+        ]);
+
+        $fetchStmt = $db->prepare("
+            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            FROM contacts c
+            LEFT JOIN projects p ON p.id = c.project_id
+            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.id = ?
+        ");
+        $fetchStmt->execute([$contactId]);
+        $updated = $fetchStmt->fetch();
+        if ($updated) {
+            $updated['tags'] = !empty($updated['tags']) ? (is_string($updated['tags']) ? json_decode($updated['tags'], true) : $updated['tags']) : [];
+            $updated['can_edit'] = true;
+        }
+
+        jsonResponse(['contact' => $updated]);
+    }
+
+    // 36. DELETE contacts/:id
+    if (preg_match('#^contacts/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $contactId = $m[1];
+
+        $stmt = $db->prepare("SELECT * FROM contacts WHERE id = ?");
+        $stmt->execute([$contactId]);
+        $contact = $stmt->fetch();
+        if (!$contact) {
+            errorResponse('Kontakt nicht gefunden', 404);
+        }
+
+        $canDelete = (!empty($user['is_superadmin']) || $contact['user_id'] === $user['id'] || (!empty($user['company_id']) && $user['company_id'] === $contact['company_id'] && $user['company_role'] === 'admin'));
+        if (!$canDelete) {
+            errorResponse('Keine Berechtigung zum Löschen dieses Kontakts', 403);
+        }
+
+        $db->prepare("DELETE FROM contacts WHERE id = ?")->execute([$contactId]);
         jsonResponse(['success' => true]);
     }
 

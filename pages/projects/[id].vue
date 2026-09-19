@@ -224,6 +224,15 @@
           </button>
 
           <button
+            @click="currentView = 'contacts'; loadProjectContacts()"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'contacts' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+          >
+            <span>📇</span>
+            <span>Kontakte ({{ projectContacts.length }})</span>
+          </button>
+
+          <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="currentView = 'settings'; initSettingsTab()"
             class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"

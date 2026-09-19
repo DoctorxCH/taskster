@@ -34,6 +34,15 @@
           </NuxtLink>
 
           <NuxtLink
+            to="/contacts"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            :class="$route.path.startsWith('/contacts') ? 'bg-white text-[#00A3C4] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
+          >
+            <span>📇</span>
+            <span>Kontakte</span>
+          </NuxtLink>
+
+          <NuxtLink
             v-if="isPlatformAdmin"
             to="/admin"
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
