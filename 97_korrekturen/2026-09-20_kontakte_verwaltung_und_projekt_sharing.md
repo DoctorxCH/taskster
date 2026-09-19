@@ -40,11 +40,15 @@ User können Kontakte für Baustellen, Gewerke und Projekte erfassen und pflegen
     - Ausklappbare OpenStreetMap-Miniaturkarte (Leaflet/Mapnik iframe via OSM Nominatim Geocoding).
     - vCard-Export (.vcf) um `ADR;TYPE=WORK` und `URL` ergänzt.
     - KI-Autofill erkennt Adressen und Webseiten automatisch aus Signaturen/Texten.
+  - **Duplikat-Schutz (Frontend & Backend):**
+    - Echtzeit-Erkennung von Duplikaten bei Eingabe oder KI-Autofill anhand von E-Mail, Telefon/Mobilnummer (letzte 7 Ziffern) oder Vor-/Nachname.
+    - Warnbanner im Modal mit 3 Schnellaktionen: "Bestehenden Kontakt bearbeiten", "Daten zusammenführen (Merge)" und "Trotzdem neu anlegen".
+    - Backend-Schutz (HTTP 409 Conflict) verhindert versehentliches doppeltes Erfassen, außer `force_duplicate: true` wird explizit übergeben.
   - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene DeepSeek V4 Flash API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Adresse, Webseite, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
   - Standard Taskster-Buttons: `taskster_button`, `taskster_button_light`, `taskster_button_accent` (`px-6 text-xs h-[42px] rounded-lg`).
 - **Projekt-Detailseite (`pages/projects/[id].vue`):**
   - Neuer Tab `📇 Kontakte (X)` im Projektheader.
-  - Listet alle Kontakte der Baustelle/des Projekts inklusive Adresse, Webseite und OpenStreetMap-Link.
+  - Listet alle Kontakte der Baustelle/des Projekts inklusive Adresse, Webseite, OpenStreetMap-Link und Duplikatschutz.
   - Eigenes Modal mit KI-Autofill zum direkten Anlegen von Projektkontakten vor Ort.
 - **Navigation (`components/Navbar.vue`, `app.vue`):**
   - Neuer Link `📇 Kontakte` in der oberen Navigationsleiste und der ausklappbaren rechten MeisterTask-Sidebar.

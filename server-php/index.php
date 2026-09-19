@@ -3891,6 +3891,57 @@ try {
             evaluateProjectAccess($user, $projectId, 'write');
         }
 
+        // Duplicate Protection (can be bypassed with force_duplicate = true)
+        $forceDuplicate = !empty($body['force_duplicate']);
+        if (!$forceDuplicate) {
+            $params = [$user['id']];
+            $companyCondition = "";
+            if (!empty($user['company_id'])) {
+                $companyCondition = " OR c.company_id = ?";
+                $params[] = $user['company_id'];
+            }
+
+            $dupFilters = [];
+            if ($email) {
+                $dupFilters[] = "(c.email IS NOT NULL AND c.email != '' AND LOWER(c.email) = LOWER(?))";
+                $params[] = $email;
+            }
+            if ($mobile) {
+                $cleanMob = preg_replace('/\D+/', '', $mobile);
+                if (strlen($cleanMob) >= 6) {
+                    $dupFilters[] = "(c.mobile IS NOT NULL AND c.mobile != '' AND REPLACE(REPLACE(REPLACE(REPLACE(c.mobile, ' ', ''), '-', ''), '/', ''), '+', '') LIKE ?)";
+                    $params[] = '%' . substr($cleanMob, -7);
+                }
+            }
+            if ($lastName && $firstName) {
+                $dupFilters[] = "(LOWER(c.last_name) = LOWER(?) AND LOWER(c.first_name) = LOWER(?))";
+                $params[] = $lastName;
+                $params[] = $firstName;
+            }
+
+            if (!empty($dupFilters)) {
+                $dupSql = "
+                    SELECT c.id, c.first_name, c.last_name, c.company_name, c.role_function, c.email, c.mobile, c.phone, c.category_group
+                    FROM contacts c
+                    WHERE (c.user_id = ?{$companyCondition})
+                      AND (" . implode(' OR ', $dupFilters) . ")
+                    LIMIT 1
+                ";
+                $dupStmt = $db->prepare($dupSql);
+                $dupStmt->execute($params);
+                $existingDup = $dupStmt->fetch();
+                if ($existingDup) {
+                    $name = trim(($existingDup['first_name'] ? $existingDup['first_name'] . ' ' : '') . $existingDup['last_name']);
+                    $extra = $existingDup['company_name'] ? " ({$existingDup['company_name']})" : "";
+                    jsonResponse([
+                        'error' => 'duplicate_found',
+                        'message' => "Mögliches Duplikat erkannt: {$name}{$extra}",
+                        'existing_contact' => $existingDup
+                    ], 409);
+                }
+            }
+        }
+
         $stmt = $db->prepare("
             INSERT INTO contacts (
                 id, user_id, company_id, project_id, first_name, last_name,

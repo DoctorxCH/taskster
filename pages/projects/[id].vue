@@ -3196,6 +3196,60 @@
             </div>
           </div>
 
+          <!-- Duplikate-Warnung Banner -->
+          <div
+            v-if="projectDuplicateCandidate"
+            class="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 shadow-xs animate-in fade-in"
+          >
+            <div class="flex items-start space-x-2.5">
+              <span class="text-xl shrink-0">⚠️</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="text-xs font-black text-amber-950">
+                    Duplikat-Schutz: Ähnlicher Kontakt existiert bereits
+                  </h4>
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                    Bereits vorhanden
+                  </span>
+                </div>
+                <p class="text-xs text-amber-900 mt-1 leading-snug">
+                  Ein Kontakt mit ähnlichen Merkmalen (Name, E-Mail oder Telefon) existiert bereits in diesem Projekt:
+                  <strong class="font-black text-slate-900">{{ (projectDuplicateCandidate.first_name ? projectDuplicateCandidate.first_name + ' ' : '') + projectDuplicateCandidate.last_name }}</strong>
+                  <span v-if="projectDuplicateCandidate.company_name" class="font-bold text-amber-950"> ({{ projectDuplicateCandidate.company_name }})</span>
+                </p>
+                <div class="text-[11px] text-amber-800 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <span v-if="projectDuplicateCandidate.email">✉️ {{ projectDuplicateCandidate.email }}</span>
+                  <span v-if="projectDuplicateCandidate.mobile">📱 {{ projectDuplicateCandidate.mobile }}</span>
+                  <span v-if="projectDuplicateCandidate.phone">📞 {{ projectDuplicateCandidate.phone }}</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-amber-200/80">
+                  <button
+                    @click="openEditProjectContactModal(projectDuplicateCandidate)"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 transition cursor-pointer"
+                  >
+                    ✏️ Bestehenden Kontakt bearbeiten
+                  </button>
+                  <button
+                    @click="mergeIntoExistingProjectContact(projectDuplicateCandidate)"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition cursor-pointer"
+                  >
+                    ⚡ Daten zusammenführen (Merge)
+                  </button>
+                  <button
+                    @click="allowDuplicateProject = true"
+                    type="button"
+                    class="text-[11px] font-bold text-amber-900 hover:underline ml-auto cursor-pointer"
+                  >
+                    Trotzdem neu anlegen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-800 mb-1">
@@ -3378,6 +3432,72 @@ const projectContactForm = ref({
   category_group: 'Handwerker',
   notes: ''
 })
+
+const allowDuplicateProject = ref(false)
+
+const projectDuplicateCandidate = computed(() => {
+  if (isEditingProjectContact.value || allowDuplicateProject.value) return null
+
+  const ln = projectContactForm.value.last_name.trim().toLowerCase()
+  const fn = projectContactForm.value.first_name.trim().toLowerCase()
+  const em = projectContactForm.value.email.trim().toLowerCase()
+  const mobDigits = projectContactForm.value.mobile.replace(/\D+/g, '')
+
+  if (!ln && !em && mobDigits.length < 6) return null
+
+  return projectContacts.value.find(c => {
+    if (c.id === projectContactForm.value.id) return false
+    if (em && c.email && c.email.trim().toLowerCase() === em) return true
+    if (mobDigits.length >= 6) {
+      const cMob = (c.mobile || '').replace(/\D+/g, '')
+      const cPh = (c.phone || '').replace(/\D+/g, '')
+      if (cMob.length >= 6 && (cMob.endsWith(mobDigits.slice(-7)) || mobDigits.endsWith(cMob.slice(-7)))) return true
+      if (cPh.length >= 6 && (cPh.endsWith(mobDigits.slice(-7)) || mobDigits.endsWith(cPh.slice(-7)))) return true
+    }
+    if (ln && fn && c.last_name && c.first_name) {
+      if (c.last_name.trim().toLowerCase() === ln && c.first_name.trim().toLowerCase() === fn) {
+        return true
+      }
+    }
+    return false
+  }) || null
+})
+
+const mergeIntoExistingProjectContact = async (target: any) => {
+  if (!target) return
+  savingProjectContact.value = true
+  projectContactError.value = ''
+
+  const merged = {
+    first_name: projectContactForm.value.first_name.trim() || target.first_name || '',
+    last_name: projectContactForm.value.last_name.trim() || target.last_name || '',
+    company_name: projectContactForm.value.company_name.trim() || target.company_name || '',
+    role_function: projectContactForm.value.role_function.trim() || target.role_function || '',
+    phone: projectContactForm.value.phone.trim() || target.phone || '',
+    mobile: projectContactForm.value.mobile.trim() || target.mobile || '',
+    email: projectContactForm.value.email.trim() || target.email || '',
+    address: projectContactForm.value.address.trim() || target.address || '',
+    website: projectContactForm.value.website.trim() || target.website || '',
+    project_id: projectId,
+    category_group: projectContactForm.value.category_group || target.category_group || 'Handwerker',
+    notes: [target.notes, projectContactForm.value.notes.trim()].filter(Boolean).join('\n'),
+    share_scope: 'private'
+  }
+
+  try {
+    await $fetch(`/api/contacts/${target.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: merged
+    })
+    showProjectContactModal.value = false
+    await loadProjectContacts()
+  } catch (err: any) {
+    projectContactError.value = err.data?.statusMessage || 'Fehler beim Zusammenführen des Kontakts'
+  } finally {
+    savingProjectContact.value = false
+  }
+}
 
 const formatProjectContactUrl = (url?: string) => {
   if (!url) return ''
@@ -3740,6 +3860,7 @@ const loadProjectContacts = async () => {
 
 const openAddProjectContactModal = () => {
   isEditingProjectContact.value = false
+  allowDuplicateProject.value = false
   projectContactError.value = ''
   showAiInputProject.value = false
   aiRawTextProject.value = ''
@@ -3881,7 +4002,8 @@ const saveProjectContact = async () => {
     project_id: projectId,
     category_group: projectContactForm.value.category_group,
     notes: projectContactForm.value.notes.trim(),
-    share_scope: 'private'
+    share_scope: 'private',
+    force_duplicate: allowDuplicateProject.value || isEditingProjectContact.value
   }
 
   try {
@@ -3901,7 +4023,11 @@ const saveProjectContact = async () => {
     showProjectContactModal.value = false
     await loadProjectContacts()
   } catch (err: any) {
-    projectContactError.value = err.data?.statusMessage || 'Fehler beim Speichern des Kontakts'
+    if (err.statusCode === 409 || err.status === 409) {
+      projectContactError.value = err.data?.message || 'Duplikat erkannt: Ein ähnlicher Kontakt existiert bereits in diesem Projekt.'
+    } else {
+      projectContactError.value = err.data?.statusMessage || 'Fehler beim Speichern des Kontakts'
+    }
   } finally {
     savingProjectContact.value = false
   }

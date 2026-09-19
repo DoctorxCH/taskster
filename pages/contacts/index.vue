@@ -600,6 +600,60 @@
             </div>
           </div>
 
+          <!-- Duplikate-Warnung Banner -->
+          <div
+            v-if="duplicateCandidate"
+            class="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 shadow-xs animate-in fade-in"
+          >
+            <div class="flex items-start space-x-2.5">
+              <span class="text-xl shrink-0">⚠️</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="text-xs font-black text-amber-950">
+                    Duplikat-Schutz: Ähnlicher Kontakt existiert bereits
+                  </h4>
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                    Bereits vorhanden
+                  </span>
+                </div>
+                <p class="text-xs text-amber-900 mt-1 leading-snug">
+                  Ein Kontakt mit ähnlichen Merkmalen (Name, E-Mail oder Telefon) existiert bereits:
+                  <strong class="font-black text-slate-900">{{ formatFullName(duplicateCandidate) }}</strong>
+                  <span v-if="duplicateCandidate.company_name" class="font-bold text-amber-950"> ({{ duplicateCandidate.company_name }})</span>
+                </p>
+                <div class="text-[11px] text-amber-800 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <span v-if="duplicateCandidate.email">✉️ {{ duplicateCandidate.email }}</span>
+                  <span v-if="duplicateCandidate.mobile">📱 {{ duplicateCandidate.mobile }}</span>
+                  <span v-if="duplicateCandidate.phone">📞 {{ duplicateCandidate.phone }}</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-amber-200/80">
+                  <button
+                    @click="openEditModal(duplicateCandidate)"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 transition cursor-pointer"
+                  >
+                    ✏️ Bestehenden Kontakt bearbeiten
+                  </button>
+                  <button
+                    @click="mergeIntoExistingContact(duplicateCandidate)"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition cursor-pointer"
+                  >
+                    ⚡ Daten zusammenführen (Merge)
+                  </button>
+                  <button
+                    @click="allowDuplicate = true"
+                    type="button"
+                    class="text-[11px] font-bold text-amber-900 hover:underline ml-auto cursor-pointer"
+                  >
+                    Trotzdem neu anlegen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Name & Vorname & Firma -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -1007,8 +1061,76 @@ const removeTag = (idx: number) => {
 }
 
 // Open Modal
+const allowDuplicate = ref(false)
+
+const duplicateCandidate = computed(() => {
+  if (isEditing.value || allowDuplicate.value) return null
+
+  const ln = form.value.last_name.trim().toLowerCase()
+  const fn = form.value.first_name.trim().toLowerCase()
+  const em = form.value.email.trim().toLowerCase()
+  const mobDigits = form.value.mobile.replace(/\D+/g, '')
+
+  if (!ln && !em && mobDigits.length < 6) return null
+
+  return contacts.value.find(c => {
+    if (c.id === form.value.id) return false
+    if (em && c.email && c.email.trim().toLowerCase() === em) return true
+    if (mobDigits.length >= 6) {
+      const cMob = (c.mobile || '').replace(/\D+/g, '')
+      const cPh = (c.phone || '').replace(/\D+/g, '')
+      if (cMob.length >= 6 && (cMob.endsWith(mobDigits.slice(-7)) || mobDigits.endsWith(cMob.slice(-7)))) return true
+      if (cPh.length >= 6 && (cPh.endsWith(mobDigits.slice(-7)) || mobDigits.endsWith(cPh.slice(-7)))) return true
+    }
+    if (ln && fn && c.last_name && c.first_name) {
+      if (c.last_name.trim().toLowerCase() === ln && c.first_name.trim().toLowerCase() === fn) {
+        return true
+      }
+    }
+    return false
+  }) || null
+})
+
+const mergeIntoExistingContact = async (target: any) => {
+  if (!target) return
+  saving.value = true
+  modalError.value = ''
+
+  const merged = {
+    first_name: form.value.first_name.trim() || target.first_name || '',
+    last_name: form.value.last_name.trim() || target.last_name || '',
+    company_name: form.value.company_name.trim() || target.company_name || '',
+    role_function: form.value.role_function.trim() || target.role_function || '',
+    phone: form.value.phone.trim() || target.phone || '',
+    mobile: form.value.mobile.trim() || target.mobile || '',
+    email: form.value.email.trim() || target.email || '',
+    address: form.value.address.trim() || target.address || '',
+    website: form.value.website.trim() || target.website || '',
+    project_id: form.value.project_id || target.project_id || null,
+    category_group: form.value.category_group || target.category_group || 'Handwerker',
+    tags: Array.from(new Set([...(Array.isArray(target.tags) ? target.tags : []), ...form.value.tags])),
+    notes: [target.notes, form.value.notes.trim()].filter(Boolean).join('\n'),
+    share_scope: form.value.is_company_shared ? 'company' : (target.share_scope || 'private')
+  }
+
+  try {
+    await $fetch(`/api/contacts/${target.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: merged
+    })
+    showModal.value = false
+    await loadContacts()
+  } catch (err: any) {
+    modalError.value = err.data?.statusMessage || 'Fehler beim Zusammenführen des Kontakts'
+  } finally {
+    saving.value = false
+  }
+}
+
 const openCreateModal = (defaultProjectId?: string) => {
   isEditing.value = false
+  allowDuplicate.value = false
   modalError.value = ''
   newTagInput.value = ''
   showAiInput.value = false
@@ -1190,7 +1312,8 @@ const saveContact = async () => {
     category_group: form.value.category_group,
     tags: form.value.tags,
     notes: form.value.notes.trim(),
-    share_scope: form.value.is_company_shared ? 'company' : 'private'
+    share_scope: form.value.is_company_shared ? 'company' : 'private',
+    force_duplicate: allowDuplicate.value || isEditing.value
   }
 
   try {
@@ -1211,7 +1334,11 @@ const saveContact = async () => {
     showModal.value = false
     await loadContacts()
   } catch (err: any) {
-    modalError.value = err.data?.statusMessage || 'Fehler beim Speichern des Kontakts'
+    if (err.statusCode === 409 || err.status === 409) {
+      modalError.value = err.data?.message || 'Duplikat erkannt: Ein ähnlicher Kontakt existiert bereits.'
+    } else {
+      modalError.value = err.data?.statusMessage || err.message || 'Fehler beim Speichern des Kontakts'
+    }
   } finally {
     saving.value = false
   }
