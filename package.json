@@ -9,7 +9,12 @@
     "build:dist": "nuxt generate && node scripts/sync-dist.cjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "db:seed": "node server/db/seed.js"
+    "db:seed": "node server/db/seed.js",
+    "ai": "node scripts/ai.cjs",
+    "ai:check": "node scripts/ai.cjs --check",
+    "index": "python generate_index.py",
+    "index:stats": "python generate_index.py --stats",
+    "php:check": "python scripts/check-php-syntax.py"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

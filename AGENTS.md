@@ -15,8 +15,16 @@
   - `python generate_index.py --stats` — zusätzlich Statistik ausgeben
   - `python generate_index.py --quiet` — ohne Konsolenausgabe
 
-## 2. Kernrollen
-- **Architekt:** [.agents/rules/martin_persona.md](file:///c:/Users/marti/Taskster/.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)
+## 1c. AI-Anbindung (OpenRouter / DeepSeek V4 Flash)
+- **Config:** `ai.config.json` (Single Source of Truth, **keine Secrets**).
+- **Key:** `OPENROUTER_API_KEY` in `.env` (gitignored) — **niemals** in den Client.
+- **Endpoint-Pinning:** `provider.only = ["baidu/fp8"]`, `allow_fallbacks = false`.
+- **CLI (VS Code):** `npm run ai -- "Frage"`, `--file <pfad>`, `--git [n]`, `--json`, `--check`.
+- **Produktion (PHP):** `POST /api/ai/chat` (Auth nötig), `GET /api/ai/config`.
+- **VS Code Tasks:** `AI: Frage stellen`, `AI: Aktuelle Datei analysieren`, `AI: Letzte Git-Änderungen erklären`.
+- **Doku:** [97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md](file:///c:/Users/marti/Taskster/97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md)
+
+## 2. Kernrollen- **Architekt:** [.agents/rules/martin_persona.md](file:///c:/Users/marti/Taskster/.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)
 - **Delegation Runtime:** [.agents/rules/delegation_runtime.md](file:///c:/Users/marti/Taskster/.agents/rules/delegation_runtime.md)
 - **Spezialisten (`.agents/agents/`):**
   `@agent-orchestrator` (Koordination), `@agent-designer` (UI/Nuxt), `@agent-backend` (API/DB),
