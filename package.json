@@ -6,6 +6,7 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "build:dist": "nuxt generate && node scripts/sync-dist.cjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "db:seed": "node server/db/seed.js"
