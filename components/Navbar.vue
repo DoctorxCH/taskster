@@ -25,7 +25,7 @@
           </NuxtLink>
 
           <NuxtLink
-            v-if="user.is_superadmin"
+            v-if="user.is_superadmin || user.company_role === 'admin' || (user.admin_permissions && user.admin_permissions.length > 0)"
             to="/admin"
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
             :class="$route.path.startsWith('/admin') ? 'bg-white text-purple-700 shadow-sm border border-purple-200' : 'text-slate-600 hover:text-purple-700 hover:bg-white/60'"
@@ -66,7 +66,7 @@
         <button
           type="button"
           @click="openStopModal"
-          class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center space-x-1 shadow-xs transition transform hover:scale-105"
+          class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center space-x-1 shadow-xs transition transform hover:scale-105 cursor-pointer"
           title="Stoppuhr anhalten & Zeit buchen"
         >
           <span>⏹️</span>
@@ -80,7 +80,7 @@
         <button
           @click="$emit('toggle-wallpaper')"
           type="button"
-          class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-700 hover:text-cyan-700 border border-slate-200/80 shadow-xs transition"
+          class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-700 hover:text-cyan-700 border border-slate-200/80 shadow-xs transition cursor-pointer"
           title="Hintergrundbild wechseln"
         >
           <span>🎨</span>
@@ -94,6 +94,12 @@
             class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200"
           >
             SUPERADMIN
+          </span>
+          <span
+            v-else-if="user.company_role === 'admin' || (user.admin_permissions && user.admin_permissions.length > 0)"
+            class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200"
+          >
+            ADMIN
           </span>
           <span
             v-else-if="user.company_name"

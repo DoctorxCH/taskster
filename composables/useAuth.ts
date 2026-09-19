@@ -9,6 +9,7 @@ export interface User {
   company_settings?: any
   is_superadmin: boolean
   is_pro: boolean
+  admin_permissions?: string[] | string
 }
 
 export const useAuth = () => {

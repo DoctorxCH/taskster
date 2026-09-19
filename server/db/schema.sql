@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   hourly_rate REAL DEFAULT NULL,
   currency TEXT DEFAULT 'CHF',
+  admin_permissions TEXT DEFAULT '[]',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -63,8 +63,9 @@
     <!-- Admin Tabs inside Liquid Glass Bar for 100% visibility -->
     <div class="liquid_glass_pill rounded-2xl px-4 py-1.5 mb-6 flex items-center space-x-3 overflow-x-auto shadow-sm">
       <button
+        v-if="hasPermission('manage_users')"
         @click="activeTab = 'users'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
         :class="activeTab === 'users' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
       >
         <span>👤</span>
@@ -72,8 +73,9 @@
       </button>
 
       <button
+        v-if="hasPermission('company_settings')"
         @click="activeTab = 'companies'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
         :class="activeTab === 'companies' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
       >
         <span>🏢</span>
@@ -81,8 +83,19 @@
       </button>
 
       <button
+        v-if="hasPermission('finance')"
+        @click="activeTab = 'finance'"
+        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
+        :class="activeTab === 'finance' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
+      >
+        <span>💳</span>
+        <span>Finanzen & Bestellungen</span>
+      </button>
+
+      <button
+        v-if="hasPermission('company_settings')"
         @click="activeTab = 'policies'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
         :class="activeTab === 'policies' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
       >
         <span>🛡️</span>
@@ -90,8 +103,9 @@
       </button>
 
       <button
+        v-if="hasPermission('manage_templates')"
         @click="activeTab = 'templates'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
         :class="activeTab === 'templates' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
       >
         <span>📋</span>
@@ -99,14 +113,19 @@
       </button>
     </div>
 
-
     <!-- TAB 1: USERS & CUSTOMERS (Liquid Glass Table Card) -->
     <div v-if="activeTab === 'users'" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
-      <div class="p-4 sm:p-6 border-b border-slate-200/80 flex items-center justify-between">
+      <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 class="text-sm font-bold text-slate-900">Alle registrierten Kunden und Benutzer</h3>
-          <p class="text-xs text-slate-600 font-medium">Verwalte Berechtigungen, Pro-Status und Firmenzuweisungen.</p>
+          <p class="text-xs text-slate-600 font-medium">Verwalte Berechtigungen, Pro-Status, Subrollen und Firmenzuweisungen.</p>
         </div>
+        <button
+          @click="openCreateUserModal"
+          class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm shrink-0"
+        >
+          <span>+ Neuen Benutzer anlegen</span>
+        </button>
       </div>
 
       <div class="overflow-x-auto">
@@ -116,7 +135,7 @@
               <th class="py-3.5 px-4">Name & E-Mail</th>
               <th class="py-3.5 px-4">Unternehmen / Organisation</th>
               <th class="py-3.5 px-4">Plan & Status</th>
-              <th class="py-3.5 px-4">Superadmin</th>
+              <th class="py-3.5 px-4">Rolle & Berechtigungen</th>
               <th class="py-3.5 px-4 text-right">Aktionen</th>
             </tr>
           </thead>
@@ -142,20 +161,38 @@
                 </span>
               </td>
               <td class="py-3.5 px-4">
-                <span
-                  v-if="u.is_superadmin"
-                  class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-300"
-                >
-                  SUPERADMIN
+                <div v-if="u.is_superadmin" class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                  <span>⚡</span>
+                  <span>SUPERADMIN</span>
+                </div>
+                <div v-else-if="u.company_role === 'admin'" class="space-y-1">
+                  <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+                    Administrator
+                  </span>
+                  <div v-if="u.admin_permissions && u.admin_permissions.length > 0" class="flex flex-wrap gap-1">
+                    <span
+                      v-for="pKey in u.admin_permissions"
+                      :key="pKey"
+                      class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/90 border border-slate-200 text-slate-700 shadow-xs"
+                      :title="getPermissionLabel(pKey)"
+                    >
+                      {{ getPermissionBadge(pKey) }}
+                    </span>
+                  </div>
+                  <div v-else class="text-[10px] text-slate-400 italic">Voll-Admin</div>
+                </div>
+                <span v-else-if="u.company_role === 'member'" class="text-xs text-slate-700 font-semibold">
+                  Mitarbeiter
                 </span>
-                <span v-else class="text-slate-400">-</span>
+                <span v-else class="text-xs text-slate-400 italic">
+                  Einzelbenutzer
+                </span>
               </td>
               <td class="py-3.5 px-4 text-right">
-                <!-- User Settings Dialog Trigger Button instead of direct 1-click upgrade -->
                 <button
                   @click="openEditUserModal(u)"
                   class="taskster_button_light px-4 text-xs h-[34px] rounded-lg shadow-xs"
-                  title="Benutzer-Einstellungen bearbeiten (Plan, Rolle, Firma)"
+                  title="Benutzer-Einstellungen bearbeiten (Plan, Rolle, Subrollen, Firma)"
                 >
                   <span>⚙️</span>
                   <span>Einstellungen</span>
@@ -226,6 +263,142 @@
                 </td>
                 <td class="py-3.5 px-4 text-right">
                   <span class="text-[11px] text-purple-700 font-bold px-2 py-0.5 rounded-full bg-purple-100 border border-purple-200">Aktiv</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FINANCE & ORDERS (Für Superadmins und Admins mit 'finance' Recht) -->
+    <div v-if="activeTab === 'finance'" class="space-y-6">
+      <!-- Finance Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Monatlicher Umsatz (MRR)</span>
+            <span class="text-xl">💰</span>
+          </div>
+          <div class="text-3xl font-black text-slate-900 mt-2">
+            {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            Wiederkehrender monatlicher Umsatz
+          </div>
+        </div>
+
+        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-700">Aktive Abonnements</span>
+            <span class="text-xl">💳</span>
+          </div>
+          <div class="text-3xl font-black text-purple-900 mt-2">
+            {{ ordersSummary?.active_subscriptions || 0 }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            Unternehmen & PRO-Nutzer
+          </div>
+        </div>
+
+        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-700">Kostenpflichtige Sitze</span>
+            <span class="text-xl">👥</span>
+          </div>
+          <div class="text-3xl font-black text-[#00A3C4] mt-2">
+            {{ ordersSummary?.total_seats || 0 }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            Zugewiesene Mitarbeiter-Lizenzen
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders & Invoices Table -->
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Abonnements & Bestellungen</h3>
+            <p class="text-xs text-slate-600 font-medium mt-1">
+              Übersicht aller aktiven Firmenabos, Einzellizenzen und Zahlungsmodalitäten.
+            </p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              @click="loadOrdersData()"
+              class="taskster_button_light px-4 text-xs h-[36px] rounded-lg flex items-center space-x-1.5"
+            >
+              <span>🔄</span>
+              <span>Aktualisieren</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="loadingOrders" class="py-12 text-center text-slate-500 text-sm">
+          Lade Bestelldaten und Abonnements...
+        </div>
+
+        <div v-else-if="orders.length === 0" class="py-12 text-center text-slate-500 text-sm">
+          Keine aktiven Bestellungen oder Abonnements hinterlegt.
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                <th class="py-3 px-4">Kunde / Organisation</th>
+                <th class="py-3 px-4">Plan / Tarif</th>
+                <th class="py-3 px-4">Lizenzen</th>
+                <th class="py-3 px-4">Monatspreis</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Abrechnung</th>
+                <th class="py-3 px-4 text-right">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100/80 font-medium">
+              <tr v-for="order in orders" :key="order.id" class="hover:bg-white/40 transition">
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900">{{ order.customer_name }}</div>
+                  <div class="text-[11px] text-slate-500">{{ order.customer_email || 'Keine E-Mail' }}</div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span
+                    class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider"
+                    :class="{
+                      'bg-purple-100 text-purple-900 border border-purple-200': order.plan === 'enterprise',
+                      'bg-indigo-100 text-indigo-900 border border-indigo-200': order.plan === 'pro',
+                      'bg-slate-100 text-slate-800 border border-slate-200': order.plan === 'starter'
+                    }"
+                  >
+                    {{ order.plan_label }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="font-bold text-slate-800">{{ order.seat_count }} Sitze</span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="font-black text-slate-900">{{ order.amount_monthly }} {{ order.currency }}</span>
+                  <span class="text-[10px] text-slate-500 block">/ Monat</span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                    :class="order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'"
+                  >
+                    {{ order.payment_status === 'paid' ? '✓ Bezahlt' : 'Ausstehend' }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="text-slate-600 text-[11px]">{{ order.next_billing || 'Monatlich automatisch' }}</span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <button
+                    @click="alert(`Rechnung für ${order.customer_name} wird generiert...`)"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-300 bg-white/70 hover:bg-white text-slate-700 transition cursor-pointer"
+                  >
+                    Rechnung
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -920,12 +1093,221 @@
       </div>
     </div>
 
+    <!-- Modal: Create New User -->
+    <div
+      v-if="showCreateUserModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+    >
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-6">
+          <div>
+            <div class="inline-flex items-center space-x-1 text-xs font-bold text-emerald-800 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 mb-1">
+              <span>👤</span>
+              <span>Neuer Benutzer</span>
+            </div>
+            <h3 class="text-lg font-black text-slate-900">
+              Benutzerkonto manuell erstellen
+            </h3>
+          </div>
+          <button
+            type="button"
+            @click="showCreateUserModal = false"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="createUser" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Name *</label>
+            <input
+              v-model="newUserForm.name"
+              type="text"
+              required
+              placeholder="z.B. Beat Meier"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">E-Mail-Adresse *</label>
+            <input
+              v-model="newUserForm.email"
+              type="email"
+              required
+              placeholder="beat.meier@musterfirma.ch"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-800">Passwort *</label>
+              <button
+                type="button"
+                @click="generateRandomPassword('new')"
+                class="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 flex items-center space-x-1 cursor-pointer"
+              >
+                <span>🎲</span>
+                <span>Zufallspasswort</span>
+              </button>
+            </div>
+            <input
+              v-model="newUserForm.password"
+              type="text"
+              required
+              minlength="6"
+              placeholder="Initiales Login-Passwort (mind. 6 Zeichen)"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
+            />
+          </div>
+
+          <!-- Plan Selection -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
+            <select
+              v-model="newUserForm.is_pro"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
+            >
+              <option :value="false">Taskster Free Plan (Basis)</option>
+              <option :value="true">Taskster PRO Plan (Unbegrenzt)</option>
+            </select>
+          </div>
+
+          <!-- Company Assignment -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Unternehmen zuweisen</label>
+            <select
+              v-model="newUserForm.company_id"
+              :disabled="!user?.is_superadmin && Boolean(user?.company_id)"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium disabled:opacity-60"
+            >
+              <option v-if="user?.is_superadmin" value="">Keine (Privatkunde / Einzelnutzer)</option>
+              <option v-for="c in companies" :key="c.id" :value="c.id">
+                {{ c.name }} ({{ c.subscription_plan ? c.subscription_plan.toUpperCase() : 'STANDARD' }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Company Role -->
+          <div v-if="newUserForm.company_id">
+            <label class="block text-xs font-bold text-slate-800 mb-1">Rolle im Unternehmen</label>
+            <select
+              v-model="newUserForm.company_role"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
+            >
+              <option value="member">Mitarbeiter (member)</option>
+              <option value="admin">Administrator (admin)</option>
+            </select>
+          </div>
+
+          <!-- Admin Subroles & Permissions (if admin or superadmin) -->
+          <div v-if="newUserForm.company_role === 'admin' || user?.is_superadmin" class="pt-3 pb-2 border-t border-slate-200/80">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                <span>🛡️</span>
+                <span>Admin-Berechtigungen & Subrollen</span>
+              </label>
+              <div class="flex items-center space-x-1">
+                <button
+                  type="button"
+                  @click="applyAdminPreset('new', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Alle
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('new', 'users')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  User-Mgmt
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('new', 'finance')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Finanzen
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('new', 'none')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Keine
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-2 bg-white/60 p-3 rounded-2xl border border-slate-200/70">
+              <label
+                v-for="perm in availablePermissions"
+                :key="perm.key"
+                class="flex items-start space-x-2.5 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  :value="perm.key"
+                  v-model="newUserForm.admin_permissions"
+                  class="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+                />
+                <div class="flex-1">
+                  <div class="text-xs font-bold text-slate-900 flex items-center space-x-1">
+                    <span>{{ perm.icon }}</span>
+                    <span>{{ perm.label }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 leading-tight">{{ perm.desc }}</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Superadmin Checkbox (Only visible if creator is Superadmin) -->
+          <div v-if="user?.is_superadmin" class="pt-3 pb-2 border-t border-slate-200/80">
+            <label class="flex items-start space-x-3 cursor-pointer select-none">
+              <input
+                v-model="newUserForm.is_superadmin"
+                type="checkbox"
+                class="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+              />
+              <div>
+                <div class="text-xs font-bold text-purple-950">Superadmin-Berechtigung</div>
+                <div class="text-[11px] text-slate-600">
+                  Ermöglicht uneingeschränkten Plattform-Vollzugriff auf alle Firmen und Daten.
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Modal Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
+            <button
+              type="button"
+              @click="showCreateUserModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="creatingUser"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+            >
+              {{ creatingUser ? 'Erstelle...' : 'Benutzer anlegen' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Modal: Edit User Settings -->
     <div
       v-if="showEditUserModal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
     >
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-6">
           <div>
             <div class="inline-flex items-center space-x-1 text-xs font-bold text-cyan-800 px-2.5 py-0.5 rounded-full bg-cyan-100 border border-cyan-200 mb-1">
@@ -939,7 +1321,7 @@
           <button
             type="button"
             @click="showEditUserModal = false"
-            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg cursor-pointer"
           >
             ✕
           </button>
@@ -966,6 +1348,26 @@
             />
           </div>
 
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-800">Neues Passwort (optional)</label>
+              <button
+                type="button"
+                @click="generateRandomPassword('edit')"
+                class="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 flex items-center space-x-1 cursor-pointer"
+              >
+                <span>🎲</span>
+                <span>Zufallspasswort</span>
+              </button>
+            </div>
+            <input
+              v-model="editUserForm.new_password"
+              type="text"
+              placeholder="Leer lassen, falls Passwort unverändert bleiben soll"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
+            />
+          </div>
+
           <!-- Plan Selection -->
           <div>
             <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
@@ -983,9 +1385,10 @@
             <label class="block text-xs font-bold text-slate-800 mb-1">Unternehmen / Organisation zuweisen</label>
             <select
               v-model="editUserForm.company_id"
-              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
+              :disabled="!user?.is_superadmin && Boolean(user?.company_id)"
+              class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium disabled:opacity-60"
             >
-              <option value="">Keine (Privatkunde / Einzelnutzer)</option>
+              <option v-if="user?.is_superadmin" value="">Keine (Privatkunde / Einzelnutzer)</option>
               <option v-for="c in companies" :key="c.id" :value="c.id">
                 {{ c.name }} ({{ c.subscription_plan ? c.subscription_plan.toUpperCase() : 'STANDARD' }})
               </option>
@@ -1004,8 +1407,70 @@
             </select>
           </div>
 
-          <!-- Superadmin Checkbox -->
-          <div class="pt-3 pb-2 border-t border-slate-200/80">
+          <!-- Admin Subroles & Permissions -->
+          <div v-if="editUserForm.company_role === 'admin' || user?.is_superadmin" class="pt-3 pb-2 border-t border-slate-200/80">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                <span>🛡️</span>
+                <span>Admin-Berechtigungen & Subrollen</span>
+              </label>
+              <div class="flex items-center space-x-1">
+                <button
+                  type="button"
+                  @click="applyAdminPreset('edit', 'all')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Alle
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('edit', 'users')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  User-Mgmt
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('edit', 'finance')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Finanzen
+                </button>
+                <button
+                  type="button"
+                  @click="applyAdminPreset('edit', 'none')"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                >
+                  Keine
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-2 bg-white/60 p-3 rounded-2xl border border-slate-200/70">
+              <label
+                v-for="perm in availablePermissions"
+                :key="perm.key"
+                class="flex items-start space-x-2.5 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  :value="perm.key"
+                  v-model="editUserForm.admin_permissions"
+                  class="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+                />
+                <div class="flex-1">
+                  <div class="text-xs font-bold text-slate-900 flex items-center space-x-1">
+                    <span>{{ perm.icon }}</span>
+                    <span>{{ perm.label }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 leading-tight">{{ perm.desc }}</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Superadmin Checkbox (Only editable by Superadmin) -->
+          <div v-if="user?.is_superadmin" class="pt-3 pb-2 border-t border-slate-200/80">
             <label class="flex items-start space-x-3 cursor-pointer select-none">
               <input
                 v-model="editUserForm.is_superadmin"
@@ -1026,14 +1491,14 @@
             <button
               type="button"
               @click="showEditUserModal = false"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               :disabled="savingUser"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               {{ savingUser ? 'Speichern...' : 'Änderungen speichern' }}
             </button>
@@ -1047,33 +1512,170 @@
 <script setup lang="ts">
 const { user, authHeaders } = useAuth()
 
-const activeTab = ref<'users' | 'companies' | 'invites' | 'policies' | 'templates'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'invites' | 'policies' | 'templates'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
 const loading = ref(true)
 
+// Permissions system
+const availablePermissions = [
+  { key: 'manage_users', label: 'Benutzer verwalten', icon: '👤', desc: 'Benutzer manuell anlegen, Rollen & Passwörter ändern' },
+  { key: 'finance', label: 'Finanzen & Bestellungen', icon: '💳', desc: 'Umsätze, MRR, Firmenabos & Zahlungsstatus einsehen' },
+  { key: 'company_settings', label: 'Firmen & Policies', icon: '🏢', desc: 'Firmendetails, Tarif-Limits und Upload-Regeln bearbeiten' },
+  { key: 'manage_templates', label: 'System-Vorlagen', icon: '📋', desc: 'Projekt- und Aufgaben-Vorlagen erstellen und bearbeiten' },
+  { key: 'audit_logs', label: 'Sicherheit & Audit', icon: '📜', desc: 'Sicherheits- und Zugriffsprotokolle einsehen' }
+]
+
+const hasPermission = (perm: string) => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  let perms = user.value.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  return Array.isArray(perms) && perms.includes(perm)
+}
+
+const isAnyAdmin = computed(() => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  if (user.value.company_role === 'admin') return true
+  let perms = user.value.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  return Array.isArray(perms) && perms.length > 0
+})
+
+const getPermissionBadge = (key: string) => {
+  const map: Record<string, string> = {
+    manage_users: '👤 User-Mgmt',
+    finance: '💳 Finanzen',
+    company_settings: '🏢 Firmen',
+    manage_templates: '📋 Vorlagen',
+    audit_logs: '📜 Audit'
+  }
+  return map[key] || key
+}
+
+const getPermissionLabel = (key: string) => {
+  const found = availablePermissions.find(p => p.key === key)
+  return found ? found.label : key
+}
+
+const generateRandomPassword = (target: 'new' | 'edit') => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*'
+  let pwd = ''
+  for (let i = 0; i < 12; i++) {
+    pwd += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  if (target === 'new') {
+    newUserForm.value.password = pwd
+  } else {
+    editUserForm.value.new_password = pwd
+  }
+}
+
+const applyAdminPreset = (target: 'new' | 'edit', preset: 'all' | 'users' | 'finance' | 'none') => {
+  const targetForm = target === 'new' ? newUserForm.value : editUserForm.value
+  if (preset === 'all') {
+    targetForm.admin_permissions = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs']
+  } else if (preset === 'users') {
+    targetForm.admin_permissions = ['manage_users']
+  } else if (preset === 'finance') {
+    targetForm.admin_permissions = ['finance']
+  } else {
+    targetForm.admin_permissions = []
+  }
+}
+
+// Create User Modal State
+const showCreateUserModal = ref(false)
+const creatingUser = ref(false)
+const newUserForm = ref({
+  name: '',
+  email: '',
+  password: '',
+  is_pro: false,
+  is_superadmin: false,
+  company_id: '',
+  company_role: 'member',
+  admin_permissions: [] as string[]
+})
+
+const openCreateUserModal = () => {
+  newUserForm.value = {
+    name: '',
+    email: '',
+    password: '',
+    is_pro: false,
+    is_superadmin: false,
+    company_id: user.value?.company_id || '',
+    company_role: 'member',
+    admin_permissions: []
+  }
+  generateRandomPassword('new')
+  showCreateUserModal.value = true
+}
+
+const createUser = async () => {
+  creatingUser.value = true
+  try {
+    await $fetch('/api/admin/users', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        name: newUserForm.value.name,
+        email: newUserForm.value.email,
+        password: newUserForm.value.password,
+        is_pro: newUserForm.value.is_pro,
+        is_superadmin: user.value?.is_superadmin ? newUserForm.value.is_superadmin : false,
+        company_id: newUserForm.value.company_id || null,
+        company_role: newUserForm.value.company_role,
+        admin_permissions: newUserForm.value.admin_permissions
+      }
+    })
+    showCreateUserModal.value = false
+    await loadAdminData()
+    alert(`Benutzer "${newUserForm.value.name}" erfolgreich angelegt!`)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Anlegen des Benutzers')
+  } finally {
+    creatingUser.value = false
+  }
+}
+
+// Edit User Modal State
 const showEditUserModal = ref(false)
 const editUserForm = ref({
   id: '',
   name: '',
   email: '',
+  new_password: '',
   is_pro: false,
   is_superadmin: false,
   company_id: '',
-  company_role: 'member'
+  company_role: 'member',
+  admin_permissions: [] as string[]
 })
 const savingUser = ref(false)
 
 const openEditUserModal = (u: any) => {
+  let perms = u.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
   editUserForm.value = {
     id: u.id,
     name: u.name || '',
     email: u.email || '',
+    new_password: '',
     is_pro: Boolean(u.is_pro),
     is_superadmin: Boolean(u.is_superadmin),
     company_id: u.company_id || '',
-    company_role: u.company_role || 'member'
+    company_role: u.company_role || 'member',
+    admin_permissions: Array.isArray(perms) ? [...perms] : []
   }
   showEditUserModal.value = true
 }
@@ -1081,17 +1683,22 @@ const openEditUserModal = (u: any) => {
 const saveUserChanges = async () => {
   savingUser.value = true
   try {
+    const payload: any = {
+      name: editUserForm.value.name,
+      email: editUserForm.value.email,
+      is_pro: editUserForm.value.is_pro,
+      is_superadmin: user.value?.is_superadmin ? editUserForm.value.is_superadmin : false,
+      company_id: editUserForm.value.company_id || null,
+      company_role: editUserForm.value.company_role,
+      admin_permissions: editUserForm.value.admin_permissions
+    }
+    if (editUserForm.value.new_password && editUserForm.value.new_password.trim().length > 0) {
+      payload.password = editUserForm.value.new_password.trim()
+    }
     await $fetch(`/api/admin/users/${editUserForm.value.id}`, {
       method: 'PATCH',
       headers: authHeaders(),
-      body: {
-        name: editUserForm.value.name,
-        email: editUserForm.value.email,
-        is_pro: editUserForm.value.is_pro,
-        is_superadmin: editUserForm.value.is_superadmin,
-        company_id: editUserForm.value.company_id || null,
-        company_role: editUserForm.value.company_role
-      }
+      body: payload
     })
     showEditUserModal.value = false
     await loadAdminData()
@@ -1100,6 +1707,25 @@ const saveUserChanges = async () => {
     alert(err.data?.statusMessage || 'Fehler beim Speichern der Benutzer-Einstellungen')
   } finally {
     savingUser.value = false
+  }
+}
+
+// Finance & Orders State
+const orders = ref<any[]>([])
+const ordersSummary = ref<any>(null)
+const loadingOrders = ref(false)
+
+const loadOrdersData = async () => {
+  if (!hasPermission('finance')) return
+  loadingOrders.value = true
+  try {
+    const res = await $fetch<any>('/api/admin/orders', { headers: authHeaders() })
+    orders.value = res.orders || []
+    ordersSummary.value = res.summary || null
+  } catch (err: any) {
+    console.error('Fehler beim Laden der Bestelldaten:', err)
+  } finally {
+    loadingOrders.value = false
   }
 }
 
@@ -1270,23 +1896,56 @@ const newCompanyAdminEmail = ref('')
 const loadAdminData = async () => {
   loading.value = true
   try {
-    const promises: Promise<any>[] = [
-      $fetch<any>('/api/admin/overview', { headers: authHeaders() }),
-      $fetch<any>('/api/admin/users', { headers: authHeaders() }),
-      $fetch<any>('/api/admin/companies', { headers: authHeaders() }),
-      $fetch<any>('/api/templates', { headers: authHeaders() })
-    ]
-    if (user.value?.company_id && user.value?.company_role === 'admin') {
-      promises.push($fetch<any>('/api/companies/invitations', { headers: authHeaders() }))
+    // 1. Overview (allowed for any admin, scoped in backend)
+    try {
+      overview.value = await $fetch<any>('/api/admin/overview', { headers: authHeaders() })
+    } catch (e) {
+      console.warn('Overview fetch error:', e)
     }
 
-    const results = await Promise.all(promises)
-    overview.value = results[0]
-    users.value = results[1].users || []
-    companies.value = results[2].companies || []
-    templates.value = results[3].templates || []
-    if (results[4]) {
-      pendingInvites.value = results[4].invitations || []
+    // 2. Users (manage_users)
+    if (hasPermission('manage_users')) {
+      try {
+        const uRes = await $fetch<any>('/api/admin/users', { headers: authHeaders() })
+        users.value = uRes.users || []
+      } catch (e) {
+        console.warn('Users fetch error:', e)
+      }
+    }
+
+    // 3. Companies (company_settings)
+    if (hasPermission('company_settings')) {
+      try {
+        const cRes = await $fetch<any>('/api/admin/companies', { headers: authHeaders() })
+        companies.value = cRes.companies || []
+      } catch (e) {
+        console.warn('Companies fetch error:', e)
+      }
+    }
+
+    // 4. Templates (manage_templates)
+    if (hasPermission('manage_templates')) {
+      try {
+        const tRes = await $fetch<any>('/api/templates', { headers: authHeaders() })
+        templates.value = tRes.templates || []
+      } catch (e) {
+        console.warn('Templates fetch error:', e)
+      }
+    }
+
+    // 5. Finance (finance)
+    if (hasPermission('finance')) {
+      await loadOrdersData()
+    }
+
+    // 6. Company Invitations (if company admin or superadmin)
+    if (user.value?.company_id && (user.value?.company_role === 'admin' || user.value?.is_superadmin)) {
+      try {
+        const invRes = await $fetch<any>('/api/companies/invitations', { headers: authHeaders() })
+        pendingInvites.value = invRes.invitations || []
+      } catch (e) {
+        console.warn('Invitations fetch error:', e)
+      }
     }
   } catch (err: any) {
     if (err.statusCode === 403 || err.statusCode === 401) {
@@ -1402,10 +2061,24 @@ onMounted(async () => {
     const { initAuth } = useAuth()
     await initAuth()
   }
-  if (!user.value?.is_superadmin) {
+  if (!isAnyAdmin.value) {
     navigateTo('/dashboard')
     return
   }
+
+  // Set default tab based on user permissions
+  if (hasPermission('manage_users')) {
+    activeTab.value = 'users'
+  } else if (hasPermission('finance')) {
+    activeTab.value = 'finance'
+  } else if (hasPermission('company_settings')) {
+    activeTab.value = 'companies'
+  } else if (hasPermission('manage_templates')) {
+    activeTab.value = 'templates'
+  } else if (user.value?.company_role === 'admin') {
+    activeTab.value = 'invites'
+  }
+
   await loadAdminData()
 })
 </script>

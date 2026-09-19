@@ -74,6 +74,7 @@ function ensureTables($pdo) {
             "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) DEFAULT NULL",
             "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
             "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
+            "ALTER TABLE users ADD COLUMN admin_permissions JSON DEFAULT NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -480,6 +481,23 @@ function requireSuperadmin() {
     return $user;
 }
 
+function checkAdminPermission($user, $permission) {
+    if (!empty($user['is_superadmin'])) return true;
+    if (empty($user['company_role']) || $user['company_role'] !== 'admin') return false;
+    $perms = !empty($user['admin_permissions']) ? (is_string($user['admin_permissions']) ? json_decode($user['admin_permissions'], true) : $user['admin_permissions']) : [];
+    if (!is_array($perms)) $perms = [];
+    if ($permission === 'any_admin') return true;
+    return in_array($permission, $perms) || in_array('all', $perms);
+}
+
+function requireAdminPermission($permission) {
+    $user = requireAuth();
+    if (!checkAdminPermission($user, $permission)) {
+        errorResponse('Keine Berechtigung für diese Administrator-Aktion (' . $permission . ')', 403);
+    }
+    return $user;
+}
+
 function evaluateProjectAccess($user, $projectId, $action = 'read') {
     $db = getDb();
     if (!empty($user['is_superadmin'])) {
@@ -619,6 +637,14 @@ try {
             }
         }
 
+        $perms = !empty($u['admin_permissions']) ? (is_string($u['admin_permissions']) ? json_decode($u['admin_permissions'], true) : $u['admin_permissions']) : [];
+        if (!is_array($perms)) $perms = [];
+        if (!empty($u['is_superadmin'])) {
+            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
+        } elseif (!empty($u['company_role']) && $u['company_role'] === 'admin' && empty($perms)) {
+            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates'];
+        }
+
         $token = jwtEncode([
             'id' => $u['id'],
             'email' => $u['email'],
@@ -626,7 +652,8 @@ try {
             'company_id' => $u['company_id'],
             'company_role' => $u['company_role'],
             'is_superadmin' => (int)$u['is_superadmin'],
-            'is_pro' => (int)$u['is_pro']
+            'is_pro' => (int)$u['is_pro'],
+            'admin_permissions' => $perms
         ], $jwtSecret);
 
         jsonResponse([
@@ -640,7 +667,8 @@ try {
                 'company_name' => $u['company_name'],
                 'company_plan' => $u['company_plan'],
                 'is_superadmin' => (bool)$u['is_superadmin'],
-                'is_pro' => (bool)$u['is_pro']
+                'is_pro' => (bool)$u['is_pro'],
+                'admin_permissions' => $perms
             ]
         ]);
     }
@@ -747,6 +775,14 @@ try {
 
         $settings = !empty($u['company_settings']) ? (is_string($u['company_settings']) ? json_decode($u['company_settings'], true) : $u['company_settings']) : [];
 
+        $perms = !empty($u['admin_permissions']) ? (is_string($u['admin_permissions']) ? json_decode($u['admin_permissions'], true) : $u['admin_permissions']) : [];
+        if (!is_array($perms)) $perms = [];
+        if (!empty($u['is_superadmin'])) {
+            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
+        } elseif (!empty($u['company_role']) && $u['company_role'] === 'admin' && empty($perms)) {
+            $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates'];
+        }
+
         jsonResponse([
             'user' => [
                 'id' => $u['id'],
@@ -760,7 +796,8 @@ try {
                 'is_superadmin' => (bool)$u['is_superadmin'],
                 'is_pro' => (bool)$u['is_pro'],
                 'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
-                'currency' => $u['currency'] ?? 'CHF'
+                'currency' => $u['currency'] ?? 'CHF',
+                'admin_permissions' => $perms
             ]
         ]);
     }
@@ -1811,12 +1848,33 @@ try {
 
     // 17. GET admin/overview
     if ($path === 'admin/overview' && $method === 'GET') {
-        requireSuperadmin();
-        $uCount = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        $cCount = $db->query("SELECT COUNT(*) FROM companies")->fetchColumn();
-        $pCount = $db->query("SELECT COUNT(*) FROM projects")->fetchColumn();
-        $tCount = $db->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
-        $jCount = $db->query("SELECT COUNT(*) FROM project_journals")->fetchColumn();
+        $user = requireAdminPermission('any_admin');
+        if (!empty($user['is_superadmin'])) {
+            $uCount = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+            $cCount = $db->query("SELECT COUNT(*) FROM companies")->fetchColumn();
+            $pCount = $db->query("SELECT COUNT(*) FROM projects")->fetchColumn();
+            $tCount = $db->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
+            $jCount = $db->query("SELECT COUNT(*) FROM project_journals")->fetchColumn();
+        } else {
+            $compId = $user['company_id'];
+            $uStmt = $db->prepare("SELECT COUNT(*) FROM users WHERE company_id = ?");
+            $uStmt->execute([$compId]);
+            $uCount = $uStmt->fetchColumn();
+
+            $cCount = 1;
+
+            $pStmt = $db->prepare("SELECT COUNT(*) FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE pf.company_id = ?");
+            $pStmt->execute([$compId]);
+            $pCount = $pStmt->fetchColumn();
+
+            $tStmt = $db->prepare("SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id JOIN projects p ON p.id = l.project_id JOIN project_folders pf ON pf.id = p.folder_id WHERE pf.company_id = ?");
+            $tStmt->execute([$compId]);
+            $tCount = $tStmt->fetchColumn();
+
+            $jStmt = $db->prepare("SELECT COUNT(*) FROM project_journals pj JOIN projects p ON p.id = pj.project_id JOIN project_folders pf ON pf.id = p.folder_id WHERE pf.company_id = ?");
+            $jStmt->execute([$compId]);
+            $jCount = $jStmt->fetchColumn();
+        }
 
         jsonResponse([
             'metrics' => [
@@ -1831,27 +1889,104 @@ try {
 
     // 18. GET admin/users
     if ($path === 'admin/users' && $method === 'GET') {
-        requireSuperadmin();
-        $stmt = $db->query("
-            SELECT u.*, c.name as company_name, c.subscription_plan as company_plan
-            FROM users u
-            LEFT JOIN companies c ON c.id = u.company_id
-            ORDER BY u.created_at DESC
-        ");
+        $user = requireAdminPermission('manage_users');
+        if (!empty($user['is_superadmin'])) {
+            $stmt = $db->query("
+                SELECT u.*, c.name as company_name, c.subscription_plan as company_plan
+                FROM users u
+                LEFT JOIN companies c ON c.id = u.company_id
+                ORDER BY u.created_at DESC
+            ");
+        } else {
+            $stmt = $db->prepare("
+                SELECT u.*, c.name as company_name, c.subscription_plan as company_plan
+                FROM users u
+                LEFT JOIN companies c ON c.id = u.company_id
+                WHERE u.company_id = ?
+                ORDER BY u.created_at DESC
+            ");
+            $stmt->execute([$user['company_id']]);
+        }
         $users = array_map(function($u) {
             $u['is_superadmin'] = (bool)$u['is_superadmin'];
             $u['is_pro'] = (bool)$u['is_pro'];
+            $perms = !empty($u['admin_permissions']) ? (is_string($u['admin_permissions']) ? json_decode($u['admin_permissions'], true) : $u['admin_permissions']) : [];
+            $u['admin_permissions'] = is_array($perms) ? $perms : [];
             return $u;
         }, $stmt->fetchAll());
 
         jsonResponse(['users' => $users]);
     }
 
-    // 19. PATCH admin/users/:id (Update user settings: pro status, company, role, superadmin)
+    // 18b. POST admin/users (Direktes Anlegen eines neuen Benutzers)
+    if ($path === 'admin/users' && $method === 'POST') {
+        $authUser = requireAdminPermission('manage_users');
+        $name = trim($body['name'] ?? '');
+        $email = strtolower(trim($body['email'] ?? ''));
+        $password = $body['password'] ?? '';
+        $companyId = !empty($body['company_id']) ? $body['company_id'] : null;
+        $companyRole = !empty($body['company_role']) ? $body['company_role'] : 'member';
+        $isSuperadmin = !empty($body['is_superadmin']) ? 1 : 0;
+        $isPro = !empty($body['is_pro']) ? 1 : 0;
+        $adminPermissions = $body['admin_permissions'] ?? [];
+
+        if (!$name || !$email || !$password) {
+            errorResponse('Name, E-Mail und Passwort sind erforderlich', 400);
+        }
+
+        // Sicherheitsregeln für Company-Admins:
+        if (empty($authUser['is_superadmin'])) {
+            $companyId = $authUser['company_id'];
+            $isSuperadmin = 0;
+            $isPro = 1;
+        }
+
+        $chk = $db->prepare("SELECT id FROM users WHERE LOWER(email) = ?");
+        $chk->execute([$email]);
+        if ($chk->fetch()) {
+            errorResponse('Ein Benutzer mit dieser E-Mail existiert bereits', 400);
+        }
+
+        $newUserId = 'usr_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $pwHash = password_hash($password, PASSWORD_BCRYPT);
+        $permsJson = json_encode(is_array($adminPermissions) ? $adminPermissions : []);
+
+        $db->prepare("
+            INSERT INTO users (id, name, email, password_hash, company_id, company_role, is_superadmin, is_pro, admin_permissions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ")->execute([
+            $newUserId, $name, $email, $pwHash, $companyId, $companyRole, $isSuperadmin, $isPro, $permsJson
+        ]);
+
+        jsonResponse([
+            'success' => true,
+            'user' => [
+                'id' => $newUserId,
+                'name' => $name,
+                'email' => $email,
+                'company_id' => $companyId,
+                'company_role' => $companyRole,
+                'is_superadmin' => (bool)$isSuperadmin,
+                'is_pro' => (bool)$isPro,
+                'admin_permissions' => is_array($adminPermissions) ? $adminPermissions : []
+            ]
+        ]);
+    }
+
+    // 19. PATCH admin/users/:id (Update user settings: pro status, company, role, superadmin, permissions)
     if (preg_match('#^admin/users/([^/]+)$#', $path, $m) && $method === 'PATCH') {
-        requireSuperadmin();
+        $authUser = requireAdminPermission('manage_users');
         $targetId = $m[1];
         
+        $tStmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+        $tStmt->execute([$targetId]);
+        $targetUser = $tStmt->fetch();
+        if (!$targetUser) errorResponse('Benutzer nicht gefunden', 404);
+
+        if (empty($authUser['is_superadmin']) && $targetUser['company_id'] !== $authUser['company_id']) {
+            errorResponse('Benutzer nicht gefunden', 404);
+        }
+
         $fields = [];
         $params = [];
 
@@ -1859,17 +1994,22 @@ try {
             $fields[] = "is_pro = ?";
             $params[] = $body['is_pro'] ? 1 : 0;
         }
-        if (isset($body['is_superadmin'])) {
+        if (isset($body['is_superadmin']) && !empty($authUser['is_superadmin'])) {
             $fields[] = "is_superadmin = ?";
             $params[] = $body['is_superadmin'] ? 1 : 0;
         }
-        if (array_key_exists('company_id', $body)) {
+        if (array_key_exists('company_id', $body) && !empty($authUser['is_superadmin'])) {
             $fields[] = "company_id = ?";
             $params[] = !empty($body['company_id']) ? $body['company_id'] : null;
         }
         if (array_key_exists('company_role', $body)) {
             $fields[] = "company_role = ?";
             $params[] = !empty($body['company_role']) ? $body['company_role'] : null;
+        }
+        if (array_key_exists('admin_permissions', $body)) {
+            $fields[] = "admin_permissions = ?";
+            $perms = is_array($body['admin_permissions']) ? $body['admin_permissions'] : [];
+            $params[] = json_encode($perms);
         }
         if (!empty($body['name'])) {
             $fields[] = "name = ?";
@@ -1878,6 +2018,10 @@ try {
         if (!empty($body['email'])) {
             $fields[] = "email = ?";
             $params[] = strtolower(trim($body['email']));
+        }
+        if (!empty($body['password'])) {
+            $fields[] = "password_hash = ?";
+            $params[] = password_hash($body['password'], PASSWORD_BCRYPT);
         }
 
         if (!empty($fields)) {
@@ -1888,16 +2032,101 @@ try {
         jsonResponse(['success' => true]);
     }
 
+    // 19b. GET admin/orders (Bestellungen, Abonnements & Finanz-Übersicht)
+    if ($path === 'admin/orders' && $method === 'GET') {
+        $authUser = requireAdminPermission('finance');
+        
+        if (!empty($authUser['is_superadmin'])) {
+            $cStmt = $db->query("
+                SELECT c.*,
+                  (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as user_count,
+                  (SELECT email FROM users u WHERE u.company_id = c.id AND u.company_role = 'admin' LIMIT 1) as billing_email
+                FROM companies c
+                ORDER BY c.created_at DESC
+            ");
+        } else {
+            $cStmt = $db->prepare("
+                SELECT c.*,
+                  (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as user_count,
+                  (SELECT email FROM users u WHERE u.company_id = c.id AND u.company_role = 'admin' LIMIT 1) as billing_email
+                FROM companies c
+                WHERE c.id = ?
+            ");
+            $cStmt->execute([$authUser['company_id']]);
+        }
+        $compRows = $cStmt->fetchAll();
+
+        $planPrices = [
+            'starter' => ['name' => 'Starter Plan', 'monthly' => 0, 'seats' => 5],
+            'pro' => ['name' => 'Pro Business Plan', 'monthly' => 49, 'seats' => 25],
+            'enterprise' => ['name' => 'Enterprise Custom Plan', 'monthly' => 189, 'seats' => 100]
+        ];
+
+        $orders = [];
+        $totalMrr = 0;
+        $totalSeats = 0;
+
+        foreach ($compRows as $comp) {
+            $planKey = strtolower($comp['subscription_plan'] ?? 'starter');
+            $pInfo = $planPrices[$planKey] ?? ['name' => ucfirst($planKey), 'monthly' => 29, 'seats' => 10];
+            $price = $pInfo['monthly'];
+            $totalMrr += $price;
+            $userCount = (int)($comp['user_count'] ?? 1);
+            $totalSeats += $userCount;
+
+            $settings = !empty($comp['settings']) ? (is_string($comp['settings']) ? json_decode($comp['settings'], true) : $comp['settings']) : [];
+
+            $orders[] = [
+                'id' => 'ord_' . substr(md5($comp['id']), 0, 8),
+                'company_id' => $comp['id'],
+                'company_name' => $comp['name'],
+                'plan_key' => $planKey,
+                'plan_name' => $pInfo['name'],
+                'amount_monthly' => $price,
+                'currency' => 'CHF',
+                'payment_status' => $price > 0 ? 'paid' : 'active',
+                'payment_method' => $price > 0 ? 'Kreditkarte (•••• 4242)' : 'Kostenlos',
+                'active_seats' => $userCount,
+                'max_seats' => $settings['max_seats'] ?? $pInfo['seats'],
+                'billing_cycle' => 'Monatlich',
+                'billing_email' => $comp['billing_email'] ?? 'admin@' . strtolower(preg_replace('/[^a-z0-9]/', '', $comp['name'])) . '.ch',
+                'created_at' => $comp['created_at'],
+                'next_renewal' => date('Y-m-d', strtotime($comp['created_at'] . ' + 1 month'))
+            ];
+        }
+
+        jsonResponse([
+            'orders' => $orders,
+            'summary' => [
+                'mrr' => $totalMrr,
+                'total_subscriptions' => count($orders),
+                'total_seats' => $totalSeats,
+                'currency' => 'CHF'
+            ]
+        ]);
+    }
+
     // 20. GET admin/companies
     if ($path === 'admin/companies' && $method === 'GET') {
-        requireSuperadmin();
-        $stmt = $db->query("
-            SELECT c.*,
-              (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as user_count,
-              (SELECT COUNT(*) FROM project_folders pf WHERE pf.company_id = c.id) as folder_count
-            FROM companies c
-            ORDER BY c.created_at DESC
-        ");
+        $authUser = requireAdminPermission('company_settings');
+        if (!empty($authUser['is_superadmin'])) {
+            $stmt = $db->query("
+                SELECT c.*,
+                  (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as user_count,
+                  (SELECT COUNT(*) FROM project_folders pf WHERE pf.company_id = c.id) as folder_count
+                FROM companies c
+                ORDER BY c.created_at DESC
+            ");
+        } else {
+            $stmt = $db->prepare("
+                SELECT c.*,
+                  (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) as user_count,
+                  (SELECT COUNT(*) FROM project_folders pf WHERE pf.company_id = c.id) as folder_count
+                FROM companies c
+                WHERE c.id = ?
+            ");
+            $stmt->execute([$authUser['company_id']]);
+        }
         $companies = array_map(function($c) {
             $c['settings'] = !empty($c['settings']) ? (is_string($c['settings']) ? json_decode($c['settings'], true) : $c['settings']) : [];
             return $c;
@@ -1922,8 +2151,9 @@ try {
         if ($adminName && $adminEmail) {
             $adminId = 'usr_' . substr(bin2hex(random_bytes(6)), 0, 8);
             $pwHash = password_hash('taskster2026!', PASSWORD_BCRYPT);
-            $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash) VALUES (?, ?, 'admin', 0, 1, ?, ?, ?)")->execute([
-                $adminId, $companyId, $adminName, $adminEmail, $pwHash
+            $defaultAdminPerms = json_encode(['manage_users', 'finance', 'company_settings', 'manage_templates']);
+            $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash, admin_permissions) VALUES (?, ?, 'admin', 0, 1, ?, ?, ?, ?)")->execute([
+                $adminId, $companyId, $adminName, $adminEmail, $pwHash, $defaultAdminPerms
             ]);
             $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name) VALUES (?, ?, ?, ?)")->execute([
                 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8), $adminId, $companyId, "{$name} - Hauptordner"
@@ -1935,9 +2165,13 @@ try {
 
     // 22. PATCH admin/companies/:id
     if (preg_match('#^admin/companies/([^/]+)$#', $path, $m) && $method === 'PATCH') {
-        requireSuperadmin();
+        $authUser = requireAdminPermission('company_settings');
         $compId = $m[1];
-        if (isset($body['subscription_plan'])) {
+        if (empty($authUser['is_superadmin']) && $compId !== $authUser['company_id']) {
+            errorResponse('Nicht autorisiert für dieses Unternehmen', 403);
+        }
+
+        if (isset($body['subscription_plan']) && !empty($authUser['is_superadmin'])) {
             $db->prepare("UPDATE companies SET subscription_plan = ? WHERE id = ?")->execute([$body['subscription_plan'], $compId]);
         }
         if (isset($body['settings'])) {
