@@ -172,27 +172,27 @@
             </button>
 
             <button
-              @click="quickLogin('marc@swissinfra.ch', 'password123')"
+              @click="quickLogin('marc@kurka.ch', 'password123')"
               class="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-left transition"
             >
               <div class="text-xs font-bold text-emerald-900">Company Admin</div>
-              <div class="text-[10px] text-emerald-700">marc@swissinfra.ch</div>
+              <div class="text-[10px] text-emerald-700">marc@kurka.ch</div>
             </button>
 
             <button
-              @click="quickLogin('sarah.editor@swissinfra.ch', 'password123')"
+              @click="quickLogin('sarah.editor@kurka.ch', 'password123')"
               class="p-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-left transition"
             >
               <div class="text-xs font-bold text-cyan-900">Projekt Editor</div>
-              <div class="text-[10px] text-cyan-700">sarah.editor@swissinfra.ch</div>
+              <div class="text-[10px] text-cyan-700">sarah.editor@kurka.ch</div>
             </button>
 
             <button
-              @click="quickLogin('lukas.viewer@subunternehmer.ch', 'password123')"
+              @click="quickLogin('lukas.viewer@kurka.ch', 'password123')"
               class="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left transition"
             >
               <div class="text-xs font-bold text-amber-900">Projekt Viewer</div>
-              <div class="text-[10px] text-amber-700">lukas.viewer@subunternehmer.ch</div>
+              <div class="text-[10px] text-amber-700">lukas.viewer@kurka.ch</div>
             </button>
           </div>
         </div>
@@ -214,7 +214,7 @@ const successMessage = ref('')
 const invitationToken = ref((route.query.token as string) || '')
 const invitationInfo = ref<any>(null)
 
-const loginEmail = ref('marc@swissinfra.ch')
+const loginEmail = ref('marc@kurka.ch')
 const loginPassword = ref('password123')
 
 const regName = ref('')

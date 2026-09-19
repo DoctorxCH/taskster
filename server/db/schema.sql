@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS projects (
   budget_hours REAL DEFAULT NULL,
   budget_amount REAL DEFAULT NULL,
   visibility TEXT NOT NULL DEFAULT 'private',
+  is_default INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

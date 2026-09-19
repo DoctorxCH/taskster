@@ -235,7 +235,15 @@
             <div>
               <div class="flex items-start justify-between mb-3">
                 <span class="text-2xl">📋</span>
-                <div class="flex items-center space-x-1.5">
+                <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                  <span
+                    v-if="project.is_default"
+                    class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 flex items-center space-x-1 shadow-xs"
+                    title="Standard-Projekt dieses Ordners"
+                  >
+                    <span>⭐</span>
+                    <span>Standard</span>
+                  </span>
                   <span
                     class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
                     :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
@@ -747,6 +755,37 @@
             <span class="font-bold">💡 Einzelnutzer-Konto:</span> Dieser Ordner ist standardmäßig privat. Nutze den Button <strong>"👥 Ordner teilen"</strong>, um Kollegen oder Partner gezielt per E-Mail einzuladen.
           </div>
 
+          <!-- Standard-Projekt festlegen (1 Projekt muss Standard sein) -->
+          <div v-if="projects.length > 0" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+            <label class="block text-xs font-bold text-slate-800">⭐ Standard-Projekt festlegen (1 Projekt muss Standard sein)</label>
+            <select
+              v-model="editFolderDefaultProjectId"
+              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4]"
+            >
+              <option v-for="p in projects" :key="p.id" :value="p.id">
+                {{ p.title }} {{ p.is_default ? '(Aktuell Standard)' : '' }}
+              </option>
+            </select>
+            <p class="text-[11px] text-slate-500">
+              Ein Projekt innerhalb des Ordners muss als Standard definiert sein.
+            </p>
+          </div>
+
+          <!-- Teammitglieder einladen -->
+          <div class="p-3.5 bg-cyan-50/70 border border-cyan-200 rounded-xl flex items-center justify-between">
+            <div>
+              <span class="text-xs font-black text-cyan-950 block">👥 Teammitglieder & Berechtigungen</span>
+              <span class="text-[11px] text-cyan-800">Kollegen zu diesem Ordner einladen (Editor oder Viewer)</span>
+            </div>
+            <button
+              type="button"
+              @click="showEditFolderModal = false; openShareFolderModal()"
+              class="taskster_button px-4 text-xs h-[36px] rounded-lg shadow-xs"
+            >
+              + Einladen
+            </button>
+          </div>
+
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
@@ -941,6 +980,7 @@ const showEditFolderModal = ref(false)
 const editFolderName = ref('')
 const editFolderIcon = ref('📁')
 const editFolderVisibility = ref('private')
+const editFolderDefaultProjectId = ref('')
 const savingFolder = ref(false)
 const editFolderError = ref('')
 
@@ -949,15 +989,15 @@ const availableFolderIcons = [
   { icon: '📁', label: 'Standard Ordner' },
   { icon: '🏗️', label: 'Bau & Tiefbau' },
   { icon: '💻', label: 'IT & Software' },
-  { icon: '⚡', label: 'Elektro & Handwerk' },
-  { icon: '🌐', label: 'Netzwerk & LWL' },
-  { icon: '🏢', label: 'Unternehmen & B2B' },
-  { icon: '📊', label: 'Finanzen & Analyse' },
-  { icon: '🛠️', label: 'Werkstatt & Service' },
-  { icon: '🚀', label: 'Projekte & Launch' },
+  { icon: '📐', label: 'Architektur & Planung' },
+  { icon: '⚡', label: 'Elektro & Energie' },
+  { icon: '🔧', label: 'Montage & Service' },
   { icon: '🚚', label: 'Logistik & Transport' },
-  { icon: '🔒', label: 'Sicherheit & Audit' },
-  // Privat & Freizeit
+  { icon: '📊', label: 'Finanzen & Controlling' },
+  { icon: '⚖️', label: 'Recht & Notariat' },
+  { icon: '🏥', label: 'Gesundheit & Praxis' },
+  { icon: '🏢', label: 'Immobilien & Liegenschaften' },
+  // Privat & Haushalt
   { icon: '🏠', label: 'Haus & Umbau' },
   { icon: '🏡', label: 'Garten & Aussen' },
   { icon: '🛋️', label: 'Wohnen & Interior' },
@@ -975,6 +1015,7 @@ const openEditFolderModal = () => {
   editFolderName.value = folder.value.name
   editFolderIcon.value = folder.value.icon || '📁'
   editFolderVisibility.value = folder.value.visibility || 'private'
+  editFolderDefaultProjectId.value = projects.value.find(p => p.is_default)?.id || projects.value[0]?.id || ''
   editFolderError.value = ''
   showEditFolderModal.value = true
 }
@@ -989,7 +1030,8 @@ const updateFolder = async () => {
       body: {
         name: editFolderName.value,
         icon: editFolderIcon.value,
-        visibility: editFolderVisibility.value
+        visibility: editFolderVisibility.value,
+        default_project_id: editFolderDefaultProjectId.value || null
       }
     })
     if (res?.folder) {

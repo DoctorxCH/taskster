@@ -51,9 +51,9 @@ const insertUser = db.prepare(`
 `)
 
 insertUser.run(superadminId, null, null, 1, 1, 'Taskster Admin', 'admin@taskster.io', passwordHash)
-insertUser.run(companyAdminId, companyId, 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@swissinfra.ch', passwordHash)
-insertUser.run(editorId, companyId, 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@swissinfra.ch', passwordHash)
-insertUser.run(viewerId, null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@subunternehmer.ch', passwordHash)
+insertUser.run(companyAdminId, companyId, 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@kurka.ch', passwordHash)
+insertUser.run(editorId, companyId, 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@kurka.ch', passwordHash)
+insertUser.run(viewerId, null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@kurka.ch', passwordHash)
 insertUser.run(freeUserId, null, null, 0, 0, 'Peter Muster (Free Plan)', 'peter@muster.ch', passwordHash)
 
 // 3. Project Folder
@@ -219,7 +219,7 @@ insertJournal.run(
 console.log('Taskster database seeded successfully!')
 console.log('Default credentials:')
 console.log('1. Superadmin:    admin@taskster.io          | password123')
-console.log('2. Company Admin: marc@swissinfra.ch         | password123')
-console.log('3. Editor:        sarah.editor@swissinfra.ch | password123')
-console.log('4. Viewer:        lukas.viewer@subunternehmer.ch | password123')
+console.log('2. Company Admin: marc@kurka.ch         | password123')
+console.log('3. Editor:        sarah.editor@kurka.ch | password123')
+console.log('4. Viewer:        lukas.viewer@kurka.ch | password123')
 console.log('5. Free User:     peter@muster.ch            | password123')

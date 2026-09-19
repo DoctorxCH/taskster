@@ -999,6 +999,11 @@ try {
 
         $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ?, company_id = ? WHERE id = ?")->execute([$name, $icon, $visibility, $companyId, $fldId]);
 
+        if (!empty($body['default_project_id'])) {
+            $defPrjId = trim($body['default_project_id']);
+            $db->prepare("UPDATE projects SET is_default = CASE WHEN id = ? THEN 1 ELSE 0 END WHERE folder_id = ?")->execute([$defPrjId, $fldId]);
+        }
+
         $uStmt = $db->prepare("SELECT pf.*, u.name as owner_name, c.name as company_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
         $uStmt->execute([$fldId]);
         jsonResponse(['success' => true, 'folder' => $uStmt->fetch()]);
@@ -1060,7 +1065,7 @@ try {
                   (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
                 FROM projects p
                 WHERE p.folder_id = ?
-                ORDER BY p.created_at DESC
+                ORDER BY p.is_default DESC, p.created_at DESC
             ");
             $pStmt->execute([$fldId]);
         } else {
@@ -1078,7 +1083,7 @@ try {
                     OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
                     OR ? IN (SELECT fm.user_id FROM folder_members fm WHERE fm.folder_id = ?)
                 )
-                ORDER BY p.created_at DESC
+                ORDER BY p.is_default DESC, p.created_at DESC
             ");
             $pStmt->execute([
                 $fldId,
@@ -1091,9 +1096,24 @@ try {
         $folderTotalMinutes = 0;
         $folderTotalBudgetHours = 0;
         $folderTotalBudgetAmount = 0;
+        $rawProjects = $pStmt->fetchAll();
+
+        $hasDefault = false;
+        foreach ($rawProjects as $rp) {
+            if (!empty($rp['is_default'])) {
+                $hasDefault = true;
+                break;
+            }
+        }
+        if (!$hasDefault && count($rawProjects) > 0) {
+            $rawProjects[0]['is_default'] = 1;
+            $db->prepare("UPDATE projects SET is_default = 1 WHERE id = ?")->execute([$rawProjects[0]['id']]);
+        }
+
         $projects = array_map(function($p) use ($db, &$folderTotalMinutes, &$folderTotalBudgetHours, &$folderTotalBudgetAmount) {
             $p['custom_data'] = !empty($p['custom_data']) ? (is_string($p['custom_data']) ? json_decode($p['custom_data'], true) : $p['custom_data']) : [];
             $p['visibility'] = $p['visibility'] ?? 'private';
+            $p['is_default'] = (bool)($p['is_default'] ?? 0);
             $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = ?");
             $tHoursStmt->execute([$p['id']]);
             $pMinutes = (int)($tHoursStmt->fetchColumn() ?: 0);
@@ -1102,7 +1122,7 @@ try {
             if (!empty($p['budget_hours'])) $folderTotalBudgetHours += floatval($p['budget_hours']);
             if (!empty($p['budget_amount'])) $folderTotalBudgetAmount += floatval($p['budget_amount']);
             return $p;
-        }, $pStmt->fetchAll());
+        }, $rawProjects);
 
         $timeSummary = [
             'totalMinutes' => $folderTotalMinutes,
@@ -1440,6 +1460,16 @@ try {
                 $t['tracked_hours'] = round($t['tracked_minutes'] / 60, 2);
                 $t['budget_hours'] = $t['budget_hours'] !== null ? floatval($t['budget_hours']) : null;
                 $t['budget_amount'] = $t['budget_amount'] !== null ? floatval($t['budget_amount']) : null;
+
+                $assigned = [];
+                if (!empty($t['assigned_to'])) {
+                    if (str_starts_with($t['assigned_to'], '[')) {
+                        $assigned = json_decode($t['assigned_to'], true) ?: [];
+                    } else {
+                        $assigned = [$t['assigned_to']];
+                    }
+                }
+                $t['assigned_users'] = $assigned;
                 return $t;
             }, $tStmt->fetchAll());
         }
@@ -1646,13 +1676,22 @@ try {
 
         evaluateListAccess($user, $listId, 'write');
 
+        $assignedTo = null;
+        if (!empty($body['assigned_to'])) {
+            if (is_array($body['assigned_to'])) {
+                $assignedTo = json_encode(array_values($body['assigned_to']));
+            } else {
+                $assignedTo = (string)$body['assigned_to'];
+            }
+        }
+
         $taskId = 'tsk_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $db->prepare("
-            INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order, assigned_to, priority, color, tags, checklist)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+            INSERT INTO tasks (id, list_id, title, description, status, due_date, custom_data, sort_order, assigned_to, priority, color, tags, checklist)
+            VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(t.sort_order), 0) + 1 FROM tasks t WHERE t.list_id = ?), ?, ?, ?, ?, ?)
         ")->execute([
-            $taskId, $listId, $title, $desc, $status, json_encode($customData), $dueDate,
-            $assignedTo, $priority, $color, $tags, $checklist
+            $taskId, $listId, $title, $desc, $status, $dueDate,
+            json_encode($customData), $listId, $assignedTo, $priority, $color, $tags, $checklist
         ]);
 
         jsonResponse([
@@ -1684,6 +1723,17 @@ try {
         $task = $tStmt->fetch();
         if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
 
+        $listAccess = evaluateListAccess($user, $task['list_id'], 'read');
+        $userRole = $listAccess['projectContext']['userRole'] ?? 'viewer';
+
+        // Viewer-Rolle: Eingeladener Viewer kann Aufgaben sehen und abhaken!
+        if ($userRole === 'viewer' && empty($user['is_superadmin'])) {
+            $newStatus = $body['status'] ?? $task['status'];
+            $db->prepare("UPDATE tasks SET status = ? WHERE id = ?")->execute([$newStatus, $taskId]);
+            jsonResponse(['success' => true]);
+        }
+
+        // Editor & Owner: dürfen Aufgaben ändern, verschieben, bearbeiten
         evaluateListAccess($user, $task['list_id'], 'write');
 
         $title = $body['title'] ?? $task['title'];
@@ -1699,7 +1749,16 @@ try {
             evaluateListAccess($user, $listId, 'write');
         }
 
-        $assignedTo = array_key_exists('assigned_to', $body) ? ($body['assigned_to'] ?: null) : ($task['assigned_to'] ?? null);
+        // Mehrfach-Zuweisung unterstützen
+        $assignedTo = $task['assigned_to'] ?? null;
+        if (array_key_exists('assigned_to', $body)) {
+            if (is_array($body['assigned_to'])) {
+                $assignedTo = !empty($body['assigned_to']) ? json_encode(array_values($body['assigned_to'])) : null;
+            } else {
+                $assignedTo = !empty($body['assigned_to']) ? (string)$body['assigned_to'] : null;
+            }
+        }
+
         $priority = $body['priority'] ?? ($task['priority'] ?? 'normal');
         $color = array_key_exists('color', $body) ? ($body['color'] ?: null) : ($task['color'] ?? null);
         $tags = isset($body['tags']) ? json_encode($body['tags']) : ($task['tags'] ?? '[]');
@@ -1762,6 +1821,14 @@ try {
         $task = $tStmt->fetch();
         if (!$task) errorResponse('Aufgabe nicht gefunden', 404);
 
+        $listAccess = evaluateListAccess($user, $task['list_id'], 'read');
+        $userRole = $listAccess['projectContext']['userRole'] ?? 'viewer';
+
+        // Editor darf Aufgaben bearbeiten, aber NICHT löschen!
+        if (($userRole === 'editor' || $userRole === 'viewer') && empty($user['is_superadmin'])) {
+            errorResponse('Nur der Projekt-Owner oder Administrator darf Aufgaben löschen.', 403);
+        }
+
         evaluateListAccess($user, $task['list_id'], 'write');
         $db->prepare("DELETE FROM tasks WHERE id = ?")->execute([$taskId]);
 
@@ -1790,10 +1857,21 @@ try {
         $task['budget_hours'] = $task['budget_hours'] !== null ? floatval($task['budget_hours']) : null;
         $task['budget_amount'] = $task['budget_amount'] !== null ? floatval($task['budget_amount']) : null;
 
-        $assignee = null;
+        $assignedUsers = [];
         if (!empty($task['assigned_to'])) {
+            if (str_starts_with($task['assigned_to'], '[')) {
+                $assignedUsers = json_decode($task['assigned_to'], true) ?: [];
+            } else {
+                $assignedUsers = [$task['assigned_to']];
+            }
+        }
+        $task['assigned_users'] = $assignedUsers;
+
+        $assignee = null;
+        if (!empty($assignedUsers)) {
+            $firstId = $assignedUsers[0];
             $aStmt = $db->prepare("SELECT id, name, email FROM users WHERE id = ?");
-            $aStmt->execute([$task['assigned_to']]);
+            $aStmt->execute([$firstId]);
             $assignee = $aStmt->fetch() ?: null;
         }
 
