@@ -272,6 +272,8 @@ async function migrate() {
       mobile VARCHAR(64) NULL,
       email VARCHAR(255) NULL,
       category_group VARCHAR(128) NULL,
+      address VARCHAR(500) NULL,
+      website VARCHAR(500) NULL,
       tags JSON NULL,
       notes TEXT NULL,
       share_scope VARCHAR(32) NOT NULL DEFAULT 'private',
@@ -297,6 +299,8 @@ async function migrate() {
     "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE users ADD COLUMN admin_permissions JSON NULL",
     "ALTER TABLE tasks MODIFY COLUMN assigned_to TEXT NULL",
+    "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
+    "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }

@@ -34,17 +34,23 @@ User können Kontakte für Baustellen, Gewerke und Projekte erfassen und pflegen
   - Filterleiste: Textsuche, Gruppe, Projekt-Dropdown, Freigabe-Filter.
   - Umschaltung: Kartenansicht (Cards) und Tabellenansicht (Table).
   - Aktionen: Direktanruf (`tel:`), WhatsApp-Link, Mail (`mailto:`), Projekt-Verknüpfung, vCard-Download (.vcf), Bearbeiten, Löschen.
-  - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene DeepSeek V4 Flash API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
+  - **Geschäftsadresse & Webseite mit OpenStreetMap-Miniatur:**
+    - Neue Felder `address` und `website` in Haupt- und Projektkontakten.
+    - Vollständig Open-Source & ohne API-Key: Klickbare Links zu OpenStreetMap & Google Maps.
+    - Ausklappbare OpenStreetMap-Miniaturkarte (Leaflet/Mapnik iframe via OSM Nominatim Geocoding).
+    - vCard-Export (.vcf) um `ADR;TYPE=WORK` und `URL` ergänzt.
+    - KI-Autofill erkennt Adressen und Webseiten automatisch aus Signaturen/Texten.
+  - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene DeepSeek V4 Flash API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Adresse, Webseite, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
   - Standard Taskster-Buttons: `taskster_button`, `taskster_button_light`, `taskster_button_accent` (`px-6 text-xs h-[42px] rounded-lg`).
 - **Projekt-Detailseite (`pages/projects/[id].vue`):**
   - Neuer Tab `📇 Kontakte (X)` im Projektheader.
-  - Listet alle Kontakte der Baustelle/des Projekts.
+  - Listet alle Kontakte der Baustelle/des Projekts inklusive Adresse, Webseite und OpenStreetMap-Link.
   - Eigenes Modal mit KI-Autofill zum direkten Anlegen von Projektkontakten vor Ort.
 - **Navigation (`components/Navbar.vue`, `app.vue`):**
   - Neuer Link `📇 Kontakte` in der oberen Navigationsleiste und der ausklappbaren rechten MeisterTask-Sidebar.
 
 ## 5. Deployment & Build
 - `python scripts/check-php-syntax.py`: Bestätigt syntaktische Korrektheit aller 3 PHP-Dateien.
-- `node scripts/migrate-mysql.cjs`: Tabelle `contacts` auf Remote-MySQL erfolgreich angelegt.
+- `node scripts/migrate-mysql.cjs`: Spalten `address` und `website` auf Remote-MySQL erfolgreich migriert.
 - `npm run build:dist`: Statischer Nuxt-Build erzeugt und in Git-Root synchronisiert.
-- `python generate_index.py --stats`: 60 Endpunkte indexiert in `.agent_index.json`.
+- `python generate_index.py --stats`: 61 Endpunkte indexiert in `.agent_index.json`.

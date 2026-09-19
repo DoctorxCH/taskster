@@ -38,6 +38,8 @@ export default defineEventHandler(async (event) => {
   const email = 'email' in body ? (body.email || '').trim() : existing.email
   const projectId = 'project_id' in body ? (body.project_id ? String(body.project_id).trim() : null) : existing.project_id
   const categoryGroup = 'category_group' in body ? (body.category_group || '').trim() : existing.category_group
+  const address = 'address' in body ? (body.address || '').trim() : existing.address
+  const website = 'website' in body ? (body.website || '').trim() : existing.website
   const notes = 'notes' in body ? (body.notes || '').trim() : existing.notes
   const shareScope = 'share_scope' in body && ['company', 'private'].includes(body.share_scope) ? body.share_scope : existing.share_scope
 
@@ -54,7 +56,7 @@ export default defineEventHandler(async (event) => {
     UPDATE contacts
     SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
         phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
-        tags = ?, notes = ?, share_scope = ?, updated_at = datetime('now')
+        address = ?, website = ?, tags = ?, notes = ?, share_scope = ?, updated_at = datetime('now')
     WHERE id = ?
   `).run(
     firstName || null,
@@ -66,6 +68,8 @@ export default defineEventHandler(async (event) => {
     email || null,
     projectId,
     categoryGroup || null,
+    address || null,
+    website || null,
     tags,
     notes || null,
     shareScope,

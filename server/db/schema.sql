@@ -212,6 +212,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   mobile TEXT,
   email TEXT,
   category_group TEXT,
+  address TEXT,
+  website TEXT,
   tags TEXT DEFAULT '[]',
   notes TEXT,
   share_scope TEXT NOT NULL DEFAULT 'private',

@@ -263,6 +263,87 @@
             </div>
           </div>
 
+          <!-- Website & Address with Miniature Map -->
+          <div v-if="c.website || c.address" class="space-y-2 text-xs text-slate-700 bg-white/70 p-3 rounded-2xl border border-white/80 mb-3">
+            <!-- Website -->
+            <div v-if="c.website" class="flex items-center space-x-2">
+              <span class="text-slate-400">🌐</span>
+              <a
+                :href="formatUrl(c.website)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-bold text-[#00A3C4] hover:underline truncate"
+                title="Webseite im neuen Tab öffnen"
+              >
+                {{ displayWebsite(c.website) }}
+              </a>
+              <span class="text-[10px] text-slate-400 ml-auto">↗</span>
+            </div>
+
+            <!-- Address -->
+            <div v-if="c.address" class="pt-0.5">
+              <div class="flex items-start space-x-2">
+                <span class="text-slate-400 shrink-0 mt-0.5">📍</span>
+                <span class="font-medium text-slate-800 text-[11px] leading-tight">
+                  {{ c.address }}
+                </span>
+              </div>
+
+              <!-- Action Chips & Miniaturkarte Toggle -->
+              <div class="flex flex-wrap items-center gap-1.5 mt-2 pl-5">
+                <a
+                  :href="getOsmSearchUrl(c.address)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition"
+                  title="In OpenStreetMap öffnen (Open Source, ohne API-Key)"
+                >
+                  <span>🗺️</span>
+                  <span>OpenStreetMap</span>
+                </a>
+                <a
+                  :href="getGoogleMapsUrl(c.address)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition"
+                  title="In Google Maps öffnen"
+                >
+                  <span>Google Maps</span>
+                </a>
+                <button
+                  @click="toggleMap(c)"
+                  type="button"
+                  class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 underline ml-auto cursor-pointer"
+                >
+                  {{ openMaps[c.id] ? 'Karte einklappen ▴' : 'Miniaturkarte ▾' }}
+                </button>
+              </div>
+
+              <!-- Miniature Map (OpenStreetMap Embed - 100% Open Source, no API key) -->
+              <div
+                v-if="openMaps[c.id]"
+                class="mt-2.5 rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative h-[140px]"
+              >
+                <div v-if="mapLoading[c.id]" class="absolute inset-0 flex items-center justify-center bg-slate-50/90 text-xs font-bold text-slate-600">
+                  <span class="animate-spin mr-1.5">⏳</span> Lade OpenStreetMap...
+                </div>
+                <iframe
+                  v-if="getOsmEmbedUrl(c)"
+                  :src="getOsmEmbedUrl(c)"
+                  class="w-full h-full border-0"
+                  loading="lazy"
+                  title="OpenStreetMap Miniaturkarte"
+                ></iframe>
+                <div v-else-if="!mapLoading[c.id]" class="p-3 text-center text-[11px] text-slate-500">
+                  <span>Standort konnte nicht auf OSM geocodiert werden.</span>
+                  <a :href="getOsmSearchUrl(c.address)" target="_blank" rel="noopener noreferrer" class="block font-bold text-[#00A3C4] underline mt-1">
+                    Auf OpenStreetMap suchen →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Notes -->
           <p v-if="c.notes" class="text-[11px] text-slate-600 line-clamp-2 italic mb-3">
             "{{ c.notes }}"
@@ -336,6 +417,27 @@
                   <div class="min-w-0">
                     <p class="font-bold text-slate-900 truncate">{{ formatFullName(c) }}</p>
                     <p v-if="c.company_name" class="text-[11px] text-cyan-800 font-semibold truncate">{{ c.company_name }}</p>
+                    <div v-if="c.website || c.address" class="flex items-center space-x-2 mt-0.5 text-[10px]">
+                      <a
+                        v-if="c.website"
+                        :href="formatUrl(c.website)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-[#00A3C4] hover:underline font-bold truncate max-w-[130px]"
+                      >
+                        🌐 {{ displayWebsite(c.website) }}
+                      </a>
+                      <a
+                        v-if="c.address"
+                        :href="getOsmSearchUrl(c.address)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-slate-500 hover:text-emerald-700 font-medium truncate max-w-[150px]"
+                        title="Auf OpenStreetMap anzeigen"
+                      >
+                        📍 {{ c.address }}
+                      </a>
+                    </div>
                   </div>
                 </div>
               </td>
@@ -575,6 +677,28 @@
             </div>
           </div>
 
+          <!-- Geschäftsadresse & Webseite -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Geschäftsadresse</label>
+              <input
+                v-model="form.address"
+                type="text"
+                placeholder="z.B. Flurstrasse 30, 8048 Zürich"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Webseite</label>
+              <input
+                v-model="form.website"
+                type="text"
+                placeholder="z.B. https://www.cablex.ch"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
           <!-- Projektzugehörigkeit & Gruppe -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -726,12 +850,83 @@ const form = ref({
   phone: '',
   mobile: '',
   email: '',
+  address: '',
+  website: '',
   project_id: '',
   category_group: 'Handwerker',
   tags: [] as string[],
   notes: '',
   is_company_shared: true
 })
+
+// OpenStreetMap & Miniature Map State
+const mapCoordinates = ref<Record<string, { lat: number; lon: number } | null>>({})
+const openMaps = ref<Record<string, boolean>>({})
+const mapLoading = ref<Record<string, boolean>>({})
+
+const formatUrl = (url?: string) => {
+  if (!url) return ''
+  const trimmed = url.trim()
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+const displayWebsite = (url?: string) => {
+  if (!url) return ''
+  return url.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '')
+}
+
+const getOsmSearchUrl = (address: string) => {
+  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
+}
+
+const getGoogleMapsUrl = (address: string) => {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+}
+
+const toggleMap = async (c: any) => {
+  if (!c.address) return
+  const current = Boolean(openMaps.value[c.id])
+  openMaps.value[c.id] = !current
+
+  if (!current && !mapCoordinates.value[c.id]) {
+    await resolveCoordinates(c.id, c.address)
+  }
+}
+
+const resolveCoordinates = async (contactId: string, address: string) => {
+  if (!address) return
+  mapLoading.value[contactId] = true
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+      headers: { 'Accept-Language': 'de,en' }
+    })
+    const data = await res.json()
+    if (data && data[0] && data[0].lat && data[0].lon) {
+      mapCoordinates.value[contactId] = {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon)
+      }
+    } else {
+      mapCoordinates.value[contactId] = null
+    }
+  } catch {
+    mapCoordinates.value[contactId] = null
+  } finally {
+    mapLoading.value[contactId] = false
+  }
+}
+
+const getOsmEmbedUrl = (c: any) => {
+  const coords = mapCoordinates.value[c.id]
+  if (!coords) return ''
+  const { lat, lon } = coords
+  const minLon = (lon - 0.006).toFixed(5)
+  const maxLon = (lon + 0.006).toFixed(5)
+  const minLat = (lat - 0.004).toFixed(5)
+  const maxLat = (lat + 0.004).toFixed(5)
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${minLon}%2C${minLat}%2C${maxLon}%2C${maxLat}&layer=mapnik&marker=${lat}%2C${lon}`
+}
 
 const groupOptions = [
   'Handwerker',
@@ -829,6 +1024,8 @@ const openCreateModal = (defaultProjectId?: string) => {
     phone: '',
     mobile: '',
     email: '',
+    address: '',
+    website: '',
     project_id: defaultProjectId || '',
     category_group: 'Handwerker',
     tags: [],
@@ -855,6 +1052,8 @@ const openEditModal = (contact: any) => {
     phone: contact.phone || '',
     mobile: contact.mobile || '',
     email: contact.email || '',
+    address: contact.address || '',
+    website: contact.website || '',
     project_id: contact.project_id || '',
     category_group: contact.category_group || 'Handwerker',
     tags: Array.isArray(contact.tags) ? [...contact.tags] : [],
@@ -883,6 +1082,8 @@ const runAiExtraction = async () => {
 - phone: string (Festnetznummer)
 - mobile: string (Mobilfunknummer)
 - email: string (E-Mail)
+- address: string (Geschäftsadresse mit Strasse/Nr/PLZ/Ort)
+- website: string (Webseite / URL)
 - category_group: string (wähle passend aus: 'Handwerker', 'Bauleitung', 'Planer & Architekten', 'Ingenieure & Geometer', 'Behörden & Ämter', 'Bauträger & Eigentümer', 'Lieferanten & Logistik', 'Sicherheitsbeauftragte', 'Sonstige')
 - tags: string[] (passende Schlagworte / Spezialisierungen)
 - notes: string (Zusätzliche nützliche Notizen)
@@ -916,6 +1117,8 @@ ${aiRawText.value.trim()}
       if (parsed.phone) form.value.phone = String(parsed.phone).trim()
       if (parsed.mobile) form.value.mobile = String(parsed.mobile).trim()
       if (parsed.email) form.value.email = String(parsed.email).trim()
+      if (parsed.address) form.value.address = String(parsed.address).trim()
+      if (parsed.website) form.value.website = String(parsed.website).trim()
       if (parsed.category_group) form.value.category_group = String(parsed.category_group).trim()
       if (Array.isArray(parsed.tags) && parsed.tags.length > 0) {
         const set = new Set([...form.value.tags, ...parsed.tags.map((t: any) => String(t).trim())])
@@ -981,6 +1184,8 @@ const saveContact = async () => {
     phone: form.value.phone.trim(),
     mobile: form.value.mobile.trim(),
     email: form.value.email.trim(),
+    address: form.value.address.trim(),
+    website: form.value.website.trim(),
     project_id: form.value.project_id || null,
     category_group: form.value.category_group,
     tags: form.value.tags,
@@ -1039,6 +1244,8 @@ const exportSingleVCard = (c: any) => {
     c.phone ? `TEL;TYPE=WORK,VOICE:${c.phone}` : '',
     c.mobile ? `TEL;TYPE=CELL,VOICE:${c.mobile}` : '',
     c.email ? `EMAIL;TYPE=WORK,INTERNET:${c.email}` : '',
+    c.address ? `ADR;TYPE=WORK:;;${c.address.replace(/\n/g, ' ')};;;;` : '',
+    c.website ? `URL:${formatUrl(c.website)}` : '',
     c.notes ? `NOTE:${c.notes.replace(/\n/g, '\\n')}` : '',
     'END:VCARD'
   ].filter(Boolean)
