@@ -1,16 +1,18 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <!-- Zugriff verweigert -->
-    <div v-if="!isCompanyAdmin" class="max-w-md mx-auto py-24 text-center">
-      <div class="liquid_glass rounded-3xl p-8 shadow-xl">
-        <div class="text-4xl mb-3">🔒</div>
-        <h2 class="text-lg font-black text-slate-900 mb-1">Zugriff verweigert</h2>
-        <p class="text-xs text-slate-600 mb-5 leading-relaxed">
+    <div v-if="!isCompanyAdmin" class="max-w-md mx-auto py-20 text-center">
+      <div class="bg-white border border-slate-200 rounded-lg p-8">
+        <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+          <Lock class="w-6 h-6" />
+        </div>
+        <h2 class="text-base font-semibold text-slate-900 mb-1">Zugriff verweigert</h2>
+        <p class="text-xs text-slate-500 mb-5 leading-relaxed">
           Dieser Bereich ist ausschließlich Firmen-Administratoren des eigenen Unternehmens vorbehalten.
         </p>
         <NuxtLink
           :to="isSuperadminWithoutCompany ? '/admin' : '/dashboard'"
-          class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center justify-center"
+          class="taskster_button"
         >
           {{ isSuperadminWithoutCompany ? 'Zur Plattform-Administration' : 'Zurück zum Dashboard' }}
         </NuxtLink>
@@ -19,85 +21,84 @@
 
     <template v-else>
       <!-- Breadcrumb -->
-      <div class="mb-6">
-        <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
-          <NuxtLink to="/dashboard" class="hover:text-emerald-700 transition flex items-center space-x-1">
-            <span>🏠</span>
-            <span>Dashboard</span>
-          </NuxtLink>
-          <span class="text-slate-400">/</span>
-          <span class="text-slate-900 font-bold flex items-center space-x-1">
-            <span>🏢</span>
-            <span>Firmen-Administration</span>
-          </span>
-        </div>
+      <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
+        <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+          <LayoutDashboard class="w-3.5 h-3.5" />
+          <span>Dashboard</span>
+        </NuxtLink>
+        <span>/</span>
+        <span class="text-slate-800 font-medium flex items-center gap-1">
+          <Building2 class="w-3.5 h-3.5 text-[#0891B2]" />
+          <span>Firmen-Administration</span>
+        </span>
       </div>
 
       <!-- Header -->
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-300/50 text-emerald-900 text-xs font-bold mb-2">
-              <span>🏢</span>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-semibold mb-2">
+              <Building2 class="w-3.5 h-3.5 text-[#0891B2]" />
               <span>Firmen-Administration</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
               {{ company?.name || 'Mein Unternehmen' }}
             </h1>
-            <p class="text-xs text-slate-600 font-medium mt-1">
+            <p class="text-sm text-slate-600 mt-1">
               Mitarbeiter, Firmenvorlagen, Plan &amp; Lizenzen, Richtlinien und Support – alles an einem Ort.
             </p>
           </div>
 
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center gap-3">
             <span
-              class="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border"
+              class="inline-flex items-center h-7 px-3 rounded-sm text-xs font-medium border"
               :class="planBadgeClass"
             >
               {{ company?.plan_name || 'Starter Plan' }}
             </span>
             <button
               @click="activeTab = 'members'; openInviteModal()"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm"
+              class="taskster_button"
             >
-              <span>+ Mitarbeiter einladen</span>
+              <UserPlus class="w-4 h-4" />
+              <span>Mitarbeiter einladen</span>
             </button>
           </div>
         </div>
       </div>
 
       <!-- Feedback -->
-      <div v-if="successMsg" class="mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-300 text-emerald-950 text-xs font-bold liquid_glass_pill">
+      <div v-if="successMsg" class="mb-6 p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
         {{ successMsg }}
       </div>
-      <div v-if="errorMsg" class="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-300 text-rose-950 text-xs font-bold liquid_glass_pill">
+      <div v-if="errorMsg" class="mb-6 p-4 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium">
         {{ errorMsg }}
       </div>
 
       <!-- Metrics -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div class="p-4 rounded-2xl liquid_glass_card text-center">
-          <div class="text-[11px] font-bold text-slate-600 uppercase">Mitarbeiter</div>
-          <div class="text-2xl font-black text-slate-900 mt-1">{{ stats.members || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium">von {{ stats.max_seats || 0 }} Sitzen</div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mitarbeiter</div>
+          <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ stats.members || 0 }}</div>
+          <div class="text-xs text-slate-500">von {{ stats.max_seats || 0 }} Sitzen</div>
         </div>
 
-        <div class="p-4 rounded-2xl liquid_glass_card text-center">
-          <div class="text-[11px] font-bold text-emerald-700 uppercase">Co-Admins</div>
-          <div class="text-2xl font-black text-emerald-900 mt-1">{{ stats.admins || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium">mit Vollzugriff</div>
+        <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+          <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Co-Admins</div>
+          <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ stats.admins || 0 }}</div>
+          <div class="text-xs text-slate-500">mit Vollzugriff</div>
         </div>
 
-        <div class="p-4 rounded-2xl liquid_glass_card text-center">
-          <div class="text-[11px] font-bold text-cyan-700 uppercase">Projekte</div>
-          <div class="text-2xl font-black text-[#00A3C4] mt-1">{{ stats.projects || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium">im Unternehmen</div>
+        <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+          <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Projekte</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ stats.projects || 0 }}</div>
+          <div class="text-xs text-slate-500">im Unternehmen</div>
         </div>
 
-        <div class="p-4 rounded-2xl liquid_glass_card text-center">
-          <div class="text-[11px] font-bold text-slate-600 uppercase">Aufgaben</div>
-          <div class="text-2xl font-black text-slate-900 mt-1">{{ stats.tasks || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium">in Listen gepflegt</div>
+        <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufgaben</div>
+          <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ stats.tasks || 0 }}</div>
+          <div class="text-xs text-slate-500">in Listen gepflegt</div>
         </div>
 
         <div class="p-4 rounded-2xl liquid_glass_card text-center">
@@ -782,6 +783,22 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Building2,
+  Users,
+  ShieldCheck,
+  Plus,
+  Pencil,
+  Trash2,
+  Mail,
+  UserPlus,
+  Search,
+  X,
+  Check,
+  Lock,
+  LayoutDashboard
+} from 'lucide-vue-next'
+
 definePageMeta({
   middleware: [
     function () {

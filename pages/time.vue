@@ -1,18 +1,18 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <!-- Breadcrumb & Top Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <div class="flex items-center space-x-2 text-xs font-bold text-slate-500 mb-1">
-          <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition">Workspace</NuxtLink>
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+          <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors">Workspace</NuxtLink>
           <span>/</span>
-          <span class="text-slate-800">Zeitrapportierung</span>
+          <span class="text-slate-800 font-medium">Zeitrapportierung</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center space-x-3">
-          <span>⏱️</span>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <Clock class="w-6 h-6 text-[#0891B2]" />
           <span>Zeitrapportierung & Controlling</span>
         </h1>
-        <p class="text-xs sm:text-sm text-slate-600 font-medium mt-1">
+        <p class="text-sm text-slate-600 mt-1">
           Alle erfassten Arbeitszeiten, Budgets und abrechenbaren Leistungen im Gesamtüberblick.
         </p>
       </div>
@@ -23,10 +23,10 @@
           @click="exportCsv"
           :disabled="filteredEntries.length === 0"
           type="button"
-          class="taskster_button_light px-5 text-xs h-[42px] rounded-lg flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
-          title="Als CSV-Datei (Excel-kompatibel) herunterladen"
+          class="taskster_button_light"
+          title="Als CSV-Datei herunterladen"
         >
-          <span>📥</span>
+          <Download class="w-4 h-4" />
           <span>CSV Export</span>
         </button>
 
@@ -34,95 +34,79 @@
           @click="printRapport"
           :disabled="filteredEntries.length === 0"
           type="button"
-          class="taskster_button_light px-5 text-xs h-[42px] rounded-lg flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
-          title="Druckansicht für Kundenrapport öffnen"
+          class="taskster_button_light"
+          title="Druckansicht öffnen"
         >
-          <span>🖨️</span>
+          <Printer class="w-4 h-4" />
           <span class="hidden sm:inline">Drucken</span>
         </button>
 
         <button
           @click="openCreateModal"
           type="button"
-          class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2 cursor-pointer shadow-md"
+          class="taskster_button"
         >
-          <span class="text-base font-black">+</span>
+          <Plus class="w-4 h-4" />
           <span>Zeit erfassen</span>
         </button>
       </div>
     </div>
 
     <!-- Summary Metrics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <!-- Total Duration -->
-      <div class="liquid_glass p-5 rounded-3xl border border-white/70 shadow-lg relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-black tracking-wider uppercase text-slate-500">Erfasste Zeit</span>
-          <span class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center text-sm font-black shadow-xs">
-            ⏱️
-          </span>
+      <div class="bg-white border border-slate-200 rounded-lg p-4">
+        <div class="flex items-center gap-2 text-slate-500">
+          <Clock class="w-4 h-4" />
+          <span class="text-xs font-semibold uppercase tracking-wide">Erfasste Zeit</span>
         </div>
-        <div class="mt-3">
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {{ formatHoursAndMinutes(summary.totalMinutes) }}
-          </div>
-          <div class="text-xs font-semibold text-cyan-800 mt-0.5">
-            {{ (summary.totalMinutes / 60).toFixed(2) }} Dezimalstunden
-          </div>
+        <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+          {{ formatHoursAndMinutes(summary.totalMinutes) }}
+        </div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          {{ (summary.totalMinutes / 60).toFixed(2) }} Dezimalstunden
         </div>
       </div>
 
       <!-- Total Cost / Amount -->
-      <div class="liquid_glass p-5 rounded-3xl border border-white/70 shadow-lg relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-black tracking-wider uppercase text-slate-500">Abrechenbarer Wert</span>
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-black shadow-xs">
-            💰
-          </span>
+      <div class="bg-white border border-slate-200 rounded-lg p-4">
+        <div class="flex items-center gap-2 text-slate-500">
+          <Coins class="w-4 h-4" />
+          <span class="text-xs font-semibold uppercase tracking-wide">Abrechenbarer Wert</span>
         </div>
-        <div class="mt-3">
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {{ formatCurrency(summary.totalCost) }}
-          </div>
-          <div class="text-xs font-semibold text-emerald-700 mt-0.5">
-            basierend auf hinterlegten Stundensätzen
-          </div>
+        <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+          {{ formatCurrency(summary.totalCost) }}
+        </div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          nach hinterlegten Stundensätzen
         </div>
       </div>
 
       <!-- Average Rate -->
-      <div class="liquid_glass p-5 rounded-3xl border border-white/70 shadow-lg relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-black tracking-wider uppercase text-slate-500">Ø Stundensatz</span>
-          <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm font-black shadow-xs">
-            📈
-          </span>
+      <div class="bg-white border border-slate-200 rounded-lg p-4">
+        <div class="flex items-center gap-2 text-slate-500">
+          <TrendingUp class="w-4 h-4" />
+          <span class="text-xs font-semibold uppercase tracking-wide">Ø Stundensatz</span>
         </div>
-        <div class="mt-3">
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {{ averageRate.toFixed(2) }} <span class="text-sm font-bold text-slate-500">CHF/h</span>
-          </div>
-          <div class="text-xs font-semibold text-indigo-700 mt-0.5">
-            effektiver Mischsatz aller Einträge
-          </div>
+        <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+          {{ averageRate.toFixed(2) }} <span class="text-sm font-normal text-slate-500">CHF/h</span>
+        </div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          Mischsatz aller Einträge
         </div>
       </div>
 
       <!-- Total Entries Count -->
-      <div class="liquid_glass p-5 rounded-3xl border border-white/70 shadow-lg relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-black tracking-wider uppercase text-slate-500">Buchungen</span>
-          <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black shadow-xs">
-            📋
-          </span>
+      <div class="bg-white border border-slate-200 rounded-lg p-4">
+        <div class="flex items-center gap-2 text-slate-500">
+          <FileText class="w-4 h-4" />
+          <span class="text-xs font-semibold uppercase tracking-wide">Buchungen</span>
         </div>
-        <div class="mt-3">
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {{ filteredEntries.length }}
-          </div>
-          <div class="text-xs font-semibold text-slate-600 mt-0.5">
-            {{ stopwatchEntriesCount }} via Stoppuhr, {{ manualEntriesCount }} manuell
-          </div>
+        <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+          {{ filteredEntries.length }}
+        </div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          {{ stopwatchEntriesCount }} Stoppuhr, {{ manualEntriesCount }} manuell
         </div>
       </div>
     </div>
@@ -566,6 +550,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import {
+  Clock,
+  Download,
+  Printer,
+  Plus,
+  Search,
+  FileText,
+  TrendingUp,
+  Coins,
+  Pencil,
+  Trash2,
+  X
+} from 'lucide-vue-next'
 
 const { user, token } = useAuth()
 

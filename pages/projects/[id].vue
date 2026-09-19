@@ -1,51 +1,49 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb in Liquid Glass Pill -->
-    <div class="mb-6">
-      <div class="inline-flex items-center space-x-2 text-xs text-slate-700 font-semibold px-4 py-2 rounded-2xl liquid_glass_pill">
-        <NuxtLink to="/dashboard" class="hover:text-cyan-700 transition flex items-center space-x-1">
-          <span>🏠</span>
-          <span>Dashboard</span>
-        </NuxtLink>
-        <span class="text-slate-400">/</span>
-        <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-700 transition flex items-center space-x-1">
-          <span>📁</span>
-          <span>{{ project?.folder_name || 'Ordner' }}</span>
-        </NuxtLink>
-        <span class="text-slate-400">/</span>
-        <span class="text-slate-900 font-bold flex items-center space-x-1">
-          <span>📋</span>
-          <span>{{ project?.title || 'Projekt' }}</span>
-        </span>
-      </div>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
+      <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+        <LayoutDashboard class="w-3.5 h-3.5" />
+        <span>Dashboard</span>
+      </NuxtLink>
+      <span>/</span>
+      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+        <Folder class="w-3.5 h-3.5" />
+        <span>{{ project?.folder_name || 'Ordner' }}</span>
+      </NuxtLink>
+      <span>/</span>
+      <span class="text-slate-800 font-medium flex items-center gap-1">
+        <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
+        <span>{{ project?.title || 'Projekt' }}</span>
+      </span>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-center py-16 text-slate-700 font-bold text-xs liquid_glass rounded-3xl max-w-sm mx-auto">
+    <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
       Lade Projektdaten...
     </div>
 
     <div v-else-if="project">
-      <!-- Project Header (Liquid Glass Card) -->
-      <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-6 shadow-xl">
+      <!-- Project Header -->
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex flex-wrap items-center gap-2.5 mb-1.5">
-              <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ project.title }}</h1>
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+              <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ project.title }}</h1>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider"
-                :class="userRole === 'viewer' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-cyan-100 text-cyan-900 border border-cyan-300'"
+                class="px-2 py-0.5 rounded-sm text-xs font-medium border"
+                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'"
               >
                 {{ userRole }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold border"
-                :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                class="px-2 py-0.5 rounded-sm text-xs font-medium border"
+                :class="project.visibility === 'company' ? 'bg-cyan-50 border-cyan-200 text-cyan-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
               >
-                {{ project.visibility === 'company' ? '🏢 Unternehmen' : '🔒 Privat' }}
+                {{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-slate-800 border border-slate-200"
+                class="px-2 py-0.5 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
               >
                 Status: {{ project.status }}
               </span>
@@ -3389,6 +3387,32 @@
 </template>
 
 <script setup lang="ts">
+import {
+  LayoutDashboard,
+  Folder,
+  ClipboardList,
+  Plus,
+  Pencil,
+  Trash2,
+  Clock,
+  UserPlus,
+  FileText,
+  Tag,
+  Paperclip,
+  Search,
+  X,
+  Check,
+  ChevronRight,
+  BookUser,
+  Building2,
+  HardHat,
+  Lock,
+  Phone,
+  Mail,
+  Globe,
+  MapPin
+} from 'lucide-vue-next'
+
 const route = useRoute()
 const { user, authHeaders } = useAuth()
 const projectId = route.params.id as string
