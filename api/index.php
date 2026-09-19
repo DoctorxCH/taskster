@@ -2073,12 +2073,13 @@ try {
             }
         }
 
+        $isManual = array_key_exists('is_manual', $body) ? (!empty($body['is_manual']) ? 1 : 0) : 1;
         $id = 'time_' . substr(bin2hex(random_bytes(8)), 0, 16);
         $stmt = $db->prepare("
             INSERT INTO time_entries (id, project_id, task_id, user_id, duration_minutes, entry_date, description, is_manual, hourly_rate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$id, $projectId, $taskId, $user['id'], $durationMinutes, $entryDate, $description, $hourlyRate]);
+        $stmt->execute([$id, $projectId, $taskId, $user['id'], $durationMinutes, $entryDate, $description, $isManual, $hourlyRate]);
 
         jsonResponse([
             'success' => true,
