@@ -92,15 +92,7 @@
         <span>Finanzen & Bestellungen</span>
       </button>
 
-      <button
-        v-if="hasPermission('company_settings')"
-        @click="activeTab = 'policies'"
-        class="py-2 px-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer shrink-0"
-        :class="activeTab === 'policies' ? 'bg-white text-purple-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'"
-      >
-        <span>🛡️</span>
-        <span>Zugriffsregeln & Tarif-Limits</span>
-      </button>
+
 
       <button
         v-if="hasPermission('manage_templates')"
@@ -493,99 +485,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: TASK LOGIC & ZERO-TRUST COMPLIANCE (Liquid Glass Cards) -->
-    <div v-else-if="activeTab === 'policies'" class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- 4-Stage Pipeline Card -->
-        <div class="liquid_glass_card rounded-3xl p-6 sm:p-7 shadow-xl">
-          <div class="flex items-center space-x-2 text-purple-700 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>🛡️</span>
-            <span>Rollen- & Berechtigungsmodell</span>
-          </div>
-          <h3 class="text-lg font-black text-slate-900 mb-2">Aktive Sicherheitsarchitektur</h3>
-          <p class="text-xs text-slate-600 font-medium leading-relaxed mb-6">
-            Jeder API-Zugriff durchläuft serverseitig diese 4 Prüfstufen:
-          </p>
 
-          <ol class="space-y-3 text-xs">
-            <li class="p-3.5 rounded-2xl bg-white/60 border border-white/80 flex items-start space-x-3 shadow-xs">
-              <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center justify-center font-bold text-[11px] shrink-0">1</span>
-              <div>
-                <strong class="text-slate-900">Company Policy Check:</strong>
-                <p class="text-slate-600 mt-0.5 font-medium">Prüft globale Unternehmensrichtlinien (z.B. Dokumenten-Upload-Sperre). Verstoß liefert 403 Forbidden.</p>
-              </div>
-            </li>
-            <li class="p-3.5 rounded-2xl bg-white/60 border border-white/80 flex items-start space-x-3 shadow-xs">
-              <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center justify-center font-bold text-[11px] shrink-0">2</span>
-              <div>
-                <strong class="text-slate-900">Project Membership Check:</strong>
-                <p class="text-slate-600 mt-0.5 font-medium">Prüft Ordnerinhaber oder Projektmitgliedschaft. Nicht berechtigte Anfragen erhalten 404 Not Found.</p>
-              </div>
-            </li>
-            <li class="p-3.5 rounded-2xl bg-white/60 border border-white/80 flex items-start space-x-3 shadow-xs">
-              <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center justify-center font-bold text-[11px] shrink-0">3</span>
-              <div>
-                <strong class="text-slate-900">List Scope Check:</strong>
-                <p class="text-slate-600 mt-0.5 font-medium">Eingeschränkte Listen erfordern explizite Listensichtbarkeit.</p>
-              </div>
-            </li>
-            <li class="p-3.5 rounded-2xl bg-white/60 border border-white/80 flex items-start space-x-3 shadow-xs">
-              <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center justify-center font-bold text-[11px] shrink-0">4</span>
-              <div>
-                <strong class="text-slate-900">Role Action Check:</strong>
-                <p class="text-slate-600 mt-0.5 font-medium">Viewer dürfen nur Lesemethoden (GET) nutzen. Schreibzugriffe werden serverseitig abgewiesen.</p>
-              </div>
-            </li>
-          </ol>
-        </div>
-
-        <!-- Freemium Rules & App Logic -->
-        <div class="liquid_glass_card rounded-3xl p-6 sm:p-7 shadow-xl">
-          <div class="flex items-center space-x-2 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>⚙️</span>
-            <span>Tarifregeln & Systemgrenzen</span>
-          </div>
-          <h3 class="text-lg font-black text-slate-900 mb-2">Durchgesetzte Systemgrenzen</h3>
-          <p class="text-xs text-slate-600 font-medium leading-relaxed mb-6">
-            Folgende Systemgrenzen sind im Backend aktiv durchgesetzt:
-          </p>
-
-          <div class="space-y-3 text-xs">
-            <div class="p-3.5 rounded-2xl bg-white/60 border border-white/80 shadow-xs">
-              <div class="flex items-center justify-between mb-1">
-                <strong class="text-slate-900">Free-Plan Ordner-Limit</strong>
-                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono font-bold text-[11px]">1 Ordner</span>
-              </div>
-              <p class="text-slate-600 font-medium">Ein Kunde im Free-Plan hat maximal 1 Projektordner zur Verfügung.</p>
-            </div>
-
-            <div class="p-3.5 rounded-2xl bg-white/60 border border-white/80 shadow-xs">
-              <div class="flex items-center justify-between mb-1">
-                <strong class="text-slate-900">Gleichzeitige Projekt-Mitarbeit</strong>
-                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono font-bold text-[11px]">Max. 3</span>
-              </div>
-              <p class="text-slate-600 font-medium">Free-User dürfen maximal in 3 Projekten gleichzeitig aktiv mitarbeiten.</p>
-            </div>
-
-            <div class="p-3.5 rounded-2xl bg-white/60 border border-white/80 shadow-xs">
-              <div class="flex items-center justify-between mb-1">
-                <strong class="text-slate-900">Teammitglieder pro Projekt</strong>
-                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono font-bold text-[11px]">Max. 5</span>
-              </div>
-              <p class="text-slate-600 font-medium">Pro Projekt können im Free-Plan maximal 5 Teammitglieder inkl. Owner teilnehmen.</p>
-            </div>
-
-            <div class="p-3.5 rounded-2xl bg-white/60 border border-white/80 shadow-xs">
-              <div class="flex items-center justify-between mb-1">
-                <strong class="text-slate-900">Company Plan Vererbung</strong>
-                <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 font-mono font-bold text-[11px]">Automatisch</span>
-              </div>
-              <p class="text-slate-600 font-medium">Eingeladene Mitarbeiter einer Company erben automatisch den bezahlten Company-Plan.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- TAB 4: PROJECT TEMPLATES (Liquid Glass Cards) -->
     <div v-if="activeTab === 'templates'" class="space-y-6">
@@ -1512,7 +1412,7 @@
 <script setup lang="ts">
 const { user, authHeaders } = useAuth()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'invites' | 'policies' | 'templates'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
@@ -1540,7 +1440,6 @@ const hasPermission = (perm: string) => {
 const isAnyAdmin = computed(() => {
   if (!user.value) return false
   if (user.value.is_superadmin) return true
-  if (user.value.company_role === 'admin') return true
   let perms = user.value.admin_permissions
   if (typeof perms === 'string') {
     try { perms = JSON.parse(perms) } catch { perms = [] }
@@ -2075,8 +1974,6 @@ onMounted(async () => {
     activeTab.value = 'companies'
   } else if (hasPermission('manage_templates')) {
     activeTab.value = 'templates'
-  } else if (user.value?.company_role === 'admin') {
-    activeTab.value = 'invites'
   }
 
   await loadAdminData()
