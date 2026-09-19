@@ -439,7 +439,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div v-if="user?.company_id || user?.is_superadmin" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
             <div class="grid grid-cols-2 gap-2">
               <label
@@ -458,8 +458,11 @@
               </label>
             </div>
             <p class="text-[11px] text-slate-500">
-              {{ newFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar (auch Admins sehen diesen Ordner nicht automatisch).' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+              {{ newFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar (auch Admins sehen diesen Ordner nicht automatisch).' : `Für alle Mitglieder des Unternehmens (${user?.company_name || 'Firma'}) sichtbar.` }}
             </p>
+          </div>
+          <div v-else class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <span class="font-bold">💡 Einzelnutzer-Konto:</span> Dieser Ordner ist standardmäßig privat. Du kannst ihn im Ordner selbst über <strong>"👥 Ordner teilen"</strong> für Kollegen freigeben.
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
@@ -529,7 +532,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div v-if="user?.company_id || editFolderCompanyId || user?.is_superadmin" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
             <div class="grid grid-cols-2 gap-2">
               <label
@@ -548,8 +551,11 @@
               </label>
             </div>
             <p class="text-[11px] text-slate-500">
-              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : `Für alle Mitglieder des Unternehmens (${editFolderCompanyName || user?.company_name || 'Firma'}) sichtbar.` }}
             </p>
+          </div>
+          <div v-else class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <span class="font-bold">💡 Einzelnutzer-Konto:</span> Dieser Ordner ist standardmäßig privat. Du kannst ihn im Ordner selbst über <strong>"👥 Ordner teilen"</strong> für Kollegen freigeben.
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
@@ -687,11 +693,16 @@ const openNewFolderModal = () => {
   showNewFolderModal.value = true
 }
 
+const editFolderCompanyId = ref<string | null>(null)
+const editFolderCompanyName = ref<string | null>(null)
+
 const openEditFolderModal = (folder: any) => {
   editFolderId.value = folder.id
   editFolderName.value = folder.name
   editFolderIcon.value = folder.icon || '📁'
   editFolderVisibility.value = folder.visibility || 'private'
+  editFolderCompanyId.value = folder.company_id || null
+  editFolderCompanyName.value = folder.company_name || null
   editFolderError.value = ''
   showEditFolderModal.value = true
 }
