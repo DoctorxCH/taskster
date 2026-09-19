@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   evaluateListAccess(user, task.list_id, event, 'write')
 
   const { title, description, status, custom_data, due_date, list_id, sort_order,
-          assigned_to, priority, color, tags, checklist } = body
+          assigned_to, priority, color, tags, checklist, budget_hours, budget_amount } = body
 
   // If moving task to another list, check destination list access as well
   const targetListId = list_id || task.list_id
@@ -35,17 +35,19 @@ export default defineEventHandler(async (event) => {
   const updatedColor = color !== undefined ? (color || null) : task.color
   const updatedTags = tags !== undefined ? JSON.stringify(tags) : (task.tags || '[]')
   const updatedChecklist = checklist !== undefined ? JSON.stringify(checklist) : (task.checklist || '[]')
+  const updatedBudgetHours = budget_hours !== undefined ? Math.max(0, parseFloat(budget_hours) || 0) : (Number(task.budget_hours) || 0)
+  const updatedBudgetAmount = budget_amount !== undefined ? Math.max(0, parseFloat(budget_amount) || 0) : (Number(task.budget_amount) || 0)
 
   db.prepare(`
     UPDATE tasks
     SET title = ?, description = ?, status = ?, custom_data = ?, due_date = ?,
         list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?,
-        tags = ?, checklist = ?
+        tags = ?, checklist = ?, budget_hours = ?, budget_amount = ?
     WHERE id = ?
   `).run(
     updatedTitle, updatedDesc, updatedStatus, updatedCustom, updatedDueDate,
     targetListId, updatedSort, updatedAssignedTo, updatedPriority, updatedColor,
-    updatedTags, updatedChecklist, taskId
+    updatedTags, updatedChecklist, updatedBudgetHours, updatedBudgetAmount, taskId
   )
 
   return {
@@ -64,6 +66,8 @@ export default defineEventHandler(async (event) => {
       color: updatedColor,
       tags: JSON.parse(updatedTags),
       checklist: JSON.parse(updatedChecklist),
+      budget_hours: updatedBudgetHours,
+      budget_amount: updatedBudgetAmount
     }
   }
 })

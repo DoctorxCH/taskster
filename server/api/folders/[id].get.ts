@@ -41,20 +41,65 @@ export default defineEventHandler((event) => {
     logic_rules: f.logic_rules ? JSON.parse(f.logic_rules) : {}
   }))
 
-  // Get projects inside this folder
-  const projects = db.prepare(`
+  // Get projects inside this folder with time tracking metrics
+  const projectsRaw = db.prepare(`
     SELECT p.*,
       (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
       (SELECT COUNT(*) FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = p.id) as task_count,
-      (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
+      (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count,
+      (SELECT COALESCE(SUM(te.duration_minutes), 0) FROM time_entries te WHERE te.project_id = p.id) as tracked_minutes,
+      (SELECT COUNT(*) FROM time_entries te WHERE te.project_id = p.id) as time_entry_count
     FROM projects p
     WHERE p.folder_id = ?
     ORDER BY p.created_at DESC
-  `).all(folderId)
+  `).all(folderId) as any[]
+
+  let folderTotalMinutes = 0
+  let folderTotalCost = 0
+  let folderTotalBudgetHours = 0
+  let folderTotalBudgetAmount = 0
+
+  const projects = projectsRaw.map(p => {
+    const minutes = Number(p.tracked_minutes) || 0
+    const budgetHours = Number(p.budget_hours) || 0
+    const budgetAmount = Number(p.budget_amount) || 0
+    const currency = p.currency || 'CHF'
+
+    // Calculate project cost
+    const entries = db.prepare('SELECT duration_minutes, hourly_rate FROM time_entries WHERE project_id = ?').all(p.id) as any[]
+    const projectCost = entries.reduce((sum, e) => {
+      const hours = (Number(e.duration_minutes) || 0) / 60
+      const rate = Number(e.hourly_rate) || 0
+      return sum + (hours * rate)
+    }, 0)
+
+    folderTotalMinutes += minutes
+    folderTotalCost += projectCost
+    folderTotalBudgetHours += budgetHours
+    folderTotalBudgetAmount += budgetAmount
+
+    return {
+      ...p,
+      currency,
+      budget_hours: budgetHours,
+      budget_amount: budgetAmount,
+      tracked_minutes: minutes,
+      tracked_hours: Number((minutes / 60).toFixed(2)),
+      tracked_cost: Number(projectCost.toFixed(2)),
+      custom_data: p.custom_data ? (typeof p.custom_data === 'string' ? JSON.parse(p.custom_data) : p.custom_data) : {}
+    }
+  })
 
   return {
     folder,
     fields,
-    projects
+    projects,
+    timeSummary: {
+      total_minutes: folderTotalMinutes,
+      total_hours: Number((folderTotalMinutes / 60).toFixed(2)),
+      total_cost: Number(folderTotalCost.toFixed(2)),
+      total_budget_hours: Number(folderTotalBudgetHours.toFixed(2)),
+      total_budget_amount: Number(folderTotalBudgetAmount.toFixed(2))
+    }
   }
 })

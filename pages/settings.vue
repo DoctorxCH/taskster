@@ -72,7 +72,65 @@
         </form>
       </div>
 
-      <!-- Card 2: Passwort ändern -->
+      <!-- Card 2: Zeiterfassung & Abrechnung -->
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
+        <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
+          <span>⏱️</span>
+          <span>Zeiterfassung & Abrechnung</span>
+        </h2>
+        <p class="text-xs text-slate-600 mb-6">Lege deinen Standard-Stundenlohn und deine Abrechnungswährung für Zeiterfassungen fest.</p>
+
+        <form @submit.prevent="updateProfile" class="space-y-4 max-w-lg">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Standard-Stundenlohn</label>
+              <div class="relative">
+                <input
+                  v-model="hourlyRate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="120.00"
+                  class="w-full pl-3.5 pr-14 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs font-bold text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm"
+                />
+                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">
+                  / Std.
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Standard-Währung</label>
+              <select
+                v-model="userCurrency"
+                class="w-full px-3.5 py-2.5 bg-white/70 border border-white/60 rounded-xl text-xs font-bold text-slate-900 focus:bg-white/90 focus:outline-none focus:border-cyan-600 backdrop-blur-sm"
+              >
+                <option value="CHF">CHF (Schweizer Franken)</option>
+                <option value="EUR">EUR (Euro)</option>
+                <option value="USD">USD (US Dollar)</option>
+                <option value="GBP">GBP (Britisches Pfund)</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="text-[11px] text-slate-500">
+            💡 Dieser Stundensatz wird bei der Erfassung von Projekt- und Aufgabenzeiten standardmäßig als Berechnungsgrundlage herangezogen.
+          </p>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="savingProfile"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ savingProfile ? 'Speichern...' : 'Abrechnungs-Daten speichern' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Card 3: Passwort ändern -->
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 class="text-base font-black text-slate-900 mb-1 flex items-center space-x-2">
           <span>🔒</span>
@@ -255,6 +313,8 @@
 const { user, authHeaders } = useAuth()
 
 const profileName = ref('')
+const hourlyRate = ref<number | string>(120)
+const userCurrency = ref('CHF')
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -274,7 +334,9 @@ onMounted(async () => {
     navigateTo('/login')
     return
   }
-  profileName.value = user.value.name
+  profileName.value = user.value.name || ''
+  hourlyRate.value = user.value.hourly_rate !== undefined ? user.value.hourly_rate : 120
+  userCurrency.value = user.value.currency || 'CHF'
 })
 
 const updateProfile = async () => {
@@ -286,15 +348,19 @@ const updateProfile = async () => {
       method: 'PATCH',
       headers: authHeaders(),
       body: {
-        name: profileName.value
+        name: profileName.value,
+        hourly_rate: Number(hourlyRate.value) || 0,
+        currency: userCurrency.value
       }
     })
-    if (user.value) {
+    if (user.value && res.user) {
       user.value.name = res.user.name
+      user.value.hourly_rate = res.user.hourly_rate
+      user.value.currency = res.user.currency
     }
-    successMsg.value = 'Profil erfolgreich aktualisiert!'
+    successMsg.value = 'Einstellungen erfolgreich aktualisiert!'
   } catch (err: any) {
-    errorMsg.value = err.data?.statusMessage || 'Fehler beim Speichern des Profils'
+    errorMsg.value = err.data?.statusMessage || 'Fehler beim Speichern'
   } finally {
     savingProfile.value = false
   }

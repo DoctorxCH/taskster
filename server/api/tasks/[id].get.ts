@@ -48,13 +48,34 @@ export default defineEventHandler((event) => {
     ORDER BY pd.created_at DESC
   `).all(taskId) as any[]
 
+  // Time entries for this task
+  const timeEntries = db.prepare(`
+    SELECT te.*, u.name as user_name, u.email as user_email
+    FROM time_entries te
+    JOIN users u ON u.id = te.user_id
+    WHERE te.task_id = ?
+    ORDER BY te.entry_date DESC, te.created_at DESC
+  `).all(taskId) as any[]
+
+  const trackedMinutes = timeEntries.reduce((sum, e) => sum + (Number(e.duration_minutes) || 0), 0)
+
   return {
     task: {
       ...task,
+      budget_hours: Number(task.budget_hours) || 0,
+      budget_amount: Number(task.budget_amount) || 0,
+      tracked_minutes: trackedMinutes,
+      tracked_hours: Number((trackedMinutes / 60).toFixed(2)),
       assignee,
     },
     subtasks,
     comments,
     documents,
+    timeEntries: timeEntries.map(e => ({
+      ...e,
+      is_manual: Boolean(e.is_manual),
+      duration_hours: Number(((Number(e.duration_minutes) || 0) / 60).toFixed(2)),
+      calculated_amount: Number((((Number(e.duration_minutes) || 0) / 60) * (Number(e.hourly_rate) || 0)).toFixed(2))
+    }))
   }
 })
