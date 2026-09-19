@@ -499,11 +499,11 @@ function getAiConfig() {
     if ($config !== null) return $config;
 
     $defaults = [
-        'model' => 'deepseek/deepseek-v4-flash-0731',
-        'provider' => ['only' => ['baidu/fp8'], 'allow_fallbacks' => false],
+        'model' => 'google/gemini-2.5-flash',
+        'provider' => ['allow_fallbacks' => true],
         'temperature' => 0.3,
-        'max_tokens' => 4096,
-        'timeout_seconds' => 120,
+        'max_tokens' => 2048,
+        'timeout_seconds' => 30,
         'system_prompt' => 'Du bist ein praeziser technischer Assistent fuer das Taskster-Projekt.'
     ];
 
