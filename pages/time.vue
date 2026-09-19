@@ -645,25 +645,16 @@ const onCustomDateChange = () => {
 
 const loadAvailableProjects = async () => {
   try {
-    const res = await $fetch<{ folders: any[] }>('/api/folders', {
+    const res = await $fetch<{ projects: any[] }>('/api/projects', {
       headers: authHeaders()
     })
-    const projs: any[] = []
-    if (res.folders) {
-      for (const f of res.folders) {
-        if (f.projects) {
-          for (const p of f.projects) {
-            projs.push(p)
-          }
-        }
-      }
-    }
+    const projs = res.projects || []
     availableProjects.value = projs
     if (projs.length > 0 && !createForm.value.project_id) {
       createForm.value.project_id = projs[0].id
     }
   } catch (err) {
-    // ignore
+    console.error('Failed to load available projects', err)
   }
 }
 
