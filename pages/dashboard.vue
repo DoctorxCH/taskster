@@ -107,6 +107,15 @@
             </div>
 
             <div class="flex items-center space-x-2">
+              <NuxtLink
+                to="/time"
+                class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-cyan-800 hover:text-cyan-900 border border-slate-200/80 text-xs font-bold shadow-xs transition"
+                title="Zur globalen Zeitrapportierung"
+              >
+                <span>⏱️</span>
+                <span>Zeitrapporte</span>
+              </NuxtLink>
+
               <button
                 @click="activeTaskTab === 'daily' ? loadDailyTodos() : loadTasks()"
                 class="p-1.5 rounded-xl hover:bg-white/80 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer ml-auto"

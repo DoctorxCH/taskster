@@ -2833,13 +2833,12 @@ try {
         $projectId = $_GET['project_id'] ?? null;
         $taskId = $_GET['task_id'] ?? null;
         $folderId = $_GET['folder_id'] ?? null;
-
-        if (!$projectId && !$taskId && !$folderId) {
-            errorResponse('project_id, task_id oder folder_id erforderlich', 400);
-        }
+        $filterUserId = $_GET['user_id'] ?? null;
+        $dateFrom = $_GET['date_from'] ?? null;
+        $dateTo = $_GET['date_to'] ?? null;
 
         $query = "
-            SELECT te.*, u.name as user_name, t.title as task_title, p.title as project_title, p.currency as project_currency
+            SELECT te.*, u.name as user_name, u.email as user_email, t.title as task_title, p.title as project_title, p.currency as project_currency
             FROM time_entries te
             JOIN users u ON u.id = te.user_id
             JOIN projects p ON p.id = te.project_id
@@ -2852,9 +2851,7 @@ try {
             evaluateProjectAccess($user, $projectId, 'read');
             $query .= " AND te.project_id = ?";
             $params[] = $projectId;
-        }
-
-        if ($taskId) {
+        } elseif ($taskId) {
             $tStmt = $db->prepare("SELECT list_id FROM tasks WHERE id = ?");
             $tStmt->execute([$taskId]);
             $tRow = $tStmt->fetch();
@@ -2863,9 +2860,7 @@ try {
             }
             $query .= " AND te.task_id = ?";
             $params[] = $taskId;
-        }
-
-        if ($folderId) {
+        } elseif ($folderId) {
             $fStmt = $db->prepare("SELECT owner_id FROM project_folders WHERE id = ?");
             $fStmt->execute([$folderId]);
             $fRow = $fStmt->fetch();
@@ -2874,6 +2869,36 @@ try {
             }
             $query .= " AND te.project_id IN (SELECT id FROM projects WHERE folder_id = ?)";
             $params[] = $folderId;
+        } else {
+            // Global query: Zero-Trust scoping
+            if (empty($user['is_superadmin'])) {
+                $uid = $user['id'];
+                $query .= " AND (
+                    te.user_id = ?
+                    OR p.owner_id = ?
+                    OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+                    OR p.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?)
+                    OR p.folder_id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
+                )";
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+            }
+        }
+
+        if ($filterUserId) {
+            $query .= " AND te.user_id = ?";
+            $params[] = $filterUserId;
+        }
+        if ($dateFrom) {
+            $query .= " AND te.entry_date >= ?";
+            $params[] = $dateFrom;
+        }
+        if ($dateTo) {
+            $query .= " AND te.entry_date <= ?";
+            $params[] = $dateTo;
         }
 
         $query .= " ORDER BY te.entry_date DESC, te.created_at DESC";

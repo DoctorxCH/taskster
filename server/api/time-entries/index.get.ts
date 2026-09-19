@@ -10,14 +10,17 @@ export default defineEventHandler((event) => {
   const taskId = query.task_id ? String(query.task_id) : null
   const folderId = query.folder_id ? String(query.folder_id) : null
 
-  let whereClauses: string[] = []
+  const filterUserId = query.user_id ? String(query.user_id) : null
+  const dateFrom = query.date_from ? String(query.date_from) : null
+  const dateTo = query.date_to ? String(query.date_to) : null
+
+  let whereClauses: string[] = ['1=1']
   let params: any[] = []
 
   if (taskId) {
     whereClauses.push('te.task_id = ?')
     params.push(taskId)
   } else if (projectId) {
-    // Check project read access
     evaluateProjectAccess(user, projectId, event, 'read')
     whereClauses.push('te.project_id = ?')
     params.push(projectId)
@@ -25,7 +28,30 @@ export default defineEventHandler((event) => {
     whereClauses.push('p.folder_id = ?')
     params.push(folderId)
   } else {
-    throw createError({ statusCode: 400, statusMessage: 'project_id, task_id oder folder_id erforderlich' })
+    // Scoped access if not superadmin
+    if (!user.is_superadmin) {
+      whereClauses.push(`(
+        te.user_id = ?
+        OR p.owner_id = ?
+        OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+        OR p.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?)
+        OR p.folder_id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
+      )`)
+      params.push(user.id, user.id, user.id, user.id, user.id)
+    }
+  }
+
+  if (filterUserId) {
+    whereClauses.push('te.user_id = ?')
+    params.push(filterUserId)
+  }
+  if (dateFrom) {
+    whereClauses.push('te.entry_date >= ?')
+    params.push(dateFrom)
+  }
+  if (dateTo) {
+    whereClauses.push('te.entry_date <= ?')
+    params.push(dateTo)
   }
 
   const sql = `

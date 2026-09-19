@@ -768,7 +768,7 @@
         <form @submit.prevent="saveTemplate" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Vorlagen-Name *</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">Vorlagen-Name *</label>
               <input
                 v-model="tmplForm.name"
                 type="text"
@@ -779,7 +779,7 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Kategorie *</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">Kategorie *</label>
               <select
                 v-model="tmplForm.category"
                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
@@ -792,7 +792,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Unterkategorie / Branche</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">Unterkategorie / Branche</label>
               <input
                 v-model="tmplForm.subcategory"
                 type="text"
@@ -802,7 +802,7 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">Beschreibung</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">Beschreibung</label>
               <input
                 v-model="tmplForm.description"
                 type="text"
