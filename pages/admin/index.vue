@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div v-if="isAnyAdmin" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header in Liquid Glass Card for guaranteed legibility on any wallpaper -->
     <div class="liquid_glass rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1407,9 +1407,43 @@
       </div>
     </div>
   </div>
+  <div v-else class="max-w-md mx-auto py-24 text-center">
+    <div class="liquid_glass rounded-3xl p-8 shadow-xl">
+      <div class="text-4xl mb-3">🔒</div>
+      <h2 class="text-lg font-black text-slate-900 mb-1">Zugriff verweigert</h2>
+      <p class="text-xs text-slate-600 mb-5 leading-relaxed">Dieser Bereich ist ausschließlich autorisierten Taskster-Plattformadministratoren vorbehalten.</p>
+      <NuxtLink to="/dashboard" class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center justify-center">
+        Zurück zum Dashboard
+      </NuxtLink>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: [
+    function () {
+      if (import.meta.client) {
+        const authData = localStorage.getItem('taskster_auth')
+        if (authData) {
+          try {
+            const parsed = JSON.parse(authData)
+            const u = parsed.user
+            const perms = u?.admin_permissions ? (typeof u.admin_permissions === 'string' ? JSON.parse(u.admin_permissions) : u.admin_permissions) : []
+            if (!u?.is_superadmin && (!Array.isArray(perms) || perms.length === 0)) {
+              return navigateTo('/dashboard')
+            }
+          } catch (_) {
+            return navigateTo('/dashboard')
+          }
+        } else {
+          return navigateTo('/login')
+        }
+      }
+    }
+  ]
+})
+
 const { user, authHeaders } = useAuth()
 
 const activeTab = ref<'users' | 'companies' | 'finance' | 'templates'>('users')
