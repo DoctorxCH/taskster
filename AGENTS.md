@@ -23,6 +23,10 @@
   - Ghost / Cancel: `taskster_button_light` (Weiß + blauer 3px Rand)
 
 ## 4. Deployment & Sync (Verbindlich)
-- **Kein SFTP-Upload mehr:** Dateien niemals direkt über SFTP auf den Server synchronisieren, da dies zu Konflikten und untracked files in Git führt.
-- **Git als Single Source of Truth:** Deployments / Updates ausschließlich via `git commit & push origin main`.
-- **Server-Befehle:** Falls auf dem Server `npm run ...` (z.B. Build) oder Datenbank-Migrationen ausgeführt werden müssen, den User direkt informieren, damit er dies im SSH-Terminal ausführen kann.
+- **Git als Single Source of Truth:** Alle Quellcode-Änderungen werden committed und nach `origin/main` gepusht.
+- **Server-Umgebung (Hostcreators Shared-Hosting):** Der Server besitzt keinen C-Compiler (`cc`) und ein inkompatibles GLIBC für native Module (`better-sqlite3`). Daher kann auf dem Server **kein** `npm install` oder `npm run build` ausgeführt werden.
+- **Verbindlicher Deployment-Ablauf:**
+  1. Änderungen lokal testen und committen (`git commit & push origin main`).
+  2. Lokaler statischer Build: `npm run generate` (erstellt `.output/public/` mit allen Assets und `api/index.php`).
+  3. Automatisches Deployment: `node scripts/deploy-sftp.cjs` synchronisiert `.output/public` direkt nach `/sub/taskster`.
+  4. Bei DB-Schema-Änderungen: `node scripts/migrate-mysql.cjs` remote gegen MySQL ausführen.

@@ -1,6 +1,12 @@
-# Anweisung: Kein SFTP-Deployment – Git-Only Workflow
+# Anweisung: Deployment-Workflow & Hosting-Architektur
 
-## Verbindliche Regel
-1. **Kein SFTP:** Es wird nicht mehr per SFTP auf den Server synchronisiert. Jeglicher File-Transfer per SFTP erzeugt auf dem Server ungetrackte Dateien und Versionskonflikte in Git.
-2. **Git als einziger Übertragungsweg:** Alle Code- und Design-Änderungen werden lokal committed und nach `origin/main` gepusht.
-3. **Mitteilungspflicht bei Server-Kommandos:** Sobald nach einem Git-Pull auf dem Server Befehle wie z.B. `npm run generate`, `npm run build`, `npm install` oder Migrationsscripte notwendig sind, wird der User mit der genauen Befehlszeile informiert.
+## 1. Hosting-Beschränkungen (Hostcreators Shared-Hosting)
+- Der Server unter `admin.kurka.ch@ssh.kurka.ch` (`/var/www18/p50824/kurka.ch/sub/taskster`) ist ein Apache/PHP-Shared-Hosting.
+- Auf dem Server **fehlt der C-Compiler (`cc`)** und GLIBC 2.29 für native Node-Module (`better-sqlite3`).
+- **Wichtig:** Auf dem Server kann **kein** `npm install` oder `npm run build` ausgeführt werden!
+
+## 2. Verbindlicher Deployment-Ablauf für Agenten
+1. **Git als Code-Source:** Alle Quellcode-Änderungen lokal committen und nach `origin/main` pushen.
+2. **Lokaler Build:** Lokal `npm run generate` ausführen. Dies erzeugt den statischen Produktions-Build unter `.output/public/` mit allen vorgerenderten Seiten und `api/index.php`.
+3. **Automatischer Sync:** `node scripts/deploy-sftp.cjs` ausführen. Dieses Skript überträgt den fertigen Build aus `.output/public` direkt per SFTP auf den Server in `/sub/taskster`.
+4. **Datenbank-Migrationen:** Falls Schema-Änderungen anfallen, `node scripts/migrate-mysql.cjs` lokal ausführen, um die Remote-MySQL-Datenbank auf `sql21.hostcreators.sk:3326` zu aktualisieren.
