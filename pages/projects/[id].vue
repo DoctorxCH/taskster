@@ -43,6 +43,24 @@
               >
                 Status: {{ project.status }}
               </span>
+              <span
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-slate-800 border border-slate-200"
+              >
+                {{ project.currency || 'CHF' }}
+              </span>
+              <span
+                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-cyan-900 border border-cyan-300 flex items-center space-x-1"
+                :title="`Erfasste Zeit: ${project.tracked_hours || 0} Std. ${project.budget_hours ? `/ Budget: ${project.budget_hours} Std.` : ''}`"
+              >
+                <span>⏱️</span>
+                <span>{{ project.tracked_hours || 0 }}h</span>
+                <span v-if="project.budget_hours" class="text-slate-500 font-semibold">/ {{ project.budget_hours }}h</span>
+                <span v-if="project.budget_hours > 0" class="text-[10px] px-1.5 py-0.2 rounded-full font-black ml-1"
+                  :class="(project.tracked_hours || 0) > project.budget_hours ? 'bg-rose-100 text-rose-700' : ((project.tracked_hours || 0) / project.budget_hours >= 0.8 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')"
+                >
+                  {{ Math.round(((project.tracked_hours || 0) / project.budget_hours) * 100) }}%
+                </span>
+              </span>
             </div>
 
             <p class="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
@@ -136,6 +154,15 @@
           >
             <span>📋</span>
             <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
+          </button>
+
+          <button
+            @click="currentView = 'time'; loadProjectTimeEntries()"
+            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'time' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+          >
+            <span>⏱️</span>
+            <span>Zeiterfassung ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
           </button>
 
           <button
@@ -328,6 +355,18 @@
                     >
                       {{ task.priority }}
                     </span>
+
+                    <!-- Time & Budget Badge -->
+                    <span
+                      v-if="(task.tracked_hours || 0) > 0 || (task.budget_hours || 0) > 0"
+                      class="inline-flex items-center space-x-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border"
+                      :class="(task.tracked_hours || 0) > (task.budget_hours || 0) && task.budget_hours > 0 ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'"
+                      :title="`Erfasst: ${task.tracked_hours || 0} Std. ${task.budget_hours ? `/ Budget: ${task.budget_hours} Std.` : ''}`"
+                    >
+                      <span>⏱️</span>
+                      <span>{{ task.tracked_hours || 0 }}h</span>
+                      <span v-if="task.budget_hours" class="text-slate-400">/{{ task.budget_hours }}h</span>
+                    </span>
                   </div>
                   <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
                 </div>
@@ -342,9 +381,9 @@
 
               <div
                 v-if="!list.tasks || list.tasks.length === 0"
-                class="py-6 text-center text-xs font-semibold text-slate-500 border border-dashed border-slate-300 rounded-2xl bg-white/70 shadow-xs"
+                class="p-6 text-center text-xs font-semibold text-slate-400 border-2 border-dashed border-slate-200/90 rounded-2xl bg-white/70"
               >
-                Hier ablegen oder Aufgabe hinzufügen
+                Noch keine Aufgaben
               </div>
             </div>
 
@@ -359,24 +398,25 @@
           </div>
         </div>
 
-        <!-- MODE B: TABLE / LISTE -->
-        <div v-else class="space-y-6">
+        <!-- MODE B: TABLE / LIST (TABULAR MEISTERTASK VIEW) -->
+        <div v-else-if="taskViewMode === 'table'" class="space-y-6">
           <div
             v-for="list in lists"
             :key="list.id"
-            class="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm"
+            class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm"
           >
-            <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div class="flex items-center space-x-2">
-                <span class="text-sm font-black text-slate-900">{{ list.title }}</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
+                <span class="w-3 h-3 rounded-full bg-cyan-500"></span>
+                <h3 class="text-sm font-black text-slate-900">{{ list.title }}</h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-white text-slate-600 font-bold border border-slate-200">
                   {{ list.tasks?.length || 0 }}
                 </span>
               </div>
               <button
                 v-if="userRole !== 'viewer'"
                 @click="openNewTaskModal(list.id)"
-                class="text-xs font-bold text-cyan-700 hover:text-cyan-800"
+                class="text-xs font-bold text-[#00A3C4] hover:text-[#008ba8] hover:underline"
               >
                 + Aufgabe erfassen
               </button>
@@ -392,6 +432,7 @@
                   <tr>
                     <th class="py-2.5 px-4">Titel & Beschreibung</th>
                     <th class="py-2.5 px-4">Status</th>
+                    <th class="py-2.5 px-4">Aufwand & Budget</th>
                     <th class="py-2.5 px-4">Fälligkeit</th>
                     <th class="py-2.5 px-4">Felder</th>
                     <th class="py-2.5 px-4 text-right">Aktion</th>
@@ -422,6 +463,19 @@
                       >
                         {{ task.status }}
                       </span>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center space-x-1.5">
+                        <span class="font-bold text-slate-900">⏱️ {{ task.tracked_hours || 0 }} Std.</span>
+                        <span v-if="task.budget_hours" class="text-[10px] text-slate-500 font-medium">/ {{ task.budget_hours }} Std.</span>
+                      </div>
+                      <div v-if="task.budget_hours > 0" class="w-20 bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                        <div
+                          class="h-1.5 rounded-full"
+                          :class="(task.tracked_hours || 0) > task.budget_hours ? 'bg-rose-500' : 'bg-cyan-600'"
+                          :style="{ width: Math.min(100, Math.round(((task.tracked_hours || 0) / task.budget_hours) * 100)) + '%' }"
+                        ></div>
+                      </div>
                     </td>
                     <td class="py-3 px-4">
                       <span v-if="task.due_date" class="text-slate-800 font-medium">
@@ -599,6 +653,44 @@
               </select>
             </div>
 
+            <!-- Währung & Budget-Einstellungen -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Projekt-Währung</label>
+                <select
+                  v-model="settingsForm.currency"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="CHF">CHF (Schweizer Franken)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Budget (Stunden)</label>
+                <input
+                  v-model="settingsForm.budget_hours"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="z.B. 40"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Budget (Betrag)</label>
+                <input
+                  v-model="settingsForm.budget_amount"
+                  type="number"
+                  step="10"
+                  min="0"
+                  :placeholder="'z.B. 5000 ' + (settingsForm.currency || 'CHF')"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+              </div>
+            </div>
+
             <!-- Project-level Custom Fields Input -->
             <div v-if="projectCustomFields.length > 0" class="pt-4 border-t border-slate-100 space-y-3">
               <h4 class="text-xs font-bold text-cyan-800 uppercase tracking-wider">
@@ -706,6 +798,201 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 5: ZEITERFASSUNG & AUDIT-PROTOKOLL -->
+    <div v-else-if="currentView === 'time'" class="space-y-6">
+      <!-- Header & Action Card -->
+      <div class="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <span>⏱️</span>
+              <span>Zeiterfassung & Controlling</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Erfasse Arbeitszeiten auf dieses Gesamtprojekt oder auf konkrete Aufgaben. Manuelle Einträge werden mit einem Stern (*) gekennzeichnet.
+            </p>
+          </div>
+          <button
+            v-if="userRole !== 'viewer'"
+            @click="openProjectTimeModal()"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
+          >
+            <span>+</span>
+            <span>Zeit erfassen</span>
+          </button>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div class="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-100">
+            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-800">Gesamtaufwand</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+              {{ projectTimeSummary.totalHours || 0 }} <span class="text-xs font-bold text-slate-500">Std.</span>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">
+              {{ projectTimeSummary.totalMinutes || 0 }} Min. rapportiert
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">Stunden-Budget</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+              {{ project?.budget_hours ? project.budget_hours + ' Std.' : 'Kein Limit' }}
+            </div>
+            <div v-if="project?.budget_hours" class="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div
+                class="h-1.5 rounded-full transition-all"
+                :class="(projectTimeSummary.totalHours || 0) > project.budget_hours ? 'bg-rose-500' : 'bg-cyan-600'"
+                :style="{ width: Math.min(100, Math.round(((projectTimeSummary.totalHours || 0) / project.budget_hours) * 100)) + '%' }"
+              ></div>
+            </div>
+            <div v-if="project?.budget_hours" class="text-[10px] text-slate-500 mt-1">
+              {{ Math.round(((projectTimeSummary.totalHours || 0) / project.budget_hours) * 100) }}% verbraucht
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">Gesamtkosten</span>
+            <div class="text-xl sm:text-2xl font-black text-emerald-900 mt-1">
+              {{ projectTimeSummary.totalCost?.toFixed(2) || '0.00' }} <span class="text-xs font-bold text-emerald-700">{{ project?.currency || 'CHF' }}</span>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">
+              Basierend auf Stundensätzen
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">Kosten-Budget</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+              {{ project?.budget_amount ? project.budget_amount.toFixed(2) + ' ' + (project.currency || 'CHF') : 'Kein Limit' }}
+            </div>
+            <div v-if="project?.budget_amount" class="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div
+                class="h-1.5 rounded-full transition-all"
+                :class="(projectTimeSummary.totalCost || 0) > project.budget_amount ? 'bg-rose-500' : 'bg-emerald-600'"
+                :style="{ width: Math.min(100, Math.round(((projectTimeSummary.totalCost || 0) / project.budget_amount) * 100)) + '%' }"
+              ></div>
+            </div>
+            <div v-if="project?.budget_amount" class="text-[10px] text-slate-500 mt-1">
+              {{ Math.round(((projectTimeSummary.totalCost || 0) / project.budget_amount) * 100) }}% verbraucht
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Audit Protocol Table Card -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <!-- Filter bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="text-xs font-black uppercase tracking-wider text-slate-500">Filter:</span>
+            <select
+              v-model="timeFilterTask"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-cyan-600"
+            >
+              <option value="">Alle Buchungen (Projekt & Aufgaben)</option>
+              <option value="__project__">Nur Gesamtprojekt (ohne Aufgabe)</option>
+              <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                Aufgabe: {{ t.title }}
+              </option>
+            </select>
+
+            <select
+              v-model="timeFilterUser"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-cyan-600"
+            >
+              <option value="">Alle Mitarbeiter</option>
+              <option :value="user?.id">Ich ({{ user?.name || user?.email }})</option>
+              <option v-for="m in members" :key="m.user_id" :value="m.user_id">
+                {{ m.name || m.email }}
+              </option>
+            </select>
+          </div>
+
+          <div class="text-xs text-slate-500 font-bold">
+            {{ filteredTimeEntries.length }} {{ filteredTimeEntries.length === 1 ? 'Eintrag' : 'Einträge' }}
+          </div>
+        </div>
+
+        <!-- Entries Table -->
+        <div v-if="loadingTimeEntries" class="text-center py-12 text-xs text-slate-400">
+          Lade Zeiterfassungsdaten...
+        </div>
+        <div v-else-if="filteredTimeEntries.length === 0" class="text-center py-12 text-xs text-slate-400">
+          Keine Zeiteinträge für diesen Filter vorhanden.
+        </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Datum</th>
+                <th class="py-3 px-4">Wer</th>
+                <th class="py-3 px-4">Rapportiert auf</th>
+                <th class="py-3 px-4">Dauer</th>
+                <th class="py-3 px-4">Stundensatz</th>
+                <th class="py-3 px-4">Kosten</th>
+                <th class="py-3 px-4">Tätigkeit / Notiz</th>
+                <th v-if="userRole !== 'viewer'" class="py-3 px-4 text-right">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr v-for="e in filteredTimeEntries" :key="e.id" class="hover:bg-slate-50/80 transition">
+                <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">
+                  {{ e.entry_date ? new Date(e.entry_date).toLocaleDateString('de-CH') : '-' }}
+                </td>
+                <td class="py-3 px-4 whitespace-nowrap">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 rounded-full bg-cyan-100 text-cyan-800 text-[10px] font-black flex items-center justify-center">
+                      {{ (e.user_name || '?').charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="font-medium text-slate-800">{{ e.user_name }}</span>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <span v-if="e.task_title" class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                    Aufgabe: {{ e.task_title }}
+                  </span>
+                  <span v-else class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                    Gesamtprojekt
+                  </span>
+                </td>
+                <td class="py-3 px-4 whitespace-nowrap font-bold text-slate-900">
+                  <span>{{ (e.duration_minutes / 60).toFixed(1) }} Std.</span>
+                  <span class="text-[10px] text-slate-500 font-normal ml-1">({{ e.duration_minutes }}m)</span>
+                  <span v-if="e.is_manual" class="text-rose-600 font-black text-sm ml-0.5 select-none" title="Manuell erfasst oder angepasst">*</span>
+                </td>
+                <td class="py-3 px-4 whitespace-nowrap text-slate-600">
+                  {{ e.hourly_rate ? e.hourly_rate.toFixed(2) + ' ' + (project?.currency || 'CHF') : '-' }}
+                </td>
+                <td class="py-3 px-4 whitespace-nowrap font-bold text-emerald-800">
+                  {{ e.cost ? e.cost.toFixed(2) + ' ' + (project?.currency || 'CHF') : '-' }}
+                </td>
+                <td class="py-3 px-4 max-w-xs truncate text-slate-600">
+                  {{ e.description || '-' }}
+                </td>
+                <td v-if="userRole !== 'viewer'" class="py-3 px-4 text-right whitespace-nowrap space-x-2">
+                  <button
+                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                    @click="openEditTimeModal(e)"
+                    class="text-cyan-700 hover:text-cyan-900 font-bold hover:underline"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                    @click="deleteTimeEntry(e.id)"
+                    class="text-rose-600 hover:text-rose-800 font-bold hover:underline"
+                  >
+                    Löschen
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1267,6 +1554,152 @@
                 >
                   + Hinzufügen
                 </button>
+              </div>
+            </div>
+
+            <!-- Zeiterfassung & Budget für diese Aufgabe -->
+            <div class="p-5 rounded-2xl bg-cyan-50/40 border border-cyan-200">
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                  <span>⏱️</span>
+                  <span>Zeiterfassung & Budget</span>
+                </label>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs font-bold text-slate-700">
+                    Aufwand: <strong>{{ drawerTask.tracked_hours || 0 }} Std.</strong>
+                  </span>
+                  <span v-if="drawerTask.budget_hours" class="text-xs text-slate-500 font-medium">
+                    / {{ drawerTask.budget_hours }} Std.
+                  </span>
+                </div>
+              </div>
+
+              <!-- Budget Inputs -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Stunden)</label>
+                  <input
+                    v-model="drawerTask.budget_hours"
+                    @blur="autoSaveDrawer"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    placeholder="z.B. 8"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Betrag in {{ project?.currency || 'CHF' }})</label>
+                  <input
+                    v-model="drawerTask.budget_amount"
+                    @blur="autoSaveDrawer"
+                    type="number"
+                    step="10"
+                    min="0"
+                    placeholder="z.B. 1000"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              <!-- Progress bar if budget exists -->
+              <div v-if="drawerTask.budget_hours > 0" class="w-full bg-slate-200 rounded-full h-2 mb-4 overflow-hidden">
+                <div
+                  class="h-2 rounded-full transition-all"
+                  :class="(drawerTask.tracked_hours || 0) > drawerTask.budget_hours ? 'bg-rose-500' : 'bg-cyan-600'"
+                  :style="{ width: Math.min(100, Math.round(((drawerTask.tracked_hours || 0) / drawerTask.budget_hours) * 100)) + '%' }"
+                ></div>
+              </div>
+
+              <!-- Quick Time Logging Form -->
+              <div v-if="userRole !== 'viewer'" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5 mb-3">
+                <div class="text-[11px] font-black uppercase tracking-wider text-slate-600">Zeit auf diese Aufgabe buchen</div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Dauer (Std.)</label>
+                    <input
+                      v-model="drawerTimeForm.duration_hours"
+                      type="number"
+                      step="0.25"
+                      min="0.05"
+                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-cyan-600"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Datum</label>
+                    <input
+                      v-model="drawerTimeForm.entry_date"
+                      type="date"
+                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                    />
+                  </div>
+                  <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Stundensatz ({{ project?.currency || 'CHF' }})</label>
+                    <input
+                      v-model="drawerTimeForm.hourly_rate"
+                      type="number"
+                      step="5"
+                      min="0"
+                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                    />
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    v-model="drawerTimeForm.description"
+                    placeholder="Beschreibung / Notiz..."
+                    class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                  />
+                  <button
+                    @click="addTaskTimeEntry"
+                    type="button"
+                    class="taskster_button px-4 text-xs h-[34px] rounded-lg"
+                  >
+                    + Buchen
+                  </button>
+                </div>
+              </div>
+
+              <!-- List of recorded entries for this task -->
+              <div v-if="drawerTimeEntries.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div
+                  v-for="te in drawerTimeEntries"
+                  :key="te.id"
+                  class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-xs"
+                >
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900">
+                      {{ (te.duration_minutes / 60).toFixed(1) }} Std.
+                      <span v-if="te.is_manual" class="text-rose-600 font-black text-sm ml-0.5" title="Manuell erfasst oder angepasst">*</span>
+                    </span>
+                    <span class="text-slate-400">·</span>
+                    <span class="text-slate-600">{{ new Date(te.entry_date).toLocaleDateString('de-CH') }}</span>
+                    <span class="text-slate-400">·</span>
+                    <span class="text-slate-700 font-medium">{{ te.user_name }}</span>
+                    <span v-if="te.description" class="text-slate-500 italic max-w-[160px] truncate">({{ te.description }})</span>
+                  </div>
+                  <div v-if="userRole !== 'viewer'" class="flex items-center space-x-2">
+                    <button
+                      v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                      @click="openEditTimeModal(te)"
+                      class="text-cyan-700 hover:text-cyan-900 font-bold text-[11px]"
+                    >
+                      Ändern
+                    </button>
+                    <button
+                      v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                      @click="deleteTimeEntry(te.id)"
+                      class="text-rose-600 hover:text-rose-800 font-bold text-[11px]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-[11px] text-slate-500 italic text-center py-2">
+                Noch keine Zeiten auf diese Aufgabe gebucht.
               </div>
             </div>
 
@@ -2029,6 +2462,162 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal: Zeit erfassen (Projekt oder Aufgabe) -->
+    <div v-if="showProjectTimeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-black text-slate-900 mb-1">⏱️ Zeit erfassen</h3>
+        <p class="text-xs text-slate-500 mb-4">
+          Buche geleistete Stunden auf dieses Gesamtprojekt oder auf eine konkrete Aufgabe.
+        </p>
+
+        <form @submit.prevent="saveProjectTime" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Rapportieren auf</label>
+            <select
+              v-model="projectTimeForm.task_id"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            >
+              <option value="">🏢 Gesamtprojekt (ohne Aufgabe)</option>
+              <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                📋 Aufgabe: {{ t.title }}
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Dauer (Stunden)</label>
+              <input
+                v-model="projectTimeForm.duration_hours"
+                type="number"
+                step="0.25"
+                min="0.05"
+                required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Datum</label>
+              <input
+                v-model="projectTimeForm.entry_date"
+                type="date"
+                required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stundensatz ({{ project?.currency || 'CHF' }})</label>
+            <input
+              v-model="projectTimeForm.hourly_rate"
+              type="number"
+              step="5"
+              min="0"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tätigkeit / Beschreibung</label>
+            <textarea
+              v-model="projectTimeForm.description"
+              rows="3"
+              placeholder="Was wurde erledigt?"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              @click="showProjectTimeModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              Zeit buchen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Zeiteintrag bearbeiten -->
+    <div v-if="showEditTimeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-lg font-black text-slate-900 mb-1">✏️ Zeiteintrag anpassen</h3>
+        <p class="text-xs text-slate-500 mb-4">
+          Manuell angepasste Einträge werden im Protokoll mit einem Stern (*) gekennzeichnet.
+        </p>
+
+        <form @submit.prevent="saveEditTime" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Dauer (Stunden)</label>
+              <input
+                v-model="editTimeForm.duration_hours"
+                type="number"
+                step="0.25"
+                min="0.05"
+                required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Datum</label>
+              <input
+                v-model="editTimeForm.entry_date"
+                type="date"
+                required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stundensatz ({{ project?.currency || 'CHF' }})</label>
+            <input
+              v-model="editTimeForm.hourly_rate"
+              type="number"
+              step="5"
+              min="0"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tätigkeit / Beschreibung</label>
+            <textarea
+              v-model="editTimeForm.description"
+              rows="3"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              @click="showEditTimeModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              Änderungen speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2045,8 +2634,45 @@ const members = ref<any[]>([])
 const journalEntries = ref<any[]>([])
 const loading = ref(true)
 
-const currentView = ref<'tasks' | 'journal' | 'team' | 'settings'>('tasks')
+const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
+
+// Zeiterfassung State
+const projectTimeEntries = ref<any[]>([])
+const projectTimeSummary = ref<{ totalMinutes: number; totalHours: number; totalCost: number }>({ totalMinutes: 0, totalHours: 0, totalCost: 0 })
+const loadingTimeEntries = ref(false)
+const timeFilterTask = ref('')
+const timeFilterUser = ref('')
+
+// Direct project time modal
+const showProjectTimeModal = ref(false)
+const projectTimeForm = ref({
+  task_id: '',
+  duration_hours: 1,
+  entry_date: new Date().toISOString().substring(0, 10),
+  description: '',
+  hourly_rate: 0
+})
+
+// Edit time entry modal (used both for project & task drawer)
+const showEditTimeModal = ref(false)
+const editingTimeEntry = ref<any>(null)
+const editTimeForm = ref({
+  id: '',
+  duration_hours: 0,
+  entry_date: '',
+  description: '',
+  hourly_rate: 0
+})
+
+// Task drawer quick time form
+const drawerTimeForm = ref({
+  duration_hours: 1,
+  entry_date: new Date().toISOString().substring(0, 10),
+  description: '',
+  hourly_rate: 0
+})
+const drawerTimeEntries = ref<any[]>([])
 
 // Drag & Drop
 const draggedTask = ref<any>(null)
@@ -2084,6 +2710,9 @@ const logicDependsOnValue = ref('')
 const settingsForm = ref<any>({
   title: '',
   status: 'active',
+  currency: 'CHF',
+  budget_hours: null,
+  budget_amount: null,
   custom_data: {}
 })
 const savingProjectSettings = ref(false)
@@ -2171,6 +2800,27 @@ const projectCustomFields = computed(() => {
   return fields.value.filter((f: any) => f.entity_type === 'project')
 })
 
+const allProjectTasks = computed(() => {
+  const arr: any[] = []
+  for (const l of lists.value) {
+    if (l.tasks) {
+      for (const t of l.tasks) {
+        arr.push(t)
+      }
+    }
+  }
+  return arr
+})
+
+const filteredTimeEntries = computed(() => {
+  return projectTimeEntries.value.filter(entry => {
+    if (timeFilterTask.value === '__project__' && entry.task_id) return false
+    if (timeFilterTask.value && timeFilterTask.value !== '__project__' && entry.task_id !== timeFilterTask.value) return false
+    if (timeFilterUser.value && entry.user_id !== timeFilterUser.value) return false
+    return true
+  })
+})
+
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
   return f ? f.label : key
@@ -2253,6 +2903,9 @@ const loadProjectData = async () => {
     lists.value = res.lists || []
     fields.value = res.fields || []
     members.value = res.members || []
+    if (currentView.value === 'time') {
+      await loadProjectTimeEntries()
+    }
   } catch (err: any) {
     if (err.statusCode === 404) {
       alert('Zugriff verweigert oder Projekt nicht gefunden.')
@@ -2263,11 +2916,158 @@ const loadProjectData = async () => {
   }
 }
 
+const loadProjectTimeEntries = async () => {
+  loadingTimeEntries.value = true
+  try {
+    const res = await $fetch<any>(`/api/time-entries?project_id=${projectId}`, { headers: authHeaders() })
+    projectTimeEntries.value = res.entries || []
+    projectTimeSummary.value = res.summary || { totalMinutes: 0, totalHours: 0, totalCost: 0 }
+  } catch (err) {
+    console.error('Failed to load time entries', err)
+  } finally {
+    loadingTimeEntries.value = false
+  }
+}
+
+const openProjectTimeModal = (preselectedTaskId = '') => {
+  projectTimeForm.value = {
+    task_id: preselectedTaskId,
+    duration_hours: 1,
+    entry_date: new Date().toISOString().substring(0, 10),
+    description: '',
+    hourly_rate: user.value?.hourly_rate || 0
+  }
+  showProjectTimeModal.value = true
+}
+
+const saveProjectTime = async () => {
+  try {
+    const durationMinutes = Math.round(Number(projectTimeForm.value.duration_hours || 0) * 60)
+    if (durationMinutes <= 0) {
+      alert('Bitte eine Dauer grösser als 0 angeben.')
+      return
+    }
+    await $fetch('/api/time-entries', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        task_id: projectTimeForm.value.task_id || null,
+        duration_minutes: durationMinutes,
+        entry_date: projectTimeForm.value.entry_date,
+        description: projectTimeForm.value.description,
+        hourly_rate: Number(projectTimeForm.value.hourly_rate || 0)
+      }
+    })
+    showProjectTimeModal.value = false
+    await loadProjectTimeEntries()
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit')
+  }
+}
+
+const openEditTimeModal = (entry: any) => {
+  editingTimeEntry.value = entry
+  editTimeForm.value = {
+    id: entry.id,
+    duration_hours: Math.round((entry.duration_minutes / 60) * 100) / 100,
+    entry_date: entry.entry_date ? entry.entry_date.substring(0, 10) : '',
+    description: entry.description || '',
+    hourly_rate: entry.hourly_rate || 0
+  }
+  showEditTimeModal.value = true
+}
+
+const saveEditTime = async () => {
+  try {
+    const durationMinutes = Math.round(Number(editTimeForm.value.duration_hours || 0) * 60)
+    if (durationMinutes <= 0) {
+      alert('Bitte eine Dauer grösser als 0 angeben.')
+      return
+    }
+    await $fetch(`/api/time-entries/${editTimeForm.value.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        duration_minutes: durationMinutes,
+        entry_date: editTimeForm.value.entry_date,
+        description: editTimeForm.value.description,
+        hourly_rate: Number(editTimeForm.value.hourly_rate || 0)
+      }
+    })
+    showEditTimeModal.value = false
+    if (showTaskDrawer.value && drawerTask.value?.id) {
+      const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
+      drawerTimeEntries.value = res.timeEntries || []
+      drawerTask.value.tracked_hours = res.task.tracked_hours
+    }
+    await loadProjectTimeEntries()
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren der Zeit')
+  }
+}
+
+const deleteTimeEntry = async (id: string) => {
+  if (!confirm('Möchtest du diesen Zeiteintrag wirklich löschen?')) return
+  try {
+    await $fetch(`/api/time-entries/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    if (showTaskDrawer.value && drawerTask.value?.id) {
+      const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
+      drawerTimeEntries.value = res.timeEntries || []
+      drawerTask.value.tracked_hours = res.task.tracked_hours
+    }
+    await loadProjectTimeEntries()
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Zeiteintrags')
+  }
+}
+
+const addTaskTimeEntry = async () => {
+  if (!drawerTask.value?.id) return
+  const durationMinutes = Math.round(Number(drawerTimeForm.value.duration_hours || 0) * 60)
+  if (durationMinutes <= 0) {
+    alert('Bitte eine Dauer grösser als 0 angeben.')
+    return
+  }
+  try {
+    await $fetch('/api/time-entries', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        task_id: drawerTask.value.id,
+        duration_minutes: durationMinutes,
+        entry_date: drawerTimeForm.value.entry_date,
+        description: drawerTimeForm.value.description,
+        hourly_rate: Number(drawerTimeForm.value.hourly_rate || user.value?.hourly_rate || 0)
+      }
+    })
+    drawerTimeForm.value.description = ''
+    drawerTimeForm.value.duration_hours = 1
+    const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
+    drawerTimeEntries.value = res.timeEntries || []
+    drawerTask.value.tracked_hours = res.task.tracked_hours
+    await loadProjectTimeEntries()
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit')
+  }
+}
+
 const initSettingsTab = () => {
   if (project.value) {
     settingsForm.value = {
       title: project.value.title,
       status: project.value.status,
+      currency: project.value.currency || 'CHF',
+      budget_hours: project.value.budget_hours ?? null,
+      budget_amount: project.value.budget_amount ?? null,
       custom_data: { ...(project.value.custom_data || {}) }
     }
   }
@@ -2282,6 +3082,9 @@ const saveProjectSettings = async () => {
       body: {
         title: settingsForm.value.title,
         status: settingsForm.value.status,
+        currency: settingsForm.value.currency || 'CHF',
+        budget_hours: settingsForm.value.budget_hours ? Number(settingsForm.value.budget_hours) : null,
+        budget_amount: settingsForm.value.budget_amount ? Number(settingsForm.value.budget_amount) : null,
         custom_data: settingsForm.value.custom_data
       }
     })
@@ -2639,11 +3442,21 @@ const openTaskDrawer = async (task: any) => {
       custom_data: { ...(t.custom_data || {}) },
       assigned_to: t.assigned_to || '',
       priority: t.priority || 'normal',
-      color: t.color || ''
+      color: t.color || '',
+      budget_hours: t.budget_hours ?? null,
+      budget_amount: t.budget_amount ?? null,
+      tracked_hours: t.tracked_hours ?? 0
     }
     drawerSubtasks.value = res.subtasks || []
     drawerComments.value = res.comments || []
     drawerDocuments.value = res.documents || []
+    drawerTimeEntries.value = res.timeEntries || []
+    drawerTimeForm.value = {
+      duration_hours: 1,
+      entry_date: new Date().toISOString().substring(0, 10),
+      description: '',
+      hourly_rate: user.value?.hourly_rate || 0
+    }
   } catch (err) {
     console.error('Failed to load task detail', err)
   }
@@ -2673,7 +3486,9 @@ const autoSaveDrawer = async () => {
         priority: drawerTask.value.priority,
         color: drawerTask.value.color || null,
         tags: drawerTask.value.tags,
-        checklist: drawerTask.value.checklist
+        checklist: drawerTask.value.checklist,
+        budget_hours: drawerTask.value.budget_hours ? Number(drawerTask.value.budget_hours) : null,
+        budget_amount: drawerTask.value.budget_amount ? Number(drawerTask.value.budget_amount) : null
       }
     })
   } catch (err) {
@@ -3211,6 +4026,14 @@ const inviteMember = async () => {
     alert(err.data?.statusMessage || 'Fehler beim Einladen des Mitglieds')
   }
 }
+
+watch(currentView, (val) => {
+  if (val === 'time') {
+    loadProjectTimeEntries()
+  } else if (val === 'settings') {
+    initSettingsTab()
+  }
+})
 
 onMounted(async () => {
   await loadProjectData()

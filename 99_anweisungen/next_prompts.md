@@ -1,0 +1,2 @@
+1. Wir brauchen auch eine detailierte Admin Verwaltung. 
+die Admins gibt es mehrstufig. Superadmin sieht alles. dann gibt es Admin und je nach dem welche subrollen oder berechtigungen er noch bekommt, kann er mehr tun. Zum beispiel hat er Berechtigung um user ändern zu können, oder neue anlegen zu können. Oder finance der sieht die bestellungen und so weiter. 

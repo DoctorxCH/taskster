@@ -65,6 +65,13 @@ function ensureTables($pdo) {
             "ALTER TABLE tasks ADD COLUMN color VARCHAR(64) DEFAULT NULL",
             "ALTER TABLE tasks ADD COLUMN tags JSON",
             "ALTER TABLE tasks ADD COLUMN checklist JSON",
+            "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) DEFAULT NULL",
+            "ALTER TABLE users ADD COLUMN currency VARCHAR(10) DEFAULT 'CHF'",
+            "ALTER TABLE projects ADD COLUMN currency VARCHAR(10) DEFAULT 'CHF'",
+            "ALTER TABLE projects ADD COLUMN budget_hours DECIMAL(10,2) DEFAULT NULL",
+            "ALTER TABLE projects ADD COLUMN budget_amount DECIMAL(12,2) DEFAULT NULL",
+            "ALTER TABLE tasks ADD COLUMN budget_hours DECIMAL(10,2) DEFAULT NULL",
+            "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) DEFAULT NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -91,6 +98,25 @@ function ensureTables($pdo) {
               sort_order INT NOT NULL DEFAULT 0,
               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
               INDEX idx_subtasks_task (task_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS time_entries (
+              id VARCHAR(64) PRIMARY KEY,
+              project_id VARCHAR(64) NOT NULL,
+              task_id VARCHAR(64) NULL,
+              user_id VARCHAR(64) NOT NULL,
+              duration_minutes INT NOT NULL,
+              entry_date DATE NOT NULL,
+              description TEXT NULL,
+              is_manual TINYINT(1) NOT NULL DEFAULT 1,
+              hourly_rate DECIMAL(10,2) NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              INDEX idx_time_project (project_id),
+              INDEX idx_time_task (task_id),
+              INDEX idx_time_user (user_id),
+              INDEX idx_time_date (entry_date)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
     } catch (Exception $e) {
@@ -724,17 +750,21 @@ try {
                 'company_plan' => $u['company_plan'],
                 'company_settings' => $settings,
                 'is_superadmin' => (bool)$u['is_superadmin'],
-                'is_pro' => (bool)$u['is_pro']
+                'is_pro' => (bool)$u['is_pro'],
+                'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
+                'currency' => $u['currency'] ?? 'CHF'
             ]
         ]);
     }
 
-    // 3b. PATCH auth/profile (Update user settings: name, password)
+    // 3b. PATCH auth/profile (Update user settings: name, password, hourly_rate, currency)
     if ($path === 'auth/profile' && ($method === 'PATCH' || $method === 'PUT')) {
         $authUser = requireAuth();
         $name = trim($body['name'] ?? '');
         $currentPassword = $body['current_password'] ?? '';
         $newPassword = $body['new_password'] ?? '';
+        $hourlyRate = array_key_exists('hourly_rate', $body) ? ($body['hourly_rate'] !== null ? floatval($body['hourly_rate']) : null) : null;
+        $currency = isset($body['currency']) ? trim($body['currency']) : null;
 
         if (!$name) errorResponse('Name erforderlich', 400);
 
@@ -751,9 +781,9 @@ try {
                 errorResponse('Das neue Passwort muss mindestens 8 Zeichen lang sein', 400);
             }
             $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-            $db->prepare("UPDATE users SET name = ?, password_hash = ? WHERE id = ?")->execute([$name, $newHash, $authUser['id']]);
+            $db->prepare("UPDATE users SET name = ?, password_hash = ?, hourly_rate = COALESCE(?, hourly_rate), currency = COALESCE(?, currency) WHERE id = ?")->execute([$name, $newHash, $hourlyRate, $currency, $authUser['id']]);
         } else {
-            $db->prepare("UPDATE users SET name = ? WHERE id = ?")->execute([$name, $authUser['id']]);
+            $db->prepare("UPDATE users SET name = ?, hourly_rate = COALESCE(?, hourly_rate), currency = COALESCE(?, currency) WHERE id = ?")->execute([$name, $hourlyRate, $currency, $authUser['id']]);
         }
 
         // Return updated user
@@ -777,7 +807,9 @@ try {
                 'company_name' => $u['company_name'],
                 'company_plan' => $u['company_plan'],
                 'is_superadmin' => (bool)$u['is_superadmin'],
-                'is_pro' => (bool)$u['is_pro']
+                'is_pro' => (bool)$u['is_pro'],
+                'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
+                'currency' => $u['currency'] ?? 'CHF'
             ]
         ]);
     }
@@ -892,12 +924,29 @@ try {
             ORDER BY p.created_at DESC
         ");
         $pStmt->execute([$fldId]);
-        $projects = array_map(function($p) {
+        $folderTotalMinutes = 0;
+        $folderTotalBudgetHours = 0;
+        $folderTotalBudgetAmount = 0;
+        $projects = array_map(function($p) use ($db, &$folderTotalMinutes, &$folderTotalBudgetHours, &$folderTotalBudgetAmount) {
             $p['custom_data'] = !empty($p['custom_data']) ? (is_string($p['custom_data']) ? json_decode($p['custom_data'], true) : $p['custom_data']) : [];
+            $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = ?");
+            $tHoursStmt->execute([$p['id']]);
+            $pMinutes = (int)($tHoursStmt->fetchColumn() ?: 0);
+            $p['tracked_hours'] = round($pMinutes / 60, 2);
+            $folderTotalMinutes += $pMinutes;
+            if (!empty($p['budget_hours'])) $folderTotalBudgetHours += floatval($p['budget_hours']);
+            if (!empty($p['budget_amount'])) $folderTotalBudgetAmount += floatval($p['budget_amount']);
             return $p;
         }, $pStmt->fetchAll());
 
-        jsonResponse(['folder' => $folder, 'fields' => $fields, 'projects' => $projects]);
+        $timeSummary = [
+            'totalMinutes' => $folderTotalMinutes,
+            'totalHours' => round($folderTotalMinutes / 60, 2),
+            'totalBudgetHours' => $folderTotalBudgetHours,
+            'totalBudgetAmount' => $folderTotalBudgetAmount
+        ];
+
+        jsonResponse(['folder' => $folder, 'fields' => $fields, 'projects' => $projects, 'timeSummary' => $timeSummary]);
     }
 
     // 7. POST folders/:id/fields
@@ -1018,6 +1067,12 @@ try {
         $project = $pStmt->fetch();
         if ($project) {
             $project['custom_data'] = !empty($project['custom_data']) ? (is_string($project['custom_data']) ? json_decode($project['custom_data'], true) : $project['custom_data']) : [];
+            $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE project_id = ?");
+            $tHoursStmt->execute([$projectId]);
+            $projectTotalMinutes = (int)($tHoursStmt->fetchColumn() ?: 0);
+            $project['tracked_hours'] = round($projectTotalMinutes / 60, 2);
+            $project['budget_hours'] = $project['budget_hours'] !== null ? floatval($project['budget_hours']) : null;
+            $project['budget_amount'] = $project['budget_amount'] !== null ? floatval($project['budget_amount']) : null;
         }
 
         // Fields
@@ -1051,10 +1106,19 @@ try {
 
         // Tasks for lists
         foreach ($accessibleLists as &$l) {
-            $tStmt = $db->prepare("SELECT * FROM tasks WHERE list_id = ? ORDER BY sort_order ASC, created_at DESC");
+            $tStmt = $db->prepare("
+                SELECT t.*, COALESCE((SELECT SUM(duration_minutes) FROM time_entries WHERE task_id = t.id), 0) as tracked_minutes
+                FROM tasks t
+                WHERE t.list_id = ?
+                ORDER BY t.sort_order ASC, t.created_at DESC
+            ");
             $tStmt->execute([$l['id']]);
             $l['tasks'] = array_map(function($t) {
                 $t['custom_data'] = !empty($t['custom_data']) ? (is_string($t['custom_data']) ? json_decode($t['custom_data'], true) : $t['custom_data']) : [];
+                $t['tracked_minutes'] = (int)($t['tracked_minutes'] ?? 0);
+                $t['tracked_hours'] = round($t['tracked_minutes'] / 60, 2);
+                $t['budget_hours'] = $t['budget_hours'] !== null ? floatval($t['budget_hours']) : null;
+                $t['budget_amount'] = $t['budget_amount'] !== null ? floatval($t['budget_amount']) : null;
                 return $t;
             }, $tStmt->fetchAll());
         }
@@ -1091,10 +1155,13 @@ try {
 
         $title = isset($body['title']) ? trim($body['title']) : $project['title'];
         $status = isset($body['status']) ? trim($body['status']) : $project['status'];
+        $currency = isset($body['currency']) ? trim($body['currency']) : ($project['currency'] ?? 'CHF');
+        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null ? floatval($body['budget_hours']) : null) : ($project['budget_hours'] ?? null);
+        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null ? floatval($body['budget_amount']) : null) : ($project['budget_amount'] ?? null);
         $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $project['custom_data'];
 
-        $db->prepare("UPDATE projects SET title = ?, status = ?, custom_data = ? WHERE id = ?")->execute([
-            $title, $status, $customData, $projectId
+        $db->prepare("UPDATE projects SET title = ?, status = ?, currency = ?, budget_hours = ?, budget_amount = ?, custom_data = ? WHERE id = ?")->execute([
+            $title, $status, $currency, $budgetHours, $budgetAmount, $customData, $projectId
         ]);
 
         jsonResponse(['success' => true]);
@@ -1286,10 +1353,12 @@ try {
         $color = array_key_exists('color', $body) ? ($body['color'] ?: null) : ($task['color'] ?? null);
         $tags = isset($body['tags']) ? json_encode($body['tags']) : ($task['tags'] ?? '[]');
         $checklist = isset($body['checklist']) ? json_encode($body['checklist']) : ($task['checklist'] ?? '[]');
+        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null ? floatval($body['budget_hours']) : null) : ($task['budget_hours'] ?? null);
+        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null ? floatval($body['budget_amount']) : null) : ($task['budget_amount'] ?? null);
 
-        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?, tags = ?, checklist = ? WHERE id = ?")->execute([
+        $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?, tags = ?, checklist = ?, budget_hours = ?, budget_amount = ? WHERE id = ?")->execute([
             $title, $desc, $status, $dueDate, $customData, $listId, $sortOrder,
-            $assignedTo, $priority, $color, $tags, $checklist, $taskId
+            $assignedTo, $priority, $color, $tags, $checklist, $budgetHours, $budgetAmount, $taskId
         ]);
 
         jsonResponse(['success' => true]);
@@ -1343,7 +1412,7 @@ try {
         jsonResponse(['success' => true]);
     }
 
-    // 13c. GET tasks/:id (detail with subtasks, comments)
+    // 13c. GET tasks/:id (detail with subtasks, comments, time entries)
     if (preg_match('#^tasks/([^/]+)$#', $path, $m) && $method === 'GET') {
         $user = requireAuth();
         $taskId = $m[1];
@@ -1357,6 +1426,13 @@ try {
         $task['custom_data'] = !empty($task['custom_data']) ? json_decode($task['custom_data'], true) : [];
         $task['tags'] = !empty($task['tags']) ? json_decode($task['tags'], true) : [];
         $task['checklist'] = !empty($task['checklist']) ? json_decode($task['checklist'], true) : [];
+
+        $tHoursStmt = $db->prepare("SELECT SUM(duration_minutes) FROM time_entries WHERE task_id = ?");
+        $tHoursStmt->execute([$taskId]);
+        $taskTrackedMinutes = (int)($tHoursStmt->fetchColumn() ?: 0);
+        $task['tracked_hours'] = round($taskTrackedMinutes / 60, 2);
+        $task['budget_hours'] = $task['budget_hours'] !== null ? floatval($task['budget_hours']) : null;
+        $task['budget_amount'] = $task['budget_amount'] !== null ? floatval($task['budget_amount']) : null;
 
         $assignee = null;
         if (!empty($task['assigned_to'])) {
@@ -1377,7 +1453,23 @@ try {
         $dStmt->execute([$taskId]);
         $documents = $dStmt->fetchAll();
 
-        jsonResponse(['task' => array_merge($task, ['assignee' => $assignee]), 'subtasks' => $subtasks, 'comments' => $comments, 'documents' => $documents]);
+        $teStmt = $db->prepare("
+            SELECT te.*, u.name as user_name
+            FROM time_entries te
+            JOIN users u ON u.id = te.user_id
+            WHERE te.task_id = ?
+            ORDER BY te.entry_date DESC, te.created_at DESC
+        ");
+        $teStmt->execute([$taskId]);
+        $timeEntries = $teStmt->fetchAll();
+
+        jsonResponse([
+            'task' => array_merge($task, ['assignee' => $assignee]),
+            'subtasks' => $subtasks,
+            'comments' => $comments,
+            'documents' => $documents,
+            'timeEntries' => $timeEntries
+        ]);
     }
 
     // 13d. POST tasks/:id/comments
@@ -1873,6 +1965,187 @@ try {
         }
         $tmplId = $m[1];
         $db->prepare("DELETE FROM project_templates WHERE id = ?")->execute([$tmplId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 28. GET time-entries
+    if ($path === 'time-entries' && $method === 'GET') {
+        $user = requireAuth();
+        $projectId = $_GET['project_id'] ?? null;
+        $taskId = $_GET['task_id'] ?? null;
+        $folderId = $_GET['folder_id'] ?? null;
+
+        if (!$projectId && !$taskId && !$folderId) {
+            errorResponse('project_id, task_id oder folder_id erforderlich', 400);
+        }
+
+        $query = "
+            SELECT te.*, u.name as user_name, t.title as task_title, p.title as project_title, p.currency as project_currency
+            FROM time_entries te
+            JOIN users u ON u.id = te.user_id
+            JOIN projects p ON p.id = te.project_id
+            LEFT JOIN tasks t ON t.id = te.task_id
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'read');
+            $query .= " AND te.project_id = ?";
+            $params[] = $projectId;
+        }
+
+        if ($taskId) {
+            $tStmt = $db->prepare("SELECT list_id FROM tasks WHERE id = ?");
+            $tStmt->execute([$taskId]);
+            $tRow = $tStmt->fetch();
+            if ($tRow) {
+                evaluateListAccess($user, $tRow['list_id'], 'read');
+            }
+            $query .= " AND te.task_id = ?";
+            $params[] = $taskId;
+        }
+
+        if ($folderId) {
+            $fStmt = $db->prepare("SELECT owner_id FROM project_folders WHERE id = ?");
+            $fStmt->execute([$folderId]);
+            $fRow = $fStmt->fetch();
+            if (!$fRow && empty($user['is_superadmin'])) {
+                errorResponse('Ordner nicht gefunden', 404);
+            }
+            $query .= " AND te.project_id IN (SELECT id FROM projects WHERE folder_id = ?)";
+            $params[] = $folderId;
+        }
+
+        $query .= " ORDER BY te.entry_date DESC, te.created_at DESC";
+        $stmt = $db->prepare($query);
+        $stmt->execute($params);
+        $rawEntries = $stmt->fetchAll();
+
+        $totalMinutes = 0;
+        $totalCost = 0;
+        $entries = array_map(function($e) use (&$totalMinutes, &$totalCost) {
+            $e['is_manual'] = (bool)$e['is_manual'];
+            $e['hourly_rate'] = $e['hourly_rate'] !== null ? floatval($e['hourly_rate']) : 0;
+            $e['duration_minutes'] = (int)$e['duration_minutes'];
+            $cost = round(($e['duration_minutes'] / 60) * $e['hourly_rate'], 2);
+            $e['cost'] = $cost;
+            $totalMinutes += $e['duration_minutes'];
+            $totalCost += $cost;
+            return $e;
+        }, $rawEntries);
+
+        jsonResponse([
+            'entries' => $entries,
+            'summary' => [
+                'totalMinutes' => $totalMinutes,
+                'totalHours' => round($totalMinutes / 60, 2),
+                'totalCost' => round($totalCost, 2)
+            ]
+        ]);
+    }
+
+    // 29. POST time-entries
+    if ($path === 'time-entries' && $method === 'POST') {
+        $user = requireAuth();
+        $projectId = trim($body['project_id'] ?? '');
+        $taskId = !empty($body['task_id']) ? trim($body['task_id']) : null;
+        $durationMinutes = (int)($body['duration_minutes'] ?? 0);
+        $entryDate = trim($body['entry_date'] ?? date('Y-m-d'));
+        $description = trim($body['description'] ?? '');
+        $hourlyRate = array_key_exists('hourly_rate', $body) && $body['hourly_rate'] !== null ? floatval($body['hourly_rate']) : floatval($user['hourly_rate'] ?? 0);
+
+        if (!$projectId || $durationMinutes <= 0) {
+            errorResponse('project_id und gültige duration_minutes erforderlich', 400);
+        }
+
+        $pAcc = evaluateProjectAccess($user, $projectId, 'write');
+        if ($pAcc['userRole'] === 'viewer') {
+            errorResponse('Viewer können keine Zeiten erfassen', 403);
+        }
+
+        if ($taskId) {
+            $tStmt = $db->prepare("SELECT list_id FROM tasks WHERE id = ?");
+            $tStmt->execute([$taskId]);
+            $tRow = $tStmt->fetch();
+            if ($tRow) {
+                evaluateListAccess($user, $tRow['list_id'], 'write');
+            }
+        }
+
+        $id = 'time_' . substr(bin2hex(random_bytes(8)), 0, 16);
+        $stmt = $db->prepare("
+            INSERT INTO time_entries (id, project_id, task_id, user_id, duration_minutes, entry_date, description, is_manual, hourly_rate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+        ");
+        $stmt->execute([$id, $projectId, $taskId, $user['id'], $durationMinutes, $entryDate, $description, $hourlyRate]);
+
+        jsonResponse([
+            'success' => true,
+            'entry' => [
+                'id' => $id,
+                'project_id' => $projectId,
+                'task_id' => $taskId,
+                'user_id' => $user['id'],
+                'duration_minutes' => $durationMinutes,
+                'entry_date' => $entryDate,
+                'description' => $description,
+                'is_manual' => true,
+                'hourly_rate' => $hourlyRate
+            ]
+        ]);
+    }
+
+    // 30. PUT time-entries/:id
+    if (preg_match('#^time-entries/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $entryId = $m[1];
+
+        $stmt = $db->prepare("SELECT * FROM time_entries WHERE id = ?");
+        $stmt->execute([$entryId]);
+        $existing = $stmt->fetch();
+        if (!$existing) {
+            errorResponse('Zeiteintrag nicht gefunden', 404);
+        }
+
+        $pAcc = evaluateProjectAccess($user, $existing['project_id'], 'write');
+        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin']) && empty($user['is_superadmin'])) {
+            errorResponse('Nur der Ersteller oder Projektleiter darf diesen Zeiteintrag bearbeiten', 403);
+        }
+
+        $durationMinutes = isset($body['duration_minutes']) ? (int)$body['duration_minutes'] : (int)$existing['duration_minutes'];
+        $entryDate = isset($body['entry_date']) ? trim($body['entry_date']) : $existing['entry_date'];
+        $description = isset($body['description']) ? trim($body['description']) : $existing['description'];
+        $hourlyRate = array_key_exists('hourly_rate', $body) && $body['hourly_rate'] !== null ? floatval($body['hourly_rate']) : floatval($existing['hourly_rate']);
+
+        $upStmt = $db->prepare("
+            UPDATE time_entries
+            SET duration_minutes = ?, entry_date = ?, description = ?, hourly_rate = ?, is_manual = 1
+            WHERE id = ?
+        ");
+        $upStmt->execute([$durationMinutes, $entryDate, $description, $hourlyRate, $entryId]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // 31. DELETE time-entries/:id
+    if (preg_match('#^time-entries/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $entryId = $m[1];
+
+        $stmt = $db->prepare("SELECT * FROM time_entries WHERE id = ?");
+        $stmt->execute([$entryId]);
+        $existing = $stmt->fetch();
+        if (!$existing) {
+            errorResponse('Zeiteintrag nicht gefunden', 404);
+        }
+
+        $pAcc = evaluateProjectAccess($user, $existing['project_id'], 'write');
+        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin']) && empty($user['is_superadmin'])) {
+            errorResponse('Nur der Ersteller oder Projektleiter darf diesen Zeiteintrag löschen', 403);
+        }
+
+        $db->prepare("DELETE FROM time_entries WHERE id = ?")->execute([$entryId]);
         jsonResponse(['success' => true]);
     }
 

@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS project_journals (
 CREATE TABLE IF NOT EXISTS project_documents (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+  task_id REFERENCES tasks(id) ON DELETE SET NULL,
   journal_id TEXT REFERENCES project_journals(id) ON DELETE SET NULL,
   file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
@@ -128,4 +128,21 @@ CREATE TABLE IF NOT EXISTS project_documents (
   storage_path TEXT NOT NULL,
   version INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  task_id REFERENCES tasks(id) ON DELETE SET NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  duration_minutes INTEGER NOT NULL,
+  hourly_rate REAL NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'CHF',
+  description TEXT,
+  entry_date TEXT NOT NULL,
+  is_manual INTEGER NOT NULL DEFAULT 1,
+  started_at TEXT,
+  ended_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT
 );

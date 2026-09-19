@@ -6,6 +6,7 @@ export default defineEventHandler((event) => {
 
   const user = db.prepare(`
     SELECT u.id, u.company_id, u.company_role, u.is_superadmin, u.is_pro, u.name, u.email,
+           u.hourly_rate, u.currency,
            c.name as company_name, c.subscription_plan as company_plan, c.settings as company_settings
     FROM users u
     LEFT JOIN companies c ON c.id = u.company_id
@@ -33,6 +34,8 @@ export default defineEventHandler((event) => {
       company_name: user.company_name,
       company_plan: user.company_plan,
       company_settings: parsedSettings,
+      hourly_rate: Number(user.hourly_rate) || 0,
+      currency: user.currency || 'CHF',
       is_superadmin: Boolean(user.is_superadmin),
       is_pro: Boolean(user.is_pro)
     }

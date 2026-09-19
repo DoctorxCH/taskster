@@ -181,6 +181,43 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id VARCHAR(64) PRIMARY KEY,
+      project_id VARCHAR(64) NOT NULL,
+      task_id VARCHAR(64) NULL,
+      user_id VARCHAR(64) NOT NULL,
+      duration_minutes INT NOT NULL,
+      hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+      currency VARCHAR(8) NOT NULL DEFAULT 'CHF',
+      description TEXT NULL,
+      entry_date VARCHAR(10) NOT NULL,
+      is_manual TINYINT(1) NOT NULL DEFAULT 1,
+      started_at DATETIME NULL,
+      ended_at DATETIME NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NULL,
+      INDEX idx_time_project (project_id),
+      INDEX idx_time_task (task_id),
+      INDEX idx_time_user (user_id),
+      INDEX idx_time_date (entry_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  // Column migrations for MySQL
+  const colMigrations = [
+    "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",
+    "ALTER TABLE users ADD COLUMN currency VARCHAR(8) NOT NULL DEFAULT 'CHF'",
+    "ALTER TABLE projects ADD COLUMN currency VARCHAR(8) NOT NULL DEFAULT 'CHF'",
+    "ALTER TABLE projects ADD COLUMN budget_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00",
+    "ALTER TABLE projects ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+    "ALTER TABLE tasks ADD COLUMN budget_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00",
+    "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+  ]
+  for (const sql of colMigrations) {
+    try { await conn.query(sql) } catch (_) {}
+  }
+
   console.log('Tables created. Seeding initial data...')
   const pwHash = bcrypt.hashSync('password123', 10)
 

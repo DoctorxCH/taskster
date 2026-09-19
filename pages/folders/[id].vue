@@ -61,6 +61,92 @@
         </div>
       </div>
 
+      <!-- Folder Time Tracking & Controlling Banner (Liquid Glass Card) -->
+      <div v-if="projects.length > 0" class="liquid_glass rounded-3xl p-6 sm:p-7 mb-8 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-800 text-xs font-black uppercase tracking-wider mb-1">
+              <span>⏱️</span>
+              <span>Zeiterfassung & Controlling-Übersicht</span>
+            </div>
+            <h3 class="text-lg font-black text-slate-900">Aufwandsanalyse im Projektordner</h3>
+            <p class="text-xs text-slate-600 font-medium mt-0.5">
+              Übersicht aller aufgewendeten Stunden und Budgets pro Projekt. (Hinweis: Auf Ordner kann nicht direkt rapportiert werden, nur auf Projekte oder Aufgaben).
+            </p>
+          </div>
+          
+          <div class="flex items-center space-x-3 shrink-0">
+            <div class="px-4 py-2 rounded-2xl bg-white/80 border border-slate-200 text-right shadow-xs">
+              <span class="text-[10px] text-slate-500 font-bold uppercase block">Gesamter Aufwand</span>
+              <span class="text-base font-black text-cyan-900">{{ timeSummary?.total_hours || 0 }} Std.</span>
+            </div>
+            <div v-if="timeSummary?.total_cost > 0" class="px-4 py-2 rounded-2xl bg-white/80 border border-slate-200 text-right shadow-xs">
+              <span class="text-[10px] text-slate-500 font-bold uppercase block">Gesamtkosten</span>
+              <span class="text-base font-black text-slate-900">{{ Number(timeSummary.total_cost).toLocaleString('de-CH') }} CHF</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown per Project (Visual Bars) -->
+        <div class="space-y-4">
+          <div
+            v-for="p in projects"
+            :key="p.id"
+            class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 shadow-xs hover:bg-white transition"
+          >
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <div class="flex items-center space-x-2.5">
+                <span class="text-base">📋</span>
+                <NuxtLink :to="`/projects/${p.id}`" class="text-xs font-black text-slate-900 hover:text-cyan-800 transition hover:underline">
+                  {{ p.title }}
+                </NuxtLink>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase" :class="p.status === 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-cyan-100 text-cyan-800 border border-cyan-200'">
+                  {{ p.status }}
+                </span>
+              </div>
+
+              <div class="flex items-center space-x-4 text-xs font-bold">
+                <span class="text-slate-700">
+                  Ist: <strong class="text-slate-900">{{ p.tracked_hours || 0 }} Std.</strong>
+                  <span v-if="p.budget_hours" class="text-slate-400 font-normal"> / {{ p.budget_hours }} Std.</span>
+                </span>
+                <span v-if="p.tracked_cost > 0" class="text-slate-600 font-medium">
+                  {{ Number(p.tracked_cost).toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}
+                </span>
+                <NuxtLink :to="`/projects/${p.id}`" class="text-cyan-700 hover:text-cyan-900 text-xs font-black hover:underline">
+                  Details & Zeit →
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- Visual Progress Bar for Project Budget -->
+            <div class="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden">
+              <div
+                v-if="p.budget_hours > 0"
+                class="h-2 rounded-full transition-all duration-300"
+                :class="(p.tracked_hours || 0) > p.budget_hours ? 'bg-rose-500' : ((p.tracked_hours || 0) / p.budget_hours >= 0.8 ? 'bg-amber-500' : 'bg-cyan-600')"
+                :style="{ width: Math.min(100, Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100)) + '%' }"
+              ></div>
+              <div
+                v-else
+                class="h-2 bg-cyan-400/60 rounded-full transition-all"
+                :style="{ width: Math.min(100, (p.tracked_hours || 0) * 5) + '%' }"
+              ></div>
+            </div>
+            
+            <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-1">
+              <span v-if="p.budget_hours > 0">
+                Budget-Auslastung: {{ Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100) }}%
+                <span v-if="(p.tracked_hours || 0) > p.budget_hours" class="text-rose-600 font-bold ml-1">⚠️ Budget überschritten (+{{ ((p.tracked_hours || 0) - p.budget_hours).toFixed(1) }} Std.)</span>
+                <span v-else class="text-emerald-700 font-semibold ml-1">({{ (p.budget_hours - (p.tracked_hours || 0)).toFixed(1) }} Std. verbleibend)</span>
+              </span>
+              <span v-else class="italic text-slate-400">Kein Stunden-Budget festgelegt</span>
+              <span v-if="p.budget_amount > 0">Kostenbudget: {{ p.budget_amount.toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Projects Section -->
       <div class="mb-12">
         <!-- Projects Header & Toolbar in Liquid Glass Container -->
@@ -157,18 +243,24 @@
                 </span>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 py-3 border-y border-slate-200/80 my-3 text-center">
+              <div class="grid grid-cols-4 gap-1.5 py-3 border-y border-slate-200/80 my-3 text-center">
                 <div>
-                  <div class="text-[10px] text-slate-500 uppercase font-bold">Abschnitte</div>
-                  <div class="text-sm font-black text-slate-900">{{ project.list_count }}</div>
+                  <div class="text-[9px] text-slate-500 uppercase font-bold">Listen</div>
+                  <div class="text-xs font-black text-slate-900">{{ project.list_count }}</div>
                 </div>
                 <div>
-                  <div class="text-[10px] text-slate-500 uppercase font-bold">Aufgaben</div>
-                  <div class="text-sm font-black text-slate-900">{{ project.task_count }}</div>
+                  <div class="text-[9px] text-slate-500 uppercase font-bold">Aufgaben</div>
+                  <div class="text-xs font-black text-slate-900">{{ project.task_count }}</div>
                 </div>
                 <div>
-                  <div class="text-[10px] text-slate-500 uppercase font-bold">Team</div>
-                  <div class="text-sm font-black text-slate-900">{{ project.member_count }}</div>
+                  <div class="text-[9px] text-slate-500 uppercase font-bold">Team</div>
+                  <div class="text-xs font-black text-slate-900">{{ project.member_count }}</div>
+                </div>
+                <div>
+                  <div class="text-[9px] text-cyan-800 uppercase font-bold">Aufwand</div>
+                  <div class="text-xs font-black" :class="(project.tracked_hours || 0) > (project.budget_hours || 0) && project.budget_hours > 0 ? 'text-rose-600' : 'text-slate-900'">
+                    {{ project.tracked_hours || 0 }}h
+                  </div>
                 </div>
               </div>
             </div>
@@ -193,6 +285,7 @@
                   <th class="py-3.5 px-4">Projekttitel</th>
                   <th class="py-3.5 px-4">Status</th>
                   <th class="py-3.5 px-4">Abschnitte & Aufgaben</th>
+                  <th class="py-3.5 px-4">Aufwand & Budget</th>
                   <th class="py-3.5 px-4">Projekt-Felder</th>
                   <th class="py-3.5 px-4 text-right">Aktion</th>
                 </tr>
@@ -215,6 +308,19 @@
                   <td class="py-3.5 px-4">
                     <span class="text-slate-900 font-bold">{{ project.task_count }} Aufgaben</span>
                     <span class="text-slate-600"> in {{ project.list_count }} Abschnitten</span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center space-x-1.5">
+                      <span class="font-bold text-slate-900">⏱️ {{ project.tracked_hours || 0 }} Std.</span>
+                      <span v-if="project.budget_hours" class="text-[10px] text-slate-500 font-medium">/ {{ project.budget_hours }} Std.</span>
+                    </div>
+                    <div v-if="project.budget_hours > 0" class="w-24 bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                      <div
+                        class="h-1.5 rounded-full"
+                        :class="(project.tracked_hours || 0) > project.budget_hours ? 'bg-rose-500' : 'bg-cyan-600'"
+                        :style="{ width: Math.min(100, Math.round(((project.tracked_hours || 0) / project.budget_hours) * 100)) + '%' }"
+                      ></div>
+                    </div>
                   </td>
                   <td class="py-3.5 px-4">
                     <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-1">
@@ -591,6 +697,7 @@ const projects = ref<any[]>([])
 const fields = ref<any[]>([])
 const loading = ref(true)
 const projectViewMode = ref<'grid' | 'list'>('grid')
+const timeSummary = ref<any>(null)
 
 // Folder edit state
 const showEditFolderModal = ref(false)
@@ -743,6 +850,7 @@ const loadFolderData = async () => {
     folder.value = res.folder
     projects.value = res.projects || []
     fields.value = res.fields || []
+    timeSummary.value = res.timeSummary || null
   } catch (err: any) {
     if (err.statusCode === 404 || err.statusCode === 401) {
       navigateTo('/dashboard')
