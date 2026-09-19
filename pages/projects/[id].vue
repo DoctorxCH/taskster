@@ -1307,6 +1307,31 @@
                 </div>
               </div>
 
+              <!-- Website & Address -->
+              <div v-if="c.website || c.address" class="space-y-1 text-[11px] bg-white p-2.5 rounded-xl border border-slate-100 mb-2">
+                <div v-if="c.website" class="flex items-center space-x-1.5">
+                  <span class="text-slate-400">🌐</span>
+                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-bold text-[#00A3C4] hover:underline truncate">
+                    {{ c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') }}
+                  </a>
+                </div>
+                <div v-if="c.address" class="flex items-start justify-between gap-1 pt-0.5">
+                  <div class="flex items-start space-x-1.5 min-w-0">
+                    <span class="text-slate-400 shrink-0 mt-0.5">📍</span>
+                    <span class="text-slate-700 font-medium truncate">{{ c.address }}</span>
+                  </div>
+                  <a
+                    :href="`https://www.openstreetmap.org/search?query=${encodeURIComponent(c.address)}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 hover:bg-emerald-100"
+                    title="In OpenStreetMap öffnen"
+                  >
+                    🗺️ Karte
+                  </a>
+                </div>
+              </div>
+
               <p v-if="c.notes" class="text-[10px] text-slate-500 line-clamp-2 italic mb-2">
                 "{{ c.notes }}"
               </p>
@@ -3247,6 +3272,27 @@
             />
           </div>
 
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Geschäftsadresse</label>
+              <input
+                v-model="projectContactForm.address"
+                type="text"
+                placeholder="z.B. Bahnhofstrasse 12, 8001 Zürich"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Webseite</label>
+              <input
+                v-model="projectContactForm.website"
+                type="text"
+                placeholder="z.B. https://www.elektromeier.ch"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
           <div>
             <label class="block text-xs font-bold text-slate-800 mb-1">Gruppe / Kategorie</label>
             <input
@@ -3327,9 +3373,17 @@ const projectContactForm = ref({
   phone: '',
   mobile: '',
   email: '',
+  address: '',
+  website: '',
   category_group: 'Handwerker',
   notes: ''
 })
+
+const formatProjectContactUrl = (url?: string) => {
+  if (!url) return ''
+  const trimmed = url.trim()
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
 
 // Live Stopwatch Integration
 const {
@@ -3700,6 +3754,8 @@ const openAddProjectContactModal = () => {
     phone: '',
     mobile: '',
     email: '',
+    address: '',
+    website: '',
     category_group: 'Handwerker',
     notes: ''
   }
@@ -3722,6 +3778,8 @@ const openEditProjectContactModal = (contact: any) => {
     phone: contact.phone || '',
     mobile: contact.mobile || '',
     email: contact.email || '',
+    address: contact.address || '',
+    website: contact.website || '',
     category_group: contact.category_group || 'Handwerker',
     notes: contact.notes || ''
   }
@@ -3747,6 +3805,8 @@ const runAiExtractionProject = async () => {
 - phone: string (Festnetznummer)
 - mobile: string (Mobilfunknummer)
 - email: string (E-Mail)
+- address: string (Geschäftsadresse mit Strasse/Nr/PLZ/Ort)
+- website: string (Webseite / URL)
 - category_group: string (wähle passend aus: 'Handwerker', 'Bauleitung', 'Planer & Architekten', 'Ingenieure & Geometer', 'Behörden & Ämter', 'Bauträger & Eigentümer', 'Lieferanten & Logistik', 'Sicherheitsbeauftragte', 'Sonstige')
 - notes: string (Zusätzliche nützliche Notizen)
 
@@ -3779,6 +3839,8 @@ ${aiRawTextProject.value.trim()}
       if (parsed.phone) projectContactForm.value.phone = String(parsed.phone).trim()
       if (parsed.mobile) projectContactForm.value.mobile = String(parsed.mobile).trim()
       if (parsed.email) projectContactForm.value.email = String(parsed.email).trim()
+      if (parsed.address) projectContactForm.value.address = String(parsed.address).trim()
+      if (parsed.website) projectContactForm.value.website = String(parsed.website).trim()
       if (parsed.category_group) projectContactForm.value.category_group = String(parsed.category_group).trim()
       if (parsed.notes) {
         projectContactForm.value.notes = projectContactForm.value.notes
@@ -3814,6 +3876,8 @@ const saveProjectContact = async () => {
     phone: projectContactForm.value.phone.trim(),
     mobile: projectContactForm.value.mobile.trim(),
     email: projectContactForm.value.email.trim(),
+    address: projectContactForm.value.address.trim(),
+    website: projectContactForm.value.website.trim(),
     project_id: projectId,
     category_group: projectContactForm.value.category_group,
     notes: projectContactForm.value.notes.trim(),
@@ -3869,6 +3933,8 @@ const exportContactVCard = (c: any) => {
     c.phone ? `TEL;TYPE=WORK,VOICE:${c.phone}` : '',
     c.mobile ? `TEL;TYPE=CELL,VOICE:${c.mobile}` : '',
     c.email ? `EMAIL;TYPE=WORK,INTERNET:${c.email}` : '',
+    c.address ? `ADR;TYPE=WORK:;;${c.address.replace(/\n/g, ' ')};;;;` : '',
+    c.website ? `URL:${formatProjectContactUrl(c.website)}` : '',
     c.notes ? `NOTE:${c.notes.replace(/\n/g, '\\n')}` : '',
     'END:VCARD'
   ].filter(Boolean)

@@ -75,6 +75,8 @@ function ensureTables($pdo) {
             "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
             "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
             "ALTER TABLE users ADD COLUMN admin_permissions JSON DEFAULT NULL",
+            "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
+            "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -143,6 +145,8 @@ function ensureTables($pdo) {
               mobile VARCHAR(64) NULL,
               email VARCHAR(255) NULL,
               category_group VARCHAR(128) NULL,
+              address VARCHAR(500) NULL,
+              website VARCHAR(500) NULL,
               tags JSON NULL,
               notes TEXT NULL,
               share_scope VARCHAR(32) NOT NULL DEFAULT 'private',
@@ -3876,6 +3880,8 @@ try {
         $email = trim($body['email'] ?? '');
         $projectId = !empty($body['project_id']) ? trim($body['project_id']) : null;
         $categoryGroup = trim($body['category_group'] ?? '');
+        $address = trim($body['address'] ?? '');
+        $website = trim($body['website'] ?? '');
         $tags = isset($body['tags']) && is_array($body['tags']) ? json_encode(array_values($body['tags'])) : '[]';
         $notes = trim($body['notes'] ?? '');
         $shareScope = in_array($body['share_scope'] ?? '', ['company', 'private']) ? $body['share_scope'] : 'private';
@@ -3889,11 +3895,11 @@ try {
             INSERT INTO contacts (
                 id, user_id, company_id, project_id, first_name, last_name,
                 company_name, role_function, phone, mobile, email,
-                category_group, tags, notes, share_scope, created_at
+                category_group, address, website, tags, notes, share_scope, created_at
             ) VALUES (
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, NOW()
+                ?, ?, ?, ?, ?, ?, NOW()
             )
         ");
         $stmt->execute([
@@ -3909,6 +3915,8 @@ try {
             $mobile ?: null,
             $email ?: null,
             $categoryGroup ?: null,
+            $address ?: null,
+            $website ?: null,
             $tags,
             $notes ?: null,
             $shareScope
@@ -4007,6 +4015,8 @@ try {
         $email = array_key_exists('email', $body) ? trim($body['email']) : $contact['email'];
         $projectId = array_key_exists('project_id', $body) ? (!empty($body['project_id']) ? trim($body['project_id']) : null) : $contact['project_id'];
         $categoryGroup = array_key_exists('category_group', $body) ? trim($body['category_group']) : $contact['category_group'];
+        $address = array_key_exists('address', $body) ? trim($body['address']) : ($contact['address'] ?? null);
+        $website = array_key_exists('website', $body) ? trim($body['website']) : ($contact['website'] ?? null);
         $notes = array_key_exists('notes', $body) ? trim($body['notes']) : $contact['notes'];
         $shareScope = array_key_exists('share_scope', $body) && in_array($body['share_scope'], ['company', 'private']) ? $body['share_scope'] : $contact['share_scope'];
         
@@ -4023,7 +4033,7 @@ try {
             UPDATE contacts
             SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
                 phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
-                tags = ?, notes = ?, share_scope = ?
+                address = ?, website = ?, tags = ?, notes = ?, share_scope = ?
             WHERE id = ?
         ");
         $upStmt->execute([
@@ -4036,6 +4046,8 @@ try {
             $email ?: null,
             $projectId,
             $categoryGroup ?: null,
+            $address ?: null,
+            $website ?: null,
             $tags,
             $notes ?: null,
             $shareScope,
