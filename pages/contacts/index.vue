@@ -559,14 +559,13 @@
               <div class="flex items-center space-x-2">
                 <span class="text-base">✨</span>
                 <span class="text-xs font-black text-slate-900">KI-Autofill Assistent</span>
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#00A3C4] text-white">DeepSeek V4</span>
               </div>
               <button
                 @click="showAiInput = !showAiInput"
                 type="button"
                 class="text-[11px] font-bold text-cyan-800 hover:text-cyan-950 underline cursor-pointer"
               >
-                {{ showAiInput ? 'Eingabe schließen' : 'Freitext / Signatur einfügen' }}
+                {{ showAiInput ? 'Eingabe schließen' : 'Öffnen' }}
               </button>
             </div>
 

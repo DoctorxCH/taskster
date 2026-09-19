@@ -1,192 +1,269 @@
 <template>
-  <div class="min-h-screen relative flex flex-col font-sans antialiased text-slate-900 selection:bg-cyan-500 selection:text-white">
-    <!-- Dynamic MeisterTask-Style Background Wallpaper with Smooth Transition -->
-    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+  <div class="min-h-screen relative flex flex-col font-sans antialiased text-slate-900 bg-[#F8FAFC] selection:bg-[#0891B2] selection:text-white">
+    <!-- Dynamic Background Wallpaper (Optional with strong opacity overlay for high legibility) -->
+    <div v-if="currentWallpaper" class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       <img
         :src="currentWallpaper"
         alt="Taskster Wallpaper"
-        class="w-full h-full object-cover object-center filter brightness-[0.92] contrast-[1.03] transition-all duration-700 ease-out"
+        class="w-full h-full object-cover object-center filter brightness-[0.95]"
       />
-      <!-- Soft subtle gradient overlay so light cards and text pop crisp and readable -->
-      <div class="absolute inset-0 bg-slate-900/15 backdrop-blur-[0.5px]"></div>
+      <div class="absolute inset-0 bg-white/92"></div>
     </div>
 
-    <!-- Main App Container (Navbar + Views + Right Sidebar) -->
+    <!-- Main App Container (Navbar + Layout) -->
     <div class="relative z-10 flex flex-col min-h-screen">
-      <Navbar @toggle-wallpaper="showWallpaperPicker = !showWallpaperPicker" />
+      <!-- Navbar Component -->
+      <Navbar
+        @toggle-wallpaper="showWallpaperPicker = !showWallpaperPicker"
+        @toggle-mobile-menu="mobileMenuOpen = !mobileMenuOpen"
+      />
 
-      <!-- Content Area with Right Sidebar Layout -->
-      <div class="flex-1 flex w-full">
-        <!-- Main Content Area -->
-        <main class="flex-1 min-w-0 transition-all">
-          <NuxtPage />
-        </main>
-
-        <!-- MeisterTask Right-Side Quick Action Rail / Sidebar -->
-        <aside
-          v-if="user && !isLoginPage"
-          class="hidden md:flex flex-col w-16 hover:w-56 bg-white/80 hover:bg-white/95 backdrop-blur-xl border-l border-white/50 shadow-2xl transition-all duration-300 ease-in-out group/sidebar z-30 sticky top-16 h-[calc(100vh-4rem)] select-none shrink-0"
-        >
-          <div class="p-3 border-b border-slate-200/60 flex items-center justify-between">
-            <span class="hidden group-hover/sidebar:inline text-[11px] font-black text-slate-500 uppercase tracking-wider">
-              Navigation
-            </span>
-            <span class="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center text-sm font-bold mx-auto group-hover/sidebar:mx-0 shadow-xs">
-              ⚡
-            </span>
+      <!-- Mobile & Tablet Sidebar Overlay Drawer -->
+      <div
+        v-if="mobileMenuOpen && user && !isLoginPage"
+        class="fixed inset-0 z-50 lg:hidden flex"
+      >
+        <div class="fixed inset-0 bg-slate-900/40" @click="mobileMenuOpen = false"></div>
+        <aside class="relative z-10 w-64 max-w-[80vw] bg-white h-full border-r border-slate-200 flex flex-col p-4 shadow-xl">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Menü</span>
+            <button
+              @click="mobileMenuOpen = false"
+              class="w-8 h-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            >
+              <X class="w-4 h-4" />
+            </button>
           </div>
 
-          <nav class="flex-1 py-4 space-y-1.5 px-2">
+          <nav class="flex-1 space-y-1">
             <NuxtLink
               to="/dashboard"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
-              :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-[#00A3C4] font-bold shadow-xs' : ''"
-              title="Start / Dashboard"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">🏠</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Startseite</span>
-            </NuxtLink>
-
-            <NuxtLink
-              to="/dashboard"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
-              title="Projektordner"
-            >
-              <span class="text-xl">📁</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Projektordner</span>
+              <LayoutDashboard class="w-4 h-4 shrink-0" />
+              <span>Dashboard</span>
             </NuxtLink>
 
             <NuxtLink
               to="/time"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
-              :class="$route.path === '/time' ? 'bg-cyan-50 text-[#00A3C4] font-bold shadow-xs' : ''"
-              title="Zeitrapportierung & Controlling"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/time' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">⏱️</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Zeitrapporte</span>
+              <Clock class="w-4 h-4 shrink-0" />
+              <span>Zeitrapporte</span>
             </NuxtLink>
 
             <NuxtLink
               to="/contacts"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
-              :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-[#00A3C4] font-bold shadow-xs' : ''"
-              title="Kontakte & Baustellen-Ansprechpartner"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">📇</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Kontakte</span>
+              <BookUser class="w-4 h-4 shrink-0" />
+              <span>Kontakte</span>
             </NuxtLink>
 
             <NuxtLink
               v-if="isPlatformAdmin"
               to="/admin"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-purple-700 hover:bg-purple-50/80"
-              :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-700 font-bold shadow-xs' : ''"
-              title="Site-Admin"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">⚙️</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Administration</span>
+              <ShieldCheck class="w-4 h-4 shrink-0" />
+              <span>Administration</span>
             </NuxtLink>
 
             <NuxtLink
               v-else-if="isCompanyAdmin"
               to="/company"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80"
-              :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-700 font-bold shadow-xs' : ''"
-              title="Firmen-Administration"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">🏢</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Firmen-Admin</span>
+              <Building2 class="w-4 h-4 shrink-0" />
+              <span>Firmen-Admin</span>
             </NuxtLink>
 
             <NuxtLink
               to="/settings"
-              class="flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80"
-              :class="$route.path === '/settings' ? 'bg-cyan-50 text-[#00A3C4] font-bold shadow-xs' : ''"
-              title="Mein Profil & Tarif"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/settings' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
-              <span class="text-xl">👤</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Mein Profil</span>
+              <Settings class="w-4 h-4 shrink-0" />
+              <span>Mein Profil</span>
             </NuxtLink>
-
-            <!-- MeisterTask Wallpaper Switcher Trigger Button in Sidebar -->
-            <button
-              @click="showWallpaperPicker = true"
-              type="button"
-              class="w-full flex items-center space-x-3 px-2.5 py-2.5 rounded-2xl transition text-slate-700 hover:text-[#00A3C4] hover:bg-cyan-50/80 text-left"
-              title="Hintergrundbild anpassen (Wallpaper)"
-            >
-              <span class="text-xl">🖼️</span>
-              <span class="hidden group-hover/sidebar:inline text-xs font-bold whitespace-nowrap">Hintergrund</span>
-            </button>
           </nav>
 
-          <!-- User Footer in Right Sidebar -->
-          <div class="p-3 border-t border-slate-200/60 flex items-center justify-center group-hover/sidebar:justify-start space-x-2.5">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-xs font-black shadow-sm shrink-0">
-              {{ user?.name?.charAt(0).toUpperCase() }}
-            </div>
-            <div class="hidden group-hover/sidebar:block min-w-0">
-              <p class="text-xs font-bold text-slate-800 truncate">{{ user?.name }}</p>
-              <p class="text-[10px] text-slate-500 truncate">{{ user?.company_name || 'Privater Workspace' }}</p>
-            </div>
+          <div class="pt-4 border-t border-slate-200 mt-auto">
+            <button
+              @click="showWallpaperPicker = true; mobileMenuOpen = false"
+              type="button"
+              class="w-full flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <Image class="w-4 h-4" />
+              <span>Hintergrund</span>
+            </button>
           </div>
         </aside>
       </div>
+
+      <!-- Main Layout with Left Desktop Sidebar -->
+      <div class="flex-1 flex w-full">
+        <!-- Left Fixed Desktop Sidebar (Design v2 Standard) -->
+        <aside
+          v-if="user && !isLoginPage"
+          class="hidden lg:flex flex-col w-60 shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14 select-none z-30"
+        >
+          <nav class="p-3 space-y-0.5 flex-1">
+            <NuxtLink
+              to="/dashboard"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              title="Dashboard"
+            >
+              <LayoutDashboard class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>Dashboard</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/time"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/time' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              title="Zeitrapporte"
+            >
+              <Clock class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>Zeitrapporte</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/contacts"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              title="Kontakte"
+            >
+              <BookUser class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>Kontakte</span>
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="isPlatformAdmin"
+              to="/admin"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800 font-semibold' : 'text-slate-600 hover:bg-purple-50/60 hover:text-purple-900'"
+              title="Site-Administration"
+            >
+              <ShieldCheck class="w-4 h-4 shrink-0 text-purple-600" />
+              <span>Administration</span>
+            </NuxtLink>
+
+            <NuxtLink
+              v-else-if="isCompanyAdmin"
+              to="/company"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-emerald-50/60 hover:text-emerald-900'"
+              title="Firmen-Administration"
+            >
+              <Building2 class="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>Firmen-Admin</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/settings"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path === '/settings' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              title="Mein Profil & Tarif"
+            >
+              <Settings class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>Einstellungen</span>
+            </NuxtLink>
+          </nav>
+
+          <!-- Sidebar Footer Wallpaper Trigger -->
+          <div class="p-3 border-t border-slate-200 flex items-center justify-between">
+            <button
+              @click="showWallpaperPicker = true"
+              type="button"
+              class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-md hover:bg-slate-100"
+            >
+              <Image class="w-3.5 h-3.5" />
+              <span>Hintergrund</span>
+            </button>
+            <span class="text-[11px] font-mono text-slate-400">v2.0</span>
+          </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 transition-all">
+          <NuxtPage />
+        </main>
+      </div>
     </div>
 
-    <!-- Wallpaper Picker Modal (MeisterTask Style Customizer) -->
+    <!-- Wallpaper Picker Modal (Design v2 Standard) -->
     <div
       v-if="showWallpaperPicker"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40"
     >
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-          <div>
-            <h3 class="text-lg font-black text-slate-900 flex items-center space-x-2">
-              <span>🖼️</span>
-              <span>Hintergrundbild auswählen</span>
-            </h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Wähle dein Lieblingsmotiv für deine persönliche Taskster-Atmosphäre.
-            </p>
-          </div>
+      <div class="bg-white rounded-lg shadow-md w-full max-w-lg flex flex-col border border-slate-200 overflow-hidden">
+        <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200">
+          <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <Image class="w-4 h-4 text-[#0891B2]" />
+            <span>Hintergrundbild (Wallpaper)</span>
+          </h2>
           <button
             type="button"
             @click="showWallpaperPicker = false"
-            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
+            class="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
           >
-            ✕
+            <X class="w-4 h-4" />
           </button>
         </div>
 
-        <!-- Wallpapers Grid -->
-        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3 max-h-80 overflow-y-auto pr-1">
-          <button
-            v-for="wp in wallpapers"
-            :key="wp.id"
-            type="button"
-            @click="selectWallpaper(wp.file)"
-            class="group/wp relative aspect-video rounded-2xl overflow-hidden border-2 transition-all hover:scale-105"
-            :class="currentWallpaper === wp.file ? 'border-[#00A3C4] ring-2 ring-cyan-500/40' : 'border-slate-200 hover:border-slate-400'"
-          >
-            <img :src="wp.file" :alt="wp.name" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-1.5 opacity-90 group-hover/wp:opacity-100">
-              <span class="text-[9px] font-bold text-white truncate w-full text-left">{{ wp.name }}</span>
-            </div>
-            <div
-              v-if="currentWallpaper === wp.file"
-              class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#00A3C4] text-white flex items-center justify-center text-[10px] font-bold shadow-sm"
+        <div class="p-5 overflow-y-auto max-h-[60vh]">
+          <p class="text-xs text-slate-500 mb-4">
+            Das Design v2 ist für hohe Lesbarkeit auf dezentem neutralem Hintergrund optimiert. Optional kannst du ein Hintergrundmotiv aktivieren.
+          </p>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- No wallpaper option -->
+            <button
+              type="button"
+              @click="selectWallpaper('')"
+              class="relative aspect-video rounded-md overflow-hidden border transition-all flex flex-col items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100"
+              :class="!currentWallpaper ? 'border-[#0891B2] ring-2 ring-[#0891B2]/20 font-semibold' : 'border-slate-200'"
             >
-              ✓
-            </div>
-          </button>
+              <span class="text-xs">Standard (Keins)</span>
+              <Check v-if="!currentWallpaper" class="w-4 h-4 text-[#0891B2] absolute top-1.5 right-1.5" />
+            </button>
+
+            <!-- Wallpapers Grid -->
+            <button
+              v-for="wp in wallpapers"
+              :key="wp.id"
+              type="button"
+              @click="selectWallpaper(wp.file)"
+              class="relative aspect-video rounded-md overflow-hidden border transition-all"
+              :class="currentWallpaper === wp.file ? 'border-[#0891B2] ring-2 ring-[#0891B2]/20' : 'border-slate-200 hover:border-slate-400'"
+            >
+              <img :src="wp.file" :alt="wp.name" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-slate-900/40 flex items-end p-1.5">
+                <span class="text-[11px] text-white truncate w-full text-left font-medium">{{ wp.name }}</span>
+              </div>
+              <Check v-if="currentWallpaper === wp.file" class="w-4 h-4 text-white bg-[#0891B2] rounded-full p-0.5 absolute top-1.5 right-1.5 shadow-sm" />
+            </button>
+          </div>
         </div>
 
-        <div class="flex items-center justify-end pt-6 mt-4 border-t border-slate-100">
+        <div class="flex justify-end gap-2 px-5 h-16 items-center border-t border-slate-200 bg-slate-50/50">
           <button
             type="button"
             @click="showWallpaperPicker = false"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            class="taskster_button"
           >
             Fertig
           </button>
@@ -197,11 +274,24 @@
 </template>
 
 <script setup lang="ts">
+import {
+  LayoutDashboard,
+  Clock,
+  BookUser,
+  Building2,
+  Settings,
+  ShieldCheck,
+  Image,
+  Check,
+  X
+} from 'lucide-vue-next'
+
 const route = useRoute()
 const { user, initAuth } = useAuth()
 const { wallpapers, currentWallpaper, initWallpaper, setWallpaper } = useWallpaper()
 
 const showWallpaperPicker = ref(false)
+const mobileMenuOpen = ref(false)
 
 const isLoginPage = computed(() => route.path === '/login')
 
@@ -233,39 +323,35 @@ onMounted(async () => {
 </script>
 
 <style>
-/* Taskster Button Standards (per User Global Rule) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+  background-color: #F8FAFC;
+  color: #0F172A;
+}
+
+/* Taskster Design v2 Button Standards */
 .taskster_button {
-  @apply bg-[#00A3C4] hover:bg-[#008ba8] text-white font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm shadow-cyan-900/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
+  @apply bg-[#0891B2] hover:bg-[#0E7490] text-white font-semibold h-9 px-4 text-sm rounded-md transition-colors inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
 }
+
 .taskster_button_accent {
-  @apply bg-rose-600 hover:bg-rose-500 text-white font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm shadow-rose-900/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
+  @apply bg-[#BE123C] hover:bg-[#9F1239] text-white font-semibold h-9 px-4 text-sm rounded-md transition-colors inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
 }
+
 .taskster_button_light {
-  @apply bg-white hover:bg-slate-50 text-slate-800 border-[3px] border-[#00A3C4] font-semibold transition inline-flex items-center justify-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99];
+  @apply bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold h-9 px-4 text-sm rounded-md transition-colors inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-/* Liquid Glass Design System – balanced for maximum legibility on all wallpapers */
-.liquid_glass {
-  background: rgba(255, 255, 255, 0.30);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
- /* border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;*/
-}
-
+/* Clean cards for backward compatibility if liquid_glass classes are referenced */
+.liquid_glass,
+.liquid_glass_card,
 .liquid_glass_pill {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.80);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1px 0 0 rgba(255, 255, 255, 0.95) inset;
-}
-
-.liquid_glass_card {
-  background: rgba(255, 255, 255, 0.90);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.07), 0 1px 0 0 rgba(255, 255, 255, 0.98) inset;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 </style>
+

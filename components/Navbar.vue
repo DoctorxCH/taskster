@@ -1,231 +1,166 @@
 <template>
-  <header class="liquid_glass sticky top-0 z-40 text-slate-900 shadow-md transition-colors border-b border-white/60">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- Brand Logo & Quick Action -->
-      <div class="flex items-center space-x-6">
-        <NuxtLink to="/dashboard" class="flex items-center space-x-2.5 group">
+  <header class="h-14 sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm text-slate-900 select-none">
+    <div class="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+      <!-- Left: Mobile Menu Toggle & Brand Logo -->
+      <div class="flex items-center gap-3">
+        <!-- Mobile & Tablet Hamburger Toggle -->
+        <button
+          v-if="user"
+          type="button"
+          @click="$emit('toggle-mobile-menu')"
+          class="lg:hidden h-9 w-9 flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          title="Menü öffnen"
+        >
+          <Menu class="w-5 h-5" />
+        </button>
+
+        <!-- Brand Logo -->
+        <NuxtLink to="/dashboard" class="flex items-center gap-2.5">
           <img
             src="/logo.png"
             alt="Taskster"
-            class="h-8 w-auto object-contain group-hover:scale-105 transition-transform"
+            class="h-7 w-auto object-contain"
           />
-          <div class="hidden sm:flex flex-col">
-            <span class="text-[10px] text-[#00A3C4] font-black tracking-widest uppercase">Workspace</span>
-          </div>
+          <span class="hidden sm:inline text-xs font-semibold text-slate-500 uppercase tracking-wider border-l border-slate-200 pl-2.5">
+            Workspace
+          </span>
         </NuxtLink>
-
-        <!-- Navigation Links -->
-        <nav v-if="user" class="hidden md:flex items-center space-x-1 pl-4 border-l border-slate-200/80">
-          <NuxtLink
-            to="/dashboard"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all"
-            :class="$route.path === '/dashboard' ? 'bg-white text-[#00A3C4] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-          >
-            Dashboard
-          </NuxtLink>
-
-          <NuxtLink
-            to="/time"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            :class="$route.path === '/time' ? 'bg-white text-[#00A3C4] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-          >
-            <span>⏱️</span>
-            <span>Zeitrapporte</span>
-          </NuxtLink>
-
-          <NuxtLink
-            to="/contacts"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            :class="$route.path.startsWith('/contacts') ? 'bg-white text-[#00A3C4] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-          >
-            <span>📇</span>
-            <span>Kontakte</span>
-          </NuxtLink>
-
-          <NuxtLink
-            v-if="isPlatformAdmin"
-            to="/admin"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            :class="$route.path.startsWith('/admin') ? 'bg-white text-purple-700 shadow-sm border border-purple-200' : 'text-slate-600 hover:text-purple-700 hover:bg-white/60'"
-          >
-            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-            <span>Admin-Bereich</span>
-          </NuxtLink>
-
-          <NuxtLink
-            v-else-if="isCompanyAdmin"
-            to="/company"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            :class="$route.path.startsWith('/company') ? 'bg-white text-emerald-700 shadow-sm border border-emerald-200' : 'text-slate-600 hover:text-emerald-700 hover:bg-white/60'"
-          >
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>🏢 Firmen-Admin</span>
-          </NuxtLink>
-        </nav>
       </div>
 
-      <!-- Center: Live Running Stopwatch Widget -->
+      <!-- Center: Running Live Stopwatch Widget -->
       <div
         v-if="user && stopwatchState.isRunning"
-        class="flex items-center space-x-2.5 px-3.5 py-1.5 rounded-2xl bg-slate-900/90 border border-cyan-500/50 text-white shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200 select-none shrink-0"
+        class="flex items-center gap-2 px-3 h-8 rounded-md bg-slate-900 text-white shadow-sm shrink-0"
       >
-        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
-        <span class="font-mono font-black text-xs sm:text-sm tracking-wider text-cyan-300">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+        <span class="font-mono font-bold text-xs tracking-wide text-cyan-300 tabular-nums">
           {{ formatSeconds(stopwatchState.elapsedSeconds) }}
         </span>
 
-        <span class="text-slate-500 hidden sm:inline">|</span>
+        <span class="text-slate-600 hidden sm:inline">|</span>
 
-        <!-- Task / Project label & navigation -->
+        <!-- Task / Project Link -->
         <NuxtLink
           :to="'/projects/' + stopwatchState.projectId"
-          class="text-xs font-bold truncate max-w-[130px] sm:max-w-[220px] hover:text-cyan-300 transition flex items-center space-x-1"
+          class="text-xs font-medium truncate max-w-[120px] sm:max-w-[200px] hover:text-cyan-300 transition-colors"
           :title="stopwatchState.taskTitle ? ('Aufgabe: ' + stopwatchState.taskTitle + ' in ' + stopwatchState.projectTitle) : ('Projekt: ' + stopwatchState.projectTitle)"
         >
           <span v-if="stopwatchState.taskTitle" class="truncate">
-            <span class="text-cyan-400 font-normal">Aufgabe:</span> {{ stopwatchState.taskTitle }}
+            <span class="text-slate-400">Aufgabe:</span> {{ stopwatchState.taskTitle }}
           </span>
           <span v-else class="truncate">
-            <span class="text-cyan-400 font-normal">Projekt:</span> {{ stopwatchState.projectTitle }}
+            <span class="text-slate-400">Projekt:</span> {{ stopwatchState.projectTitle }}
           </span>
         </NuxtLink>
 
-        <!-- Stop Button -->
+        <!-- Stop Action Button -->
         <button
           type="button"
           @click="openStopModal"
-          class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center space-x-1 shadow-xs transition transform hover:scale-105 cursor-pointer"
-          title="Stoppuhr anhalten & Zeit buchen"
+          class="h-6 px-2 rounded text-[11px] font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1 transition-colors ml-1"
+          title="Stoppuhr beenden"
         >
-          <span>⏹️</span>
+          <Square class="w-3 h-3 fill-current" />
           <span class="hidden md:inline">Stoppen</span>
         </button>
       </div>
 
-      <!-- User & Status Area -->
-      <div v-if="user" class="flex items-center space-x-3">
-        <!-- MeisterTask-style "Anpassen" (Customize Wallpaper) Button -->
-        <button
-          @click="$emit('toggle-wallpaper')"
-          type="button"
-          class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-700 hover:text-cyan-700 border border-slate-200/80 shadow-xs transition cursor-pointer"
-          title="Hintergrundbild wechseln"
-        >
-          <span>🎨</span>
-          <span>Anpassen</span>
-        </button>
-
-        <!-- Plan Badge -->
-        <div class="hidden sm:flex items-center space-x-2">
+      <!-- Right: Role Badges & User Actions -->
+      <div v-if="user" class="flex items-center gap-2 sm:gap-3">
+        <!-- Role / Plan Badges (Design v2 standard) -->
+        <div class="hidden sm:flex items-center gap-1.5">
           <span
             v-if="user.is_superadmin"
-            class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-slate-900 text-white"
           >
-            SUPERADMIN
+            Superadmin
           </span>
           <span
             v-else-if="user.admin_permissions && user.admin_permissions.length > 0"
-            class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-slate-800 text-white"
           >
-            PLATFORM ADMIN
+            Plattform-Admin
           </span>
           <span
             v-else-if="user.company_role === 'admin'"
-            class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
           >
-            COMPANY ADMIN
+            Company Admin
           </span>
           <span
             v-else-if="user.company_name"
-            class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
           >
             {{ user.company_name }}
           </span>
           <span
             v-else-if="user.is_pro"
-            class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"
           >
-            PRO PLAN
+            Pro
           </span>
           <span
             v-else
-            class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+            class="inline-flex items-center h-6 px-2 rounded-sm text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200"
           >
-            FREE PLAN
+            Free
           </span>
         </div>
 
-        <!-- User profile, Settings & Logout -->
-        <div class="flex items-center space-x-2">
-          <NuxtLink
-            to="/settings"
-            class="flex items-center space-x-2 p-1.5 rounded-xl text-slate-700 hover:bg-white/80 transition group"
-            title="Benutzer-Einstellungen"
-          >
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-xs font-bold shadow-sm">
-              {{ user.name.charAt(0).toUpperCase() }}
-            </div>
-            <span class="hidden lg:inline text-xs font-bold text-slate-800">{{ user.name }}</span>
-          </NuxtLink>
+        <!-- User Profile Link -->
+        <NuxtLink
+          to="/settings"
+          class="flex items-center gap-2 p-1 rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
+          title="Mein Profil & Einstellungen"
+        >
+          <div class="w-7 h-7 rounded-md bg-[#0891B2] text-white flex items-center justify-center text-xs font-bold shrink-0">
+            {{ user.name?.charAt(0).toUpperCase() }}
+          </div>
+          <span class="hidden md:inline text-sm font-medium text-slate-800">{{ user.name }}</span>
+        </NuxtLink>
 
-          <NuxtLink
-            to="/settings"
-            class="p-2 text-slate-500 hover:text-slate-800 hover:bg-white/80 rounded-xl transition"
-            title="Einstellungen"
-          >
-            ⚙️
-          </NuxtLink>
-
-          <button
-            @click="logout"
-            class="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200/80 hover:border-rose-200 transition-colors"
-            title="Abmelden"
-          >
-            Abmelden
-          </button>
-        </div>
+        <!-- Logout Action Button -->
+        <button
+          @click="logout"
+          type="button"
+          class="h-8 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition-colors flex items-center gap-1.5"
+          title="Abmelden"
+        >
+          <LogOut class="w-3.5 h-3.5" />
+          <span class="hidden sm:inline">Abmelden</span>
+        </button>
       </div>
 
-      <!-- If not logged in -->
-      <div v-else class="flex items-center space-x-3">
+      <!-- Logged out action -->
+      <div v-else class="flex items-center gap-3">
         <NuxtLink
           to="/login"
-          class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+          class="taskster_button"
         >
           Anmelden
         </NuxtLink>
       </div>
     </div>
 
-    <!-- Stopwatch Completion Modal -->
+    <!-- Stopwatch Modal -->
     <StopwatchModal />
   </header>
 </template>
 
 <script setup lang="ts">
+import {
+  Menu,
+  Square,
+  LogOut
+} from 'lucide-vue-next'
+
 defineEmits<{
   (e: 'toggle-wallpaper'): void
+  (e: 'toggle-mobile-menu'): void
 }>()
 
 const { user, logout, initAuth } = useAuth()
 const { state: stopwatchState, initStopwatch, openStopModal, formatSeconds } = useStopwatch()
-
-// Plattform-Admin: Superadmin ODER explizite Plattform-Permissions
-const isPlatformAdmin = computed(() => {
-  if (!user.value) return false
-  if (user.value.is_superadmin) return true
-  let perms = user.value.admin_permissions
-  if (typeof perms === 'string') {
-    try { perms = JSON.parse(perms) } catch { perms = [] }
-  }
-  return Array.isArray(perms) && perms.length > 0
-})
-
-// Firmen-Admin: company_role === 'admin' mit zugewiesenem Unternehmen (und kein Plattform-Admin)
-const isCompanyAdmin = computed(() => {
-  if (!user.value || isPlatformAdmin.value) return false
-  return Boolean(user.value.company_id && user.value.company_role === 'admin')
-})
 
 onMounted(async () => {
   initStopwatch()
@@ -234,3 +169,4 @@ onMounted(async () => {
   }
 })
 </script>
+
