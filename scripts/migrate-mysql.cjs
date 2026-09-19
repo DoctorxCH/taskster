@@ -215,6 +215,7 @@ async function migrate() {
     "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
     "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
+    "ALTER TABLE users ADD COLUMN admin_permissions JSON NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) {}
