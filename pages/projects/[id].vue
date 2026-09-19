@@ -2118,7 +2118,7 @@
               >
                 <option value="">-- Nicht zugewiesen --</option>
                 <option v-for="m in members" :key="m.user_id" :value="m.user_id">
-                  {{ m.name || m.email }}
+                  {{ m.name || m.email }} {{ m.user_id === user?.id ? '(Du)' : '' }} {{ m.role === 'owner' ? '• Inhaber' : (m.company_role ? `• ${m.company_role}` : '') }}
                 </option>
               </select>
             </div>

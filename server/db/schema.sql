@@ -31,6 +31,15 @@ CREATE TABLE IF NOT EXISTS project_folders (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS folder_members (
+  id TEXT PRIMARY KEY,
+  folder_id TEXT NOT NULL REFERENCES project_folders(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'editor',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(folder_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS folder_field_definitions (
   id TEXT PRIMARY KEY,
   folder_id TEXT NOT NULL REFERENCES project_folders(id) ON DELETE CASCADE,

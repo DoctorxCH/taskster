@@ -543,11 +543,19 @@ function evaluateProjectAccess($user, $projectId, $action = 'read') {
         $m = $mStmt->fetch();
         if ($m) {
             $role = $m['role'];
-        } elseif (
-            !empty($user['company_id']) && $user['company_id'] === $prj['company_id'] &&
-            ($prj['project_visibility'] ?? 'private') === 'company'
-        ) {
-            $role = 'editor';
+        } else {
+            // Check folder_members (inherited folder access)
+            $fmStmt = $db->prepare("SELECT role FROM folder_members WHERE folder_id = ? AND user_id = ?");
+            $fmStmt->execute([$prj['folder_id'], $user['id']]);
+            $fm = $fmStmt->fetch();
+            if ($fm) {
+                $role = $fm['role'];
+            } elseif (
+                !empty($user['company_id']) && $user['company_id'] === $prj['company_id'] &&
+                (($prj['project_visibility'] ?? 'private') === 'company' || ($prj['folder_visibility'] ?? 'private') === 'company')
+            ) {
+                $role = 'editor';
+            }
         }
     }
 
@@ -864,37 +872,56 @@ try {
         $user = requireAuth();
         $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
 
-        // Strikte Privatsphäre: Der Nutzer sieht nur:
-        // 1. Eigene Ordner (owner_id = user.id)
-        // 2. Ordner, in denen er Projektmitglied ist (project_members)
-        // 3. Ordner mit visibility = 'company' des eigenen Unternehmens
-        // Company Admins haben KEINEN automatischen Zugriff auf private Ordner!
-        $stmt = $db->prepare("
-            SELECT pf.*, u.name as owner_name, c.name as company_name,
-              (
-                SELECT COUNT(*) FROM projects p
-                WHERE p.folder_id = pf.id AND (
-                  pf.owner_id = ?
-                  OR (p.visibility = 'company' AND pf.company_id = ?)
-                  OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
-                )
-              ) as project_count
-            FROM project_folders pf
-            JOIN users u ON u.id = pf.owner_id
-            LEFT JOIN companies c ON c.id = pf.company_id
-            WHERE pf.owner_id = ?
-               OR pf.id IN (
-                   SELECT p.folder_id FROM projects p
-                   JOIN project_members pm ON pm.project_id = p.id
-                   WHERE pm.user_id = ?
-               )
-               OR (pf.visibility = 'company' AND pf.company_id = ?)
-            ORDER BY pf.created_at DESC
-        ");
-        $stmt->execute([
-            $user['id'], $companyId, $user['id'],
-            $user['id'], $user['id'], $companyId
-        ]);
+        if (!empty($user['is_superadmin'])) {
+            $stmt = $db->prepare("
+                SELECT pf.*, u.name as owner_name, c.name as company_name,
+                  (SELECT COUNT(*) FROM projects p WHERE p.folder_id = pf.id) as project_count
+                FROM project_folders pf
+                JOIN users u ON u.id = pf.owner_id
+                LEFT JOIN companies c ON c.id = pf.company_id
+                ORDER BY pf.created_at DESC
+            ");
+            $stmt->execute();
+        } else {
+            // Strikte Privatsphäre: Der Nutzer sieht nur:
+            // 1. Eigene Ordner (owner_id = user.id)
+            // 2. Ordner mit direkter Mitgliedschaft (folder_members)
+            // 3. Ordner, in denen er Projektmitglied ist (project_members)
+            // 4. Ordner mit visibility = 'company' des eigenen Unternehmens
+            $stmt = $db->prepare("
+                SELECT pf.*, u.name as owner_name, c.name as company_name,
+                  (
+                    SELECT COUNT(*) FROM projects p
+                    WHERE p.folder_id = pf.id AND (
+                      pf.owner_id = ?
+                      OR (pf.visibility = 'company' AND pf.company_id = ?)
+                      OR (p.visibility = 'company' AND pf.company_id = ?)
+                      OR pf.id IN (SELECT fm.folder_id FROM folder_members fm WHERE fm.user_id = ?)
+                      OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
+                    )
+                  ) as project_count
+                FROM project_folders pf
+                JOIN users u ON u.id = pf.owner_id
+                LEFT JOIN companies c ON c.id = pf.company_id
+                WHERE pf.owner_id = ?
+                   OR (pf.visibility = 'company' AND pf.company_id = ?)
+                   OR pf.id IN (SELECT fm.folder_id FROM folder_members fm WHERE fm.user_id = ?)
+                   OR pf.id IN (
+                       SELECT p.folder_id FROM projects p
+                       JOIN project_members pm ON pm.project_id = p.id
+                       WHERE pm.user_id = ?
+                   )
+                   OR pf.id IN (
+                       SELECT p.folder_id FROM projects p
+                       WHERE p.visibility = 'company' AND pf.company_id = ?
+                   )
+                ORDER BY pf.created_at DESC
+            ");
+            $stmt->execute([
+                $user['id'], $companyId, $companyId, $user['id'], $user['id'],
+                $user['id'], $companyId, $user['id'], $user['id'], $companyId
+            ]);
+        }
         $folders = $stmt->fetchAll();
         $folders = array_map(function($f) {
             $f['visibility'] = $f['visibility'] ?? 'private';
@@ -920,13 +947,13 @@ try {
 
         $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $icon = trim($body['icon'] ?? '📁');
-        // Standard ist verbindlich 'private', ausser bei Unternehmensmitgliedern explizit 'company' gewählt
-        $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : ($body['company_id'] ?? null);
+        $visibility = (!empty($companyId) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
         $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, ?, ?, ?)")
-           ->execute([$fldId, $user['id'], $user['company_id'], $name, $icon, $visibility]);
+           ->execute([$fldId, $user['id'], $companyId, $name, $icon, $visibility]);
 
-        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'visibility' => $visibility, 'owner_id' => $user['id'], 'company_id' => $user['company_id']]]);
+        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'visibility' => $visibility, 'owner_id' => $user['id'], 'company_id' => $companyId]]);
     }
 
     // 5b. PUT folders/:id
@@ -944,13 +971,18 @@ try {
 
         $name = trim($body['name'] ?? $folder['name']);
         $icon = trim($body['icon'] ?? ($folder['icon'] ?? '📁'));
+        $companyId = $folder['company_id'] ?: $user['company_id'];
+        if (isset($body['company_id'])) {
+            $companyId = $body['company_id'] ?: null;
+        }
+
         $visibility = $folder['visibility'] ?? 'private';
         if (isset($body['visibility'])) {
-            $visibility = (!empty($user['company_id']) && $body['visibility'] === 'company') ? 'company' : 'private';
+            $visibility = (!empty($companyId) && $body['visibility'] === 'company') ? 'company' : 'private';
         }
         if (!$name) errorResponse('Name erforderlich', 400);
 
-        $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ? WHERE id = ?")->execute([$name, $icon, $visibility, $fldId]);
+        $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ?, company_id = ? WHERE id = ?")->execute([$name, $icon, $visibility, $companyId, $fldId]);
 
         $uStmt = $db->prepare("SELECT pf.*, u.name as owner_name, c.name as company_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
         $uStmt->execute([$fldId]);
@@ -973,10 +1005,17 @@ try {
         } elseif (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && ($folder['visibility'] ?? 'private') === 'company') {
             $canAccessFolder = true;
         } else {
-            $chkStmt = $db->prepare("SELECT 1 FROM projects p JOIN project_members pm ON pm.project_id = p.id WHERE p.folder_id = ? AND pm.user_id = ? LIMIT 1");
-            $chkStmt->execute([$fldId, $user['id']]);
-            if ($chkStmt->fetch()) {
+            // Check direct folder_members
+            $chkFm = $db->prepare("SELECT 1 FROM folder_members WHERE folder_id = ? AND user_id = ? LIMIT 1");
+            $chkFm->execute([$fldId, $user['id']]);
+            if ($chkFm->fetch()) {
                 $canAccessFolder = true;
+            } else {
+                $chkStmt = $db->prepare("SELECT 1 FROM projects p JOIN project_members pm ON pm.project_id = p.id WHERE p.folder_id = ? AND pm.user_id = ? LIMIT 1");
+                $chkStmt->execute([$fldId, $user['id']]);
+                if ($chkStmt->fetch()) {
+                    $canAccessFolder = true;
+                }
             }
         }
 
@@ -1011,6 +1050,7 @@ try {
             $pStmt->execute([$fldId]);
         } else {
             $userCompany = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+            $folderVisibility = $folder['visibility'] ?? 'private';
             $pStmt = $db->prepare("
                 SELECT p.*,
                   (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
@@ -1018,15 +1058,19 @@ try {
                   (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.id) as member_count
                 FROM projects p
                 WHERE p.folder_id = ? AND (
-                    (p.visibility = 'company' AND ? = ?)
+                    (? = 'company' AND ? = ?)
+                    OR (p.visibility = 'company' AND ? = ?)
                     OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
+                    OR ? IN (SELECT fm.user_id FROM folder_members fm WHERE fm.folder_id = ?)
                 )
                 ORDER BY p.created_at DESC
             ");
             $pStmt->execute([
                 $fldId,
+                $folderVisibility, $userCompany, $folder['company_id'],
                 $userCompany, $folder['company_id'],
-                $user['id']
+                $user['id'],
+                $user['id'], $fldId
             ]);
         }
         $folderTotalMinutes = 0;
@@ -1053,6 +1097,132 @@ try {
         ];
 
         jsonResponse(['folder' => $folder, 'fields' => $fields, 'projects' => $projects, 'timeSummary' => $timeSummary]);
+    }
+
+    // 6b. GET folders/:id/members
+    if (preg_match('#^folders/([^/]+)/members$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $stmt = $db->prepare("SELECT pf.*, c.name as company_name FROM project_folders pf LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
+        $stmt->execute([$fldId]);
+        $folder = $stmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        // Fetch owner
+        $oStmt = $db->prepare("SELECT id as user_id, name, email, company_role FROM users WHERE id = ?");
+        $oStmt->execute([$folder['owner_id']]);
+        $owner = $oStmt->fetch();
+        if ($owner) {
+            $owner['role'] = 'owner';
+        }
+
+        // Fetch direct folder_members
+        $fmStmt = $db->prepare("
+            SELECT u.id as user_id, u.name, u.email, u.company_role, fm.role, fm.created_at
+            FROM folder_members fm
+            JOIN users u ON u.id = fm.user_id
+            WHERE fm.folder_id = ?
+            ORDER BY u.name ASC
+        ");
+        $fmStmt->execute([$fldId]);
+        $directMembers = $fmStmt->fetchAll();
+
+        // Company colleagues (for easy add / dropdown)
+        $companyUsers = [];
+        $compTarget = $folder['company_id'] ?: $user['company_id'];
+        if ($compTarget) {
+            $cStmt = $db->prepare("SELECT id as user_id, name, email, company_role FROM users WHERE company_id = ? ORDER BY name ASC");
+            $cStmt->execute([$compTarget]);
+            $companyUsers = $cStmt->fetchAll();
+        }
+
+        $allMembers = [];
+        if ($owner) $allMembers[] = $owner;
+        foreach ($directMembers as $dm) {
+            if ($owner && $dm['user_id'] === $owner['user_id']) continue;
+            $allMembers[] = $dm;
+        }
+
+        jsonResponse([
+            'folder' => [
+                'id' => $folder['id'],
+                'name' => $folder['name'],
+                'visibility' => $folder['visibility'] ?? 'private',
+                'company_id' => $folder['company_id'],
+                'company_name' => $folder['company_name']
+            ],
+            'members' => $allMembers,
+            'companyUsers' => $companyUsers
+        ]);
+    }
+
+    // 6c. POST folders/:id/members
+    if (preg_match('#^folders/([^/]+)/members$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+        $stmt->execute([$fldId]);
+        $folder = $stmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id']) {
+            errorResponse('Nur der Ordner-Eigentümer kann Mitglieder hinzufügen', 403);
+        }
+
+        $email = trim(strtolower($body['email'] ?? ''));
+        $targetUserId = trim($body['user_id'] ?? '');
+        $role = in_array($body['role'] ?? '', ['viewer', 'editor']) ? $body['role'] : 'editor';
+
+        $targetUser = null;
+        if ($targetUserId) {
+            $uStmt = $db->prepare("SELECT id, name, email, company_id FROM users WHERE id = ?");
+            $uStmt->execute([$targetUserId]);
+            $targetUser = $uStmt->fetch();
+        } elseif ($email) {
+            $uStmt = $db->prepare("SELECT id, name, email, company_id FROM users WHERE LOWER(email) = ?");
+            $uStmt->execute([$email]);
+            $targetUser = $uStmt->fetch();
+        }
+
+        if (!$targetUser) {
+            errorResponse('Benutzer mit dieser E-Mail nicht gefunden', 404);
+        }
+
+        $fmId = 'fm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $ins = $db->prepare("
+            INSERT INTO folder_members (id, folder_id, user_id, role)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE role = VALUES(role)
+        ");
+        $ins->execute([$fmId, $fldId, $targetUser['id'], $role]);
+
+        jsonResponse([
+            'success' => true,
+            'member' => [
+                'user_id' => $targetUser['id'],
+                'name' => $targetUser['name'],
+                'email' => $targetUser['email'],
+                'role' => $role
+            ]
+        ]);
+    }
+
+    // 6d. DELETE folders/:id/members/:userId
+    if (preg_match('#^folders/([^/]+)/members/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $targetUserId = $m[2];
+        $stmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+        $stmt->execute([$fldId]);
+        $folder = $stmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id'] && $user['id'] !== $targetUserId) {
+            errorResponse('Nur der Ordner-Eigentümer kann Mitglieder entfernen', 403);
+        }
+
+        $db->prepare("DELETE FROM folder_members WHERE folder_id = ? AND user_id = ?")->execute([$fldId, $targetUserId]);
+        jsonResponse(['success' => true]);
     }
 
     // 7. POST folders/:id/fields
@@ -1237,8 +1407,10 @@ try {
         // Tasks for lists
         foreach ($accessibleLists as &$l) {
             $tStmt = $db->prepare("
-                SELECT t.*, COALESCE((SELECT SUM(duration_minutes) FROM time_entries WHERE task_id = t.id), 0) as tracked_minutes
+                SELECT t.*, u.name as assignee_name, u.email as assignee_email,
+                       COALESCE((SELECT SUM(duration_minutes) FROM time_entries WHERE task_id = t.id), 0) as tracked_minutes
                 FROM tasks t
+                LEFT JOIN users u ON u.id = t.assigned_to
                 WHERE t.list_id = ?
                 ORDER BY t.sort_order ASC, t.created_at DESC
             ");
@@ -1253,14 +1425,38 @@ try {
             }, $tStmt->fetchAll());
         }
 
-        // Members
+        // Comprehensive Members list for project & task assignments:
+        // Includes: Project Owner, Folder Owner, all project_members, all folder_members, and all colleagues in the company!
+        $companyId = $project['company_id'] ?? null;
+        if (!$companyId && !empty($user['company_id'])) {
+            $companyId = $user['company_id'];
+        }
+
         $mStmt = $db->prepare("
-            SELECT pm.id, pm.role, u.id as user_id, u.name, u.email, u.company_role
-            FROM project_members pm
-            JOIN users u ON u.id = pm.user_id
+            SELECT u.id as user_id, u.name, u.email, u.company_role,
+                   COALESCE(pm.role, fm.role, CASE WHEN u.id = ? OR u.id = ? THEN 'owner' ELSE 'member' END) as role
+            FROM users u
+            LEFT JOIN project_members pm ON pm.user_id = u.id AND pm.project_id = ?
+            LEFT JOIN folder_members fm ON fm.user_id = u.id AND fm.folder_id = ?
             WHERE pm.project_id = ?
+               OR fm.folder_id = ?
+               OR u.id = ?
+               OR u.id = ?
+               OR (? IS NOT NULL AND u.company_id = ?)
+            GROUP BY u.id
+            ORDER BY (u.id = ?) DESC, (u.id = ?) DESC, u.name ASC
         ");
-        $mStmt->execute([$projectId]);
+        $mStmt->execute([
+            $project['owner_id'], $context['ownerId'],
+            $projectId,
+            $context['folderId'],
+            $projectId,
+            $context['folderId'],
+            $project['owner_id'],
+            $context['ownerId'],
+            $companyId, $companyId,
+            $user['id'], $project['owner_id']
+        ]);
         $members = $mStmt->fetchAll();
 
         jsonResponse([

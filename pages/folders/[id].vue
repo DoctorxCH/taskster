@@ -50,16 +50,25 @@
           <div class="flex items-center space-x-3">
             <button
               v-if="user?.id === folder.owner_id || user?.is_superadmin"
+              @click="openShareFolderModal"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+              title="Projektordner mit Mitgliedern oder dem Unternehmen teilen"
+            >
+              <span>👥</span>
+              <span>Ordner teilen</span>
+            </button>
+            <button
+              v-if="user?.id === folder.owner_id || user?.is_superadmin"
               @click="openEditFolderModal"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
-              title="Projektordner anpassen (Name & Icon)"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+              title="Projektordner anpassen (Name, Icon & Sichtbarkeit)"
             >
               <span>✏️</span>
               <span>Ordner anpassen</span>
             </button>
             <button
               @click="openNewProjectModal"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               <span>+ Neues Projekt</span>
             </button>
@@ -712,7 +721,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div v-if="user?.company_id || folder?.company_id || user?.is_superadmin" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
             <div class="grid grid-cols-2 gap-2">
               <label
@@ -731,27 +740,185 @@
               </label>
             </div>
             <p class="text-[11px] text-slate-500">
-              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : 'Für alle Mitglieder deines Unternehmens sichtbar.' }}
+              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : `Für alle Mitglieder des Unternehmens (${folder?.company_name || user?.company_name || 'Firma'}) sichtbar.` }}
             </p>
+          </div>
+          <div v-else class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <span class="font-bold">💡 Einzelnutzer-Konto:</span> Dieser Ordner ist standardmäßig privat. Nutze den Button <strong>"👥 Ordner teilen"</strong>, um Kollegen oder Partner gezielt per E-Mail einzuladen.
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               @click="showEditFolderModal = false; editFolderError = ''"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               :disabled="savingFolder || !editFolderName.trim()"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               <span>{{ savingFolder ? 'Wird gespeichert...' : 'Änderungen speichern' }}</span>
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Share Folder & Manage Members -->
+    <div v-if="showShareFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-white/80 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
+          <div class="flex items-center space-x-2.5">
+            <span class="text-2xl">👥</span>
+            <div>
+              <h3 class="text-base font-black text-slate-900">Projektordner teilen</h3>
+              <p class="text-xs text-slate-500 font-medium">{{ folder?.name }}</p>
+            </div>
+          </div>
+          <button @click="showShareFolderModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <!-- Section 1: Company Visibility Toggle -->
+        <div class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-5 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+              <span>🏢</span>
+              <span>Sichtbarkeit im Unternehmen</span>
+            </label>
+            <span
+              class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase"
+              :class="folder?.visibility === 'company' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-300'"
+            >
+              {{ folder?.visibility === 'company' ? '✓ Freigegeben' : '🔒 Privat' }}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-600 leading-relaxed">
+            Wenn für das Unternehmen freigegeben, haben alle Mitglieder des Unternehmens ({{ folder?.company_name || user?.company_name || 'Firma' }}) automatisch Zugriff auf diesen Ordner und die darin enthaltenen Projekte.
+          </p>
+          <div class="pt-2 flex items-center space-x-2">
+            <button
+              type="button"
+              @click="toggleFolderCompanyVisibility"
+              :disabled="savingFolderVisibility"
+              class="taskster_button px-4 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              <span>{{ folder?.visibility === 'company' ? '🔒 Auf Privat zurückstellen' : '🏢 Für gesamtes Unternehmen freigeben' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Invite Individual Member -->
+        <div class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-5">
+          <h4 class="text-xs font-bold text-slate-900 mb-2 flex items-center space-x-1.5">
+            <span>➕</span>
+            <span>Mitglied zum Ordner hinzufügen</span>
+          </h4>
+
+          <form @submit.prevent="addFolderMember" class="space-y-3">
+            <div v-if="folderMembersData.companyUsers && folderMembersData.companyUsers.length > 0">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Kollege aus Unternehmen auswählen</label>
+              <select
+                v-model="newMemberUserId"
+                @change="onSelectCompanyUser"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
+              >
+                <option value="">-- Oder per E-Mail unten eingeben --</option>
+                <option v-for="cu in folderMembersData.companyUsers" :key="cu.user_id" :value="cu.user_id">
+                  {{ cu.name }} ({{ cu.email }})
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+              <input
+                v-model="newMemberEmail"
+                type="email"
+                required
+                placeholder="kollege@domain.ch"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-600 shadow-xs"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Berechtigung</label>
+                <select
+                  v-model="newMemberRole"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
+                >
+                  <option value="editor">Editor (Bearbeiten)</option>
+                  <option value="viewer">Viewer (Nur Lesen)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button
+                  type="submit"
+                  :disabled="addingMember || !newMemberEmail"
+                  class="taskster_button w-full text-xs h-[38px] rounded-lg cursor-pointer"
+                >
+                  <span>{{ addingMember ? 'Füge hinzu...' : '+ Hinzufügen' }}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Section 3: Current Members List -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-900 mb-2.5 flex items-center justify-between">
+            <span class="flex items-center space-x-1.5">
+              <span>📋</span>
+              <span>Personen mit Zugriff ({{ folderMembers.length }})</span>
+            </span>
+          </h4>
+
+          <div v-if="loadingFolderMembers" class="py-6 text-center text-xs text-slate-500">
+            Lade Mitglieder...
+          </div>
+
+          <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div
+              v-for="m in folderMembers"
+              :key="m.user_id"
+              class="flex items-center justify-between p-2.5 rounded-xl bg-white/80 border border-slate-200/80 shadow-xs text-xs"
+            >
+              <div class="flex items-center space-x-2.5 min-w-0">
+                <span class="w-7 h-7 rounded-full bg-cyan-100 text-cyan-800 font-bold flex items-center justify-center text-xs shrink-0">
+                  {{ (m.name || m.email || '?').charAt(0).toUpperCase() }}
+                </span>
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-900 truncate">
+                    {{ m.name }}
+                    <span v-if="m.user_id === user?.id" class="text-[10px] text-cyan-700 font-normal ml-1">(Du)</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 truncate">{{ m.email }}</div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 shrink-0">
+                <span
+                  class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
+                  :class="m.role === 'owner' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'"
+                >
+                  {{ m.role === 'owner' ? 'Inhaber' : (m.role === 'editor' ? 'Editor' : 'Viewer') }}
+                </span>
+
+                <button
+                  v-if="m.role !== 'owner' && (user?.id === folder?.owner_id || user?.is_superadmin)"
+                  @click="removeFolderMember(m.user_id)"
+                  class="text-rose-500 hover:text-rose-700 font-bold p-1 text-xs cursor-pointer"
+                  title="Mitglied entfernen"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -836,6 +1003,112 @@ const updateFolder = async () => {
     editFolderError.value = err.data?.statusMessage || 'Ordner konnte nicht aktualisiert werden'
   } finally {
     savingFolder.value = false
+  }
+}
+
+// Share Folder & Manage Members State
+const showShareFolderModal = ref(false)
+const loadingFolderMembers = ref(false)
+const folderMembers = ref<any[]>([])
+const folderMembersData = ref<any>({})
+const newMemberEmail = ref('')
+const newMemberUserId = ref('')
+const newMemberRole = ref('editor')
+const addingMember = ref(false)
+const savingFolderVisibility = ref(false)
+
+const openShareFolderModal = async () => {
+  showShareFolderModal.value = true
+  newMemberEmail.value = ''
+  newMemberUserId.value = ''
+  newMemberRole.value = 'editor'
+  await loadFolderMembers()
+}
+
+const loadFolderMembers = async () => {
+  loadingFolderMembers.value = true
+  try {
+    const res = await $fetch<any>(`/api/folders/${folderId}/members`, {
+      headers: authHeaders()
+    })
+    folderMembersData.value = res || {}
+    folderMembers.value = res.members || []
+  } catch (err) {
+    console.error('Failed to load folder members:', err)
+  } finally {
+    loadingFolderMembers.value = false
+  }
+}
+
+const onSelectCompanyUser = () => {
+  if (newMemberUserId.value) {
+    const found = (folderMembersData.value.companyUsers || []).find((u: any) => u.user_id === newMemberUserId.value)
+    if (found) {
+      newMemberEmail.value = found.email
+    }
+  }
+}
+
+const toggleFolderCompanyVisibility = async () => {
+  if (!folder.value) return
+  savingFolderVisibility.value = true
+  const newVis = folder.value.visibility === 'company' ? 'private' : 'company'
+  try {
+    const res = await $fetch<any>(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        name: folder.value.name,
+        icon: folder.value.icon,
+        visibility: newVis
+      }
+    })
+    if (res?.folder) {
+      folder.value.visibility = res.folder.visibility
+    } else {
+      folder.value.visibility = newVis
+    }
+    await loadFolderMembers()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Ändern der Sichtbarkeit')
+  } finally {
+    savingFolderVisibility.value = false
+  }
+}
+
+const addFolderMember = async () => {
+  if (!newMemberEmail.value) return
+  addingMember.value = true
+  try {
+    await $fetch(`/api/folders/${folderId}/members`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        email: newMemberEmail.value,
+        user_id: newMemberUserId.value || undefined,
+        role: newMemberRole.value
+      }
+    })
+    newMemberEmail.value = ''
+    newMemberUserId.value = ''
+    await loadFolderMembers()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Hinzufügen des Mitglieds')
+  } finally {
+    addingMember.value = false
+  }
+}
+
+const removeFolderMember = async (userId: string) => {
+  if (!confirm('Möchtest du dieses Mitglied wirklich aus dem Projektordner entfernen?')) return
+  try {
+    await $fetch(`/api/folders/${folderId}/members/${userId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadFolderMembers()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Entfernen des Mitglieds')
   }
 }
 

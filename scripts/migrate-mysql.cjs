@@ -90,6 +90,19 @@ async function migrate() {
   `)
 
   await conn.query(`
+    CREATE TABLE IF NOT EXISTS folder_members (
+      id VARCHAR(64) PRIMARY KEY,
+      folder_id VARCHAR(64) NOT NULL,
+      user_id VARCHAR(64) NOT NULL,
+      role VARCHAR(64) NOT NULL DEFAULT 'editor',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_folder_user (folder_id, user_id),
+      INDEX idx_fm_folder (folder_id),
+      INDEX idx_fm_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
     CREATE TABLE IF NOT EXISTS lists (
       id VARCHAR(64) PRIMARY KEY,
       project_id VARCHAR(64) NOT NULL,
