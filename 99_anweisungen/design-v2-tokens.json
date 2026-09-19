@@ -1,0 +1,279 @@
+{
+  "$schema": "https://taskster.local/design-v2.schema.json",
+  "name": "Taskster Design v2",
+  "version": "2.0.0-draft",
+  "status": "DRAFT — nicht implementiert",
+  "direction": "Clean & Professional",
+  "inspiration": ["Linear", "Notion", "Stripe", "Height"],
+  "principles": [
+    "Ruhe vor Effekt — Weissraum und Hierarchie statt Glas und Schatten",
+    "Eine Akzentfarbe — Farbe bedeutet etwas, sie dekoriert nicht",
+    "Lesbarkeit zuerst — Minimum 11px, Standard 14px",
+    "Konsistenz — 3 Radien, 2 Schatten, 1 Icon-Set",
+    "Inhalt traegt — keine Emojis als Icons, keine Animationen ohne Zweck"
+  ],
+
+  "changesFromV1": {
+    "primaryColor": { "from": "#00A3C4", "to": "#0891B2", "reason": "Tiefer, ruhiger, serioeser" },
+    "baseFontSize": { "from": "12px", "to": "14px", "reason": "Lesbarkeit" },
+    "minFontSize": { "from": "9px", "to": "11px", "reason": "Lesbarkeit" },
+    "fontWeights": { "removed": ["font-black (900)"], "reason": "Zu schwer, zu laut" },
+    "radii": { "from": 6, "to": 3, "reason": "Konsistenz" },
+    "shadows": { "from": 6, "to": 2, "reason": "Konsistenz" },
+    "controlHeights": { "from": [42, 38, 36, 34, 30], "to": [36, 32, 28], "reason": "Vereinfachung" },
+    "glassEffects": { "removed": true, "reason": "Unruhig, Performance" },
+    "emojis": { "count": 115, "replacedBy": "lucide-vue-next" },
+    "sidebar": { "from": "rechts, hover-ausklappend", "to": "links, fest" },
+    "wallpaper": { "from": "zentral, 15 Bilder", "to": "optional, 3-4 Bilder" }
+  },
+
+  "colors": {
+    "neutral": {
+      "bg": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "surfaceSunken": "#F1F5F9",
+      "border": "#E2E8F0",
+      "borderStrong": "#CBD5E1",
+      "text": "#0F172A",
+      "textBody": "#334155",
+      "textMuted": "#64748B",
+      "textSubtle": "#94A3B8"
+    },
+    "accent": {
+      "base": "#0891B2",
+      "hover": "#0E7490",
+      "subtle": "#ECFEFF",
+      "border": "#A5F3FC"
+    },
+    "semantic": {
+      "success": { "text": "#047857", "bg": "#ECFDF5", "border": "#A7F3D0" },
+      "warning": { "text": "#B45309", "bg": "#FFFBEB", "border": "#FDE68A" },
+      "danger": { "text": "#BE123C", "bg": "#FFF1F2", "border": "#FECDD3" },
+      "info": { "text": "#0E7490", "bg": "#ECFEFF", "border": "#A5F3FC" }
+    },
+    "status": {
+      "todo": { "text": "slate-600", "bg": "slate-100", "border": "slate-200", "icon": "Circle", "label": "Zu erledigen" },
+      "in_progress": { "text": "#0E7490", "bg": "#ECFEFF", "border": "#A5F3FC", "icon": "CircleDot", "label": "In Arbeit" },
+      "review": { "text": "#B45309", "bg": "#FFFBEB", "border": "#FDE68A", "icon": "Eye", "label": "In Pruefung" },
+      "done": { "text": "#047857", "bg": "#ECFDF5", "border": "#A7F3D0", "icon": "CheckCircle2", "label": "Abgeschlossen" }
+    },
+    "priority": {
+      "niedrig": { "text": "slate-500", "bg": "slate-100", "icon": "ArrowDown" },
+      "normal": { "text": "slate-600", "bg": "slate-100", "icon": "Minus" },
+      "hoch": { "text": "#B45309", "bg": "#FFFBEB", "icon": "ArrowUp" },
+      "dringend": { "text": "#BE123C", "bg": "#FFF1F2", "icon": "AlertTriangle" }
+    },
+    "roles": {
+      "superadmin": "bg-slate-900 text-white",
+      "platformAdmin": "bg-slate-800 text-white",
+      "companyAdmin": "bg-cyan-50 text-cyan-800 border-cyan-200",
+      "companyMember": "bg-slate-100 text-slate-700 border-slate-200",
+      "pro": "bg-amber-50 text-amber-800 border-amber-200",
+      "free": "bg-slate-100 text-slate-600 border-slate-200"
+    },
+    "userPalette": ["#0891B2", "#7C3AED", "#D97706", "#059669", "#DC2626", "#475569"]
+  },
+
+  "typography": {
+    "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+    "fontFeatures": "'cv02', 'cv03', 'cv04', 'tnum'",
+    "scale": {
+      "display": { "size": "28px", "weight": 700, "lineHeight": 1.25 },
+      "h1": { "size": "24px", "weight": 700, "lineHeight": 1.25 },
+      "h2": { "size": "18px", "weight": 600, "lineHeight": 1.3 },
+      "h3": { "size": "16px", "weight": 600, "lineHeight": 1.3 },
+      "body": { "size": "14px", "weight": 400, "lineHeight": 1.5 },
+      "bodySm": { "size": "13px", "weight": 400, "lineHeight": 1.4 },
+      "label": { "size": "12px", "weight": 600, "lineHeight": 1.4 },
+      "caption": { "size": "12px", "weight": 400, "lineHeight": 1.4 },
+      "micro": { "size": "11px", "weight": 600, "lineHeight": 1.3 }
+    },
+    "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+    "forbidden": ["font-black (900)", "text-[9px]", "text-[10px]"]
+  },
+
+  "spacing": {
+    "grid": "4px",
+    "scale": [4, 8, 12, 16, 20, 24, 32, 40, 48, 64],
+    "pageContainer": "max-w-6xl mx-auto px-6 py-8",
+    "cardPadding": "p-5",
+    "sectionGap": "space-y-5",
+    "gridGap": "gap-4",
+    "navbarHeight": "h-14",
+    "sidebarWidth": "w-60"
+  },
+
+  "controls": {
+    "standard": "h-9",
+    "compact": "h-8",
+    "small": "h-7"
+  },
+
+  "radius": {
+    "sm": "6px",
+    "md": "10px",
+    "lg": "14px",
+    "forbidden": ["rounded-3xl", "rounded-full (ausser Avatare/Pills)"]
+  },
+
+  "shadows": {
+    "sm": "0 1px 2px rgba(15,23,42,.06)",
+    "md": "0 4px 12px rgba(15,23,42,.10)",
+    "forbidden": ["shadow-lg", "shadow-xl", "shadow-2xl"]
+  },
+
+  "components": {
+    "button": {
+      "base": "h-9 px-4 text-sm font-semibold rounded-md inline-flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+      "primary": "bg-[#0891B2] text-white hover:bg-[#0E7490]",
+      "secondary": "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50",
+      "danger": "bg-[#BE123C] text-white hover:bg-[#9F1239]",
+      "ghost": "h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900",
+      "link": "text-[#0891B2] hover:underline",
+      "compact": "h-8 px-3 text-xs"
+    },
+    "card": {
+      "base": "bg-white border border-slate-200 rounded-lg p-5",
+      "interactive": "bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+    },
+    "kpi": {
+      "wrapper": "bg-white border border-slate-200 rounded-lg p-4",
+      "label": "flex items-center gap-2 text-slate-500",
+      "labelText": "text-xs font-semibold uppercase tracking-wide",
+      "value": "text-2xl font-bold text-slate-900 mt-2 tabular-nums",
+      "meta": "text-xs text-slate-500 mt-0.5"
+    },
+    "input": {
+      "base": "w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 transition-shadow",
+      "label": "block text-xs font-semibold text-slate-700 mb-1.5",
+      "hint": "text-xs text-slate-500 mt-1.5"
+    },
+    "table": {
+      "table": "w-full text-sm",
+      "thead": "border-b border-slate-200",
+      "th": "text-left py-2.5 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wide",
+      "tbody": "divide-y divide-slate-100",
+      "row": "hover:bg-slate-50 transition-colors",
+      "td": "py-3 px-3 text-slate-700"
+    },
+    "navbar": {
+      "base": "h-14 sticky top-0 z-40 bg-white border-b border-slate-200",
+      "inner": "h-full px-6 flex items-center justify-between"
+    },
+    "sidebar": {
+      "base": "w-60 shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14",
+      "nav": "p-3 space-y-0.5",
+      "item": "flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors",
+      "itemActive": "flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium bg-cyan-50 text-cyan-800 transition-colors"
+    },
+    "tabs": {
+      "bar": "flex gap-1 border-b border-slate-200",
+      "item": "px-3 h-9 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent transition-colors",
+      "itemActive": "px-3 h-9 text-sm font-semibold text-[#0891B2] border-b-2 border-[#0891B2] transition-colors"
+    },
+    "modal": {
+      "overlay": "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40",
+      "panel": "bg-white rounded-lg shadow-md w-full max-w-lg max-h-[85vh] flex flex-col",
+      "header": "flex items-center justify-between px-5 h-14 border-b border-slate-200",
+      "title": "text-base font-semibold text-slate-900",
+      "close": "h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700",
+      "body": "p-5 overflow-y-auto flex-1",
+      "footer": "flex justify-end gap-2 px-5 h-16 items-center border-t border-slate-200"
+    },
+    "badge": {
+      "base": "inline-flex items-center gap-1.5 h-6 px-2 rounded-sm text-xs font-medium border",
+      "icon": "w-3 h-3"
+    },
+    "emptyState": {
+      "wrapper": "text-center py-16",
+      "iconBox": "w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4",
+      "icon": "w-6 h-6 text-slate-400",
+      "title": "text-sm font-semibold text-slate-900",
+      "text": "text-sm text-slate-500 mt-1 max-w-xs mx-auto"
+    }
+  },
+
+  "icons": {
+    "library": "lucide-vue-next",
+    "sizes": { "button": "w-4 h-4", "nav": "w-4 h-4", "badge": "w-3 h-3", "emptyState": "w-6 h-6" },
+    "colorRule": "currentColor — keine eigenen Icon-Farben",
+    "mapping": {
+      "🏠": "LayoutDashboard", "📁": "Folder", "⏱️": "Clock", "⚙️": "Settings",
+      "👤": "User", "🏢": "Building2", "👥": "Users", "📋": "ClipboardList",
+      "📝": "FileText", "💳": "CreditCard", "💬": "MessageSquare", "🔍": "Search",
+      "🔔": "Bell", "🎨": "Palette", "🖼️": "Image", "✅": "CheckCircle2",
+      "🗑️": "Trash2", "✏️": "Pencil", "⏹️": "Square", "📊": "BarChart3",
+      "📤": "Upload", "📎": "Paperclip", "🔒": "Lock", "⚡": "Zap",
+      "🫡": null
+    }
+  },
+
+  "animation": {
+    "allowed": [
+      "transition-colors duration-150",
+      "transition-all duration-150",
+      "transition-opacity duration-150",
+      "animate-spin (Spinner)",
+      "animate-pulse (Stoppuhr-Punkt)"
+    ],
+    "forbidden": [
+      "animate-bounce",
+      "hover:scale-105",
+      "active:scale-[0.99]",
+      "transition-all duration-700",
+      "animate-in fade-in zoom-in-95"
+    ]
+  },
+
+  "wallpaper": {
+    "default": "off",
+    "background": "#F8FAFC",
+    "whenEnabled": {
+      "overlay": "bg-white/92",
+      "note": "Wallpaper ist nur Ahnung, keine Design-Grundlage. Design funktioniert mit und ohne identisch."
+    },
+    "recommendedCount": 4
+  },
+
+  "rules": {
+    "must": [
+      "Standard-Schriftgroesse 14px (text-sm), Minimum 11px",
+      "Buttons: h-9 px-4 text-sm font-semibold rounded-md",
+      "Karten: bg-white border border-slate-200 rounded-lg p-5",
+      "Icons aus lucide-vue-next, Groesse w-4 h-4",
+      "Zahlen mit tabular-nums",
+      "Fokus: focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15",
+      "Abbrechen = secondary, Bestaetigen = primary, Loeschen = danger",
+      "Deutsche UI-Texte, de-CH-Format, CHF als Default"
+    ],
+    "mustNot": [
+      "Keine Emojis als Icons",
+      "Keine Glas-Effekte (liquid_glass, backdrop-blur)",
+      "Kein font-black (900)",
+      "Keine Schriftgroessen unter 11px",
+      "Kein rounded-3xl",
+      "Kein shadow-lg / shadow-xl / shadow-2xl",
+      "Keine Animationen ohne Zweck (bounce, scale)",
+      "Keine neuen Farben ausserhalb der Tokens"
+    ]
+  },
+
+  "migrationPhases": [
+    { "phase": 1, "content": "Tokens in tailwind.config.ts + app.vue", "effort": "klein" },
+    { "phase": 2, "content": "Inter einbinden, Typo-Skala global", "effort": "klein" },
+    { "phase": 3, "content": "Button-Klassen ersetzen", "effort": "mittel" },
+    { "phase": 4, "content": "Navbar + Sidebar umbauen (links, fest)", "effort": "mittel" },
+    { "phase": 5, "content": "Karten/Inputs/Tabellen seitenweise migrieren", "effort": "gross" },
+    { "phase": 6, "content": "Emojis -> Lucide (115 Stellen)", "effort": "gross" },
+    { "phase": 7, "content": "Wallpaper auf optional umstellen", "effort": "klein" },
+    { "phase": 8, "content": "Modals vereinheitlichen", "effort": "mittel" }
+  ],
+
+  "openQuestions": [
+    "Sidebar links statt rechts?",
+    "Inter als Schriftart einbinden?",
+    "Wallpaper ganz entfernen oder optional?",
+    "#0891B2 statt #00A3C4?",
+    "Dark Mode jetzt mitdenken?"
+  ]
+}
