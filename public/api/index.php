@@ -1167,7 +1167,10 @@ function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $body
         return ['success' => false, 'error' => $errMsg, 'log' => $log];
     }
 
-    $sendCommand("EHLO taskster.ch");
+    $fromDomain = substr(strrchr($fromEmail, '@'), 1) ?: 'kurka.ch';
+    $ehloDomain = !empty($host) ? $host : $fromDomain;
+
+    $sendCommand("EHLO {$ehloDomain}");
     $res = $readResponse();
 
     if ($secure === 'tls' && !$isSsl) {
@@ -1175,7 +1178,7 @@ function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $body
         $res = $readResponse();
         if (substr(trim($res), 0, 3) === '220') {
             stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-            $sendCommand("EHLO taskster.ch");
+            $sendCommand("EHLO {$ehloDomain}");
             $res = $readResponse();
         }
     }
@@ -1241,22 +1244,33 @@ function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $body
     $fromHeader = $fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromEmail}>" : "<{$fromEmail}>";
     $toHeader = $toName ? "=?UTF-8?B?" . base64_encode($toName) . "?= <{$to}>" : "<{$to}>";
     $encodedSubject = "=?UTF-8?B?" . base64_encode($subject) . "?=";
+    $messageId = "<" . md5(uniqid(microtime(true), true)) . "@" . $fromDomain . ">";
 
     $headers = [
         "From: {$fromHeader}",
+        "Reply-To: {$fromHeader}",
         "To: {$toHeader}",
         "Subject: {$encodedSubject}",
         "Date: " . date('r'),
         "MIME-Version: 1.0",
-        "Message-ID: <" . md5(uniqid(microtime(true), true)) . "@" . (parse_url($fromEmail, PHP_URL_HOST) ?: 'taskster.ch') . ">"
+        "Message-ID: {$messageId}",
+        "Auto-Submitted: auto-generated",
+        "X-Mailer: Taskster"
     ];
 
     if (!empty($icsContent)) {
         $headers[] = "Content-Type: multipart/mixed; boundary=\"{$boundary}\"";
         $body = "--{$boundary}\r\n";
+        $body .= "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"\r\n\r\n";
+        $body .= "--{$altBoundary}\r\n";
+        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $body .= chunk_split(base64_encode($bodyText ?: strip_tags($bodyHtml))) . "\r\n";
+        $body .= "--{$altBoundary}\r\n";
         $body .= "Content-Type: text/html; charset=UTF-8\r\n";
         $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $body .= chunk_split(base64_encode($bodyHtml ?: nl2br(htmlspecialchars($bodyText)))) . "\r\n";
+        $body .= "--{$altBoundary}--\r\n\r\n";
 
         $body .= "--{$boundary}\r\n";
         $body .= "Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name=\"invite.ics\"\r\n";
@@ -1616,6 +1630,7 @@ function icsFold($line) {
  */
 function buildIcs($evt, $attendees = [], $method = 'REQUEST', $sequence = 0) {
     $allDay = !empty($evt['all_day']);
+    $icsDomain = !empty($evt['owner_email']) && strpos($evt['owner_email'], '@') !== false ? substr(strrchr($evt['owner_email'], '@'), 1) : 'kurka.ch';
     $lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
@@ -1623,7 +1638,7 @@ function buildIcs($evt, $attendees = [], $method = 'REQUEST', $sequence = 0) {
         'CALSCALE:GREGORIAN',
         'METHOD:' . $method,
         'BEGIN:VEVENT',
-        'UID:' . $evt['id'] . '@taskster',
+        'UID:' . $evt['id'] . '@' . $icsDomain,
         'DTSTAMP:' . toIcsDate(date('Y-m-d H:i:s'))
     ];
 

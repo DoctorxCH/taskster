@@ -96,7 +96,8 @@ export function buildIcs(event: IcsEvent): string {
   ]
 
   lines.push('BEGIN:VEVENT')
-  lines.push(`UID:${event.id}@taskster`)
+  const icsDomain = event.organizerEmail && event.organizerEmail.includes('@') ? event.organizerEmail.split('@')[1] : 'kurka.ch'
+  lines.push(`UID:${event.id}@${icsDomain}`)
   lines.push(`DTSTAMP:${now}`)
 
   if (allDay) {

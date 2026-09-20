@@ -101,9 +101,12 @@ export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpCon
         // Only process completion replies (e.g. "250 " or "220 ")
         if (line.length >= 4 && line.charAt(3) === '-') continue
 
+        const fromDomain = cfg.smtp_from_email.includes('@') ? cfg.smtp_from_email.split('@')[1] : 'kurka.ch'
+        const ehloDomain = cfg.smtp_host || fromDomain
+
         if (step === 0 && code === 220) {
           step = 1
-          sendLine(`EHLO taskster.ch`)
+          sendLine(`EHLO ${ehloDomain}`)
         } else if (step === 1 && code === 250) {
           if (cfg.smtp_user && cfg.smtp_password) {
             step = 2
@@ -131,21 +134,37 @@ export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpCon
           step = 8
 
           const boundary = '----=_Part_' + Date.now()
+          const altBoundary = '----=_Alt_' + Date.now()
           const fromHeader = cfg.smtp_from_name ? `"${cfg.smtp_from_name}" <${cfg.smtp_from_email}>` : cfg.smtp_from_email
           const toHeader = options.toName ? `"${options.toName}" <${options.to}>` : options.to
+          const messageId = `<${Date.now()}_${Math.random().toString(36).slice(2)}@${fromDomain}>`
 
           let message = `From: ${fromHeader}\r\n`
+          message += `Reply-To: ${fromHeader}\r\n`
           message += `To: ${toHeader}\r\n`
           message += `Subject: =?UTF-8?B?${Buffer.from(options.subject).toString('base64')}?=\r\n`
           message += `Date: ${new Date().toUTCString()}\r\n`
           message += `MIME-Version: 1.0\r\n`
+          message += `Message-ID: ${messageId}\r\n`
+          message += `Auto-Submitted: auto-generated\r\n`
+          message += `X-Mailer: Taskster\r\n`
+
+          const textContent = options.bodyText || (options.bodyHtml ? options.bodyHtml.replace(/<[^>]*>/g, '') : '')
+          const htmlContent = options.bodyHtml || (options.bodyText ? options.bodyText.replace(/\n/g, '<br>') : '')
 
           if (options.icsContent) {
             message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`
             message += `--${boundary}\r\n`
+            message += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`
+            message += `--${altBoundary}\r\n`
+            message += `Content-Type: text/plain; charset=UTF-8\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
+            message += Buffer.from(textContent).toString('base64') + '\r\n\r\n'
+            message += `--${altBoundary}\r\n`
             message += `Content-Type: text/html; charset=UTF-8\r\n`
             message += `Content-Transfer-Encoding: base64\r\n\r\n`
-            message += Buffer.from(options.bodyHtml || options.bodyText || '').toString('base64') + '\r\n\r\n'
+            message += Buffer.from(htmlContent).toString('base64') + '\r\n\r\n'
+            message += `--${altBoundary}--\r\n\r\n`
 
             message += `--${boundary}\r\n`
             message += `Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="invite.ics"\r\n`
@@ -154,13 +173,20 @@ export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpCon
             message += Buffer.from(options.icsContent).toString('base64') + '\r\n\r\n'
             message += `--${boundary}--\r\n`
           } else if (options.bodyHtml) {
+            message += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`
+            message += `--${altBoundary}\r\n`
+            message += `Content-Type: text/plain; charset=UTF-8\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
+            message += Buffer.from(textContent).toString('base64') + '\r\n\r\n'
+            message += `--${altBoundary}\r\n`
             message += `Content-Type: text/html; charset=UTF-8\r\n`
             message += `Content-Transfer-Encoding: base64\r\n\r\n`
-            message += Buffer.from(options.bodyHtml).toString('base64') + '\r\n'
+            message += Buffer.from(htmlContent).toString('base64') + '\r\n\r\n'
+            message += `--${altBoundary}--\r\n`
           } else {
             message += `Content-Type: text/plain; charset=UTF-8\r\n`
             message += `Content-Transfer-Encoding: base64\r\n\r\n`
-            message += Buffer.from(options.bodyText || '').toString('base64') + '\r\n'
+            message += Buffer.from(textContent).toString('base64') + '\r\n'
           }
 
           message += '\r\n.'
