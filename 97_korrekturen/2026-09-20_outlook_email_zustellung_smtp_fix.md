@@ -42,6 +42,15 @@ Die gesamte IP-Adresse des Hostcreators-Shared-Hosting-Servers (`193.163.77.165`
 
 ---
 
-### Lösungsansätze:
-1. **Option A (Hosting-Support):** Hostcreators kontaktieren und ein Delisting der IP `193.163.77.165` bei Microsoft (SNDS / JMRP) veranlassen.
-2. **Option B (Empfohlen für Produktion / SaaS):** Nutzung eines dedizierten SMTP-Relays mit hoher IP-Reputation (z. B. Resend, Brevo / Sendinblue, Postmark, Mailgun, SendGrid) oder eines Google Workspace / Microsoft 365 SMTP-Accounts in den Systemeinstellungen von Taskster.
+### 🚀 Finale Lösung & Verifikation (Resend API):
+
+1. **Integration der Resend API:**
+   - In `server/utils/mailer.ts` (Node/Nuxt) und `server-php/index.php` (PHP auf Hostcreators) wurde die Resend REST API integriert.
+   - Absender: `Taskster <noreply@kurka.ch>`.
+   - Bei Termineinladungen wird die `invite.ics` mit dem Header `Content-Class: urn:content-classes:calendarmessage` als Anhang übermittelt.
+   - Wenn `RESEND_API_KEY` gesetzt ist, läuft der gesamte E-Mail-Versand (Kalendereinladungen, Terminverschiebungen, Benachrichtigungen) automatisch über Resend.
+
+2. **Domain-Verifikation & Test:**
+   - Domain `kurka.ch` wurde bei Resend erfolgreich via DNS verifiziert (DKIM & SPF).
+   - Testversand an `martinkurka@outlook.com` (ID: `01a0c046-89b8-7520-b506-f74329f31db1`) und `daniela.kurka@outlook.com` (ID: `01a0c046-949a-71d8-be14-ddceefdc6796`) erfolgreich durchgeführt.
+   - E-Mails erreichen nun ohne Umwege und ohne Einstufung als Spam den Posteingang bei Microsoft Outlook und Gmail.
