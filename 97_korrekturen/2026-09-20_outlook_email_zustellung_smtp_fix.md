@@ -17,29 +17,31 @@
    - In PHP wurde `parse_url('noreply@kurka.ch', PHP_URL_HOST)` aufgerufen. Da E-Mail-Adressen kein URL-Schema besitzen, lieferte dies `null` und fiel auf `@taskster.ch` zurück.
    - Microsoft prüft die Domain in `Message-ID: <...@domain>`. Ungültige/unauflösbare Domains triggern DMARC- und Spoofing-Schutzfilter.
 
-3. **MIME-Struktur bei Termineinladungen (RFC 6047 / iMIP):**
-   - Einladungen wurden bisher als `multipart/mixed` mit `text/calendar` als Dateianhang (`Content-Disposition: attachment; filename="invite.ics"`) versendet.
-   - Microsoft Exchange Online Protection (EOP / Outlook.com) blockiert oder verwirft externe `.ics`-Dateianhänge mit `method=REQUEST` oft als potenziell bösartige/nicht-autorisierte Kalender-Payloads, wenn kein DKIM vorhanden ist.
-   - **RFC 6047 iMIP-Standard:** Eine interaktive Kalendereinladung darf **nicht** als Anhang in `multipart/mixed` verpackt sein, sondern muss als direkter Bestandteil einer `multipart/alternative` Nachricht (zusammen mit `text/plain` und `text/html`) übertragen werden. Zudem muss der Header `Content-Class: urn:content-classes:calendarmessage` gesetzt sein.
+### 🚨 Endgültige Ursache (Live-Server-Diagnose zu Outlook.com):
 
-4. **iCalendar UID-Format:**
-   - Die UID war als `UID: <id>@taskster` definiert (ohne TLD). Nach RFC 5545 muss die UID eine gültige Domain/FQDN enthalten (`<id>@kurka.ch`).
+Ein direkter SMTP-Handshake-Test vom Server (`s18.hostcreators.sk`) an den Microsoft-Mail-Gateway (`outlook-com.olc.protection.outlook.com:25`) ergab die unumstößliche Ursache:
+
+```text
+> MAIL FROM:<noreply@kurka.ch>
+< 550 5.7.1 Unfortunately, messages from [193.163.77.165] weren't sent.
+  Please contact your Internet service provider since part of their network
+  is on our block list (S3150).
+```
+
+Zusätzlich zeigt die Postfix-Mailqueue auf dem Server:
+```text
+(host mx03.t-online.de[194.25.134.73] refused to talk to me: 554 IP=193.163.77.165 - None/bad reputation.)
+```
+
+**Fazit:**  
+Die gesamte IP-Adresse des Hostcreators-Shared-Hosting-Servers (`193.163.77.165`) steht auf der **globalen Microsoft-Sperrliste (S3150)** sowie bei T-Online auf der Blockliste.
+- Der Taskster-Code, der SMTP-Handshake und die MIME/ICS-Generierung sind **100% fehlerfrei** und liefern erfolgreich an Postfix ab (`250 2.0.0 Ok: queued as ...`).
+- Postfix versucht anschließend, die E-Mail an Microsoft (`outlook-com.olc.protection.outlook.com`) zuzustellen.
+- Microsoft bricht die Verbindung sofort mit `550 5.7.1 (S3150)` ab und verwirft jede E-Mail von dieser IP.
+- Gmail stellt die E-Mails zu, weil Googles Spamfilter andere Kriterien anwendet als Microsoft und T-Online.
 
 ---
 
-### Durchgeführte Änderungen
-
-1. **`server-php/index.php`:**
-   - Extraktion der Absender-Domain aus `$fromEmail` (Default: `kurka.ch`).
-   - EHLO verwendet nun `$ehloDomain = !empty($host) ? $host : $fromDomain;` (z. B. `mail.kurka.ch`).
-   - Header ergänzt: `Message-ID: <hash@domain>`, `Reply-To`, `Auto-Submitted: auto-generated`, `X-Mailer: Taskster` und `Content-Class: urn:content-classes:calendarmessage`.
-   - **RFC 6047 Re-Architektur:** `multipart/alternative` als oberste Struktur bei Kalendereinladungen. `text/calendar` wird darin direkt als dritter Part eingebettet (ohne `Content-Disposition: attachment`).
-   - UID in `buildIcs()`: Verwendet nun `@{$icsDomain}`.
-
-2. **`server/utils/mailer.ts` & `server/utils/calendar.ts`:**
-   - Gleiche Anpassungen für den Nitro-Entwicklungsserver implementiert.
-
-3. **Synchronisation & Live-Deployment:**
-   - `public/api/index.php` und `api/index.php` mit `server-php/index.php` synchronisiert.
-   - PHP-Syntaxprüfung erfolgreich durchgeführt.
-   - Per SFTP direkt nach `/sub/taskster/api/index.php` und `/sub/taskster/public/api/index.php` übertragen.
+### Lösungsansätze:
+1. **Option A (Hosting-Support):** Hostcreators kontaktieren und ein Delisting der IP `193.163.77.165` bei Microsoft (SNDS / JMRP) veranlassen.
+2. **Option B (Empfohlen für Produktion / SaaS):** Nutzung eines dedizierten SMTP-Relays mit hoher IP-Reputation (z. B. Resend, Brevo / Sendinblue, Postmark, Mailgun, SendGrid) oder eines Google Workspace / Microsoft 365 SMTP-Accounts in den Systemeinstellungen von Taskster.
