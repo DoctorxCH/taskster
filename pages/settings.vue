@@ -194,7 +194,6 @@
                     <option value="it">{{ $t('settings.whisper_lang_it') }}</option>
                     <option value="auto">{{ $t('settings.automatisch_erkennen') }}</option>
                   </select>
-                  <p class="text-[10px] text-slate-500 mt-1">{{ $t('settings.spracheingabe_für_openrouter_whispe') }}</p>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.design') }}</label>
