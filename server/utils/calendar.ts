@@ -161,6 +161,25 @@ export function queueEmail(mail: OutboxMail): string {
       INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status)
       VALUES (?, ?, ?, ?, ?, ?, 'pending')
     `).run(id, mail.to, mail.toName || null, mail.subject, mail.body, mail.ics || null)
+    
+    // Asynchron im Hintergrund verarbeiten
+    import('./mailer').then(({ sendSmtpEmail }) => {
+      sendSmtpEmail({
+        to: mail.to,
+        toName: mail.toName,
+        subject: mail.subject,
+        bodyHtml: mail.body,
+        icsContent: mail.ics
+      }).then(() => {
+        try {
+          db.prepare("UPDATE email_outbox SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(id)
+        } catch {}
+      }).catch((e) => {
+        try {
+          db.prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?").run(e.message, id)
+        } catch {}
+      })
+    })
   } catch {
     // Outbox-Fehler dürfen die Hauptaktion nicht blockieren
   }
