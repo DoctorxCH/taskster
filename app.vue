@@ -77,6 +77,64 @@
               <span>{{ $t('common.administration') }}</span>
             </NuxtLink>
 
+            <!-- Admin Sub-Menu (Mobile) -->
+            <div v-if="isPlatformAdmin && $route.path.startsWith('/admin')" class="ml-4 pl-2.5 border-l-2 border-purple-200 space-y-0.5 my-1">
+              <NuxtLink
+                v-if="hasAdminPermission('manage_users')"
+                to="/admin?tab=users"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              >
+                <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Benutzerverwaltung</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=companies"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              >
+                <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Unternehmen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('finance')"
+                to="/admin?tab=finance"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              >
+                <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Finanzen & Lizenzen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('manage_templates')"
+                to="/admin?tab=templates"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              >
+                <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Projekt-Vorlagen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=email"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              >
+                <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>E-Mail & Versand</span>
+              </NuxtLink>
+            </div>
+
             <NuxtLink
               v-else-if="isCompanyAdmin"
               to="/company"
@@ -170,6 +228,64 @@
               <ShieldCheck class="w-4 h-4 shrink-0 text-purple-600" />
               <span>{{ $t('common.administration') }}</span>
             </NuxtLink>
+
+            <!-- Admin Sub-Menu (Desktop) -->
+            <div v-if="isPlatformAdmin && $route.path.startsWith('/admin')" class="ml-4 pl-2.5 border-l-2 border-purple-200 space-y-0.5 my-1">
+              <NuxtLink
+                v-if="hasAdminPermission('manage_users')"
+                to="/admin?tab=users"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Benutzerverwaltung"
+              >
+                <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Benutzerverwaltung</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=companies"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Unternehmen"
+              >
+                <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Unternehmen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('finance')"
+                to="/admin?tab=finance"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Finanzen & Lizenzen"
+              >
+                <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Finanzen & Lizenzen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('manage_templates')"
+                to="/admin?tab=templates"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Projekt-Vorlagen"
+              >
+                <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Projekt-Vorlagen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=email"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="E-Mail & Versand"
+              >
+                <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>E-Mail & Versand</span>
+              </NuxtLink>
+            </div>
 
             <NuxtLink
               v-else-if="isCompanyAdmin"
@@ -306,7 +422,11 @@ import {
   Image,
   Check,
   X,
-  CalendarDays
+  CalendarDays,
+  Users,
+  CreditCard,
+  ClipboardList,
+  Mail
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -329,6 +449,21 @@ const isPlatformAdmin = computed(() => {
   }
   return Array.isArray(perms) && perms.length > 0
 })
+
+const currentAdminTab = computed(() => {
+  if (!route.path.startsWith('/admin')) return ''
+  return (route.query.tab as string) || 'users'
+})
+
+const hasAdminPermission = (perm: string) => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  let perms = user.value.admin_permissions
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = [] }
+  }
+  return Array.isArray(perms) && perms.includes(perm)
+}
 
 // Firmen-Admin (company_role === 'admin' mit Unternehmen, kein Plattform-Admin)
 const isCompanyAdmin = computed(() => {
