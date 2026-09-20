@@ -3983,7 +3983,7 @@ const runAiExtractionProject = async () => {
   aiStatusSuccessProject.value = false
 
   try {
-    const res = await $fetch<{ success: boolean; text: string }>('/api/ai/chat', {
+    const res = await $fetch<{ success: boolean; text?: string; response?: string }>('/api/ai/chat', {
       method: 'POST',
       headers: authHeaders(),
       body: {
@@ -4009,13 +4009,14 @@ ${aiRawTextProject.value.trim()}
       }
     })
 
-    if (!res || !res.text) {
+    const replyText = (res?.text || res?.response || '').trim()
+    if (!res || !replyText) {
       throw new Error('Keine Antwort von der KI erhalten.')
     }
 
     let parsed: any = null
     try {
-      const clean = res.text.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim()
+      const clean = replyText.replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim()
       parsed = JSON.parse(clean)
     } catch {
       throw new Error('KI-Rückgabe konnte nicht als JSON interpretiert werden.')

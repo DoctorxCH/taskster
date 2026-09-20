@@ -118,6 +118,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       text,
+      response: text,
       model: data.model,
       usage: data.usage
     }
