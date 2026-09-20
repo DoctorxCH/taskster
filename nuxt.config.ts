@@ -2,7 +2,18 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: false },
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/i18n'],
+  i18n: {
+    locales: [
+      { code: 'de', file: 'de.json', name: 'Deutsch' },
+      { code: 'en', file: 'en.json', name: 'English' },
+      { code: 'sk', file: 'sk.json', name: 'Slovenčina' }
+    ],
+    defaultLocale: 'de',
+    strategy: 'no_prefix',
+    lazy: true,
+    langDir: 'locales'
+  },
   app: {
     head: {
       title: 'Taskster - Professionelles Projekt- & Bauleitermanagement',

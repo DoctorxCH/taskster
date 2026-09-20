@@ -175,6 +175,19 @@
           </span>
         </div>
 
+        <!-- Language Switcher -->
+        <div class="hidden sm:flex items-center mr-1">
+          <select
+            v-model="$i18n.locale"
+            class="h-7 px-1.5 rounded-md text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+            title="Sprache / Language / Jazyk"
+          >
+            <option value="de">DE</option>
+            <option value="en">EN</option>
+            <option value="sk">SK</option>
+          </select>
+        </div>
+
         <!-- User Profile Link -->
         <NuxtLink
           to="/settings"
