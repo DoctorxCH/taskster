@@ -6,9 +6,13 @@ export default defineEventHandler((event) => {
   const config = getSmtpConfig()
 
   return {
+    settings: {
+      ...config,
+      smtp_password_set: Boolean(config.smtp_password),
+      smtp_password: config.smtp_password || ''
+    },
     config: {
       ...config,
-      // Mask password for safety if not requesting explicit edit
       smtp_password_set: Boolean(config.smtp_password),
       smtp_password: config.smtp_password || ''
     }

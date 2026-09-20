@@ -1057,13 +1057,16 @@ function seedDefaultEmailTemplates($pdo) {
 }
 
 function getSmtpConfigDb($pdo) {
-    $stmt = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'smtp_%'");
+    $stmt = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'smtp_%' OR `key` = 'mail_provider' OR `key` = 'resend_api_key'");
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $map = [];
     foreach ($rows as $r) {
         $map[$r['key']] = $r['value'];
     }
+    $envResend = getEnvValue('RESEND_API_KEY');
     return [
+        'mail_provider' => !empty($map['mail_provider']) ? $map['mail_provider'] : (!empty($envResend) || !empty($map['resend_api_key']) ? 'resend' : 'smtp'),
+        'resend_api_key' => !empty($map['resend_api_key']) ? $map['resend_api_key'] : ($envResend ?: ''),
         'smtp_host' => !empty($map['smtp_host']) ? $map['smtp_host'] : 'mail.kurka.ch',
         'smtp_port' => !empty($map['smtp_port']) ? (int)$map['smtp_port'] : 465,
         'smtp_secure' => !empty($map['smtp_secure']) ? $map['smtp_secure'] : 'ssl',
@@ -1087,7 +1090,7 @@ function saveSmtpConfigDb($pdo, $config) {
     }
 }
 
-function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
+function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null, $fromEmail = null, $fromName = null) {
     $log = [];
     $db = getDb();
 
@@ -1106,7 +1109,9 @@ function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', 
         } catch (Exception $e) {}
     }
 
-    $from = 'Taskster <noreply@kurka.ch>';
+    $fn = !empty($fromName) ? $fromName : 'Taskster';
+    $fe = !empty($fromEmail) ? $fromEmail : 'noreply@kurka.ch';
+    $from = "{$fn} <{$fe}>";
     $payload = [
         'from' => $from,
         'to' => [$to],
@@ -1167,9 +1172,10 @@ function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', 
 }
 
 function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
-    $resendKey = getEnvValue('RESEND_API_KEY');
-    if (!empty($resendKey) && strpos($resendKey, 're_') === 0 && $resendKey !== 're_xxxxxxxxx') {
-        return sendResendEmailNative($resendKey, $to, $toName, $subject, $bodyHtml, $bodyText, $icsContent, $outboxId);
+    $provider = $cfg['mail_provider'] ?? 'resend';
+    $resendKey = $cfg['resend_api_key'] ?? getEnvValue('RESEND_API_KEY');
+    if ($provider === 'resend' && !empty($resendKey) && strpos($resendKey, 're_') === 0 && $resendKey !== 're_xxxxxxxxx') {
+        return sendResendEmailNative($resendKey, $to, $toName, $subject, $bodyHtml, $bodyText, $icsContent, $outboxId, $cfg['smtp_from_email'] ?? null, $cfg['smtp_from_name'] ?? null);
     }
 
     $log = [];
@@ -6971,18 +6977,20 @@ try {
         $user = requireAdminPermission('company_settings');
         if ($method === 'GET') {
             $cfg = getSmtpConfigDb($db);
-            // Mask password if not superadmin
-            if (empty($user['is_superadmin']) && !empty($cfg['smtp_password'])) {
-                $cfg['smtp_password'] = '••••••••';
+            // Mask sensitive fields if not superadmin
+            if (empty($user['is_superadmin'])) {
+                if (!empty($cfg['smtp_password'])) $cfg['smtp_password'] = '••••••••';
+                if (!empty($cfg['resend_api_key'])) $cfg['resend_api_key'] = substr($cfg['resend_api_key'], 0, 6) . '••••••••';
             }
             jsonResponse(['settings' => $cfg]);
         } elseif ($method === 'POST') {
-            $allowed = ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password', 'smtp_from_email', 'smtp_from_name'];
+            $allowed = ['mail_provider', 'resend_api_key', 'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password', 'smtp_from_email', 'smtp_from_name'];
             $update = [];
             foreach ($allowed as $k) {
                 if (array_key_exists($k, $body)) {
-                    // Don't overwrite password if masked
+                    // Don't overwrite if masked
                     if ($k === 'smtp_password' && $body[$k] === '••••••••') continue;
+                    if ($k === 'resend_api_key' && strpos($body[$k], '••••') !== false) continue;
                     $update[$k] = $body[$k];
                 }
             }
@@ -7003,29 +7011,30 @@ try {
         if (!empty($body['custom_config']) && is_array($body['custom_config'])) {
             foreach ($body['custom_config'] as $k => $v) {
                 if ($k === 'smtp_password' && $v === '••••••••') continue;
+                if ($k === 'resend_api_key' && strpos((string)$v, '••••') !== false) continue;
                 if ($v !== null && $v !== '') $cfg[$k] = $v;
             }
         }
 
+        $provider = $cfg['mail_provider'] ?? 'resend';
         $subject = 'Taskster Test-E-Mail ' . date('d.m.Y H:i:s');
         $bodyHtml = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #00A3C4; border-radius: 8px;">
-          <h2 style="color: #00A3C4; margin-top: 0;">Taskster SMTP-Test erfolgreich! 🎉</h2>
-          <p>Diese Test-E-Mail bestätigt, dass die SMTP-Konfiguration ordnungsgemäss funktioniert.</p>
+          <h2 style="color: #00A3C4; margin-top: 0;">Taskster E-Mail Test erfolgreich! 🎉</h2>
+          <p>Diese Test-E-Mail bestätigt, dass der Versand über <strong>' . htmlspecialchars($provider === 'resend' ? 'Resend API (DKIM verifiziert)' : 'SMTP Server') . '</strong> einwandfrei funktioniert.</p>
           <div style="background: #f0fdfa; border-left: 4px solid #00A3C4; padding: 12px; margin: 16px 0;">
-            <div><strong>Host:</strong> ' . htmlspecialchars($cfg['smtp_host']) . '</div>
-            <div><strong>Port:</strong> ' . htmlspecialchars((string)$cfg['smtp_port']) . '</div>
-            <div><strong>Verschlüsselung:</strong> ' . htmlspecialchars($cfg['smtp_secure']) . '</div>
-            <div><strong>Absender:</strong> ' . htmlspecialchars($cfg['smtp_from_name'] . ' <' . $cfg['smtp_from_email'] . '>') . '</div>
+            <div><strong>Methode:</strong> ' . htmlspecialchars($provider === 'resend' ? 'Resend REST API (noreply@kurka.ch)' : 'SMTP-Server (' . $cfg['smtp_host'] . ')') . '</div>
+            <div><strong>Absender:</strong> ' . htmlspecialchars(($cfg['smtp_from_name'] ?? 'Taskster') . ' <' . ($cfg['smtp_from_email'] ?? 'noreply@kurka.ch') . '>') . '</div>
+            <div><strong>Empfänger:</strong> ' . htmlspecialchars($targetEmail) . '</div>
           </div>
           <p style="font-size: 13px; color: #64748b;">Gesendet am ' . date('d.m.Y \u\m H:i:s \U\h\r') . ' von Taskster.</p>
         </div>';
-        $bodyText = "Taskster SMTP-Test erfolgreich!\n\nHost: {$cfg['smtp_host']}\nPort: {$cfg['smtp_port']}\nAbsender: {$cfg['smtp_from_email']}\n\nGesendet am " . date('d.m.Y H:i:s');
+        $bodyText = "Taskster E-Mail Test erfolgreich!\n\nMethode: " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . "\nAbsender: " . ($cfg['smtp_from_email'] ?? 'noreply@kurka.ch') . "\nEmpfänger: " . $targetEmail . "\n\nGesendet am " . date('d.m.Y H:i:s');
 
         $res = sendSmtpEmailNative($cfg, $targetEmail, $user['name'] ?? null, $subject, $bodyHtml, $bodyText);
         if ($res['success']) {
             jsonResponse([
                 'success' => true,
-                'message' => "Test-E-Mail erfolgreich an {$targetEmail} versendet.",
+                'message' => "Test-E-Mail erfolgreich via " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . " an {$targetEmail} versendet.",
                 'log' => $res['log']
             ]);
         } else {

@@ -4,12 +4,12 @@
     <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-5">
       <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
         <LayoutDashboard class="w-3.5 h-3.5" />
-        <span>Dashboard</span>
+        <span>{{ $t('common.dashboard') }}</span>
       </NuxtLink>
       <span>/</span>
       <span class="text-slate-800 font-medium flex items-center gap-1">
-        <Settings class="w-3.5 h-3.5 text-[#0891B2]" />
-        <span>Einstellungen</span>
+        <SettingsIcon class="w-3.5 h-3.5 text-[#0891B2]" />
+        <span>{{ $t('common.einstellungen') }}</span>
       </span>
     </div>
 
@@ -36,7 +36,7 @@
           @click="saveAll"
         >
           <Save class="w-4 h-4" />
-          <span>{{ saving ? 'Speichern…' : $t('common.alle_anderungen_speichern') }}</span>
+          <span>{{ saving ? $t('settings.speichern_laeuft') : $t('common.alle_anderungen_speichern') }}</span>
         </button>
       </div>
     </div>
@@ -71,8 +71,7 @@
               v-if="s.key === 'notifications' && settings.notifications.browser"
               class="w-1.5 h-1.5 rounded-full bg-emerald-500"
               title="Browser-Benachrichtigungen aktiv"
-            />
-          </button>
+            />          </button>
         </div>
 
         <!-- Konto-Info -->
@@ -105,7 +104,7 @@
         <section v-show="active === 'profile'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <User class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Profil</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('common.profil') }}</h2>
           </header>
           <div class="p-5 space-y-5">
             <!-- Profilbild (Avatar) -->
@@ -122,15 +121,14 @@
                   title="Bild ändern"
                 >
                   <Camera class="w-5 h-5 mb-0.5" />
-                  <span>Ändern</span>
+                  <span>{{ $t('settings.aendern') }}</span>
                 </button>
               </div>
 
               <div class="space-y-1.5 flex-1">
-                <h4 class="text-xs font-bold text-slate-900">Dein Profilbild</h4>
+                <h4 class="text-xs font-bold text-slate-900">{{ $t('settings.dein_profilbild') }}</h4>
                 <p class="text-[11px] text-slate-500 leading-relaxed">
-                  Dieses Bild wird im Team, in der Navigation und bei deinen Aufgaben angezeigt.
-                  Empfohlen: Quadratisch, mind. 150×150 px (JPG, PNG oder WebP).
+                  {{ $t('settings.profilbild_hinweis') }}
                 </p>
                 <div class="flex items-center gap-2 pt-1">
                   <input
@@ -146,7 +144,7 @@
                     @click="triggerAvatarUpload"
                   >
                     <Upload class="w-3.5 h-3.5 mr-1" />
-                    <span>Bild hochladen</span>
+                    <span>{{ $t('settings.bild_hochladen') }}</span>
                   </button>
                   <button
                     v-if="profileAvatar"
@@ -155,7 +153,7 @@
                     @click="removeAvatar"
                   >
                     <Trash2 class="w-3.5 h-3.5 mr-1" />
-                    <span>Entfernen</span>
+                    <span>{{ $t('settings.entfernen') }}</span>
                   </button>
                 </div>
               </div>
@@ -163,13 +161,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Vollständiger Name</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('login.vollständiger_name') }}</label>
                 <input v-model="profileName" type="text" class="ts-input" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">E-Mail-Adresse</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.email_adresse') }}</label>
                 <input :value="user?.email" type="email" disabled class="ts-input bg-slate-50 text-slate-500 cursor-not-allowed" />
-                <p class="text-[11px] text-slate-500 mt-1.5">Dient als Login-Kennung und kann nicht geändert werden.</p>
+                <p class="text-[11px] text-slate-500 mt-1.5">{{ $t('settings.dient_als_loginkennung_und_kann_nic') }}</p>
               </div>
             </div>
 
@@ -186,7 +184,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Whisper-Sprache <span class="text-[#0891B2] font-mono text-[10px]">AI</span>
+                    {{ $t('settings.whisper_sprache') }} <span class="text-[#0891B2] font-mono text-[10px]">AI</span>
                   </label>
                   <select v-model="settings.whisper_language" class="ts-input">
                     <option value="de">Deutsch (de)</option>
@@ -194,33 +192,33 @@
                     <option value="en">English (en)</option>
                     <option value="fr">Français (fr)</option>
                     <option value="it">Italiano (it)</option>
-                    <option value="auto">Automatisch erkennen</option>
+                    <option value="auto">{{ $t('settings.automatisch_erkennen') }}</option>
                   </select>
-                  <p class="text-[10px] text-slate-500 mt-1">Spracheingabe für OpenRouter Whisper</p>
+                  <p class="text-[10px] text-slate-500 mt-1">{{ $t('settings.spracheingabe_für_openrouter_whispe') }}</p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Design</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.design') }}</label>
                   <select v-model="settings.theme" class="ts-input">
-                    <option value="light">Hell</option>
-                    <option value="dark">Dunkel (in Vorbereitung)</option>
-                    <option value="system">Systemeinstellung</option>
+                    <option value="light">{{ $t('settings.hell') }}</option>
+                    <option value="dark">{{ $t('settings.dunkel_in_vorbereitung') }}</option>
+                    <option value="system">{{ $t('settings.systemeinstellung') }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Listen-Dichte</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.listen_dichte') }}</label>
                   <select v-model="settings.density" class="ts-input">
-                    <option value="comfortable">Komfortabel</option>
-                    <option value="compact">Kompakt</option>
+                    <option value="comfortable">{{ $t('settings.komfortabel') }}</option>
+                    <option value="compact">{{ $t('settings.kompakt') }}</option>
                   </select>
                 </div>
               </div>
               <div class="mt-4 max-w-xs">
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Startseite nach dem Login</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.startseite_nach_dem_login') }}</label>
                 <select v-model="settings.start_page" class="ts-input">
-                  <option value="dashboard">Dashboard</option>
-                  <option value="calendar">Kalender</option>
-                  <option value="time">Zeitrapporte</option>
-                  <option value="contacts">Kontakte</option>
+                  <option value="dashboard">{{ $t('common.dashboard') }}</option>
+                  <option value="calendar">{{ $t('common.kalender') }}</option>
+                  <option value="time">{{ $t('common.zeitrapporte') }}</option>
+                  <option value="contacts">{{ $t('common.kontakte') }}</option>
                 </select>
               </div>
             </div>
@@ -231,34 +229,34 @@
         <section v-show="active === 'calendar'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <CalendarDays class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Kalender</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('common.kalender') }}</h2>
           </header>
           <div class="p-5 space-y-6">
 
             <!-- Ansicht & Woche -->
             <div>
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Ansicht & Woche</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ $t('settings.ansicht_woche') }}</h3>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Ansicht</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_ansicht') }}</label>
                   <select v-model="settings.calendar.default_view" class="ts-input">
-                    <option value="month">Monat</option>
-                    <option value="week">Woche</option>
-                    <option value="day">Tag</option>
+                    <option value="month">{{ $t('settings.monat') }}</option>
+                    <option value="week">{{ $t('settings.woche') }}</option>
+                    <option value="day">{{ $t('settings.tag') }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Erster Wochentag</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.erster_wochentag') }}</label>
                   <select v-model.number="settings.calendar.week_start" class="ts-input">
-                    <option :value="1">Montag</option>
-                    <option :value="0">Sonntag</option>
+                    <option :value="1">{{ $t('settings.montag') }}</option>
+                    <option :value="0">{{ $t('settings.sonntag') }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Zeitformat</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.zeitformat') }}</label>
                   <select v-model="settings.calendar.time_format" class="ts-input">
-                    <option value="24h">24 Stunden (17:00)</option>
-                    <option value="12h">12 Stunden (5:00 PM)</option>
+                    <option value="24h">{{ $t('settings.24_stunden_1700') }}</option>
+                    <option value="12h">{{ $t('settings.12_stunden_500_pm') }}</option>
                   </select>
                 </div>
               </div>
@@ -267,29 +265,29 @@
                 <label class="ts-toggle">
                   <input v-model="settings.calendar.show_week_numbers" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">Kalenderwochen anzeigen</span>
-                    <span class="block text-[11px] text-slate-500">Zeigt die KW-Nummer links neben jeder Woche.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.kalenderwochen_anzeigen') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.zeigt_die_kwnummer_links_neben_jede') }}</span>
                   </span>
                 </label>
                 <label class="ts-toggle">
                   <input v-model="settings.calendar.show_weekends" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">Wochenenden anzeigen</span>
-                    <span class="block text-[11px] text-slate-500">Samstag und Sonntag in der Wochenansicht einblenden.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.wochenenden_anzeigen') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.samstag_und_sonntag_in_der_wochenan') }}</span>
                   </span>
                 </label>
                 <label class="ts-toggle">
                   <input v-model="settings.calendar.show_tasks" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">Aufgaben mit Fälligkeitsdatum anzeigen</span>
-                    <span class="block text-[11px] text-slate-500">Aufgaben erscheinen als schreibgeschützte Einträge im Kalender.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.aufgaben_mit_fälligkeitsdatum_anzei') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.aufgaben_erscheinen_als_schreibgesc') }}</span>
                   </span>
                 </label>
                 <label class="ts-toggle">
                   <input v-model="settings.calendar.show_declined" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">Abgesagte Termine anzeigen</span>
-                    <span class="block text-[11px] text-slate-500">Termine, die du abgelehnt hast, weiterhin darstellen.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.abgesagte_termine_anzeigen') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.termine_die_du_abgelehnt_hast_weite') }}</span>
                   </span>
                 </label>
               </div>
@@ -297,72 +295,72 @@
 
             <!-- Arbeitszeit -->
             <div class="pt-5 border-t border-slate-100">
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">Arbeitszeit</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">{{ $t('settings.arbeitszeit') }}</h3>
               <p class="text-[11px] text-slate-500 mb-3">
-                Bestimmt den hervorgehobenen Bereich in der Wochen- und Tagesansicht.
+                {{ $t('settings.bestimmt_den_hervorgehobenen_bereic') }}
               </p>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Arbeitsbeginn</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.arbeitsbeginn') }}</label>
                   <input v-model="settings.calendar.workday_start" type="time" class="ts-input" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Arbeitsende</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.arbeitsende') }}</label>
                   <input v-model="settings.calendar.workday_end" type="time" class="ts-input" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Raster-Auflösung</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.rasterauflösung') }}</label>
                   <select v-model.number="settings.calendar.slot_minutes" class="ts-input">
-                    <option :value="15">15 Minuten</option>
-                    <option :value="30">30 Minuten</option>
-                    <option :value="60">60 Minuten</option>
+                    <option :value="15">{{ $t('settings.15_minuten') }}</option>
+                    <option :value="30">{{ $t('settings.30_minuten') }}</option>
+                    <option :value="60">{{ $t('settings.60_minuten') }}</option>
                   </select>
                 </div>
               </div>
               <p v-if="workdayInvalid" class="mt-2 text-[11px] font-medium text-rose-600">
-                Das Arbeitsende muss nach dem Arbeitsbeginn liegen.
+                {{ $t('settings.das_arbeitsende_muss_nach_dem_arbei') }}
               </p>
             </div>
 
             <!-- Neue Termine -->
             <div class="pt-5 border-t border-slate-100">
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Voreinstellungen für neue Termine</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ $t('settings.voreinstellungen_für_neue_termine') }}</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Dauer</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_dauer') }}</label>
                   <select v-model.number="settings.calendar.default_duration_minutes" class="ts-input">
-                    <option :value="15">15 Minuten</option>
-                    <option :value="30">30 Minuten</option>
-                    <option :value="45">45 Minuten</option>
-                    <option :value="60">1 Stunde</option>
-                    <option :value="90">1,5 Stunden</option>
-                    <option :value="120">2 Stunden</option>
-                    <option :value="480">Ganzer Arbeitstag</option>
+                    <option :value="15">{{ $t('settings.15_minuten') }}</option>
+                    <option :value="30">{{ $t('settings.30_minuten') }}</option>
+                    <option :value="45">{{ $t('settings.45_minuten') }}</option>
+                    <option :value="60">{{ $t('settings.1_stunde') }}</option>
+                    <option :value="90">{{ $t('settings.15_stunden') }}</option>
+                    <option :value="120">{{ $t('settings.2_stunden') }}</option>
+                    <option :value="480">{{ $t('settings.ganzer_arbeitstag') }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Erinnerung</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_erinnerung') }}</label>
                   <select v-model="reminderModel" class="ts-input">
-                    <option value="none">Keine</option>
-                    <option value="5">5 Minuten vorher</option>
-                    <option value="15">15 Minuten vorher</option>
-                    <option value="30">30 Minuten vorher</option>
-                    <option value="60">1 Stunde vorher</option>
-                    <option value="1440">1 Tag vorher</option>
+                    <option value="none">{{ $t('settings.keine') }}</option>
+                    <option value="5">{{ $t('settings.5_minuten_vorher') }}</option>
+                    <option value="15">{{ $t('settings.15_minuten_vorher') }}</option>
+                    <option value="30">{{ $t('settings.30_minuten_vorher') }}</option>
+                    <option value="60">{{ $t('settings.1_stunde_vorher') }}</option>
+                    <option value="1440">{{ $t('settings.1_tag_vorher') }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Kategorie</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_kategorie') }}</label>
                   <select v-model="settings.calendar.default_category_id" class="ts-input">
-                    <option :value="null">Keine</option>
+                    <option :value="null">{{ $t('settings.keine') }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Sichtbarkeit</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_sichtbarkeit') }}</label>
                   <select v-model="settings.calendar.default_visibility" class="ts-input">
-                    <option value="private">Privat (nur ich & Eingeladene)</option>
-                    <option v-if="user?.company_id" value="company">Für Firma sichtbar</option>
+                    <option value="private">{{ $t('settings.privat_nur_ich_eingeladene') }}</option>
+                    <option v-if="user?.company_id" value="company">{{ $t('settings.für_firma_sichtbar') }}</option>
                   </select>
                 </div>
               </div>
@@ -374,33 +372,33 @@
         <section v-show="active === 'notifications'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <Bell class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Benachrichtigungen</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('common.benachrichtigungen') }}</h2>
           </header>
           <div class="p-5 space-y-6">
 
             <!-- Kanäle -->
             <div>
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Kanäle</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ $t('settings.kanäle') }}</h3>
               <div class="space-y-1">
                 <label class="ts-toggle">
                   <input v-model="settings.notifications.in_app" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">In der App</span>
-                    <span class="block text-[11px] text-slate-500">Glocken-Symbol in der Navigation. Empfohlen.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.in_der_app') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.glockensymbol_in_der_navigation_emp') }}</span>
                   </span>
                 </label>
 
                 <label class="ts-toggle">
                   <input v-model="settings.notifications.browser" type="checkbox" class="ts-check" @change="onBrowserToggle" />
                   <span class="flex-1">
-                    <span class="block text-sm font-medium text-slate-800">Browser-Benachrichtigungen</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.browser_benachrichtigungen') }}</span>
                     <span class="block text-[11px] text-slate-500">
-                      Hinweise direkt im Betriebssystem – auch wenn Taskster im Hintergrund läuft.
+                      {{ $t('settings.hinweise_direkt_im_betriebssystem_a') }}
                       <span v-if="browserPermission === 'denied'" class="text-rose-600 font-medium">
-                        Der Browser hat die Erlaubnis blockiert; bitte in den Website-Einstellungen freigeben.
+                        {{ $t('settings.der_browser_hat_die_erlaubnis_block') }}
                       </span>
                       <span v-else-if="browserPermission === 'granted'" class="text-emerald-600 font-medium">
-                        Erlaubnis erteilt.
+                        {{ $t('settings.erlaubnis_erteilt') }}
                       </span>
                     </span>
                   </span>
@@ -408,16 +406,16 @@
                     v-if="browserPermission === 'granted'"
                     class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0"
                   >
-                    Aktiv
+                    {{ $t('settings.aktiv') }}
                   </span>
                 </label>
 
                 <label class="ts-toggle">
                   <input v-model="settings.notifications.email" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">E-Mail-Benachrichtigungen</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.email_benachrichtigungen') }}</span>
                     <span class="block text-[11px] text-slate-500">
-                      Erhalte E-Mails für zugewiesene Aufgaben, Termineinladungen, Fälligkeiten und Kommentare.
+                      {{ $t('settings.erhalte_emails_für_zugewiesene_aufg') }}
                     </span>
                   </span>
                 </label>
@@ -425,18 +423,18 @@
                 <label class="ts-toggle">
                   <input v-model="settings.notifications.sound" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">Ton</span>
-                    <span class="block text-[11px] text-slate-500">Kurzer Signalton bei neuen Benachrichtigungen.</span>
+                    <span class="block text-sm font-medium text-slate-800">{{ $t('settings.ton') }}</span>
+                    <span class="block text-[11px] text-slate-500">{{ $t('settings.kurzer_signalton_bei_neuen_benachri') }}</span>
                   </span>
                 </label>
               </div>
 
               <div class="mt-4 max-w-xs">
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Zusammenfassung</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.zusammenfassung') }}</label>
                 <select v-model="settings.notifications.digest" class="ts-input">
-                  <option value="off">Keine Zusammenfassung</option>
-                  <option value="daily">Täglich (morgens)</option>
-                  <option value="weekly">Wöchentlich (Montag)</option>
+                  <option value="off">{{ $t('settings.keine_zusammenfassung') }}</option>
+                  <option value="daily">{{ $t('settings.täglich_morgens') }}</option>
+                  <option value="weekly">{{ $t('settings.wöchentlich_montag') }}</option>
                 </select>
               </div>
             </div>
@@ -444,11 +442,11 @@
             <!-- Ereignisse -->
             <div class="pt-5 border-t border-slate-100">
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Worüber informieren</h3>
+                <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">{{ $t('settings.worüber_informieren') }}</h3>
                 <div class="flex gap-2">
-                  <button type="button" class="text-[11px] font-semibold text-[#0891B2] hover:underline" @click="setAllEvents(true)">Alle an</button>
+                  <button type="button" class="text-[11px] font-semibold text-[#0891B2] hover:underline" @click="setAllEvents(true)">{{ $t('settings.alle_an') }}</button>
                   <span class="text-slate-300">·</span>
-                  <button type="button" class="text-[11px] font-semibold text-slate-500 hover:underline" @click="setAllEvents(false)">Alle aus</button>
+                  <button type="button" class="text-[11px] font-semibold text-slate-500 hover:underline" @click="setAllEvents(false)">{{ $t('settings.alle_aus') }}</button>
                 </div>
               </div>
 
@@ -469,29 +467,29 @@
         <section v-show="active === 'billing'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <Clock class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Zeiterfassung & Abrechnung</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.zeiterfassung_abrechnung') }}</h2>
           </header>
           <div class="p-5 space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Stundenlohn</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standard_stundenlohn') }}</label>
                 <div class="relative">
                   <input v-model="hourlyRate" type="number" step="0.01" min="0" placeholder="120.00" class="ts-input pr-14 font-semibold" />
-                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold pointer-events-none">/ Std.</span>
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold pointer-events-none">{{ $t('settings.std') }}</span>
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Standard-Währung</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.standardwährung') }}</label>
                 <select v-model="userCurrency" class="ts-input">
-                  <option value="CHF">CHF (Schweizer Franken)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                  <option value="USD">USD (US Dollar)</option>
-                  <option value="GBP">GBP (Britisches Pfund)</option>
+                  <option value="CHF">{{ $t('settings.chf_schweizer_franken') }}</option>
+                  <option value="EUR">{{ $t('settings.eur_euro') }}</option>
+                  <option value="USD">{{ $t('settings.usd_us_dollar') }}</option>
+                  <option value="GBP">{{ $t('settings.gbp_britisches_pfund') }}</option>
                 </select>
               </div>
             </div>
             <p class="text-[11px] text-slate-500">
-              Dieser Stundensatz wird bei der Erfassung von Projekt- und Aufgabenzeiten standardmässig herangezogen.
+              {{ $t('settings.dieser_stundensatz_wird_bei_der_erf') }}
             </p>
           </div>
         </section>
@@ -500,26 +498,26 @@
         <section v-show="active === 'security'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <Lock class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Passwort & Sicherheit</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.passwort_sicherheit') }}</h2>
           </header>
           <div class="p-5">
             <form class="space-y-4 max-w-lg" @submit.prevent="changePassword">
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Aktuelles Passwort</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.aktuelles_passwort') }}</label>
                 <input v-model="currentPassword" type="password" required placeholder="••••••••" class="ts-input" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Neues Passwort (min. 8 Zeichen)</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.neues_passwort_min_8_zeichen') }}</label>
                 <input v-model="newPassword" type="password" required placeholder="••••••••" class="ts-input" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Neues Passwort bestätigen</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('settings.neues_passwort_bestätigen') }}</label>
                 <input v-model="confirmPassword" type="password" required placeholder="••••••••" class="ts-input" />
               </div>
               <div class="pt-1">
                 <button type="submit" class="taskster_button" :disabled="savingPassword">
                   <ShieldCheck class="w-4 h-4" />
-                  <span>{{ savingPassword ? 'Wird geändert…' : 'Passwort aktualisieren' }}</span>
+                  <span>{{ savingPassword ? $t('settings.wird_geaendert') : $t('settings.passwort_aktualisieren') }}</span>
                 </button>
               </div>
             </form>
@@ -530,19 +528,19 @@
         <section v-show="active === 'plan'" class="bg-white border border-slate-200 rounded-lg">
           <header class="px-5 h-14 flex items-center gap-2 border-b border-slate-200">
             <Zap class="w-4 h-4 text-[#0891B2]" />
-            <h2 class="text-base font-semibold text-slate-900">Tarifplan</h2>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('common.tarifplan') }}</h2>
           </header>
           <div class="p-5">
             <div class="p-4 rounded-md bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div class="text-[11px] text-slate-500 uppercase font-semibold mb-1">Dein aktiver Plan</div>
+                <div class="text-[11px] text-slate-500 uppercase font-semibold mb-1">{{ $t('settings.dein_aktiver_plan') }}</div>
                 <div class="text-xl font-bold tracking-tight" :class="planTextClass">{{ planLabel }}</div>
                 <p class="text-xs text-slate-600 mt-1">
                   <template v-if="user?.company_name">
-                    Du profitierst vom Plan deines Unternehmens ({{ user.company_name }}).
+                    {{ $t('settings.du_profitierst_vom_plan_deines_unte') }} ({{ user.company_name }})
                   </template>
-                  <template v-else-if="user?.is_pro">Du geniesst alle PRO-Vorteile.</template>
-                  <template v-else>Für Änderungen wende dich an den Support oder deinen Administrator.</template>
+                  <template v-else-if="user?.is_pro">{{ $t('settings.du_geniesst_alle_provorteile') }}</template>
+                  <template v-else>{{ $t('settings.für_änderungen_wende_dich_an_den_su') }}</template>
                 </p>
               </div>
               <button
@@ -553,7 +551,7 @@
                 @click="requestUpgrade"
               >
                 <Zap class="w-4 h-4" />
-                <span>{{ upgradeSent ? 'Anfrage gesendet' : 'Upgrade anfragen' }}</span>
+                <span>{{ upgradeSent ? $t('settings.anfrage_gesendet') : $t('settings.upgrade_anfragen') }}</span>
               </button>
             </div>
           </div>
@@ -564,7 +562,7 @@
           <header class="px-5 h-14 flex items-center justify-between border-b border-slate-200">
             <div class="flex items-center gap-2">
               <Building2 class="w-4 h-4 text-[#0891B2]" />
-              <h2 class="text-base font-semibold text-slate-900">Unternehmen</h2>
+              <h2 class="text-base font-semibold text-slate-900">{{ $t('common.unternehmen') }}</h2>
             </div>
             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200">
               Company Admin
@@ -572,30 +570,30 @@
           </header>
           <div class="p-5 space-y-5">
             <div>
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Mitarbeiter einladen</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ $t('settings.mitarbeiter_einladen') }}</h3>
               <form class="flex flex-col sm:flex-row gap-2" @submit.prevent="inviteCompanyMember">
                 <input v-model="companyInviteEmail" type="email" required placeholder="mitarbeiter@firma.ch" class="ts-input flex-1" />
                 <select v-model="companyInviteRole" class="ts-input sm:w-48">
-                  <option value="member">Mitarbeiter</option>
+                  <option value="member">{{ $t('settings.mitarbeiter') }}</option>
                   <option value="admin">Company Admin</option>
                 </select>
                 <button type="submit" class="taskster_button shrink-0" :disabled="sendingCompanyInvite || !companyInviteEmail.trim()">
                   <Plus class="w-4 h-4" />
-                  <span>{{ sendingCompanyInvite ? 'Sendet…' : 'Einladen' }}</span>
+                  <span>{{ sendingCompanyInvite ? $t('settings.sendet') : $t('settings.einladen') }}</span>
                 </button>
               </form>
               <div v-if="companyInviteLink" class="mt-3 p-3 rounded-md bg-cyan-50 border border-cyan-200">
-                <div class="text-xs font-semibold text-cyan-900 mb-1">Einladungslink</div>
+                <div class="text-xs font-semibold text-cyan-900 mb-1">{{ $t('settings.einladungslink') }}</div>
                 <input readonly :value="companyInviteLink" class="w-full h-8 px-2.5 rounded bg-white border border-cyan-200 text-xs font-mono" @click="($event.target as HTMLInputElement).select()" />
               </div>
             </div>
 
             <div class="pt-5 border-t border-slate-100">
               <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">
-                Aktuelle Mitarbeiter ({{ companyMembers.length }})
+                {{ $t('settings.aktuelle_mitarbeiter') }} ({{ companyMembers.length }})
               </h3>
-              <div v-if="loadingCompanyMembers" class="text-xs text-slate-500 py-3">Lade Mitglieder…</div>
-              <div v-else-if="companyMembers.length === 0" class="text-xs text-slate-500 py-3 italic">Noch keine weiteren Mitarbeiter vorhanden.</div>
+              <div v-if="loadingCompanyMembers" class="text-xs text-slate-500 py-3">{{ $t('settings.lade_mitglieder') }}</div>
+              <div v-else-if="companyMembers.length === 0" class="text-xs text-slate-500 py-3 italic">{{ $t('settings.noch_keine_weiteren_mitarbeiter_vor') }}</div>
               <div v-else class="divide-y divide-slate-100 border border-slate-200 rounded-md overflow-hidden">
                 <div v-for="m in companyMembers" :key="m.id" class="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50">
                   <div class="flex items-center gap-3 min-w-0">
@@ -605,7 +603,7 @@
                     <div class="min-w-0">
                       <div class="text-sm font-medium text-slate-900 truncate">
                         {{ m.name }}
-                        <span v-if="m.id === user?.id" class="text-slate-400 font-normal">(Du)</span>
+                        <span v-if="m.id === user?.id" class="text-slate-400 font-normal">{{ $t('settings.du') }}</span>
                       </div>
                       <div class="text-[11px] text-slate-500 truncate">{{ m.email }}</div>
                     </div>
@@ -616,7 +614,7 @@
                       ? 'bg-cyan-50 text-cyan-800 border-cyan-200'
                       : 'bg-slate-100 text-slate-600 border-slate-200'"
                   >
-                    {{ m.company_role === 'admin' ? 'Company Admin' : 'Mitarbeiter' }}
+                    {{ m.company_role === 'admin' ? 'Company Admin' : $t('settings.mitarbeiter') }}
                   </span>
                 </div>
               </div>
@@ -631,7 +629,7 @@
 
 <script setup lang="ts">
 import {
-  LayoutDashboard, Settings, User, Clock, Lock, Zap, Building2,
+  LayoutDashboard, Settings as SettingsIcon, User, Clock, Lock, Zap, Building2,
   ShieldCheck, CalendarDays, Bell, Save, CircleDot, CheckCircle2, AlertCircle, Plus,
   Camera, Upload, Trash2
 } from 'lucide-vue-next'
@@ -757,20 +755,20 @@ const reminderModel = computed({
   }
 })
 
-const eventOptions = [
-  { key: 'calendar_invite', label: 'Termineinladungen', hint: 'Jemand lädt dich zu einem Termin ein.' },
-  { key: 'calendar_change', label: 'Terminänderungen', hint: 'Zeit oder Ort eines Termins ändert sich.' },
-  { key: 'calendar_cancel', label: 'Terminabsagen', hint: 'Ein Termin wird abgesagt oder gelöscht.' },
-  { key: 'calendar_reminder', label: 'Terminerinnerungen', hint: 'Vor Beginn eines Termins.' },
-  { key: 'task_assigned', label: 'Aufgabenzuweisung', hint: 'Dir wird eine Aufgabe zugewiesen.' },
-  { key: 'task_due', label: 'Fällige Aufgaben', hint: 'Aufgaben, die bald fällig sind.' },
-  { key: 'task_comment', label: 'Kommentare', hint: 'Neue Kommentare zu deinen Aufgaben.' },
-  { key: 'mention', label: 'Erwähnungen', hint: 'Jemand erwähnt dich mit @Name.' },
-  { key: 'budget_warning', label: 'Budgetwarnungen', hint: 'Ein Projektbudget ist erreicht.' }
-]
+const eventOptions = computed(() => [
+  { key: 'calendar_invite', label: t('settings.termineinladungen'), hint: t('settings.jemand_lädt_dich_zu_einem_termin_ei') },
+  { key: 'calendar_change', label: t('settings.terminänderungen'), hint: t('settings.zeit_oder_ort_eines_termins_ändert_') },
+  { key: 'calendar_cancel', label: t('settings.terminabsagen'), hint: t('settings.ein_termin_wird_abgesagt_oder_gelös') },
+  { key: 'calendar_reminder', label: t('settings.terminerinnerungen'), hint: t('settings.vor_beginn_eines_termins') },
+  { key: 'task_assigned', label: t('settings.aufgabenzuweisung'), hint: t('settings.dir_wird_eine_aufgabe_zugewiesen') },
+  { key: 'task_due', label: t('settings.fällige_aufgaben'), hint: t('settings.aufgaben_die_bald_fällig_sind') },
+  { key: 'task_comment', label: t('settings.kommentare'), hint: t('settings.neue_kommentare_zu_deinen_aufgaben') },
+  { key: 'mention', label: t('settings.erwähnungen'), hint: t('settings.jemand_erwähnt_dich_mit_name') },
+  { key: 'budget_warning', label: t('settings.budgetwarnungen'), hint: t('settings.ein_projektbudget_ist_erreicht') }
+])
 
 function setAllEvents(value: boolean) {
-  for (const e of eventOptions) settings.value.notifications.events[e.key] = value
+  for (const e of eventOptions.value) settings.value.notifications.events[e.key] = value
 }
 
 // ---------------------------------------------------------------------------
@@ -789,7 +787,7 @@ function readBrowserPermission() {
 async function onBrowserToggle() {
   if (!import.meta.client || typeof Notification === 'undefined') {
     settings.value.notifications.browser = false
-    errorMsg.value = 'Dieser Browser unterstützt keine Benachrichtigungen.'
+    errorMsg.value = t('settings.dieser_browser_unterstützt_keine_be')
     return
   }
   if (settings.value.notifications.browser && Notification.permission !== 'granted') {
@@ -797,7 +795,7 @@ async function onBrowserToggle() {
     browserPermission.value = result as any
     if (result !== 'granted') {
       settings.value.notifications.browser = false
-      errorMsg.value = 'Ohne Erlaubnis des Browsers können keine Benachrichtigungen angezeigt werden.'
+      errorMsg.value = t('settings.ohne_erlaubnis_des_browsers_können_')
     }
   }
 }
@@ -822,7 +820,7 @@ function onAvatarFileSelected(e: Event) {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    errorMsg.value = 'Bitte wähle eine gültige Bilddatei (JPG, PNG oder WebP).'
+    errorMsg.value = t('settings.bitte_gueltige_bilddatei')
     return
   }
 
@@ -916,11 +914,11 @@ async function saveAll() {
   errorMsg.value = ''
 
   if (!profileName.value.trim()) {
-    errorMsg.value = 'Bitte gib einen Namen an.'
+    errorMsg.value = t('settings.bitte_gib_einen_namen_an')
     return
   }
   if (workdayInvalid.value) {
-    errorMsg.value = 'Das Arbeitsende muss nach dem Arbeitsbeginn liegen.'
+    errorMsg.value = t('settings.das_arbeitsende_muss_nach_dem_arbei')
     active.value = 'calendar'
     return
   }
@@ -969,7 +967,7 @@ async function changePassword() {
   errorMsg.value = ''
 
   if (newPassword.value !== confirmPassword.value) {
-    errorMsg.value = 'Die neuen Passwörter stimmen nicht überein.'
+    errorMsg.value = t('settings.die_neuen_passwörter_stimmen_nicht_')
     return
   }
 
@@ -987,9 +985,9 @@ async function changePassword() {
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
-    successMsg.value = 'Passwort erfolgreich geändert.'
+    successMsg.value = t('settings.passwort_erfolgreich_geändert')
   } catch (err: any) {
-    errorMsg.value = err?.data?.statusMessage || 'Passwort konnte nicht geändert werden.'
+    errorMsg.value = err?.data?.statusMessage || t('settings.passwort_konnte_nicht_geändert_werd')
   } finally {
     savingPassword.value = false
   }
@@ -1006,7 +1004,7 @@ async function requestUpgrade() {
     // Feld existiert serverseitig evtl. noch nicht – Anfrage gilt trotzdem als gestellt
   }
   upgradeSent.value = true
-  successMsg.value = 'Upgrade-Anfrage gesendet. Wir melden uns in Kürze.'
+  successMsg.value = t('settings.upgradeanfrage_gesendet_wir_melden_')
 }
 
 // ---------------------------------------------------------------------------
@@ -1044,10 +1042,10 @@ async function inviteCompanyMember() {
     })
     companyInviteLink.value = res.invite_link || res.link || ''
     companyInviteEmail.value = ''
-    successMsg.value = 'Einladung erstellt.'
+    successMsg.value = t('settings.einladung_erstellt')
     await loadCompanyMembers()
   } catch (err: any) {
-    errorMsg.value = err?.data?.statusMessage || 'Einladung konnte nicht erstellt werden.'
+    errorMsg.value = err?.data?.statusMessage || t('settings.einladung_konnte_nicht_erstellt_wer')
   } finally {
     sendingCompanyInvite.value = false
   }

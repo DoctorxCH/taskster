@@ -5,6 +5,8 @@ import * as tls from 'tls'
 import { Resend } from 'resend'
 
 export interface SmtpConfig {
+  mail_provider?: 'resend' | 'smtp'
+  resend_api_key?: string
   smtp_host: string
   smtp_port: number
   smtp_secure: 'ssl' | 'tls' | 'none'
@@ -15,11 +17,14 @@ export interface SmtpConfig {
 }
 
 export function getSmtpConfig(): SmtpConfig {
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'smtp_%'").all() as any[]
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'smtp_%' OR key = 'mail_provider' OR key = 'resend_api_key'").all() as any[]
   const map: Record<string, string> = {}
   for (const r of rows) map[r.key] = r.value
 
+  const envResend = process.env.RESEND_API_KEY
   return {
+    mail_provider: (map.mail_provider as any) || (envResend || map.resend_api_key ? 'resend' : 'smtp'),
+    resend_api_key: map.resend_api_key || envResend || '',
     smtp_host: map.smtp_host || 'mail.kurka.ch',
     smtp_port: parseInt(map.smtp_port || '465', 10),
     smtp_secure: (map.smtp_secure as any) || 'ssl',
@@ -55,11 +60,12 @@ export interface MailOptions {
 /**
  * Sendet E-Mails über die Resend API mit noreply@kurka.ch
  */
-export async function sendResendEmail(options: MailOptions, apiKey: string): Promise<{ success: boolean; log: string[] }> {
+export async function sendResendEmail(options: MailOptions, apiKey: string, customFrom?: string): Promise<{ success: boolean; log: string[] }> {
   const log: string[] = []
   const outboxId = 'out_' + randomUUID().substring(0, 8)
   const resend = new Resend(apiKey)
-  const fromAddress = 'Taskster <noreply@kurka.ch>'
+  const cfg = getSmtpConfig()
+  const fromAddress = customFrom || `${cfg.smtp_from_name || 'Taskster'} <${cfg.smtp_from_email || 'noreply@kurka.ch'}>`
 
   // Log pending to email_outbox
   try {
@@ -123,12 +129,13 @@ export async function sendResendEmail(options: MailOptions, apiKey: string): Pro
  * Native Socket/TLS SMTP Mailer (Zero External Dependencies) mit automatischem Resend-Fallback
  */
 export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpConfig): Promise<{ success: boolean; log: string[] }> {
-  const resendApiKey = process.env.RESEND_API_KEY
-  if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 're_xxxxxxxxx') {
-    return sendResendEmail(options, resendApiKey)
+  const cfg = customConfig || getSmtpConfig()
+  const resendApiKey = cfg.resend_api_key || process.env.RESEND_API_KEY
+  if (cfg.mail_provider !== 'smtp' && resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 're_xxxxxxxxx') {
+    const fromStr = `${cfg.smtp_from_name || 'Taskster'} <${cfg.smtp_from_email || 'noreply@kurka.ch'}>`
+    return sendResendEmail(options, resendApiKey, fromStr)
   }
 
-  const cfg = customConfig || getSmtpConfig()
   const log: string[] = []
   const outboxId = 'out_' + randomUUID().substring(0, 8)
 
