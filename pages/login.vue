@@ -21,7 +21,7 @@
 
         <div class="relative z-10 pt-6 border-t border-white/20">
           <div class="flex items-center space-x-2 text-xs text-cyan-100 font-medium">
-            <span>✨</span>
+            <Sparkles class="w-4 h-4 text-cyan-200" />
             <span>Zero-Trust Architektur & Schweizer Präzision</span>
           </div>
         </div>
@@ -159,8 +159,9 @@
 
         <!-- One-Click Demo Logins -->
         <div class="mt-8 pt-6 border-t border-slate-200">
-          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
-            ⚡ 1-Klick Schnell-Login (Demo-Rollen)
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center flex items-center justify-center space-x-1">
+            <Zap class="w-3.5 h-3.5 text-amber-500 inline" />
+            <span>1-Klick Schnell-Login (Demo-Rollen)</span>
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
@@ -203,6 +204,8 @@
 </template>
 
 <script setup lang="ts">
+import { Sparkles, Zap } from 'lucide-vue-next'
+
 const route = useRoute()
 const { setAuth } = useAuth()
 
