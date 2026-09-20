@@ -312,27 +312,27 @@
                   </td>
                   <td class="py-3 px-4">
                     <div class="flex flex-wrap gap-1.5 max-w-md">
-                      <span
-                        v-for="f in matrixData.folders"
-                        v-show="m.folder_access && m.folder_access[f.id] && m.folder_access[f.id].role !== 'none'"
-                        :key="'f_' + f.id"
-                        class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
-                        :class="getRoleBadgeClass(m.folder_access[f.id].role)"
-                      >
-                        <span>📁 {{ f.name }}</span>
-                        <span class="font-bold uppercase text-[9px]">({{ m.folder_access[f.id].role }})</span>
-                      </span>
+                      <template v-for="f in (matrixData?.folders || [])" :key="'f_' + f.id">
+                        <span
+                          v-if="m.folder_access?.[f.id] && m.folder_access[f.id].role !== 'none'"
+                          class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
+                          :class="getRoleBadgeClass(m.folder_access[f.id].role)"
+                        >
+                          <span>📁 {{ f.name }}</span>
+                          <span class="font-bold uppercase text-[9px]">({{ m.folder_access[f.id].role }})</span>
+                        </span>
+                      </template>
 
-                      <span
-                        v-for="p in matrixData.projects"
-                        v-show="m.project_access && m.project_access[p.id] && m.project_access[p.id].role !== 'none' && (!m.folder_access || !m.folder_access[p.folder_id] || m.folder_access[p.folder_id].role === 'none')"
-                        :key="'p_' + p.id"
-                        class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
-                        :class="getRoleBadgeClass(m.project_access[p.id].role)"
-                      >
-                        <span>📄 {{ p.title }}</span>
-                        <span class="font-bold uppercase text-[9px]">({{ m.project_access[p.id].role }})</span>
-                      </span>
+                      <template v-for="p in (matrixData?.projects || [])" :key="'p_' + p.id">
+                        <span
+                          v-if="m.project_access?.[p.id] && m.project_access[p.id].role !== 'none' && (!m.folder_access || !m.folder_access[p.folder_id] || m.folder_access[p.folder_id].role === 'none')"
+                          class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
+                          :class="getRoleBadgeClass(m.project_access[p.id].role)"
+                        >
+                          <span>📄 {{ p.title }}</span>
+                          <span class="font-bold uppercase text-[9px]">({{ m.project_access[p.id].role }})</span>
+                        </span>
+                      </template>
 
                       <span v-if="hasNoAccess(m)" class="text-slate-400 text-[11px] italic">
                         Kein spezifischer Zugriff
