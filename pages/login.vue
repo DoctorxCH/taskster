@@ -165,11 +165,11 @@
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
-              @click="quickLogin('admin@taskster.io', 'password123')"
+              @click="quickLogin('admin@kurka.ch', '[REDACTED_SECRET]')"
               class="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-left transition"
             >
               <div class="text-xs font-bold text-purple-900">Site Superadmin</div>
-              <div class="text-[10px] text-purple-700">admin@taskster.io</div>
+              <div class="text-[10px] text-purple-700">admin@kurka.ch</div>
             </button>
 
             <button

@@ -332,7 +332,7 @@ async function migrate() {
     ON DUPLICATE KEY UPDATE name=VALUES(name), company_role=VALUES(company_role), password_hash=VALUES(password_hash);
   `
 
-  await conn.query(insertUserSql, ['user-superadmin-01', null, null, 1, 1, 'Taskster Admin', 'admin@taskster.io', pwHash])
+  await conn.query(insertUserSql, ['user-superadmin-01', null, null, 1, 1, 'Taskster Admin', 'admin@kurka.ch', pwHash])
   await conn.query(insertUserSql, ['user-marc-01', 'comp-swiss-infra-01', 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@kurka.ch', pwHash])
   await conn.query(insertUserSql, ['user-sarah-02', 'comp-swiss-infra-01', 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@kurka.ch', pwHash])
   await conn.query(insertUserSql, ['user-lukas-03', null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@kurka.ch', pwHash])
