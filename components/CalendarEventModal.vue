@@ -539,6 +539,9 @@ function normalizeDateTime(value: string, allDay: boolean, isEnd: boolean): stri
 }
 
 async function save() {
+  if (attendeeInput.value.trim()) {
+    addAttendee()
+  }
   if (!form.value.title.trim()) return
   saving.value = true
 
