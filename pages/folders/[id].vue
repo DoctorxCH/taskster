@@ -741,13 +741,24 @@
                             :class="importColumnMapping[hIdx] === 'title' ? 'border-[#00A3C4] bg-cyan-50/50 text-cyan-950 font-bold' : ''"
                           >
                             <option value="">-- Nicht importieren --</option>
-                            <option value="list_title">📂 Phase / Abschnitt (Erzeugt Listen)</option>
-                            <option value="title">📌 Aufgabentitel (Pflicht)</option>
-                            <option value="description">📋 Beschreibung</option>
-                            <option value="due_date">📅 Fälligkeitsdatum</option>
-                            <option value="priority">⚡ Priorität (niedrig/normal/hoch/dringend)</option>
-                            <option value="status">🔄 Status (todo/in_progress/done)</option>
-                            <option value="tags">🏷️ Tags / Schlagwörter</option>
+                            <optgroup label="Standard-Felder">
+                              <option value="list_title">📂 Phase / Abschnitt (Erzeugt Listen)</option>
+                              <option value="title">📌 Aufgabentitel (Pflicht)</option>
+                              <option value="description">📋 Beschreibung</option>
+                              <option value="due_date">📅 Fälligkeitsdatum</option>
+                              <option value="priority">⚡ Priorität (niedrig/normal/hoch/dringend)</option>
+                              <option value="status">🔄 Status (todo/in_progress/done)</option>
+                              <option value="tags">🏷️ Tags / Schlagwörter</option>
+                            </optgroup>
+                            <optgroup v-if="taskCustomFields.length > 0" label="Benutzerdefinierte Felder">
+                              <option
+                                v-for="f in taskCustomFields"
+                                :key="f.id"
+                                :value="'custom:' + f.field_key"
+                              >
+                                ⚙️ {{ f.label }} ({{ f.field_key }})
+                              </option>
+                            </optgroup>
                           </select>
                         </td>
                       </tr>
@@ -1665,6 +1676,10 @@ const projectFields = computed(() => {
   return fields.value.filter((f: any) => f.entity_type === 'project')
 })
 
+const taskCustomFields = computed(() => {
+  return fields.value.filter((f: any) => f.entity_type !== 'project')
+})
+
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
   return f ? f.label : key
@@ -1790,6 +1805,14 @@ const processImportFile = async (file: File) => {
         mapping[idx] = 'status'
       } else if (!Object.values(mapping).includes('tags') && (lower.includes('tag') || lower.includes('label') || lower.includes('kategorie') || lower.includes('schlagwort'))) {
         mapping[idx] = 'tags'
+      } else {
+        // Benutzerdefinierte Felder anhand Label oder Feld-Key erkennen
+        const matchField = taskCustomFields.value.find((f: any) =>
+          f.label?.toLowerCase() === lower || f.field_key?.toLowerCase() === lower
+        )
+        if (matchField) {
+          mapping[idx] = 'custom:' + matchField.field_key
+        }
       }
     })
     importColumnMapping.value = mapping
@@ -1934,6 +1957,15 @@ const createProject = async () => {
           tagList = String(row[tagColIdx] || '').split(/[,;|]/).map(t => t.trim()).filter(Boolean)
         }
 
+        // Benutzerdefinierte Felder aus dem Mapping uebernehmen
+        const customData: Record<string, string> = {}
+        for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+          if (!targetField || !targetField.startsWith('custom:')) continue
+          const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
+          if (!cellVal) continue
+          customData[targetField.replace('custom:', '')] = cellVal
+        }
+
         tasksToImport.push({
           list_title: secTitle || detectedImportPhases.value[0] || 'Aufgaben',
           title: taskTitle,
@@ -1941,7 +1973,8 @@ const createProject = async () => {
           due_date: rawDate || null,
           priority: prio,
           status: stat,
-          tags: tagList
+          tags: tagList,
+          custom_data: customData
         })
       }
 
