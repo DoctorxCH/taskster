@@ -183,6 +183,15 @@
             </NuxtLink>
           </nav>
 
+          <!-- Mini-Kalender (Terminübersicht) -->
+          <div class="border-t border-slate-200 pt-3">
+            <div class="px-4 pb-1 flex items-center gap-2">
+              <CalendarDays class="w-3.5 h-3.5 text-slate-400" />
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kalender</span>
+            </div>
+            <MiniCalendar />
+          </div>
+
           <!-- Sidebar Footer Wallpaper Trigger -->
           <div class="p-3 border-t border-slate-200 flex items-center justify-between">
             <button
@@ -286,7 +295,8 @@ import {
   ShieldCheck,
   Image,
   Check,
-  X
+  X,
+  CalendarDays
 } from 'lucide-vue-next'
 
 const route = useRoute()

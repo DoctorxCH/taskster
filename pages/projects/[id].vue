@@ -961,10 +961,9 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- VIEW 5: ZEITERFASSUNG & AUDIT-PROTOKOLL -->
-    <div v-else-if="currentView === 'time'" class="space-y-6">
+      <!-- VIEW 5: ZEITERFASSUNG & AUDIT-PROTOKOLL -->
+      <div v-else-if="currentView === 'time'" class="space-y-6">
       <!-- Header & Action Card -->
       <div class="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
@@ -1363,6 +1362,7 @@
         </div>
       </div>
     </div>
+  </div>
 
     <!-- Modal: New Section (Abschnitt) -->
     <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
