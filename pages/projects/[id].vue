@@ -1744,43 +1744,162 @@
         ></div>
 
         <!-- Header -->
-        <div class="px-6 py-4 border-b border-slate-200 bg-white flex items-start justify-between gap-4 shrink-0">
-          <div class="flex-1 min-w-0">
-            <!-- Breadcrumbs -->
-            <div class="flex items-center space-x-1.5 text-[11px] font-bold text-slate-500 mb-1.5 flex-wrap">
-              <span>📁 {{ project?.folder_name || 'Ordner' }}</span>
-              <span>/</span>
-              <span>📋 {{ project?.title || 'Projekt' }}</span>
-              <span v-if="getTaskSectionTitle(drawerTask?.list_id)">/</span>
-              <span v-if="getTaskSectionTitle(drawerTask?.list_id)" class="text-cyan-800 font-extrabold">
-                🏷️ {{ getTaskSectionTitle(drawerTask?.list_id) }}
-              </span>
-              <span v-if="isCreatingTaskInDrawer" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">
-                Neu
-              </span>
+        <div class="px-6 py-4 border-b border-slate-200 bg-white flex flex-col gap-3 shrink-0">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <!-- Breadcrumbs -->
+              <div class="flex items-center space-x-1.5 text-[11px] font-bold text-slate-500 mb-1.5 flex-wrap">
+                <span>📁 {{ project?.folder_name || 'Ordner' }}</span>
+                <span>/</span>
+                <span>📋 {{ project?.title || 'Projekt' }}</span>
+                <span v-if="getTaskSectionTitle(drawerTask?.list_id)">/</span>
+                <span v-if="getTaskSectionTitle(drawerTask?.list_id)" class="text-cyan-800 font-extrabold">
+                  🏷️ {{ getTaskSectionTitle(drawerTask?.list_id) }}
+                </span>
+                <span v-if="isCreatingTaskInDrawer" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">
+                  Neu
+                </span>
+              </div>
+
+              <!-- Title (Inline editierbar) -->
+              <input
+                v-if="drawerTask"
+                v-model="drawerTask.title"
+                @blur="autoSaveDrawer"
+                @keyup.enter="autoSaveDrawer"
+                :disabled="userRole === 'viewer'"
+                class="w-full text-xl sm:text-2xl font-black text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white rounded-xl px-2 -mx-2 py-1 placeholder-slate-400 border border-transparent focus:border-[#00A3C4] focus:outline-none transition disabled:cursor-default"
+                placeholder="Aufgabentitel eingeben..."
+              />
             </div>
 
-            <!-- Title (Inline editierbar) -->
-            <input
-              v-if="drawerTask"
-              v-model="drawerTask.title"
-              @blur="autoSaveDrawer"
-              @keyup.enter="autoSaveDrawer"
-              :disabled="userRole === 'viewer'"
-              class="w-full text-xl sm:text-2xl font-black text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white rounded-xl px-2 -mx-2 py-1 placeholder-slate-400 border border-transparent focus:border-[#00A3C4] focus:outline-none transition disabled:cursor-default"
-              placeholder="Aufgabentitel eingeben..."
-            />
+            <!-- Top-Right Actions: Tracked Hours + Stopwatch Start/Stop + Close -->
+            <div class="flex items-center gap-2 shrink-0 self-start pt-1">
+              <!-- Bisher erfasster Gesamtaufwand -->
+              <div
+                v-if="drawerTask"
+                class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-2xs select-none"
+                title="Bisher erfasster Gesamtaufwand auf dieser Aufgabe"
+              >
+                <span>⏱️</span>
+                <span>{{ drawerTask.tracked_hours || 0 }} Std.</span>
+                <span v-if="drawerTask.budget_hours" class="text-slate-400 font-normal">/ {{ drawerTask.budget_hours }}h</span>
+              </div>
+
+              <!-- Live Stoppuhr Steuerung (Start / Stopp) -->
+              <div v-if="userRole !== 'viewer' && drawerTask?.id">
+                <!-- Stoppuhr läuft aktiv auf DIESER Aufgabe -->
+                <div
+                  v-if="stopwatchState.isRunning && stopwatchState.taskId === drawerTask.id"
+                  class="flex items-center space-x-1.5 px-2.5 py-1 bg-slate-950 text-white rounded-xl border border-cyan-400/60 shadow-xs h-[38px] select-none"
+                >
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                  <span class="font-mono font-bold text-xs text-cyan-200">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
+                  <button
+                    type="button"
+                    @click="openStopModal"
+                    class="taskster_button_accent px-2.5 text-[11px] h-[28px] rounded-lg ml-1 font-bold shadow-xs flex items-center gap-1"
+                    title="Stoppen & Buchen"
+                  >
+                    <span>⏹️</span>
+                    <span>Stopp</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="discardTimer"
+                    class="text-slate-400 hover:text-rose-400 p-1 text-xs transition"
+                    title="Timer verwerfen"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <!-- Stoppuhr läuft auf ANDERER Aufgabe / Projekt -->
+                <button
+                  v-else-if="stopwatchState.isRunning"
+                  type="button"
+                  @click="startTaskTimer(drawerTask)"
+                  class="px-3 text-xs h-[38px] rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1.5 shadow-2xs transition"
+                  title="Stoppuhr auf diese Aufgabe umschalten"
+                >
+                  <span>⚠️</span>
+                  <span class="hidden sm:inline">Hierher wechseln</span>
+                  <span class="sm:hidden">Wechseln</span>
+                </button>
+
+                <!-- Stoppuhr inaktiv: Start-Button -->
+                <button
+                  v-else
+                  type="button"
+                  @click="startTaskTimer(drawerTask)"
+                  class="taskster_button px-3.5 text-xs h-[38px] rounded-xl flex items-center gap-1.5 shadow-xs"
+                  title="Stoppuhr für diese Aufgabe starten"
+                >
+                  <span>⏱️</span>
+                  <span>Start</span>
+                </button>
+              </div>
+
+              <!-- Close button -->
+              <button
+                type="button"
+                @click="closeTaskDrawer"
+                class="text-slate-400 hover:text-slate-800 w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center shrink-0 transition text-lg font-bold ml-1"
+                title="Schliessen"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
-          <!-- Close button -->
-          <button
-            type="button"
-            @click="closeTaskDrawer"
-            class="text-slate-400 hover:text-slate-800 w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center shrink-0 transition text-lg font-bold"
-            title="Schliessen"
-          >
-            ✕
-          </button>
+          <!-- Zusatzfelder direkt unter dem Titel -->
+          <div v-if="drawerTask && visibleDrawerFields.length > 0" class="pt-3 border-t border-slate-100">
+            <div class="text-[10px] font-black text-cyan-800 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <span>⚙️</span>
+              <span>Zusatzfelder</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              <div v-for="f in visibleDrawerFields" :key="f.id" class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label">
+                  {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
+                </label>
+                <select
+                  v-if="f.field_type === 'select'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                >
+                  <option value="">-- Keine Auswahl --</option>
+                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <input
+                  v-else-if="f.field_type === 'date'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  type="date"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                />
+                <input
+                  v-else-if="f.field_type === 'number'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @change="autoSaveDrawer"
+                  type="number"
+                  :disabled="userRole === 'viewer'"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                />
+                <input
+                  v-else
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @blur="autoSaveDrawer"
+                  :disabled="userRole === 'viewer'"
+                  type="text"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Body: 2 Columns Grid -->
@@ -1935,216 +2054,160 @@
               </div>
             </div>
 
-            <!-- Zeiterfassung & Budget für diese Aufgabe -->
-            <div class="p-5 rounded-2xl bg-cyan-50/40 border border-cyan-200">
-              <div class="flex items-center justify-between mb-3">
-                <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
-                  <span>⏱️</span>
-                  <span>Zeiterfassung & Budget</span>
-                </label>
+            <!-- Zeiterfassung & Budget für diese Aufgabe (Kompaktes Menü) -->
+            <div class="p-4 rounded-2xl bg-cyan-50/40 border border-cyan-200 transition-all">
+              <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs font-bold text-slate-700">
-                    Aufwand: <strong>{{ drawerTask.tracked_hours || 0 }} Std.</strong>
-                  </span>
-                  <span v-if="drawerTask.budget_hours" class="text-xs text-slate-500 font-medium">
-                    / {{ drawerTask.budget_hours }} Std.
+                  <span class="text-sm">⏱️</span>
+                  <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Zeiterfassung & Budget</span>
+                  <span class="text-xs font-bold text-cyan-900 bg-cyan-100/80 px-2.5 py-0.5 rounded-full border border-cyan-300/60 shadow-2xs">
+                    {{ drawerTask.tracked_hours || 0 }} Std.
+                    <span v-if="drawerTask.budget_hours" class="text-cyan-700 font-medium"> / {{ drawerTask.budget_hours }} Std.</span>
                   </span>
                 </div>
+
+                <button
+                  type="button"
+                  @click="showDrawerTimeMenu = !showDrawerTimeMenu"
+                  class="text-xs font-bold text-cyan-800 hover:text-cyan-950 flex items-center space-x-1 px-3 py-1.5 rounded-xl hover:bg-cyan-100/70 bg-white border border-cyan-200 shadow-2xs transition cursor-pointer"
+                >
+                  <span>{{ showDrawerTimeMenu ? 'Menü verbergen' : 'Budget & Manuell buchen' }}</span>
+                  <span class="text-[10px] transform transition-transform" :class="{ 'rotate-180': showDrawerTimeMenu }">▼</span>
+                </button>
               </div>
 
-              <!-- Budget Inputs -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Stunden)</label>
-                  <input
-                    v-model="drawerTask.budget_hours"
-                    @blur="autoSaveDrawer"
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    placeholder="z.B. 8"
-                    :disabled="userRole === 'viewer'"
-                    class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Betrag in {{ project?.currency || 'CHF' }})</label>
-                  <input
-                    v-model="drawerTask.budget_amount"
-                    @blur="autoSaveDrawer"
-                    type="number"
-                    step="10"
-                    min="0"
-                    placeholder="z.B. 1000"
-                    :disabled="userRole === 'viewer'"
-                    class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
-                  />
-                </div>
-              </div>
-
-              <!-- Progress bar if budget exists -->
-              <div v-if="drawerTask.budget_hours > 0" class="w-full bg-slate-200 rounded-full h-2 mb-4 overflow-hidden">
+              <!-- Progress bar if budget exists and collapsed -->
+              <div v-if="drawerTask.budget_hours > 0" class="w-full bg-slate-200 rounded-full h-1.5 mt-3 overflow-hidden">
                 <div
-                  class="h-2 rounded-full transition-all"
+                  class="h-1.5 rounded-full transition-all"
                   :class="(drawerTask.tracked_hours || 0) > drawerTask.budget_hours ? 'bg-rose-500' : 'bg-cyan-600'"
                   :style="{ width: Math.min(100, Math.round(((drawerTask.tracked_hours || 0) / drawerTask.budget_hours) * 100)) + '%' }"
                 ></div>
               </div>
 
-              <!-- Live Stopwatch Section for this Task -->
-              <div
-                v-if="stopwatchState.isRunning && stopwatchState.taskId === drawerTask.id"
-                class="mb-3.5 p-4 rounded-2xl bg-slate-950 text-white border border-cyan-400/50 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in select-none"
-              >
-                <div class="flex items-center space-x-3">
-                  <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+              <!-- Collapsible Section: Budget + Manuelle Buchung + Liste -->
+              <div v-if="showDrawerTimeMenu" class="mt-4 pt-3.5 border-t border-cyan-200/80 space-y-3.5 animate-in fade-in duration-150">
+                <!-- Budget Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <div class="text-[10px] font-black text-cyan-400 uppercase tracking-wider">Stoppuhr läuft aktiv</div>
-                    <div class="text-2xl font-black font-mono text-cyan-200 tracking-tight mt-0.5">
-                      {{ formatSeconds(stopwatchState.elapsedSeconds) }}
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Stunden)</label>
+                    <input
+                      v-model="drawerTask.budget_hours"
+                      @blur="autoSaveDrawer"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      placeholder="z.B. 8"
+                      :disabled="userRole === 'viewer'"
+                      class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Betrag in {{ project?.currency || 'CHF' }})</label>
+                    <input
+                      v-model="drawerTask.budget_amount"
+                      @blur="autoSaveDrawer"
+                      type="number"
+                      step="10"
+                      min="0"
+                      placeholder="z.B. 1000"
+                      :disabled="userRole === 'viewer'"
+                      class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <!-- Quick Time Logging Form (Manuell) -->
+                <div v-if="userRole !== 'viewer'" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                  <div class="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center justify-between">
+                    <span>Manuell Zeit auf diese Aufgabe buchen</span>
+                    <span class="text-[10px] text-slate-400 font-normal">Wird mit * markiert</span>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Dauer (Std.)</label>
+                      <input
+                        v-model="drawerTimeForm.duration_hours"
+                        type="number"
+                        step="0.25"
+                        min="0.05"
+                        class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-cyan-600"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Datum</label>
+                      <input
+                        v-model="drawerTimeForm.entry_date"
+                        type="date"
+                        class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                      />
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Stundensatz ({{ project?.currency || 'CHF' }})</label>
+                      <input
+                        v-model="drawerTimeForm.hourly_rate"
+                        type="number"
+                        step="5"
+                        min="0"
+                        class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="drawerTimeForm.description"
+                      placeholder="Beschreibung / Notiz..."
+                      class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
+                    />
+                    <button
+                      @click="addTaskTimeEntry"
+                      type="button"
+                      class="taskster_button px-4 text-xs h-[34px] rounded-lg"
+                    >
+                      + Buchen
+                    </button>
+                  </div>
+                </div>
+
+                <!-- List of recorded entries for this task -->
+                <div v-if="drawerTimeEntries.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div
+                    v-for="te in drawerTimeEntries"
+                    :key="te.id"
+                    class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-xs"
+                  >
+                    <div class="flex items-center space-x-2">
+                      <span class="font-bold text-slate-900">
+                        {{ (te.duration_minutes / 60).toFixed(1) }} Std.
+                        <span v-if="te.is_manual" class="text-rose-600 font-black text-sm ml-0.5" title="Manuell erfasst oder angepasst">*</span>
+                      </span>
+                      <span class="text-slate-400">·</span>
+                      <span class="text-slate-600">{{ new Date(te.entry_date).toLocaleDateString('de-CH') }}</span>
+                      <span class="text-slate-400">·</span>
+                      <span class="text-slate-700 font-medium">{{ te.user_name }}</span>
+                      <span v-if="te.description" class="text-slate-500 italic max-w-[160px] truncate">({{ te.description }})</span>
+                    </div>
+                    <div v-if="userRole !== 'viewer'" class="flex items-center space-x-2">
+                      <button
+                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                        @click="openEditTimeModal(te)"
+                        class="text-cyan-700 hover:text-cyan-900 font-bold text-[11px]"
+                      >
+                        Ändern
+                      </button>
+                      <button
+                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                        @click="deleteTimeEntry(te.id)"
+                        class="text-rose-600 hover:text-rose-800 font-bold text-[11px]"
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center space-x-2 self-end sm:self-auto">
-                  <button
-                    type="button"
-                    @click="discardTimer"
-                    class="text-xs font-bold text-rose-400 hover:text-rose-200 hover:underline px-2 py-1"
-                  >
-                    Verwerfen
-                  </button>
-                  <button
-                    type="button"
-                    @click="openStopModal"
-                    class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg flex items-center space-x-1.5 shadow-sm"
-                  >
-                    <span>⏹️</span>
-                    <span>Stoppen & Buchen</span>
-                  </button>
+                <div v-else class="text-[11px] text-slate-500 italic text-center py-2">
+                  Noch keine Zeiten auf diese Aufgabe gebucht.
                 </div>
-              </div>
-
-              <!-- Other running timer warning -->
-              <div
-                v-else-if="stopwatchState.isRunning"
-                class="mb-3.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2"
-              >
-                <div class="flex items-center space-x-2">
-                  <span>⚠️</span>
-                  <span>Stoppuhr läuft auf <strong>{{ stopwatchState.taskTitle || stopwatchState.projectTitle }}</strong> ({{ formatSeconds(stopwatchState.elapsedSeconds) }})</span>
-                </div>
-                <button
-                  v-if="userRole !== 'viewer'"
-                  type="button"
-                  @click="startTaskTimer(drawerTask)"
-                  class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs shadow-xs shrink-0"
-                >
-                  Auf diese Aufgabe wechseln
-                </button>
-              </div>
-
-              <!-- Start Stopwatch Button if idle -->
-              <div v-else-if="userRole !== 'viewer'" class="mb-3.5">
-                <button
-                  type="button"
-                  @click="startTaskTimer(drawerTask)"
-                  class="taskster_button w-full px-4 text-xs h-[42px] rounded-lg flex items-center justify-center space-x-2 shadow-sm"
-                >
-                  <span>⏱️</span>
-                  <span>Stoppuhr für diese Aufgabe starten</span>
-                </button>
-              </div>
-
-              <!-- Quick Time Logging Form (Manuell) -->
-              <div v-if="userRole !== 'viewer'" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5 mb-3">
-                <div class="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center justify-between">
-                  <span>Manuell Zeit auf diese Aufgabe buchen</span>
-                  <span class="text-[10px] text-slate-400 font-normal">Wird mit * markiert</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Dauer (Std.)</label>
-                    <input
-                      v-model="drawerTimeForm.duration_hours"
-                      type="number"
-                      step="0.25"
-                      min="0.05"
-                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-cyan-600"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Datum</label>
-                    <input
-                      v-model="drawerTimeForm.entry_date"
-                      type="date"
-                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
-                    />
-                  </div>
-                  <div class="col-span-2 sm:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Stundensatz ({{ project?.currency || 'CHF' }})</label>
-                    <input
-                      v-model="drawerTimeForm.hourly_rate"
-                      type="number"
-                      step="5"
-                      min="0"
-                      class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
-                    />
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input
-                    v-model="drawerTimeForm.description"
-                    placeholder="Beschreibung / Notiz..."
-                    class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
-                  />
-                  <button
-                    @click="addTaskTimeEntry"
-                    type="button"
-                    class="taskster_button px-4 text-xs h-[34px] rounded-lg"
-                  >
-                    + Buchen
-                  </button>
-                </div>
-              </div>
-
-              <!-- List of recorded entries for this task -->
-              <div v-if="drawerTimeEntries.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                <div
-                  v-for="te in drawerTimeEntries"
-                  :key="te.id"
-                  class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-xs"
-                >
-                  <div class="flex items-center space-x-2">
-                    <span class="font-bold text-slate-900">
-                      {{ (te.duration_minutes / 60).toFixed(1) }} Std.
-                      <span v-if="te.is_manual" class="text-rose-600 font-black text-sm ml-0.5" title="Manuell erfasst oder angepasst">*</span>
-                    </span>
-                    <span class="text-slate-400">·</span>
-                    <span class="text-slate-600">{{ new Date(te.entry_date).toLocaleDateString('de-CH') }}</span>
-                    <span class="text-slate-400">·</span>
-                    <span class="text-slate-700 font-medium">{{ te.user_name }}</span>
-                    <span v-if="te.description" class="text-slate-500 italic max-w-[160px] truncate">({{ te.description }})</span>
-                  </div>
-                  <div v-if="userRole !== 'viewer'" class="flex items-center space-x-2">
-                    <button
-                      v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
-                      @click="openEditTimeModal(te)"
-                      class="text-cyan-700 hover:text-cyan-900 font-bold text-[11px]"
-                    >
-                      Ändern
-                    </button>
-                    <button
-                      v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
-                      @click="deleteTimeEntry(te.id)"
-                      class="text-rose-600 hover:text-rose-800 font-bold text-[11px]"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="text-[11px] text-slate-500 italic text-center py-2">
-                Noch keine Zeiten auf diese Aufgabe gebucht.
               </div>
             </div>
 
@@ -2467,49 +2530,7 @@
               </div>
             </div>
 
-            <!-- Custom Fields -->
-            <div v-if="taskCustomFields.length > 0" class="pt-3 border-t border-slate-200 space-y-3">
-              <label class="block text-[11px] font-black text-cyan-800 uppercase tracking-wider">⚙️ Zusatzfelder</label>
-              <div v-for="f in visibleDrawerFields" :key="f.id">
-                <label class="block text-xs font-bold text-slate-700 mb-1">
-                  {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
-                </label>
-                <select
-                  v-if="f.field_type === 'select'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
-                >
-                  <option value="">-- Nicht ausgewählt --</option>
-                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
-                </select>
-                <input
-                  v-else-if="f.field_type === 'date'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
-                  type="date"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
-                />
-                <input
-                  v-else-if="f.field_type === 'number'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
-                  type="number"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
-                />
-                <input
-                  v-else
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @blur="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  type="text"
-                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
-                />
-              </div>
-            </div>
+
 
             <!-- Delete Button (Only owner, admin, or superadmin) -->
             <div v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin" class="pt-4 border-t border-slate-200">
@@ -3718,6 +3739,7 @@ const newTagInput = ref('')
 const newChecklistInput = ref('')
 const newSubtaskInput = ref('')
 const newCommentInput = ref('')
+const showDrawerTimeMenu = ref(false)
 
 // Section Pastel Colors
 const sectionPastelColors = [
@@ -4624,6 +4646,7 @@ const toggleTaskCompleted = async (task: any) => {
 const openNewTaskModal = (listId: string) => {
   const chosenListId = listId || lists.value[0]?.id || ''
   isCreatingTaskInDrawer.value = true
+  showDrawerTimeMenu.value = false
   drawerTaskAssignedUsers.value = []
   showAssigneeDropdown.value = false
   drawerTask.value = {
@@ -4692,6 +4715,7 @@ const onDrawerSectionChange = async () => {
 
 const openTaskDrawer = async (task: any) => {
   isCreatingTaskInDrawer.value = false
+  showDrawerTimeMenu.value = false
   showAssigneeDropdown.value = false
   drawerTaskAssignedUsers.value = parseAssignedUsers(task.assigned_users || task.assigned_to)
   drawerTask.value = {

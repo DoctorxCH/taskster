@@ -329,7 +329,7 @@
                   <span class="w-2.5 h-2.5 rounded-full bg-[#0891B2] shrink-0"></span>
                   <div class="min-w-0">
                     <NuxtLink
-                      :to="`/projects/${task.project_id}`"
+                      :to="`/projects/${task.project_id}?task=${task.id}`"
                       class="text-xs sm:text-sm font-bold text-slate-900 group-hover/task:text-[#0891B2] transition block truncate"
                     >
                       {{ task.title }}
@@ -385,9 +385,9 @@
                     <span>{{ task.due_date }}</span>
                   </span>
                   <NuxtLink
-                    :to="`/projects/${task.project_id}`"
+                    :to="`/projects/${task.project_id}?task=${task.id}`"
                     class="p-1.5 rounded text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 transition text-xs"
-                    title="Projekt öffnen"
+                    title="Aufgabe öffnen"
                   >
                     <ArrowRight class="w-4 h-4" />
                   </NuxtLink>
@@ -611,8 +611,16 @@
                   </p>
                   <div class="flex items-center space-x-3 mt-1.5 text-[10px] text-slate-400 font-medium">
                     <span>{{ formatRelativeTime(notif.created_at) }}</span>
+                    <!-- Aufgabe: direkt mit ?task= verlinken, damit der Drawer aufgeht -->
                     <NuxtLink
-                      v-if="notif.project_id"
+                      v-if="notif.reference_type === 'task' && notif.reference_id && notif.project_id"
+                      :to="`/projects/${notif.project_id}?task=${notif.reference_id}`"
+                      class="text-[#0891B2] hover:underline font-semibold"
+                    >
+                      Zur Aufgabe →
+                    </NuxtLink>
+                    <NuxtLink
+                      v-else-if="notif.project_id"
                       :to="`/projects/${notif.project_id}`"
                       class="text-[#0891B2] hover:underline font-semibold"
                     >
