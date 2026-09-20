@@ -5248,8 +5248,10 @@ try {
             }
         }
 
-        // Bei Zeitänderung alle benachrichtigen
+        // Bei Zeitänderung alle bisherigen Teilnehmer benachrichtigen (außer wer gerade erst neu eingeladen wurde)
         if ($timeChanged) {
+            $newInvitedEmails = !empty($newInvites) ? array_map(function($i) { return strtolower($i['email']); }, $newInvites) : [];
+
             $aStmt = $db->prepare("SELECT email, name, user_id FROM event_attendees WHERE event_id = ? AND is_organizer = 0");
             $aStmt->execute([$id]);
             $attendees = $aStmt->fetchAll();
@@ -5263,6 +5265,9 @@ try {
             $ics = buildIcs($evtForIcs, $attendees, 'REQUEST', 1);
 
             foreach ($attendees as $a) {
+                if (in_array(strtolower($a['email']), $newInvitedEmails, true)) {
+                    continue; // Hat bereits die Einladung mit dem neuen Zeitpunkt erhalten
+                }
                 if (!empty($a['user_id'])) {
                     createNotification($a['user_id'], 'calendar_update', 'Termin verschoben: ' . $title, 'Neuer Zeitpunkt: ' . $startAt, 'event', $id);
                 }

@@ -135,8 +135,9 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // --- Bei Zeitänderung alle benachrichtigen -----------------------------
+  // --- Bei Zeitänderung alle bisherigen Teilnehmer benachrichtigen (außer wer gerade erst neu eingeladen wurde)
   if (timeChanged) {
+    const newInvitedEmails = new Set(newInvites.map(i => i.email.toLowerCase()))
     const attendees = db.prepare(
       'SELECT email, name, user_id FROM event_attendees WHERE event_id = ? AND is_organizer = 0'
     ).all(id) as any[]
@@ -154,6 +155,9 @@ export default defineEventHandler(async (event) => {
     })
 
     for (const a of attendees) {
+      if (newInvitedEmails.has(a.email.toLowerCase())) {
+        continue // Hat bereits die Einladung mit dem neuen Zeitpunkt erhalten
+      }
       if (a.user_id) {
         try {
           db.prepare(`
