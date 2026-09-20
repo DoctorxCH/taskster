@@ -153,9 +153,8 @@ export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpCon
           const htmlContent = options.bodyHtml || (options.bodyText ? options.bodyText.replace(/\n/g, '<br>') : '')
 
           if (options.icsContent) {
-            message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`
-            message += `--${boundary}\r\n`
-            message += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`
+            message += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n`
+            message += `Content-Class: urn:content-classes:calendarmessage\r\n\r\n`
             message += `--${altBoundary}\r\n`
             message += `Content-Type: text/plain; charset=UTF-8\r\n`
             message += `Content-Transfer-Encoding: base64\r\n\r\n`
@@ -164,14 +163,11 @@ export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpCon
             message += `Content-Type: text/html; charset=UTF-8\r\n`
             message += `Content-Transfer-Encoding: base64\r\n\r\n`
             message += Buffer.from(htmlContent).toString('base64') + '\r\n\r\n'
-            message += `--${altBoundary}--\r\n\r\n`
-
-            message += `--${boundary}\r\n`
-            message += `Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="invite.ics"\r\n`
-            message += `Content-Transfer-Encoding: base64\r\n`
-            message += `Content-Disposition: attachment; filename="invite.ics"\r\n\r\n`
+            message += `--${altBoundary}\r\n`
+            message += `Content-Type: text/calendar; charset=UTF-8; method=REQUEST\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
             message += Buffer.from(options.icsContent).toString('base64') + '\r\n\r\n'
-            message += `--${boundary}--\r\n`
+            message += `--${altBoundary}--\r\n`
           } else if (options.bodyHtml) {
             message += `Content-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`
             message += `--${altBoundary}\r\n`

@@ -1259,10 +1259,9 @@ function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $body
     ];
 
     if (!empty($icsContent)) {
-        $headers[] = "Content-Type: multipart/mixed; boundary=\"{$boundary}\"";
-        $body = "--{$boundary}\r\n";
-        $body .= "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"\r\n\r\n";
-        $body .= "--{$altBoundary}\r\n";
+        $headers[] = "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"";
+        $headers[] = "Content-Class: urn:content-classes:calendarmessage";
+        $body = "--{$altBoundary}\r\n";
         $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
         $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $body .= chunk_split(base64_encode($bodyText ?: strip_tags($bodyHtml))) . "\r\n";
@@ -1270,14 +1269,11 @@ function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $body
         $body .= "Content-Type: text/html; charset=UTF-8\r\n";
         $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $body .= chunk_split(base64_encode($bodyHtml ?: nl2br(htmlspecialchars($bodyText)))) . "\r\n";
-        $body .= "--{$altBoundary}--\r\n\r\n";
-
-        $body .= "--{$boundary}\r\n";
-        $body .= "Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name=\"invite.ics\"\r\n";
-        $body .= "Content-Transfer-Encoding: base64\r\n";
-        $body .= "Content-Disposition: attachment; filename=\"invite.ics\"\r\n\r\n";
+        $body .= "--{$altBoundary}\r\n";
+        $body .= "Content-Type: text/calendar; charset=UTF-8; method=REQUEST\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $body .= chunk_split(base64_encode($icsContent)) . "\r\n";
-        $body .= "--{$boundary}--\r\n";
+        $body .= "--{$altBoundary}--\r\n";
     } elseif (!empty($bodyHtml)) {
         $headers[] = "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"";
         $body = "--{$altBoundary}\r\n";
