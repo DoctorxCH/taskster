@@ -1,3 +1,0 @@
-settings.datenübertragbarkeit_art_20
-settings.gruppe_löschen
-settings.verschlüsselung
