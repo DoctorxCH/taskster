@@ -1,18 +1,18 @@
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
     <!-- Breadcrumb -->
-    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
-      <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+      <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
         <LayoutDashboard class="w-3.5 h-3.5" />
         <span>Dashboard</span>
       </NuxtLink>
       <span>/</span>
-      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
         <Folder class="w-3.5 h-3.5" />
         <span>{{ project?.folder_name || 'Ordner' }}</span>
       </NuxtLink>
       <span>/</span>
-      <span class="text-slate-800 font-medium flex items-center gap-1">
+      <span class="text-slate-800 font-semibold flex items-center gap-1">
         <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
         <span>{{ project?.title || 'Projekt' }}</span>
       </span>
@@ -23,43 +23,46 @@
       Lade Projektdaten...
     </div>
 
-    <div v-else-if="project">
+    <div v-else-if="project" class="space-y-6">
       <!-- Project Header -->
-      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <!-- Left: Title & Badges -->
           <div>
             <div class="flex flex-wrap items-center gap-2 mb-1.5">
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ project.title }}</h1>
               <span
-                class="px-2 py-0.5 rounded-sm text-xs font-medium border"
-                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'"
+                class="px-2 py-0.5 rounded text-xs font-semibold border capitalize"
+                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-[#0891B2] border-cyan-200'"
               >
                 {{ userRole }}
               </span>
               <span
-                class="px-2 py-0.5 rounded-sm text-xs font-medium border"
-                :class="project.visibility === 'company' ? 'bg-cyan-50 border-cyan-200 text-cyan-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                class="px-2 py-0.5 rounded text-xs font-semibold border flex items-center space-x-1"
+                :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
               >
-                {{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}
+                <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
+                <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
+                <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
               </span>
               <span
-                class="px-2 py-0.5 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200"
               >
                 Status: {{ project.status }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-slate-800 border border-slate-200"
+                class="px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase"
               >
                 {{ project.currency || 'CHF' }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white/90 text-cyan-900 border border-cyan-300 flex items-center space-x-1"
+                class="px-2.5 py-0.5 rounded text-xs font-semibold bg-cyan-50 text-[#0891B2] border border-cyan-200 flex items-center space-x-1"
                 :title="`Erfasste Zeit: ${project.tracked_hours || 0} Std. ${project.budget_hours ? `/ Budget: ${project.budget_hours} Std.` : ''}`"
               >
-                <span>⏱️</span>
+                <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
                 <span>{{ project.tracked_hours || 0 }}h</span>
-                <span v-if="project.budget_hours" class="text-slate-500 font-semibold">/ {{ project.budget_hours }}h</span>
-                <span v-if="project.budget_hours > 0" class="text-[10px] px-1.5 py-0.2 rounded-full font-black ml-1"
+                <span v-if="project.budget_hours" class="text-slate-500 font-normal">/ {{ project.budget_hours }}h</span>
+                <span v-if="project.budget_hours > 0" class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-1"
                   :class="(project.tracked_hours || 0) > project.budget_hours ? 'bg-rose-100 text-rose-700' : ((project.tracked_hours || 0) / project.budget_hours >= 0.8 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')"
                 >
                   {{ Math.round(((project.tracked_hours || 0) / project.budget_hours) * 100) }}%
@@ -67,42 +70,42 @@
               </span>
             </div>
 
-            <p class="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-cyan-800 font-bold hover:underline">{{ project.folder_name }}</NuxtLink></span>
-              <span v-if="project.company_name" class="text-teal-800 font-semibold">• {{ project.company_name }}</span>
+            <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#0891B2] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="project.company_name" class="text-slate-700 font-medium">• {{ project.company_name }}</span>
             </p>
 
             <!-- Project-level custom fields display in header -->
-            <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-2 pt-1">
+            <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-2 pt-2">
               <span
                 v-for="(val, key) in project.custom_data"
                 :key="key"
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded-xl bg-white/80 border border-slate-200 text-slate-800 shadow-xs"
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-800"
               >
-                <span class="text-cyan-700 font-bold mr-1.5">{{ getFieldLabel(key) }}:</span>
-                <span class="text-slate-900 font-bold">{{ val }}</span>
+                <span class="text-[#0891B2] font-semibold mr-1.5">{{ getFieldLabel(key) }}:</span>
+                <span class="text-slate-900 font-semibold">{{ val }}</span>
               </span>
             </div>
           </div>
 
-          <!-- Actions & View Mode Toggle -->
-          <div class="flex flex-wrap items-center gap-2">
+          <!-- Right: Actions & View Mode Toggle (Cleaned up, no duplicate gear icon!) -->
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
             <!-- View Mode Switcher -->
-            <div class="bg-white/90 border border-slate-200/80 rounded-xl p-0.5 flex items-center space-x-1 shadow-xs h-[42px]">
+            <div class="bg-slate-100 border border-slate-200 rounded-md p-1 flex items-center space-x-1">
               <button
                 @click="taskViewMode = 'board'"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[34px]"
-                :class="taskViewMode === 'board' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
+                :class="taskViewMode === 'board' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
               >
-                <span>▦</span>
+                <LayoutGrid class="w-3.5 h-3.5" />
                 <span>Kacheln</span>
               </button>
               <button
                 @click="taskViewMode = 'table'"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer h-[34px]"
-                :class="taskViewMode === 'table' ? 'bg-cyan-50 text-cyan-800 font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
+                :class="taskViewMode === 'table' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
               >
-                <span>☰</span>
+                <List class="w-3.5 h-3.5" />
                 <span>Liste</span>
               </button>
             </div>
@@ -110,65 +113,56 @@
             <!-- Project Stopwatch Control -->
             <div
               v-if="userRole !== 'viewer' && stopwatchState.isRunning && stopwatchState.projectId === project?.id"
-              class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-lg border border-cyan-400/60 shadow-md h-[42px] select-none"
+              class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-md border border-cyan-400/60 shadow-xs h-9 select-none"
             >
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
               <div class="flex flex-col text-left leading-tight">
-                <span class="text-[9px] font-bold text-cyan-300 uppercase tracking-wider truncate max-w-[120px]">
-                  {{ stopwatchState.taskId ? ('📋 ' + stopwatchState.taskTitle) : '🏢 Projekt' }}
+                <span class="text-[9px] font-semibold text-cyan-300 uppercase tracking-wider truncate max-w-[120px]">
+                  {{ stopwatchState.taskId ? stopwatchState.taskTitle : 'Projekt' }}
                 </span>
-                <span class="font-mono font-black text-xs text-white">
+                <span class="font-mono font-bold text-xs text-white">
                   {{ formatSeconds(stopwatchState.elapsedSeconds) }}
                 </span>
               </div>
               <button
                 @click="openStopModal"
                 type="button"
-                class="ml-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-black shadow-xs transition"
+                class="ml-1 px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-bold cursor-pointer"
                 title="Stoppuhr stoppen & buchen"
               >
-                ⏹️ Stoppen
+                Stopp
               </button>
             </div>
 
             <button
               v-else-if="userRole !== 'viewer'"
               @click="startProjectTimer"
-              class="taskster_button_light px-3.5 text-xs h-[42px] rounded-lg flex items-center space-x-1.5"
+              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
               :title="stopwatchState.isRunning ? 'Stoppuhr für dieses Projekt starten' : 'Stoppuhr auf Projekt starten'"
             >
-              <span>⏱️</span>
-              <span>Projekt-Stoppuhr</span>
-            </button>
-
-            <!-- Manage Sections (Zahnrad) -->
-            <button
-              v-if="userRole !== 'viewer'"
-              @click="openManageSectionsModal"
-              class="taskster_button_light px-3.5 text-xs h-[42px] rounded-lg"
-              title="Abschnitte verwalten & Farben definieren"
-            >
-              <span class="text-base">⚙️</span>
+              <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+              <span class="hidden sm:inline">Projekt-Stoppuhr</span>
             </button>
 
             <!-- Excel/CSV Import -->
             <button
               v-if="userRole !== 'viewer'"
               @click="openImportModal"
-              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5"
+              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
               title="Aufgaben aus Excel oder CSV importieren"
             >
-              <span>📊</span>
-              <span>Import (Excel/CSV)</span>
+              <Upload class="w-3.5 h-3.5 text-slate-600" />
+              <span class="hidden sm:inline">Import</span>
             </button>
 
             <!-- New Section -->
             <button
               v-if="userRole !== 'viewer'"
               @click="showNewListModal = true"
-              class="taskster_button_light px-5 text-xs h-[42px] rounded-lg"
+              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1"
             >
-              <span>+ Neuer Abschnitt</span>
+              <Plus class="w-3.5 h-3.5" />
+              <span>Abschnitt</span>
             </button>
 
             <!-- New Task -->
@@ -176,67 +170,68 @@
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(lists[0]?.id)"
               :disabled="lists.length === 0"
-              class="taskster_button px-5 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
             >
-              <span>+ Aufgabe erfassen</span>
+              <Plus class="w-3.5 h-3.5" />
+              <span>Aufgabe erfassen</span>
             </button>
           </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="flex border-b border-slate-200/80 mt-6 -mb-6 sm:-mb-8 space-x-6 overflow-x-auto">
+        <!-- Navigation Tabs (Cleaned up, Lucide Icons, Single location for Settings) -->
+        <div class="flex border-b border-slate-200 space-x-6 overflow-x-auto pt-1">
           <button
             @click="currentView = 'tasks'"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'tasks' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>📋</span>
+            <ClipboardList class="w-4 h-4" />
             <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
           </button>
 
           <button
             @click="currentView = 'time'; loadProjectTimeEntries()"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'time' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'time' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>⏱️</span>
+            <Clock class="w-4 h-4" />
             <span>Zeiterfassung ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
           </button>
 
           <button
             @click="currentView = 'journal'; loadJournals()"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'journal' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>📝</span>
+            <Activity class="w-4 h-4" />
             <span>Aktivitätsjournal ({{ journalEntries.length }})</span>
           </button>
 
           <button
             @click="currentView = 'team'"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'team' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>👥</span>
+            <Users class="w-4 h-4" />
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
           </button>
 
           <button
             @click="currentView = 'contacts'; loadProjectContacts()"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'contacts' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'contacts' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>📇</span>
+            <Contact class="w-4 h-4" />
             <span>Kontakte ({{ projectContacts.length }})</span>
           </button>
 
           <button
             v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
             @click="currentView = 'settings'; initSettingsTab()"
-            class="py-3.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4] font-black' : 'border-transparent text-slate-700 hover:text-slate-950 font-bold'"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'settings' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
-            <span>⚙️</span>
+            <Settings class="w-4 h-4" />
             <span>Projekt-Einstellungen</span>
           </button>
         </div>
