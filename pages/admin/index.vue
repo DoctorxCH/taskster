@@ -6,31 +6,74 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold mb-2">
-            <ShieldCheck class="w-3.5 h-3.5 text-purple-600" />
-            <span>Zentrale Site-Administration</span>
+            <Users v-if="activeTab === 'users'" class="w-3.5 h-3.5 text-purple-600" />
+            <Building2 v-else-if="activeTab === 'companies'" class="w-3.5 h-3.5 text-purple-600" />
+            <CreditCard v-else-if="activeTab === 'finance'" class="w-3.5 h-3.5 text-purple-600" />
+            <ClipboardList v-else-if="activeTab === 'templates'" class="w-3.5 h-3.5 text-purple-600" />
+            <Mail v-else-if="activeTab === 'email'" class="w-3.5 h-3.5 text-purple-600" />
+            <ShieldCheck v-else class="w-3.5 h-3.5 text-purple-600" />
+            <span>{{ activeSectionBadge }}</span>
           </div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-            Taskster Plattform-Administration
+            {{ activeSectionTitle }}
           </h1>
           <p class="text-sm text-slate-600 mt-1">
-            Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.
+            {{ activeSectionDescription }}
           </p>
         </div>
 
         <div class="flex items-center gap-3">
           <button
+            v-if="activeTab === 'users' && hasPermission('manage_users')"
+            @click="openCreateUserModal"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Neuen Benutzer anlegen</span>
+          </button>
+
+          <button
+            v-else-if="activeTab === 'companies' && hasPermission('company_settings')"
             @click="showCreateCompanyModal = true"
-            class="taskster_button"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
             <Plus class="w-4 h-4" />
             <span>Neues Unternehmen</span>
+          </button>
+
+          <button
+            v-else-if="activeTab === 'finance' && hasPermission('finance')"
+            @click="loadOrdersData()"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+          >
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loadingOrders }" />
+            <span>Aktualisieren</span>
+          </button>
+
+          <button
+            v-else-if="activeTab === 'templates' && hasPermission('manage_templates')"
+            @click="openCreateTemplateModal"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Neue Vorlage</span>
+          </button>
+
+          <button
+            v-else-if="activeTab === 'email' && hasPermission('company_settings')"
+            @click="openTestEmailModal()"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+          >
+            <Send class="w-4 h-4" />
+            <span>Test-E-Mail</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Admin Metrics -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <!-- Admin Metrics (Focused per active tab, no double stacking) -->
+    <!-- TAB: USERS -->
+    <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
       <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
         <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
         <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
@@ -62,11 +105,105 @@
       </div>
     </div>
 
-    <!-- Admin Tabs (Design v2 standard) -->
+    <!-- TAB: COMPANIES -->
+    <div v-else-if="activeTab === 'companies'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ companies.length }}</div>
+        <div class="text-xs text-slate-500">Organisationen & Mandanten</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
+        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ totalCompanyUsers }}</div>
+        <div class="text-xs text-slate-500">Mitarbeiter-Accounts</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
+        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
+        <div class="text-xs text-slate-500">Uploads freigegeben</div>
+      </div>
+    </div>
+
+    <!-- TAB: FINANCE -->
+    <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
+        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">
+          {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+        </div>
+        <div class="text-xs text-slate-500">Wiederkehrender monatlicher Umsatz</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
+        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">
+          {{ ordersSummary?.active_subscriptions || 0 }}
+        </div>
+        <div class="text-xs text-slate-500">Unternehmen & PRO-Nutzer</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
+        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">
+          {{ ordersSummary?.total_seats || 0 }}
+        </div>
+        <div class="text-xs text-slate-500">Zugewiesene Mitarbeiter-Lizenzen</div>
+      </div>
+    </div>
+
+    <!-- TAB: TEMPLATES -->
+    <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
+        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ templates.length }}</div>
+        <div class="text-xs text-slate-500">Systemweite Vorlagen</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
+        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ jobTemplatesCount }}</div>
+        <div class="text-xs text-slate-500">Baufirmen & Business</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
+        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ privateTemplatesCount }}</div>
+        <div class="text-xs text-slate-500">Bauherren & Privatnutzer</div>
+      </div>
+    </div>
+
+    <!-- TAB: EMAIL -->
+    <div v-else-if="activeTab === 'email'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Versand-Methode</div>
+        <div class="text-xl font-bold text-[#0891B2] mt-1">
+          {{ smtpConfig.mail_provider === 'resend' ? 'Resend API' : 'SMTP' }}
+        </div>
+        <div class="text-xs text-slate-500">{{ smtpConfig.mail_provider === 'resend' ? 'noreply@kurka.ch' : (smtpConfig.smtp_host || 'Server') }}</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
+        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">
+          {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
+        </div>
+        <div class="text-xs text-slate-500">System-Trigger bereit</div>
+      </div>
+
+      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
+        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
+        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ emailOutbox.length }}</div>
+        <div class="text-xs text-slate-500">Protokollierte Einträge</div>
+      </div>
+    </div>
+
+    <!-- Admin Tabs (Synchronized with Route & Sidebar) -->
     <div class="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
       <button
         v-if="hasPermission('manage_users')"
-        @click="activeTab = 'users'"
+        @click="setTab('users')"
         class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
         :class="activeTab === 'users' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
@@ -76,7 +213,7 @@
 
       <button
         v-if="hasPermission('company_settings')"
-        @click="activeTab = 'companies'"
+        @click="setTab('companies')"
         class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
         :class="activeTab === 'companies' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
@@ -86,7 +223,7 @@
 
       <button
         v-if="hasPermission('finance')"
-        @click="activeTab = 'finance'"
+        @click="setTab('finance')"
         class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
         :class="activeTab === 'finance' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
@@ -96,22 +233,22 @@
 
       <button
         v-if="hasPermission('manage_templates')"
-        @click="activeTab = 'templates'"
+        @click="setTab('templates')"
         class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
         :class="activeTab === 'templates' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
         <ClipboardList class="w-4 h-4" />
-        <span>Projekt-Vorlagen (Job & Privat)</span>
+        <span>Projekt-Vorlagen</span>
       </button>
 
       <button
         v-if="hasPermission('company_settings')"
-        @click="activeTab = 'email'"
+        @click="setTab('email')"
         class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
         :class="activeTab === 'email' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
       >
         <Mail class="w-4 h-4" />
-        <span>E-Mail & Benachrichtigungen</span>
+        <span>E-Mail & Versand</span>
       </button>
     </div>
 
@@ -275,48 +412,6 @@
 
     <!-- TAB: FINANCE & ORDERS (Für Superadmins und Admins mit 'finance' Recht) -->
     <div v-if="activeTab === 'finance'" class="space-y-6">
-      <!-- Finance Stats Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Monatlicher Umsatz (MRR)</span>
-            <span class="text-xl">💰</span>
-          </div>
-          <div class="text-3xl font-black text-slate-900 mt-2">
-            {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
-          </div>
-          <div class="text-xs text-slate-500 font-medium mt-1">
-            Wiederkehrender monatlicher Umsatz
-          </div>
-        </div>
-
-        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-purple-700">Aktive Abonnements</span>
-            <span class="text-xl">💳</span>
-          </div>
-          <div class="text-3xl font-black text-purple-900 mt-2">
-            {{ ordersSummary?.active_subscriptions || 0 }}
-          </div>
-          <div class="text-xs text-slate-500 font-medium mt-1">
-            Unternehmen & PRO-Nutzer
-          </div>
-        </div>
-
-        <div class="p-5 rounded-3xl liquid_glass border border-white/80 shadow-md">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-cyan-700">Kostenpflichtige Sitze</span>
-            <span class="text-xl">👥</span>
-          </div>
-          <div class="text-3xl font-black text-[#00A3C4] mt-2">
-            {{ ordersSummary?.total_seats || 0 }}
-          </div>
-          <div class="text-xs text-slate-500 font-medium mt-1">
-            Zugewiesene Mitarbeiter-Lizenzen
-          </div>
-        </div>
-      </div>
-
       <!-- Orders & Invoices Table -->
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
@@ -2250,12 +2345,103 @@ definePageMeta({
 })
 
 const { user, authHeaders } = useAuth()
+const route = useRoute()
+const router = useRouter()
 
 const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
 const loading = ref(true)
+
+const activeSectionBadge = computed(() => {
+  switch (activeTab.value) {
+    case 'users': return 'Benutzerverwaltung'
+    case 'companies': return 'Unternehmen & Mandanten'
+    case 'finance': return 'Finanzen & Lizenzen'
+    case 'templates': return 'Projekt-Vorlagen'
+    case 'email': return 'E-Mail & Versand'
+    default: return 'Zentrale Administration'
+  }
+})
+
+const activeSectionTitle = computed(() => {
+  switch (activeTab.value) {
+    case 'users': return 'Benutzer- & Kundenverwaltung'
+    case 'companies': return 'Unternehmen, Mandanten & B2B'
+    case 'finance': return 'Finanzen, Abonnements & Lizenzen'
+    case 'templates': return 'Projekt- & Aufgaben-Vorlagen'
+    case 'email': return 'Zentrale E-Mail-Konfiguration'
+    default: return 'Taskster Plattform-Administration'
+  }
+})
+
+const activeSectionDescription = computed(() => {
+  switch (activeTab.value) {
+    case 'users': return 'Verwalte registrierte Benutzer, Rollen, Berechtigungen und Firmenzuweisungen.'
+    case 'companies': return 'Verwalte Subscription-Pläne, Upload-Restriktionen und Sicherheitsrichtlinien.'
+    case 'finance': return 'Wiederkehrender monatlicher Umsatz (MRR), Firmenabos und Lizenz-Sitze.'
+    case 'templates': return 'Vordefinierte Vorlagen für geschäftliche und private Bau- & Projektorganisation.'
+    case 'email': return 'Resend & SMTP Einstellungen, E-Mail-Vorlagen und Versandprotokolle.'
+    default: return 'Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.'
+  }
+})
+
+const totalCompanyUsers = computed(() => {
+  return companies.value.reduce((sum, c) => sum + (Number(c.user_count) || 0), 0)
+})
+
+const companiesWithUploadAllowed = computed(() => {
+  return companies.value.filter(c => c.settings?.allow_document_upload).length
+})
+
+const jobTemplatesCount = computed(() => {
+  return templates.value.filter(t => t.category === 'job').length
+})
+
+const privateTemplatesCount = computed(() => {
+  return templates.value.filter(t => t.category === 'private').length
+})
+
+const activeEmailTemplatesCount = computed(() => {
+  return emailTemplates.value.filter(t => t.is_active).length
+})
+
+const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email') => {
+  activeTab.value = tab
+  router.replace({ query: { ...route.query, tab } })
+}
+
+function syncTabFromRoute() {
+  const qTab = route.query.tab as any
+  const validTabs = ['users', 'companies', 'finance', 'templates', 'email']
+  if (qTab && validTabs.includes(qTab)) {
+    if (
+      (qTab === 'users' && hasPermission('manage_users')) ||
+      (qTab === 'companies' && hasPermission('company_settings')) ||
+      (qTab === 'finance' && hasPermission('finance')) ||
+      (qTab === 'templates' && hasPermission('manage_templates')) ||
+      (qTab === 'email' && hasPermission('company_settings'))
+    ) {
+      activeTab.value = qTab
+      return
+    }
+  }
+  // Fallback defaults based on permission
+  if (hasPermission('manage_users')) {
+    activeTab.value = 'users'
+  } else if (hasPermission('finance')) {
+    activeTab.value = 'finance'
+  } else if (hasPermission('company_settings')) {
+    activeTab.value = 'companies'
+  } else if (hasPermission('manage_templates')) {
+    activeTab.value = 'templates'
+  }
+}
+
+watch(() => route.query.tab, () => {
+  syncTabFromRoute()
+})
 
 // Email Settings & Trigger Templates state
 const emailSubTab = ref<'settings' | 'templates' | 'outbox'>('settings')
@@ -3081,6 +3267,8 @@ watch(activeTab, (tab) => {
     loadEmailSettings()
     loadEmailTemplates()
     loadEmailOutbox()
+  } else if (tab === 'finance') {
+    loadOrdersData()
   }
 })
 
@@ -3094,18 +3282,12 @@ onMounted(async () => {
     return
   }
 
-  // Set default tab based on user permissions
-  if (hasPermission('manage_users')) {
-    activeTab.value = 'users'
-  } else if (hasPermission('finance')) {
-    activeTab.value = 'finance'
-  } else if (hasPermission('company_settings')) {
-    activeTab.value = 'companies'
-  } else if (hasPermission('manage_templates')) {
-    activeTab.value = 'templates'
-  }
+  syncTabFromRoute()
 
   await loadAdminData()
+  if (activeTab.value === 'finance') {
+    await loadOrdersData()
+  }
   if (hasPermission('company_settings')) {
     loadEmailSettings()
     loadEmailTemplates()
