@@ -1,32 +1,38 @@
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-    <!-- Breadcrumb & Top Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <!-- Breadcrumb & Top Header Card -->
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-          <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors">Workspace</NuxtLink>
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+          <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+            <LayoutDashboard class="w-3.5 h-3.5" />
+            <span>Dashboard</span>
+          </NuxtLink>
           <span>/</span>
-          <span class="text-slate-800 font-medium">Zeitrapportierung</span>
+          <span class="text-slate-800 font-semibold flex items-center gap-1">
+            <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+            <span>Zeitrapportierung</span>
+          </span>
         </div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
           <Clock class="w-6 h-6 text-[#0891B2]" />
           <span>Zeitrapportierung & Controlling</span>
         </h1>
-        <p class="text-sm text-slate-600 mt-1">
+        <p class="text-xs text-slate-500 mt-1">
           Alle erfassten Arbeitszeiten, Budgets und abrechenbaren Leistungen im Gesamtüberblick.
         </p>
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center flex-wrap gap-2.5">
+      <div class="flex items-center flex-wrap gap-2">
         <button
           @click="exportCsv"
           :disabled="filteredEntries.length === 0"
           type="button"
-          class="taskster_button_light"
+          class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
           title="Als CSV-Datei herunterladen"
         >
-          <Download class="w-4 h-4" />
+          <Download class="w-3.5 h-3.5 text-slate-600" />
           <span>CSV Export</span>
         </button>
 
@@ -34,30 +40,30 @@
           @click="printRapport"
           :disabled="filteredEntries.length === 0"
           type="button"
-          class="taskster_button_light"
+          class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
           title="Druckansicht öffnen"
         >
-          <Printer class="w-4 h-4" />
+          <Printer class="w-3.5 h-3.5 text-slate-600" />
           <span class="hidden sm:inline">Drucken</span>
         </button>
 
         <button
           @click="openCreateModal"
           type="button"
-          class="taskster_button"
+          class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-3.5 h-3.5" />
           <span>Zeit erfassen</span>
         </button>
       </div>
     </div>
 
     <!-- Summary Metrics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- Total Duration -->
-      <div class="bg-white border border-slate-200 rounded-lg p-4">
+      <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
         <div class="flex items-center gap-2 text-slate-500">
-          <Clock class="w-4 h-4" />
+          <Clock class="w-4 h-4 text-[#0891B2]" />
           <span class="text-xs font-semibold uppercase tracking-wide">Erfasste Zeit</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
@@ -69,9 +75,9 @@
       </div>
 
       <!-- Total Cost / Amount -->
-      <div class="bg-white border border-slate-200 rounded-lg p-4">
+      <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
         <div class="flex items-center gap-2 text-slate-500">
-          <Coins class="w-4 h-4" />
+          <Coins class="w-4 h-4 text-emerald-600" />
           <span class="text-xs font-semibold uppercase tracking-wide">Abrechenbarer Wert</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
@@ -83,9 +89,9 @@
       </div>
 
       <!-- Average Rate -->
-      <div class="bg-white border border-slate-200 rounded-lg p-4">
+      <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
         <div class="flex items-center gap-2 text-slate-500">
-          <TrendingUp class="w-4 h-4" />
+          <TrendingUp class="w-4 h-4 text-cyan-600" />
           <span class="text-xs font-semibold uppercase tracking-wide">Ø Stundensatz</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
@@ -97,9 +103,9 @@
       </div>
 
       <!-- Total Entries Count -->
-      <div class="bg-white border border-slate-200 rounded-lg p-4">
+      <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
         <div class="flex items-center gap-2 text-slate-500">
-          <FileText class="w-4 h-4" />
+          <FileText class="w-4 h-4 text-slate-600" />
           <span class="text-xs font-semibold uppercase tracking-wide">Buchungen</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
@@ -112,18 +118,18 @@
     </div>
 
     <!-- Filter Toolbar -->
-    <div class="liquid_glass p-5 rounded-3xl border border-white/70 shadow-xl mb-8 space-y-4">
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
       <!-- Quick Range Switcher -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200/60">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-xs font-black text-slate-500 uppercase mr-1">Zeitraum:</span>
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide mr-1">Zeitraum:</span>
           <button
             v-for="preset in presets"
             :key="preset.id"
             @click="selectPreset(preset.id)"
             type="button"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
-            :class="activePreset === preset.id ? 'bg-[#00A3C4] text-white shadow-xs' : 'bg-white/80 hover:bg-white text-slate-700 border border-slate-200/80'"
+            class="px-3 py-1 rounded text-xs font-semibold transition cursor-pointer"
+            :class="activePreset === preset.id ? 'bg-[#0891B2] text-white shadow-2xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'"
           >
             {{ preset.label }}
           </button>
@@ -138,12 +144,12 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <!-- Search Input -->
         <div class="relative">
-          <span class="absolute left-3.5 top-2.5 text-slate-400 text-xs">🔍</span>
+          <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             v-model="searchFilter"
             type="text"
             placeholder="Suche nach Text, Aufgabe..."
-            class="w-full pl-9 pr-3 py-2 bg-white/95 rounded-xl text-xs text-slate-800 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
           />
         </div>
 
@@ -152,7 +158,7 @@
           <select
             v-model="selectedProjectId"
             @change="loadTimeEntries"
-            class="w-full px-3 py-2 bg-white/95 rounded-xl text-xs font-bold text-slate-800 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#0891B2]"
           >
             <option value="">Alle Projekte ({{ availableProjects.length }})</option>
             <option v-for="p in availableProjects" :key="p.id" :value="p.id">
@@ -163,50 +169,51 @@
 
         <!-- Date From -->
         <div class="flex items-center space-x-2">
-          <span class="text-[11px] font-bold text-slate-500 shrink-0">Von:</span>
+          <span class="text-xs font-semibold text-slate-500 shrink-0">Von:</span>
           <input
             v-model="dateFrom"
             @change="onCustomDateChange"
             type="date"
-            class="w-full px-3 py-2 bg-white/95 rounded-xl text-xs font-bold text-slate-800 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#0891B2]"
           />
         </div>
 
         <!-- Date To -->
         <div class="flex items-center space-x-2">
-          <span class="text-[11px] font-bold text-slate-500 shrink-0">Bis:</span>
+          <span class="text-xs font-semibold text-slate-500 shrink-0">Bis:</span>
           <input
             v-model="dateTo"
             @change="onCustomDateChange"
             type="date"
-            class="w-full px-3 py-2 bg-white/95 rounded-xl text-xs font-bold text-slate-800 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#0891B2]"
           />
         </div>
       </div>
     </div>
 
     <!-- Time Entries Table Section -->
-    <div class="liquid_glass rounded-3xl border border-white/70 shadow-2xl overflow-hidden">
+    <div class="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
       <!-- Loading State -->
       <div v-if="loading" class="py-16 text-center">
-        <div class="inline-block animate-spin text-3xl mb-2">⏱️</div>
-        <p class="text-xs font-bold text-slate-600">Zeitrapporte werden geladen...</p>
+        <Clock class="w-8 h-8 text-[#0891B2] animate-spin mx-auto mb-2" />
+        <p class="text-xs font-semibold text-slate-600">Zeitrapporte werden geladen...</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredEntries.length === 0" class="py-16 px-6 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center text-2xl font-black mx-auto mb-3 shadow-xs">
-          ⏱️
+        <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mx-auto mb-3 border border-cyan-200">
+          <Clock class="w-6 h-6" />
         </div>
-        <h3 class="text-sm font-black text-slate-800">Keine Zeiteinträge gefunden</h3>
+        <h3 class="text-sm font-bold text-slate-900">Keine Zeiteinträge gefunden</h3>
         <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
           Im ausgewählten Zeitraum liegen keine Buchungen vor. Starte die Live-Stoppuhr oben oder trage eine Zeit manuell nach.
         </p>
         <button
           @click="openCreateModal"
-          class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2"
+          class="taskster_button px-4 text-xs h-9 rounded-md inline-flex items-center space-x-1.5"
         >
-          <span>+ Zeit manuell eintragen</span>
+          <Plus class="w-3.5 h-3.5" />
+          <span>Zeit manuell eintragen</span>
         </button>
       </div>
 
@@ -214,36 +221,36 @@
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-500">
-              <th class="py-3.5 px-4 sm:px-6">Datum</th>
-              <th class="py-3.5 px-4">Mitarbeiter</th>
-              <th class="py-3.5 px-4">Projekt & Aufgabe</th>
-              <th class="py-3.5 px-4">Erfassung</th>
-              <th class="py-3.5 px-4">Beschreibung</th>
-              <th class="py-3.5 px-4 text-right">Dauer</th>
-              <th class="py-3.5 px-4 text-right">Ansatz</th>
-              <th class="py-3.5 px-4 text-right">Betrag</th>
-              <th class="py-3.5 px-4 sm:px-6 text-right">Aktionen</th>
+            <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="py-3 px-4 sm:px-6">Datum</th>
+              <th class="py-3 px-4">Mitarbeiter</th>
+              <th class="py-3 px-4">Projekt & Aufgabe</th>
+              <th class="py-3 px-4">Erfassung</th>
+              <th class="py-3 px-4">Beschreibung</th>
+              <th class="py-3 px-4 text-right">Dauer</th>
+              <th class="py-3 px-4 text-right">Ansatz</th>
+              <th class="py-3 px-4 text-right">Betrag</th>
+              <th class="py-3 px-4 sm:px-6 text-right">Aktionen</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-xs">
             <tr
               v-for="entry in filteredEntries"
               :key="entry.id"
-              class="hover:bg-white/80 transition-colors group"
+              class="hover:bg-slate-50 transition-colors group"
             >
               <!-- Date -->
-              <td class="py-3 px-4 sm:px-6 font-bold text-slate-800 whitespace-nowrap">
+              <td class="py-3 px-4 sm:px-6 font-semibold text-slate-800 whitespace-nowrap">
                 {{ formatDate(entry.entry_date) }}
               </td>
 
               <!-- User -->
               <td class="py-3 px-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-[10px] font-black">
+                  <div class="w-6 h-6 rounded bg-cyan-100 text-[#0891B2] flex items-center justify-center text-[10px] font-bold border border-cyan-200">
                     {{ (entry.user_name || 'U').charAt(0).toUpperCase() }}
                   </div>
-                  <span class="font-bold text-slate-800">{{ entry.user_name }}</span>
+                  <span class="font-semibold text-slate-800">{{ entry.user_name }}</span>
                 </div>
               </td>
 
@@ -251,12 +258,13 @@
               <td class="py-3 px-4 min-w-[200px]">
                 <NuxtLink
                   :to="'/projects/' + entry.project_id"
-                  class="font-extrabold text-[#00A3C4] hover:underline block truncate"
+                  class="font-bold text-[#0891B2] hover:underline block truncate"
                 >
                   {{ entry.project_title }}
                 </NuxtLink>
-                <span v-if="entry.task_title" class="text-[11px] text-slate-600 block truncate">
-                  🎯 {{ entry.task_title }}
+                <span v-if="entry.task_title" class="text-[11px] text-slate-600 flex items-center gap-1 truncate mt-0.5">
+                  <Target class="w-3 h-3 text-cyan-600 inline shrink-0" />
+                  <span>{{ entry.task_title }}</span>
                 </span>
               </td>
 
@@ -264,18 +272,18 @@
               <td class="py-3 px-4 whitespace-nowrap">
                 <span
                   v-if="!entry.is_manual"
-                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-100 text-cyan-800 border border-cyan-200"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-[#0891B2] border border-cyan-200"
                   title="Über Live-Stoppuhr gestoppt"
                 >
-                  <span>⏱️</span>
+                  <Clock class="w-3 h-3 text-[#0891B2]" />
                   <span>Stoppuhr</span>
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"
                   title="Manuelle Zeiterfassung"
                 >
-                  <span>✏️</span>
+                  <Pencil class="w-3 h-3 text-slate-500" />
                   <span>Manuell</span>
                 </span>
               </td>
@@ -286,20 +294,20 @@
               </td>
 
               <!-- Duration -->
-              <td class="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+              <td class="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
                 <div>{{ formatHoursAndMinutes(entry.duration_minutes) }}</div>
-                <div class="text-[10px] text-slate-600 font-semibold">
+                <div class="text-[10px] text-slate-500 font-medium">
                   {{ (entry.duration_minutes / 60).toFixed(2) }} h
                 </div>
               </td>
 
               <!-- Rate -->
-              <td class="py-3 px-4 text-right font-semibold text-slate-600 whitespace-nowrap">
+              <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap">
                 {{ (Number(entry.hourly_rate) || 0).toFixed(2) }} {{ entry.project_currency || 'CHF' }}/h
               </td>
 
               <!-- Amount -->
-              <td class="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+              <td class="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
                 {{ ((Number(entry.duration_minutes) / 60) * (Number(entry.hourly_rate) || 0)).toFixed(2) }} {{ entry.project_currency || 'CHF' }}
               </td>
 
@@ -308,17 +316,17 @@
                 <div class="flex items-center justify-end space-x-1">
                   <button
                     @click="openEditModal(entry)"
-                    class="p-1.5 rounded-lg hover:bg-cyan-50 text-slate-600 hover:text-[#00A3C4] transition cursor-pointer"
+                    class="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-[#0891B2] transition cursor-pointer"
                     title="Eintrag bearbeiten"
                   >
-                    ✏️
+                    <Pencil class="w-3.5 h-3.5" />
                   </button>
                   <button
                     @click="deleteEntry(entry.id)"
-                    class="p-1.5 rounded-lg hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition cursor-pointer"
+                    class="p-1 rounded hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition cursor-pointer"
                     title="Eintrag löschen"
                   >
-                    🗑️
+                    <Trash2 class="w-3.5 h-3.5" />
                   </button>
                 </div>
               </td>
@@ -327,20 +335,20 @@
 
           <!-- Table Footer Summary -->
           <tfoot>
-            <tr class="bg-slate-50/90 font-black text-xs text-slate-900 border-t-2 border-slate-200">
-              <td colspan="5" class="py-3.5 px-4 sm:px-6 uppercase tracking-wider text-slate-600">
+            <tr class="bg-slate-50 font-bold text-xs text-slate-900 border-t-2 border-slate-200">
+              <td colspan="5" class="py-3 px-4 sm:px-6 uppercase tracking-wider text-slate-600">
                 Summe der gefilterten Auswahl
               </td>
-              <td class="py-3.5 px-4 text-right text-cyan-800">
+              <td class="py-3 px-4 text-right text-[#0891B2]">
                 {{ formatHoursAndMinutes(summary.totalMinutes) }}
               </td>
-              <td class="py-3.5 px-4 text-right text-slate-500">
+              <td class="py-3 px-4 text-right text-slate-500">
                 Ø {{ averageRate.toFixed(2) }}
               </td>
-              <td class="py-3.5 px-4 text-right text-emerald-800">
+              <td class="py-3 px-4 text-right text-emerald-700">
                 {{ formatCurrency(summary.totalCost) }}
               </td>
-              <td class="py-3.5 px-4 sm:px-6"></td>
+              <td class="py-3 px-4 sm:px-6"></td>
             </tr>
           </tfoot>
         </table>
@@ -561,7 +569,9 @@ import {
   Coins,
   Pencil,
   Trash2,
-  X
+  X,
+  LayoutDashboard,
+  Target
 } from 'lucide-vue-next'
 
 const { user, token } = useAuth()

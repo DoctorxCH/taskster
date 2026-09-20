@@ -3065,6 +3065,69 @@ try {
         jsonResponse(['query' => $q, 'total' => count($hits), 'groups' => $groups]);
     }
 
+    // ==========================================
+    // CALENDAR (Sidebar-Miniatur: Aufgaben-Faelligkeiten)
+    // ==========================================
+
+    // CAL-1. GET calendar?year=YYYY&month=M
+    if ($path === 'calendar' && $method === 'GET') {
+        $user = requireAuth();
+        $year = (int)($_GET['year'] ?? date('Y'));
+        $month = (int)($_GET['month'] ?? date('n'));
+
+        if ($month < 1 || $month > 12) {
+            errorResponse('Ungültiger Monat', 400);
+        }
+
+        $firstDay = sprintf('%04d-%02d-01', $year, $month);
+        $lastDay = sprintf('%04d-%02d-%02d', $year, $month, (int)date('t', mktime(0, 0, 0, $month, 1, $year)));
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+        $uid = $user['id'];
+
+        $stmt = $db->prepare("
+            SELECT t.id, t.title, t.due_date, t.status, t.priority,
+                   p.id AS project_id, p.title AS project_title
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE t.due_date IS NOT NULL
+              AND t.due_date >= ? AND t.due_date <= ?
+              AND (
+                pf.owner_id = ?
+                OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
+                OR (pf.company_id IS NOT NULL AND pf.company_id = ? AND pf.visibility = 'company')
+              )
+            ORDER BY t.due_date ASC
+        ");
+        $stmt->execute([$firstDay, $lastDay, $uid, $uid, $companyId]);
+        $rows = $stmt->fetchAll();
+
+        $today = date('Y-m-d');
+        $days = [];
+        foreach ($rows as $r) {
+            $dateKey = substr($r['due_date'], 0, 10);
+            if (!isset($days[$dateKey])) {
+                $days[$dateKey] = ['count' => 0, 'overdue' => 0, 'items' => []];
+            }
+            $isOverdue = ($dateKey < $today && $r['status'] !== 'done');
+            $days[$dateKey]['count']++;
+            if ($isOverdue) $days[$dateKey]['overdue']++;
+            if (count($days[$dateKey]['items']) < 5) {
+                $days[$dateKey]['items'][] = [
+                    'id' => $r['id'], 'title' => $r['title'], 'status' => $r['status'],
+                    'priority' => $r['priority'], 'project_id' => $r['project_id'],
+                    'project_title' => $r['project_title'], 'overdue' => $isOverdue
+                ];
+            }
+        }
+
+        jsonResponse([
+            'year' => $year, 'month' => $month, 'today' => $today,
+            'total' => count($rows), 'days' => $days
+        ]);
+    }
+
     // 17. GET admin/overview
     if ($path === 'admin/overview' && $method === 'GET') {
         $user = requireAdminPermission('any_admin');

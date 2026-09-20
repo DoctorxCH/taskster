@@ -19,15 +19,19 @@
     </div>
 
     <div v-else-if="folder" class="space-y-6">
-      <!-- Folder Header Banner -->
-      <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+      <!-- Single Unified Header & Folder Dashboard Card -->
+      <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+        <!-- Row 1: Folder Title, Meta & Main Action Buttons -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex items-center gap-2.5 mb-1.5">
-              <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0">
+            <div class="flex items-center gap-2.5 mb-1">
+              <div class="w-9 h-9 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0">
                 <Folder class="w-5 h-5" />
               </div>
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ folder.name }}</h1>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200 ml-1">
+                {{ projects.length }} {{ projects.length === 1 ? 'Projekt' : 'Projekte' }}
+              </span>
             </div>
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>Owner: <strong class="text-slate-900 font-semibold">{{ folder.owner_name }}</strong></span>
@@ -43,11 +47,33 @@
                 <span>{{ folder.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
               </span>
               <span v-if="folder.company_name" class="text-slate-700 font-medium">• {{ folder.company_name }}</span>
-              <span>• Erstellt am {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
+              <span>• {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
             </p>
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
+            <!-- View Mode Switcher -->
+            <div class="bg-slate-100 border border-slate-200 rounded-md p-1 flex items-center space-x-1 mr-1">
+              <button
+                @click="projectViewMode = 'grid'"
+                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
+                :class="projectViewMode === 'grid' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                title="Kachel-Ansicht"
+              >
+                <LayoutGrid class="w-3.5 h-3.5" />
+                <span>Kacheln</span>
+              </button>
+              <button
+                @click="projectViewMode = 'list'"
+                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
+                :class="projectViewMode === 'list' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                title="Listenansicht"
+              >
+                <List class="w-3.5 h-3.5" />
+                <span>Liste</span>
+              </button>
+            </div>
+
             <button
               v-if="user?.id === folder.owner_id || user?.is_superadmin"
               @click="openShareFolderModal"
@@ -75,146 +101,88 @@
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Compact Folder Controlling Summary Row (Subtle & Collapsible) -->
-      <div v-if="projects.length > 0" class="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-3 min-w-0">
-            <div class="w-8 h-8 rounded bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-              <BarChart3 class="w-4 h-4 text-[#0891B2]" />
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center space-x-3 text-xs font-semibold text-slate-900 flex-wrap">
-                <span>Controlling & Aufwand:</span>
-                <span class="text-[#0891B2] font-bold">{{ timeSummary?.total_hours || 0 }} Std. Gesamtaufwand</span>
-                <span v-if="timeSummary?.total_cost > 0" class="text-slate-600">• {{ Number(timeSummary.total_cost).toLocaleString('de-CH') }} CHF Kosten</span>
-              </div>
-              <p class="text-[11px] text-slate-500 truncate hidden sm:block">
-                Stunden & Budgets auf Summenebene aller {{ projects.length }} Projekte in diesem Ordner.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            @click="showControllingDetails = !showControllingDetails"
-            class="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition flex items-center space-x-1 shrink-0 ml-2 cursor-pointer"
-          >
-            <span>{{ showControllingDetails ? 'Details einklappen' : 'Details anzeigen' }}</span>
-            <ChevronUp v-if="showControllingDetails" class="w-3.5 h-3.5" />
-            <ChevronDown v-else class="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <!-- Collapsible Breakdown per Project -->
-        <div v-if="showControllingDetails" class="mt-4 pt-3 border-t border-slate-200 space-y-3">
-          <div
-            v-for="p in projects"
-            :key="p.id"
-            class="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs"
-          >
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
-              <div class="flex items-center space-x-2">
-                <NuxtLink :to="`/projects/${p.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition hover:underline">
-                  {{ p.title }}
-                </NuxtLink>
-                <span class="text-[10px] px-2 py-0.2 rounded font-semibold uppercase" :class="p.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-cyan-100 text-[#0891B2] border border-cyan-200'">
-                  {{ p.status }}
-                </span>
-              </div>
-
-              <div class="flex items-center space-x-4 text-xs font-medium text-slate-700">
-                <span>
-                  Ist: <strong class="text-slate-900">{{ p.tracked_hours || 0 }} Std.</strong>
-                  <span v-if="p.budget_hours" class="text-slate-500 font-normal"> / {{ p.budget_hours }} Std.</span>
-                </span>
-                <span v-if="p.tracked_cost > 0" class="text-slate-600">
-                  {{ Number(p.tracked_cost).toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}
-                </span>
-                <NuxtLink :to="`/projects/${p.id}`" class="text-[#0891B2] hover:underline text-xs font-semibold flex items-center space-x-0.5">
-                  <span>Öffnen</span>
-                  <ArrowRight class="w-3 h-3" />
-                </NuxtLink>
-              </div>
-            </div>
-
-            <!-- Visual Progress Bar for Project Budget -->
-            <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-              <div
-                v-if="p.budget_hours > 0"
-                class="h-1.5 rounded-full transition-all duration-300"
-                :class="(p.tracked_hours || 0) > p.budget_hours ? 'bg-rose-500' : ((p.tracked_hours || 0) / p.budget_hours >= 0.8 ? 'bg-amber-500' : 'bg-[#0891B2]')"
-                :style="{ width: Math.min(100, Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100)) + '%' }"
-              ></div>
-              <div
-                v-else
-                class="h-1.5 bg-cyan-500/60 rounded-full transition-all"
-                :style="{ width: Math.min(100, (p.tracked_hours || 0) * 5) + '%' }"
-              ></div>
-            </div>
-            
-            <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-1">
-              <span v-if="p.budget_hours > 0">
-                Auslastung: {{ Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100) }}%
-                <span v-if="(p.tracked_hours || 0) > p.budget_hours" class="text-rose-600 font-semibold ml-1">Budget überschritten (+{{ ((p.tracked_hours || 0) - p.budget_hours).toFixed(1) }} Std.)</span>
-                <span v-else class="text-emerald-700 font-semibold ml-1">({{ (p.budget_hours - (p.tracked_hours || 0)).toFixed(1) }} Std. verbleibend)</span>
-              </span>
-              <span v-else class="italic text-slate-400">Kein Stunden-Budget festgelegt</span>
-              <span v-if="p.budget_amount > 0">Kostenbudget: {{ p.budget_amount.toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Projects Section (Primary Hero Focus) -->
-      <div class="space-y-4">
-        <!-- Projects Header & Toolbar -->
-        <div class="bg-white border border-slate-200 rounded-lg px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-          <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2">
-              <Folder class="w-5 h-5 text-[#0891B2]" />
-              <h2 class="text-base font-bold text-slate-900 tracking-tight">
-                Projekte in diesem Ordner
-              </h2>
-            </div>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
-              {{ projects.length }}
-            </span>
-          </div>
-
-          <!-- View Mode Toggle & Actions -->
-          <div class="flex items-center space-x-3">
-            <div class="bg-slate-100 border border-slate-200 rounded-md p-1 flex items-center space-x-1">
-              <button
-                @click="projectViewMode = 'grid'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
-                :class="projectViewMode === 'grid' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-                title="Kachel-Ansicht"
-              >
-                <LayoutGrid class="w-3.5 h-3.5" />
-                <span>Kacheln</span>
-              </button>
-              <button
-                @click="projectViewMode = 'list'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
-                :class="projectViewMode === 'list' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-                title="Listen- / Tabellenansicht"
-              >
-                <List class="w-3.5 h-3.5" />
-                <span>Liste</span>
-              </button>
+        <!-- Row 2: Controlling Summary Bar inside same Header Card -->
+        <div v-if="projects.length > 0" class="pt-3 border-t border-slate-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2 text-xs text-slate-700">
+              <BarChart3 class="w-4 h-4 text-[#0891B2] shrink-0" />
+              <span class="font-semibold text-slate-900">Controlling:</span>
+              <span class="text-[#0891B2] font-bold">{{ timeSummary?.total_hours || 0 }} Std. Gesamtaufwand</span>
+              <span v-if="timeSummary?.total_cost > 0" class="text-slate-600 hidden sm:inline">• {{ Number(timeSummary.total_cost).toLocaleString('de-CH') }} CHF</span>
             </div>
 
             <button
-              @click="openNewProjectModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              type="button"
+              @click="showControllingDetails = !showControllingDetails"
+              class="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition flex items-center space-x-1 shrink-0 cursor-pointer"
             >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Neues Projekt</span>
+              <span>{{ showControllingDetails ? 'Details einklappen' : 'Details anzeigen' }}</span>
+              <ChevronUp v-if="showControllingDetails" class="w-3.5 h-3.5" />
+              <ChevronDown v-else class="w-3.5 h-3.5" />
             </button>
           </div>
+
+          <!-- Collapsible Breakdown per Project -->
+          <div v-if="showControllingDetails" class="mt-3 pt-3 border-t border-slate-200 space-y-3">
+            <div
+              v-for="p in projects"
+              :key="p.id"
+              class="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
+                <div class="flex items-center space-x-2">
+                  <NuxtLink :to="`/projects/${p.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition hover:underline">
+                    {{ p.title }}
+                  </NuxtLink>
+                  <span class="text-[10px] px-2 py-0.2 rounded font-semibold uppercase" :class="p.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-cyan-100 text-[#0891B2] border border-cyan-200'">
+                    {{ p.status }}
+                  </span>
+                </div>
+
+                <div class="flex items-center space-x-4 text-xs font-medium text-slate-700">
+                  <span>
+                    Ist: <strong class="text-slate-900">{{ p.tracked_hours || 0 }} Std.</strong>
+                    <span v-if="p.budget_hours" class="text-slate-500 font-normal"> / {{ p.budget_hours }} Std.</span>
+                  </span>
+                  <span v-if="p.tracked_cost > 0" class="text-slate-600">
+                    {{ Number(p.tracked_cost).toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}
+                  </span>
+                  <NuxtLink :to="`/projects/${p.id}`" class="text-[#0891B2] hover:underline text-xs font-semibold flex items-center space-x-0.5">
+                    <span>Öffnen</span>
+                    <ArrowRight class="w-3 h-3" />
+                  </NuxtLink>
+                </div>
+              </div>
+
+              <!-- Visual Progress Bar for Project Budget -->
+              <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div
+                  v-if="p.budget_hours > 0"
+                  class="h-1.5 rounded-full transition-all duration-300"
+                  :class="(p.tracked_hours || 0) > p.budget_hours ? 'bg-rose-500' : ((p.tracked_hours || 0) / p.budget_hours >= 0.8 ? 'bg-amber-500' : 'bg-[#0891B2]')"
+                  :style="{ width: Math.min(100, Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100)) + '%' }"
+                ></div>
+                <div
+                  v-else
+                  class="h-1.5 bg-cyan-500/60 rounded-full transition-all"
+                  :style="{ width: Math.min(100, (p.tracked_hours || 0) * 5) + '%' }"
+                ></div>
+              </div>
+              
+              <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-1">
+                <span v-if="p.budget_hours > 0">
+                  Auslastung: {{ Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100) }}%
+                  <span v-if="(p.tracked_hours || 0) > p.budget_hours" class="text-rose-600 font-semibold ml-1">Budget überschritten (+{{ ((p.tracked_hours || 0) - p.budget_hours).toFixed(1) }} Std.)</span>
+                  <span v-else class="text-emerald-700 font-semibold ml-1">({{ (p.budget_hours - (p.tracked_hours || 0)).toFixed(1) }} Std. verbleibend)</span>
+                </span>
+                <span v-else class="italic text-slate-400">Kein Stunden-Budget festgelegt</span>
+                <span v-if="p.budget_amount > 0">Kostenbudget: {{ p.budget_amount.toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
         <!-- Empty State -->
         <div v-if="projects.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
@@ -398,7 +366,6 @@
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Modal: New Project (with Templates support) -->
     <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
