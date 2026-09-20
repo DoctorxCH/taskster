@@ -41,7 +41,7 @@
       <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
           <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 font-bold text-xl mb-4">
-            📁
+            <Folder class="w-6 h-6" />
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Mehrstufige Struktur</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
@@ -51,7 +51,7 @@
 
         <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
           <div class="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-800/60 flex items-center justify-center text-teal-400 font-bold text-xl mb-4">
-            🛡️
+            <Shield class="w-6 h-6" />
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Präzise Rollen & Rechte</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
@@ -61,7 +61,7 @@
 
         <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800">
           <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-            🏢
+            <Building2 class="w-6 h-6" />
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Flexible Team-Verwaltung</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
@@ -74,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import { Folder, Shield, Building2 } from 'lucide-vue-next'
+
 const { user } = useAuth()
 
 onMounted(() => {
