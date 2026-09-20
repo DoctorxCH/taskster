@@ -255,6 +255,30 @@ function ensureTables($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS system_settings (
+              `key` VARCHAR(128) PRIMARY KEY,
+              `value` MEDIUMTEXT NOT NULL,
+              description VARCHAR(512) NULL,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS email_templates (
+              id VARCHAR(64) PRIMARY KEY,
+              trigger_event VARCHAR(64) NOT NULL UNIQUE,
+              name VARCHAR(255) NOT NULL,
+              description TEXT NULL,
+              subject VARCHAR(512) NOT NULL,
+              body_html MEDIUMTEXT NOT NULL,
+              body_text MEDIUMTEXT NOT NULL,
+              variables JSON NOT NULL,
+              is_active TINYINT(1) NOT NULL DEFAULT 1,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
         // Standard-Kategorien einmalig anlegen
         $catCount = (int)$pdo->query("SELECT COUNT(*) FROM event_categories WHERE is_system = 1")->fetchColumn();
         if ($catCount === 0) {
@@ -274,6 +298,30 @@ function ensureTables($pdo) {
             foreach ($defaults as $d) {
                 try { $ins->execute($d); } catch (Exception $e) {}
             }
+        }
+
+        // Standard-SMTP-Einstellungen einmalig anlegen
+        $smtpCount = (int)$pdo->query("SELECT COUNT(*) FROM system_settings WHERE `key` LIKE 'smtp_%'")->fetchColumn();
+        if ($smtpCount === 0) {
+            $smtpDefaults = [
+                'smtp_host' => 'mail.kurka.ch',
+                'smtp_port' => '465',
+                'smtp_secure' => 'ssl',
+                'smtp_user' => 'noreply@kurka.ch',
+                'smtp_password' => '[REDACTED_SECRET]',
+                'smtp_from_email' => 'noreply@kurka.ch',
+                'smtp_from_name' => 'Taskster'
+            ];
+            $insSmtp = $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)");
+            foreach ($smtpDefaults as $k => $v) {
+                try { $insSmtp->execute([$k, $v]); } catch (Exception $e) {}
+            }
+        }
+
+        // Standard-E-Mail-Vorlagen einmalig anlegen
+        $tmplCount = (int)$pdo->query("SELECT COUNT(*) FROM email_templates")->fetchColumn();
+        if ($tmplCount === 0) {
+            seedDefaultEmailTemplates($pdo);
         }
     } catch (Exception $e) {
         // Continue if table exists or migration done
@@ -547,6 +595,456 @@ function seedTemplates($pdo) {
             $d['icon'], json_encode($d['lists']), json_encode($d['fields'])
         ]);
     }
+}
+
+function getDefaultEmailTemplates() {
+    return [
+        [
+            'id' => 'tmpl_task_assigned',
+            'trigger_event' => 'task_assigned',
+            'name' => 'Aufgabe zugewiesen',
+            'description' => 'Wird gesendet, wenn einem Benutzer eine neue Aufgabe zugewiesen wird.',
+            'subject' => '[Taskster] Neue Aufgabe: {{task_title}}',
+            'variables' => ['user_name', 'task_title', 'project_title', 'assigned_by', 'due_date', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\nDir wurde die Aufgabe \"{{task_title}}\" im Projekt \"{{project_title}}\" zugewiesen.\nFälligkeitsdatum: {{due_date}}\n\nZur Aufgabe: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #00A3C4; margin-bottom: 16px;">Neue Aufgabe zugewiesen</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p>Dir wurde eine neue Aufgabe zugewiesen:</p>
+  <div style="background: #f8fafc; border-left: 4px solid #00A3C4; padding: 12px; margin: 16px 0;">
+    <div style="font-size: 16px; font-weight: bold; color: #0f172a;">{{task_title}}</div>
+    <div style="font-size: 13px; color: #64748b; margin-top: 4px;">Projekt: {{project_title}}</div>
+    <div style="font-size: 13px; color: #64748b;">Fällig am: {{due_date}}</div>
+  </div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #00A3C4; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Aufgabe öffnen</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_task_due',
+            'trigger_event' => 'task_due',
+            'name' => 'Aufgabe fällig',
+            'description' => 'Wird gesendet, wenn eine Aufgabe heute oder bald fällig ist.',
+            'subject' => '[Taskster] Erinnerung: Aufgabe {{task_title}} ist fällig',
+            'variables' => ['user_name', 'task_title', 'project_title', 'due_date', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\nDie Aufgabe \"{{task_title}}\" im Projekt \"{{project_title}}\" ist heute bzw. bald fällig ({{due_date}}).\n\nZur Aufgabe: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #ea580c; margin-bottom: 16px;">Aufgabe ist fällig</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p>Die folgende Aufgabe erfordert deine Aufmerksamkeit:</p>
+  <div style="background: #fff7ed; border-left: 4px solid #ea580c; padding: 12px; margin: 16px 0;">
+    <div style="font-size: 16px; font-weight: bold; color: #9a3412;">{{task_title}}</div>
+    <div style="font-size: 13px; color: #7c2d12; margin-top: 4px;">Projekt: {{project_title}} | Fällig: {{due_date}}</div>
+  </div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #ea580c; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Jetzt bearbeiten</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_task_comment',
+            'trigger_event' => 'task_comment',
+            'name' => 'Neuer Aufgaben-Kommentar',
+            'description' => 'Wird gesendet, wenn ein neuer Kommentar zu einer Aufgabe verfasst wurde.',
+            'subject' => '[Taskster] Neuer Kommentar zu {{task_title}}',
+            'variables' => ['user_name', 'author_name', 'task_title', 'comment_content', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\n{{author_name}} hat einen Kommentar zu \"{{task_title}}\" verfasst:\n\n\"{{comment_content}}\"\n\nZur Aufgabe: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #00A3C4; margin-bottom: 16px;">Neuer Kommentar</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p><strong>{{author_name}}</strong> hat zu <em>{{task_title}}</em> geschrieben:</p>
+  <blockquote style="background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 10px 14px; margin: 14px 0; font-style: italic;">{{comment_content}}</blockquote>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #00A3C4; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Kommentar ansehen & antworten</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_calendar_invite',
+            'trigger_event' => 'calendar_invite',
+            'name' => 'Termineinladung',
+            'description' => 'Wird bei Einladungen zu Besprechungen/Terminen versendet.',
+            'subject' => '[Taskster] Termineinladung: {{event_title}}',
+            'variables' => ['user_name', 'inviter_name', 'event_title', 'event_start', 'event_end', 'event_location', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\n{{inviter_name}} hat dich zu folgendem Termin eingeladen:\n\nTermin: {{event_title}}\nZeit: {{event_start}} bis {{event_end}}\nOrt: {{event_location}}\n\nZum Termin: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #00A3C4; margin-bottom: 16px;">Termineinladung</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p><strong>{{inviter_name}}</strong> hat dich zu einem Termin eingeladen:</p>
+  <div style="background: #f0fdfa; border-left: 4px solid #00A3C4; padding: 12px; margin: 16px 0;">
+    <div style="font-size: 16px; font-weight: bold; color: #134e4a;">{{event_title}}</div>
+    <div style="font-size: 13px; color: #115e59; margin-top: 4px;">📅 {{event_start}} - {{event_end}}</div>
+    <div style="font-size: 13px; color: #115e59;">📍 {{event_location}}</div>
+  </div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #00A3C4; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Termin im Kalender öffnen</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_calendar_reminder',
+            'trigger_event' => 'calendar_reminder',
+            'name' => 'Terminerinnerung',
+            'description' => 'Wird vor Beginn eines anstehenden Termins versendet.',
+            'subject' => '[Taskster] Erinnerung: {{event_title}}',
+            'variables' => ['user_name', 'event_title', 'event_start', 'event_location', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\nErinnerung an deinen bevorstehenden Termin:\n\n{{event_title}}\nBeginn: {{event_start}}\nOrt: {{event_location}}\n\nZum Kalender: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #0284c7; margin-bottom: 16px;">Terminerinnerung</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p>Dein Termin beginnt in Kürze:</p>
+  <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px; margin: 16px 0;">
+    <div style="font-size: 16px; font-weight: bold; color: #0369a1;">{{event_title}}</div>
+    <div style="font-size: 13px; color: #0284c7; margin-top: 4px;">⏰ {{event_start}} | 📍 {{event_location}}</div>
+  </div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #0284c7; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Kalender anzeigen</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_mention',
+            'trigger_event' => 'mention',
+            'name' => 'Erwähnung (@Name)',
+            'description' => 'Wird gesendet, wenn ein Benutzer in einem Text erwähnt wird.',
+            'subject' => '[Taskster] {{author_name}} hat dich erwähnt',
+            'variables' => ['user_name', 'author_name', 'context_title', 'mention_text', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\n{{author_name}} hat dich in \"{{context_title}}\" erwähnt:\n\n\"{{mention_text}}\"\n\nÖffnen: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #7c3aed; margin-bottom: 16px;">Du wurdest erwähnt</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p><strong>{{author_name}}</strong> hat dich in <em>{{context_title}}</em> erwähnt:</p>
+  <div style="background: #faf5ff; border-left: 4px solid #7c3aed; padding: 12px; margin: 16px 0; font-style: italic;">{{mention_text}}</div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #7c3aed; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Zur Notiz / Aufgabe</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_budget_warning',
+            'trigger_event' => 'budget_warning',
+            'name' => 'Budgetwarnung',
+            'description' => 'Wird bei Überschreiten von Budgetschwellen in Projekten gesendet.',
+            'subject' => '[Taskster] Budget-Warnung: {{project_title}}',
+            'variables' => ['user_name', 'project_title', 'budget_percent', 'tracked_hours', 'budget_hours', 'action_url'],
+            'body_text' => "Hallo {{user_name}},\n\nDas Projekt \"{{project_title}}\" hat {{budget_percent}}% des geplanten Budgets erreicht ({{tracked_hours}} von {{budget_hours}} Stunden gebucht).\n\nDetails: {{action_url}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #dc2626; margin-bottom: 16px;">Budgetwarnung</h2>
+  <p>Hallo <strong>{{user_name}}</strong>,</p>
+  <p>Das Projekt <strong>{{project_title}}</strong> hat die Budgetgrenze erreicht:</p>
+  <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px; margin: 16px 0;">
+    <div style="font-size: 16px; font-weight: bold; color: #991b1b;">{{budget_percent}}% verbraucht</div>
+    <div style="font-size: 13px; color: #b91c1c; margin-top: 4px;">{{tracked_hours}} von {{budget_hours}} Std. erfasst</div>
+  </div>
+  <p><a href="{{action_url}}" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">Controlling ansehen</a></p>
+</div>'
+        ],
+        [
+            'id' => 'tmpl_company_invite',
+            'trigger_event' => 'company_invite',
+            'name' => 'Unternehmen-Einladung',
+            'description' => 'Wird beim Einladen neuer Mitarbeiter in ein Unternehmen gesendet.',
+            'subject' => 'Einladung zu {{company_name}} auf Taskster',
+            'variables' => ['inviter_name', 'company_name', 'invite_link'],
+            'body_text' => "Hallo,\n\n{{inviter_name}} hat dich eingeladen, dem Unternehmen \"{{company_name}}\" auf Taskster beizutreten.\n\nKlicke auf den folgenden Link, um deine Registrierung abzuschliessen:\n{{invite_link}}\n\nBeste Grüsse,\nDein Taskster Team",
+            'body_html' => '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2 style="color: #00A3C4; margin-bottom: 16px;">Willkommen bei Taskster</h2>
+  <p>Hallo,</p>
+  <p><strong>{{inviter_name}}</strong> hat dich eingeladen, dem Unternehmen <strong>{{company_name}}</strong> auf Taskster beizutreten.</p>
+  <p style="margin: 24px 0;"><a href="{{invite_link}}" style="display: inline-block; background: #00A3C4; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold;">Einladung annehmen & registrieren</a></p>
+  <p style="font-size: 12px; color: #64748b;">Oder kopiere diesen Link in deinen Browser:<br><span style="font-family: monospace; color: #0f172a;">{{invite_link}}</span></p>
+</div>'
+        ]
+    ];
+}
+
+function seedDefaultEmailTemplates($pdo) {
+    $defaults = getDefaultEmailTemplates();
+    $stmt = $pdo->prepare("
+        INSERT INTO email_templates (id, trigger_event, name, description, subject, variables, body_text, body_html, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ON DUPLICATE KEY UPDATE name=VALUES(name), subject=VALUES(subject), variables=VALUES(variables), body_text=VALUES(body_text), body_html=VALUES(body_html)
+    ");
+    foreach ($defaults as $d) {
+        try {
+            $stmt->execute([
+                $d['id'], $d['trigger_event'], $d['name'], $d['description'] ?? null,
+                $d['subject'], json_encode($d['variables']), $d['body_text'], $d['body_html']
+            ]);
+        } catch (Exception $e) {}
+    }
+}
+
+function getSmtpConfigDb($pdo) {
+    $stmt = $pdo->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'smtp_%'");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $map = [];
+    foreach ($rows as $r) {
+        $map[$r['key']] = $r['value'];
+    }
+    return [
+        'smtp_host' => !empty($map['smtp_host']) ? $map['smtp_host'] : 'mail.kurka.ch',
+        'smtp_port' => !empty($map['smtp_port']) ? (int)$map['smtp_port'] : 465,
+        'smtp_secure' => !empty($map['smtp_secure']) ? $map['smtp_secure'] : 'ssl',
+        'smtp_user' => !empty($map['smtp_user']) ? $map['smtp_user'] : 'noreply@kurka.ch',
+        'smtp_password' => isset($map['smtp_password']) ? $map['smtp_password'] : '[REDACTED_SECRET]',
+        'smtp_from_email' => !empty($map['smtp_from_email']) ? $map['smtp_from_email'] : 'noreply@kurka.ch',
+        'smtp_from_name' => !empty($map['smtp_from_name']) ? $map['smtp_from_name'] : 'Taskster'
+    ];
+}
+
+function saveSmtpConfigDb($pdo, $config) {
+    $stmt = $pdo->prepare("
+        INSERT INTO system_settings (`key`, `value`)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)
+    ");
+    foreach ($config as $k => $v) {
+        if ($v !== null) {
+            $stmt->execute([$k, (string)$v]);
+        }
+    }
+}
+
+function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null) {
+    $log = [];
+    $db = getDb();
+    $outboxId = 'mail_' . substr(bin2hex(random_bytes(6)), 0, 8);
+
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
+        ");
+        $stmt->execute([$outboxId, $to, $toName ?: null, $subject, $bodyHtml ?: $bodyText, $icsContent]);
+    } catch (Exception $e) {}
+
+    $host = !empty($cfg['smtp_host']) ? $cfg['smtp_host'] : 'mail.kurka.ch';
+    $port = !empty($cfg['smtp_port']) ? (int)$cfg['smtp_port'] : 465;
+    $secure = !empty($cfg['smtp_secure']) ? $cfg['smtp_secure'] : 'ssl';
+    $isSsl = ($secure === 'ssl' || $port === 465);
+    $user = isset($cfg['smtp_user']) ? $cfg['smtp_user'] : '';
+    $pass = isset($cfg['smtp_password']) ? $cfg['smtp_password'] : '';
+    $fromEmail = !empty($cfg['smtp_from_email']) ? $cfg['smtp_from_email'] : 'noreply@kurka.ch';
+    $fromName = !empty($cfg['smtp_from_name']) ? $cfg['smtp_from_name'] : 'Taskster';
+
+    $prefix = $isSsl ? 'ssl://' : 'tcp://';
+    $socketAddress = $prefix . $host . ':' . $port;
+
+    $context = stream_context_create([
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        ]
+    ]);
+
+    $errno = 0;
+    $errstr = '';
+    $fp = @stream_socket_client($socketAddress, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
+    if (!$fp) {
+        $errMsg = "Verbindung fehlgeschlagen zu $socketAddress ($errno: $errstr)";
+        $log[] = "! " . $errMsg;
+        try {
+            $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]);
+        } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    stream_set_timeout($fp, 15);
+
+    $readResponse = function() use ($fp, &$log) {
+        $response = '';
+        while (!feof($fp)) {
+            $line = fgets($fp, 1024);
+            if ($line === false) break;
+            $response .= $line;
+            $log[] = '< ' . trim($line);
+            if (isset($line[3]) && $line[3] === ' ') {
+                break;
+            }
+        }
+        return $response;
+    };
+
+    $sendCommand = function($cmd, $mask = false) use ($fp, &$log) {
+        $log[] = '> ' . ($mask ? '********' : $cmd);
+        fwrite($fp, $cmd . "\r\n");
+    };
+
+    $res = $readResponse();
+    if (substr(trim($res), 0, 3) !== '220') {
+        fclose($fp);
+        $errMsg = "Ungültige Serverantwort beim Verbinden: " . trim($res);
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $sendCommand("EHLO taskster.ch");
+    $res = $readResponse();
+
+    if ($secure === 'tls' && !$isSsl) {
+        $sendCommand("STARTTLS");
+        $res = $readResponse();
+        if (substr(trim($res), 0, 3) === '220') {
+            stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $sendCommand("EHLO taskster.ch");
+            $res = $readResponse();
+        }
+    }
+
+    if ($user && $pass) {
+        $sendCommand("AUTH LOGIN");
+        $res = $readResponse();
+        if (substr(trim($res), 0, 3) !== '334') {
+            fclose($fp);
+            $errMsg = "AUTH LOGIN fehlgeschlagen: " . trim($res);
+            try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+            return ['success' => false, 'error' => $errMsg, 'log' => $log];
+        }
+
+        $sendCommand(base64_encode($user));
+        $res = $readResponse();
+        if (substr(trim($res), 0, 3) !== '334') {
+            fclose($fp);
+            $errMsg = "Benutzername abgelehnt: " . trim($res);
+            try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+            return ['success' => false, 'error' => $errMsg, 'log' => $log];
+        }
+
+        $sendCommand(base64_encode($pass), true);
+        $res = $readResponse();
+        if (substr(trim($res), 0, 3) !== '235') {
+            fclose($fp);
+            $errMsg = "Passwort abgelehnt / Authentifizierungsfehler: " . trim($res);
+            try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+            return ['success' => false, 'error' => $errMsg, 'log' => $log];
+        }
+    }
+
+    $sendCommand("MAIL FROM:<{$fromEmail}>");
+    $res = $readResponse();
+    if (substr(trim($res), 0, 3) !== '250') {
+        fclose($fp);
+        $errMsg = "MAIL FROM abgelehnt: " . trim($res);
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $sendCommand("RCPT TO:<{$to}>");
+    $res = $readResponse();
+    if (substr(trim($res), 0, 3) !== '250') {
+        fclose($fp);
+        $errMsg = "RCPT TO für <{$to}> abgelehnt: " . trim($res);
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $sendCommand("DATA");
+    $res = $readResponse();
+    if (substr(trim($res), 0, 3) !== '354') {
+        fclose($fp);
+        $errMsg = "DATA abgelehnt: " . trim($res);
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $boundary = '=_Part_' . md5(uniqid(microtime(true), true));
+    $altBoundary = '=_Alt_' . md5(uniqid(microtime(true) . 'alt', true));
+    $fromHeader = $fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromEmail}>" : "<{$fromEmail}>";
+    $toHeader = $toName ? "=?UTF-8?B?" . base64_encode($toName) . "?= <{$to}>" : "<{$to}>";
+    $encodedSubject = "=?UTF-8?B?" . base64_encode($subject) . "?=";
+
+    $headers = [
+        "From: {$fromHeader}",
+        "To: {$toHeader}",
+        "Subject: {$encodedSubject}",
+        "Date: " . date('r'),
+        "MIME-Version: 1.0",
+        "Message-ID: <" . md5(uniqid(microtime(true), true)) . "@" . (parse_url($fromEmail, PHP_URL_HOST) ?: 'taskster.ch') . ">"
+    ];
+
+    if (!empty($icsContent)) {
+        $headers[] = "Content-Type: multipart/mixed; boundary=\"{$boundary}\"";
+        $body = "--{$boundary}\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $body .= chunk_split(base64_encode($bodyHtml ?: nl2br(htmlspecialchars($bodyText)))) . "\r\n";
+
+        $body .= "--{$boundary}\r\n";
+        $body .= "Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name=\"invite.ics\"\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n";
+        $body .= "Content-Disposition: attachment; filename=\"invite.ics\"\r\n\r\n";
+        $body .= chunk_split(base64_encode($icsContent)) . "\r\n";
+        $body .= "--{$boundary}--\r\n";
+    } elseif (!empty($bodyHtml)) {
+        $headers[] = "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"";
+        $body = "--{$altBoundary}\r\n";
+        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $body .= chunk_split(base64_encode($bodyText ?: strip_tags($bodyHtml))) . "\r\n";
+
+        $body .= "--{$altBoundary}\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $body .= chunk_split(base64_encode($bodyHtml)) . "\r\n";
+        $body .= "--{$altBoundary}--\r\n";
+    } else {
+        $headers[] = "Content-Type: text/plain; charset=UTF-8";
+        $headers[] = "Content-Transfer-Encoding: base64";
+        $body = chunk_split(base64_encode($bodyText)) . "\r\n";
+    }
+
+    $rawMessage = implode("\r\n", $headers) . "\r\n\r\n" . $body . "\r\n.";
+    fwrite($fp, $rawMessage . "\r\n");
+    $log[] = '> [MIME Body gesendet (' . strlen($rawMessage) . ' Bytes)]';
+
+    $res = $readResponse();
+    if (substr(trim($res), 0, 3) !== '250') {
+        fclose($fp);
+        $errMsg = "Nachrichtensendung fehlgeschlagen: " . trim($res);
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $sendCommand("QUIT");
+    $readResponse();
+    fclose($fp);
+
+    try {
+        $db->prepare("UPDATE email_outbox SET status = 'sent', sent_at = NOW() WHERE id = ?")->execute([$outboxId]);
+    } catch (Exception $e) {}
+
+    return ['success' => true, 'log' => $log];
+}
+
+function sendTriggerEmailNative($pdo, $triggerEvent, $recipient, $data = []) {
+    if (!empty($recipient['settings'])) {
+        $settings = is_string($recipient['settings']) ? json_decode($recipient['settings'], true) : $recipient['settings'];
+        if (isset($settings['notifications'])) {
+            if (isset($settings['notifications']['email']) && $settings['notifications']['email'] === false) {
+                return null;
+            }
+            if (isset($settings['notifications']['events'][$triggerEvent]) && $settings['notifications']['events'][$triggerEvent] === false) {
+                return null;
+            }
+        }
+    }
+
+    $stmt = $pdo->prepare("SELECT * FROM email_templates WHERE trigger_event = ? AND is_active = 1");
+    $stmt->execute([$triggerEvent]);
+    $tmpl = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$tmpl) return null;
+
+    $subject = $tmpl['subject'];
+    $bodyHtml = $tmpl['body_html'];
+    $bodyText = $tmpl['body_text'];
+
+    $mergedData = array_merge([
+        'user_name' => !empty($recipient['name']) ? $recipient['name'] : $recipient['email'],
+        'user_email' => $recipient['email'],
+        'action_url' => 'https://taskster.ch'
+    ], $data);
+
+    foreach ($mergedData as $k => $v) {
+        $ph = '{{' . $k . '}}';
+        $vStr = is_scalar($v) ? (string)$v : '';
+        $subject = str_replace($ph, $vStr, $subject);
+        $bodyHtml = str_replace($ph, $vStr, $bodyHtml);
+        $bodyText = str_replace($ph, $vStr, $bodyText);
+    }
+
+    $cfg = getSmtpConfigDb($pdo);
+    return sendSmtpEmailNative($cfg, $recipient['email'], $recipient['name'] ?? null, $subject, $bodyHtml, $bodyText, $data['ics_content'] ?? null);
 }
 
 
@@ -5892,6 +6390,152 @@ try {
 
         $db->prepare("DELETE FROM contacts WHERE id = ?")->execute([$contactId]);
         jsonResponse(['success' => true]);
+    }
+
+    // 37. GET & POST admin/email-settings
+    if ($path === 'admin/email-settings') {
+        $user = requireAdminPermission('company_settings');
+        if ($method === 'GET') {
+            $cfg = getSmtpConfigDb($db);
+            // Mask password if not superadmin
+            if (empty($user['is_superadmin']) && !empty($cfg['smtp_password'])) {
+                $cfg['smtp_password'] = '••••••••';
+            }
+            jsonResponse(['settings' => $cfg]);
+        } elseif ($method === 'POST') {
+            $allowed = ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_password', 'smtp_from_email', 'smtp_from_name'];
+            $update = [];
+            foreach ($allowed as $k) {
+                if (array_key_exists($k, $body)) {
+                    // Don't overwrite password if masked
+                    if ($k === 'smtp_password' && $body[$k] === '••••••••') continue;
+                    $update[$k] = $body[$k];
+                }
+            }
+            saveSmtpConfigDb($db, $update);
+            jsonResponse(['success' => true, 'settings' => getSmtpConfigDb($db)]);
+        }
+    }
+
+    // 38. POST admin/email-test
+    if ($path === 'admin/email-test' && $method === 'POST') {
+        $user = requireAdminPermission('company_settings');
+        $targetEmail = !empty($body['to_email']) ? trim($body['to_email']) : $user['email'];
+        if (!$targetEmail) {
+            errorResponse('Empfänger-E-Mail fehlt', 400);
+        }
+
+        $cfg = getSmtpConfigDb($db);
+        if (!empty($body['custom_config']) && is_array($body['custom_config'])) {
+            foreach ($body['custom_config'] as $k => $v) {
+                if ($k === 'smtp_password' && $v === '••••••••') continue;
+                if ($v !== null && $v !== '') $cfg[$k] = $v;
+            }
+        }
+
+        $subject = 'Taskster Test-E-Mail ' . date('d.m.Y H:i:s');
+        $bodyHtml = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #00A3C4; border-radius: 8px;">
+          <h2 style="color: #00A3C4; margin-top: 0;">Taskster SMTP-Test erfolgreich! 🎉</h2>
+          <p>Diese Test-E-Mail bestätigt, dass die SMTP-Konfiguration ordnungsgemäss funktioniert.</p>
+          <div style="background: #f0fdfa; border-left: 4px solid #00A3C4; padding: 12px; margin: 16px 0;">
+            <div><strong>Host:</strong> ' . htmlspecialchars($cfg['smtp_host']) . '</div>
+            <div><strong>Port:</strong> ' . htmlspecialchars((string)$cfg['smtp_port']) . '</div>
+            <div><strong>Verschlüsselung:</strong> ' . htmlspecialchars($cfg['smtp_secure']) . '</div>
+            <div><strong>Absender:</strong> ' . htmlspecialchars($cfg['smtp_from_name'] . ' <' . $cfg['smtp_from_email'] . '>') . '</div>
+          </div>
+          <p style="font-size: 13px; color: #64748b;">Gesendet am ' . date('d.m.Y \u\m H:i:s \U\h\r') . ' von Taskster.</p>
+        </div>';
+        $bodyText = "Taskster SMTP-Test erfolgreich!\n\nHost: {$cfg['smtp_host']}\nPort: {$cfg['smtp_port']}\nAbsender: {$cfg['smtp_from_email']}\n\nGesendet am " . date('d.m.Y H:i:s');
+
+        $res = sendSmtpEmailNative($cfg, $targetEmail, $user['name'] ?? null, $subject, $bodyHtml, $bodyText);
+        if ($res['success']) {
+            jsonResponse([
+                'success' => true,
+                'message' => "Test-E-Mail erfolgreich an {$targetEmail} versendet.",
+                'log' => $res['log']
+            ]);
+        } else {
+            jsonResponse([
+                'success' => false,
+                'error' => $res['error'],
+                'log' => $res['log']
+            ], 400);
+        }
+    }
+
+    // 39. GET admin/email-templates
+    if ($path === 'admin/email-templates' && $method === 'GET') {
+        requireAdminPermission('any_admin');
+        $stmt = $db->query("SELECT * FROM email_templates ORDER BY name ASC");
+        $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($templates as &$t) {
+            $t['variables'] = !empty($t['variables']) ? (is_string($t['variables']) ? json_decode($t['variables'], true) : $t['variables']) : [];
+            $t['is_active'] = (bool)$t['is_active'];
+        }
+        jsonResponse(['templates' => $templates]);
+    }
+
+    // 40. PUT / PATCH admin/email-templates/:id
+    if (preg_match('#^admin/email-templates/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        requireAdminPermission('company_settings');
+        $tmplId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM email_templates WHERE id = ? OR trigger_event = ?");
+        $stmt->execute([$tmplId, $tmplId]);
+        $tmpl = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$tmpl) errorResponse('Vorlage nicht gefunden', 404);
+
+        $subject = array_key_exists('subject', $body) ? trim($body['subject']) : $tmpl['subject'];
+        $bodyHtml = array_key_exists('body_html', $body) ? $body['body_html'] : $tmpl['body_html'];
+        $bodyText = array_key_exists('body_text', $body) ? $body['body_text'] : $tmpl['body_text'];
+        $isActive = array_key_exists('is_active', $body) ? ($body['is_active'] ? 1 : 0) : $tmpl['is_active'];
+
+        $up = $db->prepare("
+            UPDATE email_templates
+            SET subject = ?, body_html = ?, body_text = ?, is_active = ?
+            WHERE id = ?
+        ");
+        $up->execute([$subject, $bodyHtml, $bodyText, $isActive, $tmpl['id']]);
+
+        $stmt->execute([$tmpl['id'], $tmpl['id']]);
+        $updated = $stmt->fetch(PDO::FETCH_ASSOC);
+        $updated['variables'] = !empty($updated['variables']) ? (is_string($updated['variables']) ? json_decode($updated['variables'], true) : $updated['variables']) : [];
+        $updated['is_active'] = (bool)$updated['is_active'];
+        jsonResponse(['template' => $updated]);
+    }
+
+    // 41. POST admin/email-templates/reset
+    if ($path === 'admin/email-templates/reset' && $method === 'POST') {
+        requireAdminPermission('company_settings');
+        $targetId = !empty($body['id']) ? trim($body['id']) : null;
+        $defaults = getDefaultEmailTemplates();
+
+        if ($targetId) {
+            foreach ($defaults as $d) {
+                if ($d['id'] === $targetId || $d['trigger_event'] === $targetId) {
+                    $up = $db->prepare("
+                        UPDATE email_templates
+                        SET name = ?, subject = ?, variables = ?, body_text = ?, body_html = ?, is_active = 1
+                        WHERE id = ? OR trigger_event = ?
+                    ");
+                    $up->execute([$d['name'], $d['subject'], json_encode($d['variables']), $d['body_text'], $d['body_html'], $d['id'], $d['trigger_event']]);
+                    break;
+                }
+            }
+        } else {
+            seedDefaultEmailTemplates($db);
+        }
+        jsonResponse(['success' => true]);
+    }
+
+    // 42. GET admin/email-outbox
+    if ($path === 'admin/email-outbox' && $method === 'GET') {
+        requireAdminPermission('any_admin');
+        $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 50;
+        $stmt = $db->prepare("SELECT * FROM email_outbox ORDER BY created_at DESC LIMIT ?");
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $outbox = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        jsonResponse(['outbox' => $outbox]);
     }
 
     // Not found
