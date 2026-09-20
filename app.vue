@@ -85,9 +85,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                :title="$t('admin.benutzerverwaltung')"
               >
                 <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Benutzerverwaltung</span>
+                <span>{{ $t('admin.benutzerverwaltung') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -96,9 +97,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                :title="$t('admin.unternehmen')"
               >
                 <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Unternehmen</span>
+                <span>{{ $t('admin.unternehmen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -107,9 +109,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                :title="$t('admin.finanzen_lizenzen')"
               >
                 <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Finanzen & Lizenzen</span>
+                <span>{{ $t('admin.finanzen_lizenzen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -118,9 +121,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                :title="$t('admin.projekt_vorlagen')"
               >
                 <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Projekt-Vorlagen</span>
+                <span>{{ $t('admin.projekt_vorlagen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -129,9 +133,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                :title="$t('admin.email_versand')"
               >
                 <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>E-Mail & Versand</span>
+                <span>{{ $t('admin.email_versand') }}</span>
               </NuxtLink>
             </div>
 
@@ -236,10 +241,10 @@
                 to="/admin?tab=users"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Benutzerverwaltung"
+                :title="$t('admin.benutzerverwaltung')"
               >
                 <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Benutzerverwaltung</span>
+                <span>{{ $t('admin.benutzerverwaltung') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -247,10 +252,10 @@
                 to="/admin?tab=companies"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Unternehmen"
+                :title="$t('admin.unternehmen')"
               >
                 <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Unternehmen</span>
+                <span>{{ $t('admin.unternehmen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -258,10 +263,10 @@
                 to="/admin?tab=finance"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Finanzen & Lizenzen"
+                :title="$t('admin.finanzen_lizenzen')"
               >
                 <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Finanzen & Lizenzen</span>
+                <span>{{ $t('admin.finanzen_lizenzen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -269,10 +274,10 @@
                 to="/admin?tab=templates"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Projekt-Vorlagen"
+                :title="$t('admin.projekt_vorlagen')"
               >
                 <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Projekt-Vorlagen</span>
+                <span>{{ $t('admin.projekt_vorlagen') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -280,10 +285,10 @@
                 to="/admin?tab=email"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="E-Mail & Versand"
+                :title="$t('admin.email_versand')"
               >
                 <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>E-Mail & Versand</span>
+                <span>{{ $t('admin.email_versand') }}</span>
               </NuxtLink>
             </div>
 
@@ -348,7 +353,7 @@
         <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200">
           <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
             <Image class="w-4 h-4 text-[#0891B2]" />
-            <span>Hintergrundbild (Wallpaper)</span>
+            <span>{{ $t('wallpaper.titel') }}</span>
           </h2>
           <button
             type="button"
@@ -361,7 +366,7 @@
 
         <div class="p-5 overflow-y-auto max-h-[60vh]">
           <p class="text-xs text-slate-500 mb-4">
-            Das Design v2 ist für hohe Lesbarkeit auf dezentem neutralem Hintergrund optimiert. Optional kannst du ein Hintergrundmotiv aktivieren.
+            {{ $t('wallpaper.beschreibung') }}
           </p>
 
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -372,7 +377,7 @@
               class="relative aspect-video rounded-md overflow-hidden border transition-all flex flex-col items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100"
               :class="!currentWallpaper ? 'border-[#0891B2] ring-2 ring-[#0891B2]/20 font-semibold' : 'border-slate-200'"
             >
-              <span class="text-xs">Standard (Keins)</span>
+              <span class="text-xs">{{ $t('wallpaper.standard_keins') }}</span>
               <Check v-if="!currentWallpaper" class="w-4 h-4 text-[#0891B2] absolute top-1.5 right-1.5" />
             </button>
 
@@ -400,7 +405,7 @@
             @click="showWallpaperPicker = false"
             class="taskster_button"
           >
-            Fertig
+            {{ $t('wallpaper.fertig') }}
           </button>
         </div>
       </div>
@@ -507,12 +512,14 @@ async function startNotificationPolling() {
 }
 
 watch(user, (u) => {
-  if (u) startNotificationPolling()
-  else if (notificationTimer) {
+  if (u) {
+    syncUserLanguage()
+    startNotificationPolling()
+  } else if (notificationTimer) {
     clearInterval(notificationTimer)
     notificationTimer = null
   }
-})
+}, { deep: true })
 
 onBeforeUnmount(() => {
   if (notificationTimer) clearInterval(notificationTimer)

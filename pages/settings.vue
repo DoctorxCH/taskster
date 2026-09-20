@@ -187,11 +187,11 @@
                     {{ $t('settings.whisper_sprache') }} <span class="text-[#0891B2] font-mono text-[10px]">AI</span>
                   </label>
                   <select v-model="settings.whisper_language" class="ts-input">
-                    <option value="de">Deutsch (de)</option>
-                    <option value="de-CH">Schweizerdeutsch (de-CH)</option>
-                    <option value="en">English (en)</option>
-                    <option value="fr">Français (fr)</option>
-                    <option value="it">Italiano (it)</option>
+                    <option value="de">{{ $t('settings.whisper_lang_de') }}</option>
+                    <option value="de-CH">{{ $t('settings.whisper_lang_dech') }}</option>
+                    <option value="en">{{ $t('settings.whisper_lang_en') }}</option>
+                    <option value="fr">{{ $t('settings.whisper_lang_fr') }}</option>
+                    <option value="it">{{ $t('settings.whisper_lang_it') }}</option>
                     <option value="auto">{{ $t('settings.automatisch_erkennen') }}</option>
                   </select>
                   <p class="text-[10px] text-slate-500 mt-1">{{ $t('settings.spracheingabe_für_openrouter_whispe') }}</p>
@@ -575,7 +575,7 @@
                 <input v-model="companyInviteEmail" type="email" required placeholder="mitarbeiter@firma.ch" class="ts-input flex-1" />
                 <select v-model="companyInviteRole" class="ts-input sm:w-48">
                   <option value="member">{{ $t('settings.mitarbeiter') }}</option>
-                  <option value="admin">Company Admin</option>
+                  <option value="admin">{{ $t('settings.company_admin') }}</option>
                 </select>
                 <button type="submit" class="taskster_button shrink-0" :disabled="sendingCompanyInvite || !companyInviteEmail.trim()">
                   <Plus class="w-4 h-4" />
@@ -614,7 +614,7 @@
                       ? 'bg-cyan-50 text-cyan-800 border-cyan-200'
                       : 'bg-slate-100 text-slate-600 border-slate-200'"
                   >
-                    {{ m.company_role === 'admin' ? 'Company Admin' : $t('settings.mitarbeiter') }}
+                    {{ m.company_role === 'admin' ? $t('settings.company_admin') : $t('settings.mitarbeiter') }}
                   </span>
                 </div>
               </div>
