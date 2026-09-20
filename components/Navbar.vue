@@ -9,7 +9,7 @@
           type="button"
           @click="$emit('toggle-mobile-menu')"
           class="lg:hidden h-9 w-9 flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          title="Menü öffnen"
+          :title="$t('Navbar.menu_oeffnen')"
         >
           <Menu class="w-5 h-5" />
         </button>
@@ -22,7 +22,7 @@
             class="h-7 w-auto object-contain"
           />
           <span class="hidden sm:inline text-xs font-semibold text-slate-500 uppercase tracking-wider border-l border-slate-200 pl-2.5">
-            Workspace
+            {{ $t('Navbar.workspace') }}
           </span>
         </NuxtLink>
       </div>
@@ -43,13 +43,13 @@
         <NuxtLink
           :to="'/projects/' + stopwatchState.projectId"
           class="text-xs font-medium truncate max-w-[120px] sm:max-w-[200px] hover:text-cyan-300 transition-colors"
-          :title="stopwatchState.taskTitle ? ('Aufgabe: ' + stopwatchState.taskTitle + ' in ' + stopwatchState.projectTitle) : ('Projekt: ' + stopwatchState.projectTitle)"
+          :title="stopwatchState.taskTitle ? ($t('Navbar.aufgabe') + ' ' + stopwatchState.taskTitle + ' in ' + stopwatchState.projectTitle) : ($t('Navbar.projekt') + ' ' + stopwatchState.projectTitle)"
         >
           <span v-if="stopwatchState.taskTitle" class="truncate">
-            <span class="text-slate-400">Aufgabe:</span> {{ stopwatchState.taskTitle }}
+            <span class="text-slate-400">{{ $t('Navbar.aufgabe') }}</span> {{ stopwatchState.taskTitle }}
           </span>
           <span v-else class="truncate">
-            <span class="text-slate-400">Projekt:</span> {{ stopwatchState.projectTitle }}
+            <span class="text-slate-400">{{ $t('Navbar.projekt') }}</span> {{ stopwatchState.projectTitle }}
           </span>
         </NuxtLink>
 
@@ -58,10 +58,10 @@
           type="button"
           @click="openStopModal"
           class="h-6 px-2 rounded text-[11px] font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1 transition-colors ml-1"
-          title="Stoppuhr beenden"
+          :title="$t('Navbar.stoppuhr_beenden')"
         >
           <Square class="w-3 h-3 fill-current" />
-          <span class="hidden md:inline">Stoppen</span>
+          <span class="hidden md:inline">{{ $t('Navbar.stoppen') }}</span>
         </button>
       </div>
 
@@ -72,7 +72,7 @@
           <button
             type="button"
             class="relative h-9 w-9 flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            :title="unreadCount > 0 ? `${unreadCount} ungelesene Benachrichtigungen` : 'Benachrichtigungen'"
+            :title="unreadCount > 0 ? $t('Navbar.ungelesene_benachrichtigungen', { count: unreadCount }) : $t('Navbar.benachrichtigungen')"
             @click="notifOpen = !notifOpen"
           >
             <Bell class="w-4.5 h-4.5" />
@@ -91,22 +91,22 @@
             class="absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden"
           >
             <div class="flex items-center justify-between px-4 h-12 border-b border-slate-200">
-              <span class="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
+              <span class="text-sm font-semibold text-slate-900">{{ $t('Navbar.benachrichtigungen') }}</span>
               <button
                 v-if="unreadCount > 0"
                 type="button"
                 class="text-[11px] font-semibold text-[#0891B2] hover:underline"
                 @click="markAllRead"
               >
-                Alle gelesen
+                {{ $t('Navbar.alle_gelesen') }}
               </button>
             </div>
 
             <div class="max-h-[360px] overflow-y-auto">
-              <div v-if="loading" class="py-8 text-center text-xs text-slate-500">Lade…</div>
+              <div v-if="loading" class="py-8 text-center text-xs text-slate-500">{{ $t('Navbar.lade') }}</div>
               <div v-else-if="recent.length === 0" class="py-8 px-4 text-center">
                 <Bell class="w-5 h-5 text-slate-300 mx-auto mb-2" />
-                <p class="text-xs text-slate-500">Keine Benachrichtigungen</p>
+                <p class="text-xs text-slate-500">{{ $t('Navbar.keine_benachrichtigungen') }}</p>
               </div>
               <button
                 v-for="n in recent"
@@ -130,7 +130,7 @@
               class="block px-4 h-11 flex items-center justify-center text-xs font-semibold text-slate-600 hover:bg-slate-50 border-t border-slate-200"
               @click="notifOpen = false"
             >
-              Alle im Dashboard anzeigen
+              {{ $t('Navbar.alle_im_dashboard_anzeigen') }}
             </NuxtLink>
           </div>
         </div>

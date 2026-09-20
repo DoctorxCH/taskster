@@ -1890,6 +1890,7 @@ function canEditEvent($user, $evt) {
 function defaultUserSettings() {
     return [
         'language' => 'de',
+        'whisper_language' => 'de',
         'theme' => 'light',
         'density' => 'comfortable',
         'start_page' => 'dashboard',
@@ -1974,7 +1975,8 @@ function normalizeUserSettings($raw) {
         ? $cal['default_category_id'] : null;
 
     return [
-        'language' => pickEnum($raw['language'] ?? null, ['de', 'en'], $d['language']),
+        'language' => pickEnum($raw['language'] ?? null, ['de', 'en', 'sk'], $d['language']),
+        'whisper_language' => pickEnum($raw['whisper_language'] ?? null, ['de', 'de-CH', 'en', 'fr', 'it', 'auto'], $d['whisper_language']),
         'theme' => pickEnum($raw['theme'] ?? null, ['light', 'dark', 'system'], $d['theme']),
         'density' => pickEnum($raw['density'] ?? null, ['comfortable', 'compact'], $d['density']),
         'start_page' => pickEnum($raw['start_page'] ?? null, ['dashboard', 'calendar', 'time', 'contacts'], $d['start_page']),

@@ -16,8 +16,8 @@
         </h1>
         <p class="text-xs sm:text-sm text-slate-600 font-medium mt-1">
           <span v-if="user?.company_name" class="font-bold text-[#0891B2]">{{ user.company_name }}</span>
-          <span v-else>Privater Workspace</span>
-          – Deine aktuellen Aufgaben, Projektordner und Meilensteine im Überblick.
+          <span v-else>{{ $t('dashboard.privater_workspace') }}</span>
+          – {{ $t('dashboard.deine_aktuellen_aufgaben') }}
         </p>
       </div>
 
@@ -30,10 +30,10 @@
         >
           <Search class="w-4 h-4 text-slate-400 shrink-0" />
           <span class="flex-1 text-xs sm:text-sm text-slate-400 truncate">
-            Aufgaben, Projekte, Ordner, Personen durchsuchen…
+            {{ $t('dashboard.suche_placeholder') }}
           </span>
           <span class="hidden sm:flex items-center gap-1 shrink-0">
-            <kbd class="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded">Strg</kbd>
+            <kbd class="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded">{{ $t('dashboard.strg') }}</kbd>
             <kbd class="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded">K</kbd>
           </span>
         </button>
@@ -50,9 +50,9 @@
           <Zap class="w-5 h-5" />
         </div>
         <div>
-          <h4 class="text-xs font-bold text-amber-900">Taskster Free Plan aktiv</h4>
+          <h4 class="text-xs font-bold text-amber-900">{{ $t('dashboard.free_plan_aktiv') }}</h4>
           <p class="text-xs text-amber-800/90 font-medium mt-0.5">
-            Maximal 1 Projektordner, max. in 3 Projekten gleichzeitig mitarbeiten.
+            {{ $t('dashboard.free_plan_hinweis') }}
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@
         to="/settings"
         class="taskster_button px-4 text-xs h-9 rounded-md shrink-0"
       >
-        Auf PRO upgraden
+        {{ $t('dashboard.auf_pro_upgraden') }}
       </NuxtLink>
     </div>
 
@@ -74,7 +74,7 @@
             <div class="flex items-center space-x-3 flex-wrap gap-y-2">
               <div class="flex items-center space-x-2">
                 <ClipboardList class="w-5 h-5 text-[#0891B2]" />
-                <h2 class="text-base font-bold text-slate-900 tracking-tight">Aufgaben</h2>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('dashboard.aufgaben') }}</h2>
               </div>
               
               <!-- Tab Switcher: Mein Tag vs. Projekt-Aufgaben -->
@@ -86,7 +86,7 @@
                   :class="activeTaskTab === 'daily' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                 >
                   <Sun class="w-3.5 h-3.5" />
-                  <span>Mein Tag</span>
+                  <span>{{ $t('dashboard.mein_tag') }}</span>
                   <span
                     class="text-[10px] px-1.5 py-0.2 rounded-full"
                     :class="activeTaskTab === 'daily' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'"
@@ -102,7 +102,7 @@
                   :class="activeTaskTab === 'assigned' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                 >
                   <Folder class="w-3.5 h-3.5" />
-                  <span>Projekte</span>
+                  <span>{{ $t('dashboard.alle_projekte') }}</span>
                   <span
                     class="text-[10px] px-1.5 py-0.2 rounded-full"
                     :class="activeTaskTab === 'assigned' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'"
@@ -121,7 +121,7 @@
                 title="Sprachaufnahme via openai/whisper-large-v3-turbo anfertigen"
               >
                 <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
-                <span>Neue Sprachnotiz</span>
+                <span>{{ $t('dashboard.neue_sprachnotiz') }}</span>
               </button>
 
               <NuxtLink
@@ -130,7 +130,7 @@
                 title="Zur globalen Zeitrapportierung"
               >
                 <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
-                <span>Zeitrapporte</span>
+                <span>{{ $t('dashboard.zeitrapporte') }}</span>
               </NuxtLink>
 
               <button
@@ -180,8 +180,8 @@
             <div v-if="dailyTodos.length > 0" class="px-3 py-2 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600 font-semibold gap-3">
               <div class="flex items-center space-x-2 min-w-0">
                 <Target class="w-4 h-4 text-[#0891B2]" />
-                <span>Heute erledigt:</span>
-                <span class="text-slate-900 font-bold">{{ completedDailyTodosCount }} von {{ dailyTodos.length }}</span>
+                <span>{{ $t('dashboard.heute_erledigt') }}</span>
+                <span class="text-slate-900 font-bold">{{ completedDailyTodosCount }} {{ $t('dashboard.von') }} {{ dailyTodos.length }}</span>
                 <span class="text-slate-400 font-normal">({{ completionPercentage }}%)</span>
               </div>
               <div class="w-36 sm:w-48 bg-slate-200 rounded-full h-2 overflow-hidden shrink-0">
@@ -194,7 +194,7 @@
 
             <!-- Loading Daily Todos -->
             <div v-if="loadingDailyTodos" class="py-10 text-center text-xs text-slate-500 font-medium">
-              Lade Tages-Todos...
+              ...
             </div>
 
             <!-- Empty Daily Todos State -->
@@ -205,9 +205,9 @@
               <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-2 border border-amber-200">
                 <Sun class="w-5 h-5" />
               </div>
-              <h3 class="text-sm font-bold text-slate-900">Starte deinen Tag mit klarem Fokus</h3>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.starte_tag_fokus') }}</h3>
               <p class="text-xs text-slate-500 mt-1 max-w-md">
-                Tages-Todos gelten immer für den heutigen Tag. Bleibt ein Todo am Abend unerledigt, wandert es automatisch als Übertrag auf den nächsten Tag!
+                {{ $t('dashboard.starte_tag_fokus_desc') }}
               </p>
             </div>
 
@@ -520,7 +520,7 @@
           <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
             <div class="flex items-center space-x-2.5">
               <Bell class="w-5 h-5 text-[#0891B2]" />
-              <h2 class="text-base font-bold text-slate-900 tracking-tight">Benachrichtigungen</h2>
+              <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('Navbar.benachrichtigungen') }}</h2>
             </div>
             <div class="flex items-center space-x-2">
               <span
@@ -547,7 +547,7 @@
               class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'all' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
             >
-              Alle
+              {{ $t('dashboard.alle_projekte') === 'Alle Projekte' ? 'Alle' : 'All' }}
             </button>
             <button
               @click="activeNotificationTab = 'mentions'"
@@ -567,7 +567,7 @@
 
           <!-- Loading State -->
           <div v-if="loadingNotifications" class="py-8 text-center text-xs text-slate-500 font-medium">
-            Lade Benachrichtigungen...
+            ...
           </div>
 
           <!-- Empty State -->
@@ -576,10 +576,10 @@
               <PartyPopper class="w-5 h-5" />
             </div>
             <p class="text-xs text-slate-900 font-bold mb-0.5">
-              Keine ungelesenen Benachrichtigungen
+              {{ $t('dashboard.keine_benachrichtigungen') }}
             </p>
             <p class="text-[11px] text-slate-500">
-              Du bist in diesem Bereich komplett auf dem neuesten Stand!
+              {{ $t('dashboard.keine_benachrichtigungen_desc') }}
             </p>
           </div>
 
@@ -656,7 +656,7 @@
               @click="markAllNotificationsRead"
               class="taskster_button_light px-4 text-xs h-8 rounded-md mx-auto"
             >
-              Alle als gelesen markieren
+              {{ $t('dashboard.alle_als_gelesen') }}
             </button>
           </div>
         </section>
@@ -664,22 +664,22 @@
         <!-- WIDGET 4: Quick Summary / Stats (MeisterTask Style Compact Card) -->
         <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-            System & Workspace Status
+            {{ $t('dashboard.system_workspace_status') }}
           </h3>
 
           <div class="space-y-3">
             <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">Projektordner</span>
+              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.projekt_ordner') }}</span>
               <span class="text-sm font-bold text-slate-900">{{ folders.length }}</span>
             </div>
 
             <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">Aktive Projekte</span>
+              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.aktive_projekte') }}</span>
               <span class="text-sm font-bold text-[#0891B2]">{{ totalProjects }}</span>
             </div>
 
             <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">Offene Aufgaben</span>
+              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.offene_aufgaben') }}</span>
               <span class="text-sm font-bold text-slate-900">{{ tasks.length }}</span>
             </div>
 
@@ -886,6 +886,7 @@ import {
 } from 'lucide-vue-next'
 
 const { user, authHeaders } = useAuth()
+const { t, locale } = useI18n()
 const { state: stopwatchState, startTimer, openStopModal, formatSeconds } = useStopwatch()
 const showVoiceModal = ref(false)
 
@@ -944,7 +945,8 @@ const unreadCount = ref(0)
 // Formatted Date matching MeisterTask screenshot (e.g. "Freitag, 18. September")
 const formattedDate = computed(() => {
   const now = new Date()
-  return now.toLocaleDateString('de-DE', {
+  const loc = locale.value === 'sk' ? 'sk-SK' : (locale.value === 'en' ? 'en-US' : 'de-DE')
+  return now.toLocaleDateString(loc, {
     weekday: 'long',
     day: 'numeric',
     month: 'long'
@@ -954,10 +956,10 @@ const formattedDate = computed(() => {
 // MeisterTask dynamic motivational greeting
 const greetingPrefix = computed(() => {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 11) return 'Guten Morgen'
-  if (hour >= 11 && hour < 14) return 'Mahlzeit'
-  if (hour >= 14 && hour < 18) return 'Sich anstrengen'
-  return 'Guten Abend'
+  if (hour >= 5 && hour < 11) return t('dashboard.guten_morgen')
+  if (hour >= 11 && hour < 14) return t('dashboard.guten_tag')
+  if (hour >= 14 && hour < 18) return t('dashboard.guten_tag')
+  return t('dashboard.guten_abend')
 })
 
 // New Folder Modal
@@ -1166,10 +1168,11 @@ const formatRelativeTime = (dateStr: string) => {
   if (isNaN(date.getTime())) return dateStr
   const now = new Date()
   const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (diffSec < 60) return 'Gerade eben'
-  if (diffSec < 3600) return `vor ${Math.floor(diffSec / 60)} Min.`
-  if (diffSec < 86400) return `vor ${Math.floor(diffSec / 3600)} Std.`
-  return date.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  if (diffSec < 60) return t('dashboard.gerade_eben')
+  if (diffSec < 3600) return t('dashboard.vor_min', { min: Math.floor(diffSec / 60) })
+  if (diffSec < 86400) return t('dashboard.vor_std', { std: Math.floor(diffSec / 3600) })
+  const loc = locale.value === 'sk' ? 'sk-SK' : (locale.value === 'en' ? 'en-US' : 'de-CH')
+  return date.toLocaleDateString(loc, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 const createFolder = async () => {

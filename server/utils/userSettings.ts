@@ -8,7 +8,8 @@
 
 export interface UserSettings {
   // --- Darstellung ---
-  language: 'de' | 'en'
+  language: 'de' | 'en' | 'sk'
+  whisper_language: 'de' | 'de-CH' | 'en' | 'fr' | 'it' | 'auto'
   theme: 'light' | 'dark' | 'system'
   density: 'comfortable' | 'compact'
   start_page: 'dashboard' | 'calendar' | 'time' | 'contacts'
@@ -54,6 +55,7 @@ export interface UserSettings {
 
 export const DEFAULT_SETTINGS: UserSettings = {
   language: 'de',
+  whisper_language: 'de',
   theme: 'light',
   density: 'comfortable',
   start_page: 'dashboard',
@@ -129,7 +131,8 @@ export function normalizeSettings(raw: any): UserSettings {
   const reminder = cal.default_reminder_minutes
 
   return {
-    language: pickEnum(src.language, ['de', 'en'] as const, d.language),
+    language: pickEnum(src.language, ['de', 'en', 'sk'] as const, d.language),
+    whisper_language: pickEnum(src.whisper_language, ['de', 'de-CH', 'en', 'fr', 'it', 'auto'] as const, d.whisper_language),
     theme: pickEnum(src.theme, ['light', 'dark', 'system'] as const, d.theme),
     density: pickEnum(src.density, ['comfortable', 'compact'] as const, d.density),
     start_page: pickEnum(src.start_page, ['dashboard', 'calendar', 'time', 'contacts'] as const, d.start_page),

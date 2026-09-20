@@ -35,10 +35,10 @@
             <img src="/logo.png" alt="Taskster" class="h-8 w-auto" />
           </div>
           <h2 class="text-2xl font-black text-slate-900 tracking-tight">
-            {{ activeTab === 'login' ? 'Willkommen bei Taskster' : 'Konto erstellen' }}
+            {{ activeTab === 'login' ? $t('login.willkommen_bei_taskster') : $t('login.konto_erstellen') }}
           </h2>
           <p class="text-xs text-slate-500 mt-1">
-            {{ activeTab === 'login' ? 'Melde dich an, um auf deine Projekte und Aufgaben zuzugreifen.' : 'Starte sofort mit deinen ersten Projektordnern & Vorlagen.' }}
+            {{ activeTab === 'login' ? $t('login.melde_dich_an') : $t('login.starte_sofort') }}
           </p>
         </div>
 
@@ -49,14 +49,14 @@
             class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
             :class="activeTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'"
           >
-            Anmelden
+            {{ $t('login.anmelden') }}
           </button>
           <button
             @click="activeTab = 'register'"
             class="flex-1 py-2 text-xs font-bold rounded-lg transition-all"
             :class="activeTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'"
           >
-            Registrieren
+            {{ $t('login.registrieren') }}
           </button>
         </div>
 
@@ -161,7 +161,7 @@
         <div class="mt-8 pt-6 border-t border-slate-200">
           <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center flex items-center justify-center space-x-1">
             <Zap class="w-3.5 h-3.5 text-amber-500 inline" />
-            <span>1-Klick Schnell-Login (Demo-Rollen)</span>
+            <span>{{ $t('login.schnell_login_titel') }}</span>
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
@@ -208,6 +208,7 @@ import { Sparkles, Zap } from 'lucide-vue-next'
 
 const route = useRoute()
 const { setAuth } = useAuth()
+const { t, setLocale } = useI18n()
 
 const activeTab = ref<'login' | 'register'>((route.query.tab as string) === 'register' || Boolean(route.query.token) ? 'register' : 'login')
 const loading = ref(false)
@@ -253,6 +254,13 @@ const handleLogin = async () => {
       }
     })
     setAuth(res.token, res.user)
+    if (res.user?.settings?.language && ['de', 'en', 'sk'].includes(res.user.settings.language)) {
+      try {
+        await setLocale(res.user.settings.language)
+      } catch (e) {
+        console.error('[i18n] Failed to set locale on login:', e)
+      }
+    }
     navigateTo('/dashboard')
   } catch (err: any) {
     errorMessage.value = err.data?.statusMessage || 'Anmeldung fehlgeschlagen'
@@ -275,6 +283,13 @@ const handleRegister = async () => {
       }
     })
     setAuth(res.token, res.user)
+    if (res.user?.settings?.language && ['de', 'en', 'sk'].includes(res.user.settings.language)) {
+      try {
+        await setLocale(res.user.settings.language)
+      } catch (e) {
+        console.error('[i18n] Failed to set locale on register:', e)
+      }
+    }
     navigateTo('/dashboard')
   } catch (err: any) {
     errorMessage.value = err.data?.statusMessage || 'Registrierung fehlgeschlagen'
