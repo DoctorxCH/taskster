@@ -50,7 +50,7 @@ const insertUser = db.prepare(`
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `)
 
-insertUser.run(superadminId, null, null, 1, 1, 'Taskster Admin', 'admin@taskster.io', passwordHash)
+insertUser.run(superadminId, null, null, 1, 1, 'Taskster Admin', 'admin@kurka.ch', passwordHash)
 insertUser.run(companyAdminId, companyId, 'admin', 0, 1, 'Marc Steiner (Bauleitung)', 'marc@kurka.ch', passwordHash)
 insertUser.run(editorId, companyId, 'member', 0, 1, 'Sarah Keller (Projektleitung)', 'sarah.editor@kurka.ch', passwordHash)
 insertUser.run(viewerId, null, null, 0, 0, 'Lukas Frey (Subunternehmer)', 'lukas.viewer@kurka.ch', passwordHash)
@@ -218,7 +218,7 @@ insertJournal.run(
 
 console.log('Taskster database seeded successfully!')
 console.log('Default credentials:')
-console.log('1. Superadmin:    admin@taskster.io          | password123')
+console.log('1. Superadmin:    admin@kurka.ch          | password123')
 console.log('2. Company Admin: marc@kurka.ch         | password123')
 console.log('3. Editor:        sarah.editor@kurka.ch | password123')
 console.log('4. Viewer:        lukas.viewer@kurka.ch | password123')
