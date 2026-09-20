@@ -64,6 +64,42 @@ export default defineEventHandler(async (event) => {
   const config = getAiConfig()
   const timeoutMs = (config.timeout_seconds || 60) * 1000
 
+  const lang = body.language || 'de'
+  const langPrompts: Record<string, { prompt: string; sys: string; whisperLang?: string }> = {
+    'de': {
+      whisperLang: 'de',
+      prompt: 'Transkription auf Deutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.',
+      sys: 'Du bist ein präziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort für Wort auf Deutsch. Gib AUSSCHLIESSLICH den gesprochenen Text zurück, ohne Kommentare oder Anführungszeichen.'
+    },
+    'de-CH': {
+      whisperLang: 'de',
+      prompt: 'Transkription auf Deutsch / Schweizerdeutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.',
+      sys: 'Du bist ein präziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht (Schweizerdeutsch/Deutsch) Wort für Wort auf Standarddeutsch oder wie gesprochen. Gib AUSSCHLIESSLICH den Text zurück.'
+    },
+    'en': {
+      whisperLang: 'en',
+      prompt: 'Transcription in English. Construction, project, note, task, craftsman, site.',
+      sys: 'You are a precise transcription assistant. Transcribe the audio word for word in English. Return ONLY the spoken text without comments.'
+    },
+    'fr': {
+      whisperLang: 'fr',
+      prompt: 'Transcription en français. Chantier, projet, note, tâche, artisan, Suisse.',
+      sys: 'Tu es un assistant de transcription précis. Transcris le message audio mot à mot en français. Renvoie UNIQUEMENT le texte sans commentaires.'
+    },
+    'it': {
+      whisperLang: 'it',
+      prompt: 'Trascrizione in italiano. Cantiere, progetto, nota, compito, artigiano, Svizzera.',
+      sys: 'Sei un assistente di trascrizione preciso. Trascrivi il messaggio audio parola per parola in italiano. Restituisci SOLO il testo senza commenti.'
+    },
+    'auto': {
+      whisperLang: undefined,
+      prompt: 'Audio transcription for Taskster project management.',
+      sys: 'Du bist ein präziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort für Wort in der Originalsprache. Gib AUSSCHLIESSLICH den gesprochenen Text zurück.'
+    }
+  }
+
+  const selectedLangConfig = langPrompts[lang] || langPrompts['de']
+
   // 1. Try OpenRouter /api/v1/audio/transcriptions (OpenAI-compatible)
   try {
     const formData = new FormData()
@@ -71,8 +107,10 @@ export default defineEventHandler(async (event) => {
     const ext = mimeType.includes('mp4') ? 'mp4' : (mimeType.includes('wav') ? 'wav' : 'webm')
     formData.append('file', blob, `recording.${ext}`)
     formData.append('model', targetModel)
-    formData.append('language', 'de')
-    formData.append('prompt', 'Transkription auf Deutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.')
+    if (selectedLangConfig.whisperLang) {
+      formData.append('language', selectedLangConfig.whisperLang)
+    }
+    formData.append('prompt', selectedLangConfig.prompt)
     formData.append('temperature', '0.0')
 
     const controller = new AbortController()
@@ -98,7 +136,8 @@ export default defineEventHandler(async (event) => {
         return {
           success: true,
           text: text.trim(),
-          model: targetModel
+          model: targetModel,
+          language: lang
         }
       }
     }
@@ -126,7 +165,7 @@ export default defineEventHandler(async (event) => {
         messages: [
           {
             role: 'system',
-            content: 'Du bist ein präziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort für Wort auf Deutsch. Gib AUSSCHLIESSLICH den gesprochenen Text zurück, ohne Kommentare, Höflichkeitsfloskeln oder Anführungszeichen.'
+            content: selectedLangConfig.sys
           },
           {
             role: 'user',

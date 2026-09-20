@@ -72,6 +72,8 @@ export default defineEventHandler((event) => {
       title: e.title,
       description: e.description,
       location: e.location,
+      latitude: e.latitude,
+      longitude: e.longitude,
       start: e.start_at,
       end: e.end_at,
       allDay: Boolean(e.all_day),
