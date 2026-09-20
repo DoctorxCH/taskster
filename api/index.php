@@ -2771,12 +2771,107 @@ try {
         $config = getAiConfig();
         jsonResponse([
             'model' => $config['model'],
+            'audio_model' => $config['audio_model'] ?? 'openai/whisper-large-v3-turbo',
             'provider' => $config['provider'],
             'temperature' => $config['temperature'],
             'max_tokens' => $config['max_tokens'],
             'timeout_seconds' => $config['timeout_seconds'],
             'key_configured' => (bool)getEnvValue('OPENROUTER_API_KEY')
         ]);
+    }
+
+    // AI-3. POST ai/transcribe (Sprachtranskription mit OpenRouter / openai/whisper-large-v3-turbo)
+    if ($path === 'ai/transcribe' && $method === 'POST') {
+        requireAuth();
+        $config = getAiConfig();
+        $apiKey = getEnvValue('OPENROUTER_API_KEY');
+        if (!$apiKey) {
+            errorResponse('OPENROUTER_API_KEY fehlt in .env', 500);
+        }
+
+        $audioBase64 = trim($body['audio'] ?? $body['audioBase64'] ?? $body['file'] ?? '');
+        $mimeType = $body['mimeType'] ?? 'audio/webm';
+        $targetModel = $body['model'] ?? $config['audio_model'] ?? 'openai/whisper-large-v3-turbo';
+
+        if (!$audioBase64) {
+            errorResponse('Audio-Daten erforderlich (base64)', 400);
+        }
+
+        if (strpos($audioBase64, 'base64,') !== false) {
+            $parts = explode('base64,', $audioBase64);
+            $audioBase64 = $parts[1];
+        }
+
+        $audioData = base64_decode($audioBase64);
+        if (!$audioData) {
+            errorResponse('Ungueltige Base64 Audio-Daten', 400);
+        }
+
+        // Call OpenRouter audio/transcriptions endpoint
+        $tmpFile = tempnam(sys_get_temp_dir(), 'voice_') . '.webm';
+        file_put_contents($tmpFile, $audioData);
+
+        $ch = curl_init('https://openrouter.ai/api/v1/audio/transcriptions');
+        $cFile = new CURLFile($tmpFile, $mimeType, 'recording.webm');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => [
+                'file' => $cFile,
+                'model' => $targetModel
+            ],
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $apiKey,
+                'HTTP-Referer: https://taskster.ch',
+                'X-Title: Taskster Voice Transcription'
+            ],
+            CURLOPT_TIMEOUT => (int)($config['timeout_seconds'] ?? 60)
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        @unlink($tmpFile);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            $resData = json_decode((string)$response, true);
+            $text = trim($resData['text'] ?? $resData['transcription'] ?? '');
+            if ($text !== '') {
+                jsonResponse([
+                    'success' => true,
+                    'text' => $text,
+                    'model' => $targetModel
+                ]);
+            }
+        }
+
+        // Fallback: Chat completion with input audio
+        try {
+            $chatMessages = [
+                ['role' => 'system', 'content' => 'Du bist ein praeziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort fuer Wort auf Deutsch. Gib AUSSCHLIESSLICH den gesprochenen Text zurueck, ohne Kommentare, Hoeflichkeitsfloskeln oder Anfuehrungszeichen.'],
+                [
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'input_audio',
+                            'input_audio' => [
+                                'data' => $audioBase64,
+                                'format' => strpos($mimeType, 'wav') !== false ? 'wav' : (strpos($mimeType, 'mp3') !== false ? 'mp3' : 'webm')
+                            ]
+                        ],
+                        ['type' => 'text', 'text' => 'Bitte transkribiere diese Audionachricht praezise.']
+                    ]
+                ]
+            ];
+            $res = callOpenRouter($chatMessages, ['model' => $targetModel]);
+            jsonResponse([
+                'success' => true,
+                'text' => trim($res['text']),
+                'model' => $targetModel
+            ]);
+        } catch (Exception $e) {
+            errorResponse('Sprachtranskription fehlgeschlagen: ' . $e->getMessage(), 502);
+        }
     }
 
     // ==========================================
