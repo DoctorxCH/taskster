@@ -26,7 +26,7 @@ export default defineEventHandler((event) => {
     WHERE p.folder_id = ? AND pm.user_id = ?
   `).get(folderId, user.id))
 
-  if (!user.is_superadmin && !isOwner && !isCompanyPeer && !isProjectMember) {
+  if (!isOwner && !isCompanyPeer && !isProjectMember) {
     throw createError({ statusCode: 404, statusMessage: 'Projektordner nicht gefunden' })
   }
 

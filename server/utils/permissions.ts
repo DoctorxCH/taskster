@@ -23,28 +23,6 @@ export function evaluateProjectAccess(
   event?: H3Event,
   action: 'read' | 'write' = 'read'
 ): ProjectContext {
-  // If platform superadmin, full unrestricted access
-  if (user.is_superadmin) {
-    const prj = db.prepare(`
-      SELECT p.id, p.folder_id, pf.owner_id, pf.company_id
-      FROM projects p
-      JOIN project_folders pf ON pf.id = p.folder_id
-      WHERE p.id = ?
-    `).get(projectId) as any
-
-    if (!prj) {
-      throw createError({ statusCode: 404, statusMessage: 'Projekt nicht gefunden' })
-    }
-
-    return {
-      projectId: prj.id,
-      folderId: prj.folder_id,
-      ownerId: prj.owner_id,
-      companyId: prj.company_id,
-      userRole: 'owner'
-    }
-  }
-
   // Find project and folder
   const prj = db.prepare(`
     SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility
@@ -140,8 +118,8 @@ export function evaluateListAccess(
   const projectContext = evaluateProjectAccess(user, list.project_id, event, action)
 
   if (list.access_mode === 'custom') {
-    // Owner and company admin always see custom lists
-    if (projectContext.userRole !== 'owner' && projectContext.userRole !== 'admin' && !user.is_superadmin) {
+    // Owner and project admin always see custom lists
+    if (projectContext.userRole !== 'owner' && projectContext.userRole !== 'admin') {
       const access = db.prepare('SELECT is_visible FROM list_access WHERE list_id = ? AND user_id = ?').get(listId, user.id) as any
       if (!access || access.is_visible !== 1) {
         throw createError({ statusCode: 404, statusMessage: 'Liste nicht gefunden' })

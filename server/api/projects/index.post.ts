@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check write access to folder
-  const canCreate = user.is_superadmin || folder.owner_id === user.id || (user.company_id && user.company_id === folder.company_id && user.company_role === 'admin')
+  const canCreate = folder.owner_id === user.id || (user.company_id && user.company_id === folder.company_id && user.company_role === 'admin')
   if (!canCreate) {
     throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung zur Projekterstellung in diesem Ordner' })
   }

@@ -11,8 +11,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Projektordner nicht gefunden' })
   }
 
-  // Zero-Trust: Only owner (or superadmin) can modify the folder
-  if (!user.is_superadmin && folder.owner_id !== user.id) {
+  // Zero-Trust: Only owner can modify the folder
+  if (folder.owner_id !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Nur der Eigentümer kann diesen Projektordner bearbeiten' })
   }
 

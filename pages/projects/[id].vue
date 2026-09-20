@@ -237,7 +237,7 @@
           </button>
 
           <button
-            v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+            v-if="userRole === 'owner' || userRole === 'admin'"
             @click="currentView = 'settings'; initSettingsTab()"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
             :class="currentView === 'settings' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
@@ -719,7 +719,7 @@
             </p>
           </div>
           <button
-            v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+            v-if="userRole === 'owner' || userRole === 'admin'"
             @click="showInviteMemberModal = true"
             class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
@@ -1255,14 +1255,14 @@
                 </td>
                 <td v-if="userRole !== 'viewer'" class="py-3 px-4 text-right whitespace-nowrap space-x-2">
                   <button
-                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin'"
                     @click="openEditTimeModal(e)"
                     class="text-cyan-700 hover:text-cyan-900 font-bold hover:underline"
                   >
                     Bearbeiten
                   </button>
                   <button
-                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                    v-if="e.user_id === user?.id || userRole === 'owner' || userRole === 'admin'"
                     @click="deleteTimeEntry(e.id)"
                     class="text-rose-600 hover:text-rose-800 font-bold hover:underline"
                   >
@@ -1832,7 +1832,7 @@
 
           <div class="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
-              v-if="isEditingTask && (userRole === 'owner' || userRole === 'admin' || user?.is_superadmin)"
+              v-if="isEditingTask && (userRole === 'owner' || userRole === 'admin')"
               type="button"
               @click="deleteTask"
               class="taskster_button_accent px-4 text-xs h-[38px] rounded-lg"
@@ -2430,14 +2430,14 @@
                     </div>
                     <div v-if="userRole !== 'viewer'" class="flex items-center space-x-2">
                       <button
-                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin'"
                         @click="openEditTimeModal(te)"
                         class="text-cyan-700 hover:text-cyan-900 font-bold text-[11px]"
                       >
                         Ändern
                       </button>
                       <button
-                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
+                        v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin'"
                         @click="deleteTimeEntry(te.id)"
                         class="text-rose-600 hover:text-rose-800 font-bold text-[11px]"
                       >
@@ -2773,8 +2773,8 @@
 
 
 
-            <!-- Delete Button (Only owner, admin, or superadmin) -->
-            <div v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin" class="pt-4 border-t border-slate-200">
+            <!-- Delete Button (Only owner or admin) -->
+            <div v-if="userRole === 'owner' || userRole === 'admin'" class="pt-4 border-t border-slate-200">
               <button
                 @click="deleteTaskFromDrawer"
                 type="button"

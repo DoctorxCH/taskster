@@ -17,8 +17,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Ordner nicht gefunden' })
   }
 
-  // Only owner, company admin, or superadmin can add field definitions
-  const canEdit = user.is_superadmin || folder.owner_id === user.id || (user.company_id === folder.company_id && user.company_role === 'admin')
+  // Only owner or company admin can add field definitions
+  const canEdit = folder.owner_id === user.id || (user.company_id === folder.company_id && user.company_role === 'admin')
   if (!canEdit) {
     throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung zum Bearbeiten der Felddefinitionen' })
   }

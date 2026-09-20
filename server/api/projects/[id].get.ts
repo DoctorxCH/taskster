@@ -38,7 +38,7 @@ export default defineEventHandler((event) => {
 
   const accessibleLists = allLists.filter((l) => {
     if (l.access_mode === 'inherit') return true
-    if (context.userRole === 'owner' || context.userRole === 'admin' || user.is_superadmin) return true
+    if (context.userRole === 'owner' || context.userRole === 'admin') return true
 
     // Check list_access table
     const access = db.prepare('SELECT is_visible FROM list_access WHERE list_id = ? AND user_id = ?').get(l.id, user.id) as any
