@@ -3,7 +3,18 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: false },
   routeRules: {
-    '/settings': { ssr: false }
+    '/admin/**': { ssr: false },
+    '/admin': { ssr: false },
+    '/company/**': { ssr: false },
+    '/company': { ssr: false },
+    '/dashboard': { ssr: false },
+    '/calendar': { ssr: false },
+    '/contacts/**': { ssr: false },
+    '/contacts': { ssr: false },
+    '/time': { ssr: false },
+    '/settings': { ssr: false },
+    '/projects/**': { ssr: false },
+    '/folders/**': { ssr: false }
   },
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/i18n'],
   i18n: {

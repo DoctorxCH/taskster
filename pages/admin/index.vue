@@ -1,5 +1,6 @@
 <template>
-  <div v-if="isAnyAdmin" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="w-full">
+    <div v-if="isAnyAdmin" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <!-- Header -->
     <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2178,15 +2179,16 @@
         </form>
       </div>
     </div>
-  </div>
-  <div v-else class="max-w-md mx-auto py-24 text-center">
-    <div class="liquid_glass rounded-3xl p-8 shadow-xl">
-      <div class="text-4xl mb-3">🔒</div>
-      <h2 class="text-lg font-black text-slate-900 mb-1">Zugriff verweigert</h2>
-      <p class="text-xs text-slate-600 mb-5 leading-relaxed">Dieser Bereich ist ausschließlich autorisierten Taskster-Plattformadministratoren vorbehalten.</p>
-      <NuxtLink to="/dashboard" class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center justify-center">
-        Zurück zum Dashboard
-      </NuxtLink>
+    </div>
+    <div v-else class="max-w-md mx-auto py-24 text-center">
+      <div class="liquid_glass rounded-3xl p-8 shadow-xl">
+        <div class="text-4xl mb-3">🔒</div>
+        <h2 class="text-lg font-black text-slate-900 mb-1">Zugriff verweigert</h2>
+        <p class="text-xs text-slate-600 mb-5 leading-relaxed">Dieser Bereich ist ausschließlich autorisierten Taskster-Plattformadministratoren vorbehalten.</p>
+        <NuxtLink to="/dashboard" class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center justify-center">
+          Zurück zum Dashboard
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>
