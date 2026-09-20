@@ -4,7 +4,7 @@
       <!-- Kopf -->
       <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200 shrink-0">
         <h2 class="text-base font-semibold text-slate-900">
-          {{ isEdit ? 'Termin bearbeiten' : 'Neuer Termin' }}
+          {{ isEdit ? (event?.is_organizer ? 'Termin bearbeiten' : 'Termineinladung') : 'Neuer Termin' }}
         </h2>
         <button type="button" class="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700" @click="$emit('close')">
           <X class="w-4 h-4" />
@@ -13,6 +13,14 @@
 
       <!-- Inhalt -->
       <form class="flex-1 overflow-y-auto p-5 space-y-4" @submit.prevent="save">
+        <!-- Banner bei Einladungen -->
+        <div v-if="isEdit && !event?.is_organizer && event?.my_status" class="p-3 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-between text-xs text-cyan-900">
+          <div class="flex items-center gap-2">
+            <Users class="w-4 h-4 text-[#0891B2] shrink-0" />
+            <span>Organisiert von <strong>{{ event?.owner_name || 'Organisator' }}</strong> · Dein Status: <span class="font-semibold px-2 py-0.5 rounded text-[11px]" :class="statusClass(event?.my_status)">{{ statusLabel(event?.my_status) }}</span></span>
+          </div>
+        </div>
+
         <!-- Betreff -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1.5">Betreff <span class="text-rose-500">*</span></label>
@@ -20,8 +28,9 @@
             v-model="form.title"
             type="text"
             required
+            :disabled="isEdit && !event?.editable"
             placeholder="z.B. Baubesprechung Trasse 410"
-            class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
+            class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 disabled:bg-slate-100 disabled:text-slate-600"
           />
         </div>
 
@@ -302,10 +311,13 @@
         <div class="flex items-center gap-2">
           <!-- Antwort-Buttons für Eingeladene -->
           <template v-if="isEdit && !event?.is_organizer && event?.my_status">
-            <button type="button" class="h-9 px-3 text-sm font-semibold rounded-md bg-white text-slate-700 border border-slate-300 hover:bg-slate-50" @click="respond('declined')">
+            <button type="button" class="taskster_button_light" @click="$emit('close')">
+              Schließen
+            </button>
+            <button type="button" class="taskster_button_accent" @click="respond('declined')">
               Absagen
             </button>
-            <button type="button" class="h-9 px-3 text-sm font-semibold rounded-md bg-white text-slate-700 border border-slate-300 hover:bg-slate-50" @click="respond('tentative')">
+            <button type="button" class="taskster_button_light" @click="respond('tentative')">
               Vorbehalt
             </button>
             <button type="button" class="taskster_button" @click="respond('accepted')">
@@ -314,7 +326,7 @@
           </template>
 
           <template v-else>
-            <button type="button" class="h-9 px-4 text-sm font-semibold rounded-md bg-white text-slate-700 border border-slate-300 hover:bg-slate-50" @click="$emit('close')">
+            <button type="button" class="taskster_button_light" @click="$emit('close')">
               Abbrechen
             </button>
             <button

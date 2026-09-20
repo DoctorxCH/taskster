@@ -161,13 +161,18 @@
               type="button"
               draggable="true"
               class="w-full text-left px-1.5 py-0.5 rounded text-[11px] font-medium truncate transition-opacity hover:opacity-80 cursor-grab active:cursor-grabbing"
-              :class="draggingId === ev.id ? 'opacity-40' : ''"
+              :class="[
+                draggingId === ev.id ? 'opacity-40' : '',
+                ev.my_status === 'pending' ? 'border-dashed border border-cyan-500/70 font-normal bg-cyan-50/40' : '',
+                ev.my_status === 'declined' || ev.status === 'cancelled' ? 'line-through opacity-50 grayscale' : ''
+              ]"
               :style="{ backgroundColor: ev.color + '22', color: ev.color, borderLeft: '3px solid ' + ev.color }"
               :title="eventTooltip(ev)"
               @dragstart="onDragStart(ev, $event)"
               @dragend="onDragEnd"
               @click.stop="openEdit(ev)"
             >
+              <span v-if="ev.my_status === 'pending'" class="font-bold text-cyan-700 mr-0.5" title="Noch nicht beantwortet">?</span>
               <span v-if="!ev.allDay" class="font-mono text-[10px] opacity-70">{{ timeOf(ev.start) }}</span>
               {{ ev.title }}
             </button>
@@ -266,22 +271,28 @@
             @drop.prevent="onDropAt(d.key, h)"
           />
 
-          <!-- Termine (absolut positioniert) -->
+          <!-- Termine (absolut positioniert mit Kollisions-Nebeneinander-Berechnung) -->
           <button
-            v-for="ev in timedEventsForDay(d.key)"
-            :key="ev.id"
+            v-for="item in timedEventsWithLayoutForDay(d.key)"
+            :key="item.event.id"
             type="button"
             draggable="true"
-            class="absolute left-0.5 right-0.5 rounded px-1.5 py-0.5 text-[11px] font-medium text-left overflow-hidden transition-opacity hover:opacity-90 cursor-grab active:cursor-grabbing z-10"
-            :class="draggingId === ev.id ? 'opacity-40' : ''"
-            :style="weekEventStyle(ev)"
-            :title="eventTooltip(ev)"
-            @dragstart="onDragStart(ev, $event)"
+            class="absolute rounded px-1.5 py-0.5 text-[11px] font-medium text-left overflow-hidden transition-opacity hover:opacity-90 cursor-grab active:cursor-grabbing z-10"
+            :class="[
+              draggingId === item.event.id ? 'opacity-40' : '',
+              eventStatusClasses(item.event)
+            ]"
+            :style="weekEventStyle(item)"
+            :title="eventTooltip(item.event)"
+            @dragstart="onDragStart(item.event, $event)"
             @dragend="onDragEnd"
-            @click.stop="openEdit(ev)"
+            @click.stop="openEdit(item.event)"
           >
-            <div class="truncate font-semibold">{{ ev.title }}</div>
-            <div class="truncate text-[10px] opacity-80">{{ timeOf(ev.start) }}–{{ timeOf(ev.end) }}</div>
+            <div class="truncate font-semibold flex items-center justify-between gap-1">
+              <span class="truncate" :class="item.event.my_status === 'declined' || item.event.status === 'cancelled' ? 'line-through' : ''">{{ item.event.title }}</span>
+              <span v-if="item.event.my_status === 'pending'" class="shrink-0 px-1 text-[9px] font-bold rounded bg-cyan-100 text-cyan-800 border border-cyan-300">Offen</span>
+            </div>
+            <div class="truncate text-[10px] opacity-80">{{ timeOf(item.event.start) }}–{{ timeOf(item.event.end) }}</div>
           </button>
         </div>
       </div>
@@ -316,7 +327,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-sm font-semibold text-slate-900 truncate">{{ ev.title }}</span>
+              <span class="text-sm font-semibold text-slate-900 truncate" :class="ev.my_status === 'declined' || ev.status === 'cancelled' ? 'line-through text-slate-400' : ''">{{ ev.title }}</span>
               <span
                 v-if="ev.category_name"
                 class="px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
@@ -332,7 +343,37 @@
                 {{ statusLabel(ev.my_status) }}
               </span>
             </div>
-            <div v-if="ev.location" class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+
+            <!-- Schnellantwort-Knöpfe für Einladungen direkt in der Tagesansicht -->
+            <div v-if="!ev.is_organizer && ev.my_status" class="mt-2 flex flex-wrap items-center gap-2" @click.stop>
+              <span class="text-[11px] text-slate-500 font-medium">Antwort:</span>
+              <button
+                type="button"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded transition-colors"
+                :class="ev.my_status === 'accepted' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'"
+                @click.stop="quickRespond(ev, 'accepted')"
+              >
+                Zusagen
+              </button>
+              <button
+                type="button"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded transition-colors"
+                :class="ev.my_status === 'tentative' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'"
+                @click.stop="quickRespond(ev, 'tentative')"
+              >
+                Vorbehalt
+              </button>
+              <button
+                type="button"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded transition-colors"
+                :class="ev.my_status === 'declined' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'"
+                @click.stop="quickRespond(ev, 'declined')"
+              >
+                Absagen
+              </button>
+            </div>
+
+            <div v-if="ev.location" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
               <MapPin class="w-3 h-3" />
               {{ ev.location }}
             </div>
@@ -780,6 +821,93 @@ function timedEventsForDay(key: string) {
   return eventsForDay(key).filter((e) => !e.allDay)
 }
 
+/** Berechnet Nebeneinander-Spalten (Collision Layout) für Termine desselben Tages. */
+function timedEventsWithLayoutForDay(key: string) {
+  const evs = timedEventsForDay(key)
+  if (!evs.length) return []
+
+  const items = evs.map((ev) => {
+    const s = new Date(String(ev.start).replace(' ', 'T'))
+    const e = new Date(String(ev.end).replace(' ', 'T'))
+    const startMin = isNaN(s.getTime()) ? 0 : s.getHours() * 60 + s.getMinutes()
+    let endMin = isNaN(e.getTime()) ? startMin + 60 : e.getHours() * 60 + e.getMinutes()
+    if (endMin <= startMin) endMin = startMin + 15
+
+    return {
+      event: ev,
+      startMin,
+      endMin,
+      colIndex: 0
+    }
+  })
+
+  items.sort((a, b) => {
+    if (a.startMin !== b.startMin) return a.startMin - b.startMin
+    return (b.endMin - b.startMin) - (a.endMin - a.startMin)
+  })
+
+  const clusters: typeof items[] = []
+  let currentCluster: typeof items = []
+  let clusterMaxEnd = -1
+
+  for (const item of items) {
+    if (currentCluster.length === 0) {
+      currentCluster.push(item)
+      clusterMaxEnd = item.endMin
+    } else if (item.startMin < clusterMaxEnd) {
+      currentCluster.push(item)
+      if (item.endMin > clusterMaxEnd) clusterMaxEnd = item.endMin
+    } else {
+      clusters.push(currentCluster)
+      currentCluster = [item]
+      clusterMaxEnd = item.endMin
+    }
+  }
+  if (currentCluster.length > 0) clusters.push(currentCluster)
+
+  const result: any[] = []
+
+  for (const cluster of clusters) {
+    const columns: typeof items[] = []
+
+    for (const item of cluster) {
+      let placed = false
+      for (let c = 0; c < columns.length; c++) {
+        const lastInCol = columns[c][columns[c].length - 1]
+        if (lastInCol.endMin <= item.startMin) {
+          columns[c].push(item)
+          item.colIndex = c
+          placed = true
+          break
+        }
+      }
+      if (!placed) {
+        columns.push([item])
+        item.colIndex = columns.length - 1
+      }
+    }
+
+    const maxCols = columns.length
+    for (const item of cluster) {
+      const colIndex = item.colIndex || 0
+      const left = (colIndex / maxCols) * 100
+      const width = (100 / maxCols)
+
+      result.push({
+        event: item.event,
+        startMin: item.startMin,
+        endMin: item.endMin,
+        leftPercent: left,
+        widthPercent: width,
+        maxCols,
+        colIndex
+      })
+    }
+  }
+
+  return result
+}
+
 /** Ganztägige Termine je Wochentag (eigene Zeile). */
 const weekAllDay = computed(() =>
   weekDays.value.map((d) => ({
@@ -788,19 +916,56 @@ const weekAllDay = computed(() =>
   }))
 )
 
-function weekEventStyle(ev: any) {
-  const start = new Date(String(ev.start).replace(' ', 'T'))
-  const end = new Date(String(ev.end).replace(' ', 'T'))
-  const startMin = start.getHours() * 60 + start.getMinutes()
-  const endMin = end.getHours() * 60 + end.getMinutes()
-  const top = (startMin / 60) * 56 // h-14 = 56px
+function weekEventStyle(item: any) {
+  const ev = item.event || item
+  const startMin = item.startMin !== undefined ? item.startMin : (() => {
+    const s = new Date(String(ev.start).replace(' ', 'T'))
+    return s.getHours() * 60 + s.getMinutes()
+  })()
+  const endMin = item.endMin !== undefined ? item.endMin : (() => {
+    const e = new Date(String(ev.end).replace(' ', 'T'))
+    return e.getHours() * 60 + e.getMinutes()
+  })()
+
+  const top = (startMin / 60) * 56
   const height = Math.max(((endMin - startMin) / 60) * 56, 22)
+  const left = item.leftPercent ?? 0
+  const width = item.widthPercent ?? 100
+
   return {
     top: top + 'px',
     height: height + 'px',
+    left: `calc(${left}% + 1px)`,
+    width: `calc(${width}% - 2px)`,
     backgroundColor: ev.color + '22',
     color: ev.color,
     borderLeft: '3px solid ' + ev.color
+  }
+}
+
+function eventStatusClasses(ev: any) {
+  const classes: string[] = []
+  if (ev.my_status === 'pending') {
+    classes.push('border-2 border-dashed border-cyan-500/70 bg-cyan-50/40')
+  } else if (ev.my_status === 'tentative') {
+    classes.push('border-2 border-dotted border-amber-500/70')
+  } else if (ev.my_status === 'declined' || ev.status === 'cancelled') {
+    classes.push('line-through opacity-50 grayscale')
+  }
+  return classes.join(' ')
+}
+
+async function quickRespond(ev: any, status: 'accepted' | 'declined' | 'tentative') {
+  try {
+    await $fetch(`/api/events/${ev.id}/respond`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { status }
+    })
+    ev.my_status = status
+    await loadEvents()
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || 'Antwort konnte nicht gespeichert werden')
   }
 }
 
