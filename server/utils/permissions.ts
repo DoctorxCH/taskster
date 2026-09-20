@@ -50,21 +50,69 @@ export function evaluateProjectAccess(
     }
   }
 
-  // --- STAGE 2: Project Membership Check ---
-  // Owner of the folder has full project ownership. No automatic company admin bypass.
-  let role: 'owner' | 'admin' | 'editor' | 'viewer' | null = null
+  // --- STAGE 2: Project Membership & Group Access Check ---
+  const ROLE_RANK: Record<string, number> = { viewer: 1, editor: 2, admin: 3, owner: 4 }
+  const candidateRoles: Array<'owner' | 'admin' | 'editor' | 'viewer'> = []
 
+  // 1. Owner of the folder has full project ownership
   if (prj.owner_id === user.id) {
-    role = 'owner'
-  } else {
-    const member = db.prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?').get(projectId, user.id) as any
-    if (member) {
-      role = member.role as 'owner' | 'admin' | 'editor' | 'viewer'
-    } else if (
-      user.company_id && user.company_id === prj.company_id &&
-      prj.project_visibility === 'company'
-    ) {
-      role = 'editor'
+    candidateRoles.push('owner')
+  }
+
+  // 2. Direct project membership
+  const member = db.prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?').get(projectId, user.id) as any
+  if (member?.role && member.role in ROLE_RANK) {
+    candidateRoles.push(member.role as 'owner' | 'admin' | 'editor' | 'viewer')
+  }
+
+  // 3. Direct folder membership
+  const folderMember = db.prepare('SELECT role FROM folder_members WHERE folder_id = ? AND user_id = ?').get(prj.folder_id, user.id) as any
+  if (folderMember?.role && folderMember.role in ROLE_RANK) {
+    candidateRoles.push(folderMember.role as 'owner' | 'admin' | 'editor' | 'viewer')
+  }
+
+  // 4. Project-level group access
+  const projectGroupRoles = db.prepare(`
+    SELECT pga.role
+    FROM project_group_access pga
+    JOIN user_group_members ugm ON ugm.group_id = pga.group_id
+    WHERE pga.project_id = ? AND ugm.user_id = ?
+  `).all(projectId, user.id) as { role: string }[]
+  for (const grp of projectGroupRoles) {
+    if (grp.role in ROLE_RANK) {
+      candidateRoles.push(grp.role as any)
+    }
+  }
+
+  // 5. Folder-level group access
+  const folderGroupRoles = db.prepare(`
+    SELECT fga.role
+    FROM folder_group_access fga
+    JOIN user_group_members ugm ON ugm.group_id = fga.group_id
+    WHERE fga.folder_id = ? AND ugm.user_id = ?
+  `).all(prj.folder_id, user.id) as { role: string }[]
+  for (const grp of folderGroupRoles) {
+    if (grp.role in ROLE_RANK) {
+      candidateRoles.push(grp.role as any)
+    }
+  }
+
+  // 6. Company-level visibility
+  if (
+    user.company_id && user.company_id === prj.company_id &&
+    (prj.project_visibility === 'company' || prj.folder_visibility === 'company')
+  ) {
+    candidateRoles.push('editor')
+  }
+
+  // Determine highest role
+  let role: 'owner' | 'admin' | 'editor' | 'viewer' | null = null
+  let maxRank = 0
+  for (const r of candidateRoles) {
+    const rank = ROLE_RANK[r] || 0
+    if (rank > maxRank) {
+      maxRank = rank
+      role = r
     }
   }
 
@@ -89,6 +137,95 @@ export function evaluateProjectAccess(
     userRole: role
   }
 }
+
+export interface FolderContext {
+  folderId: string
+  ownerId: string
+  companyId: string | null
+  userRole: 'owner' | 'admin' | 'editor' | 'viewer'
+}
+
+/**
+ * Evaluates access to a project folder including direct membership,
+ * company visibility, and group memberships.
+ */
+export function evaluateFolderAccess(
+  user: AuthUser,
+  folderId: string,
+  event?: H3Event,
+  action: 'read' | 'write' = 'read'
+): FolderContext {
+  const folder = db.prepare(`
+    SELECT id, owner_id, company_id, visibility
+    FROM project_folders
+    WHERE id = ?
+  `).get(folderId) as any
+
+  if (!folder) {
+    throw createError({ statusCode: 404, statusMessage: 'Ordner nicht gefunden' })
+  }
+
+  const ROLE_RANK: Record<string, number> = { viewer: 1, editor: 2, admin: 3, owner: 4 }
+  const candidateRoles: Array<'owner' | 'admin' | 'editor' | 'viewer'> = []
+
+  // 1. Folder owner
+  if (folder.owner_id === user.id) {
+    candidateRoles.push('owner')
+  }
+
+  // 2. Direct folder membership
+  const member = db.prepare('SELECT role FROM folder_members WHERE folder_id = ? AND user_id = ?').get(folderId, user.id) as any
+  if (member?.role && member.role in ROLE_RANK) {
+    candidateRoles.push(member.role as any)
+  }
+
+  // 3. Folder group access
+  const groupRoles = db.prepare(`
+    SELECT fga.role
+    FROM folder_group_access fga
+    JOIN user_group_members ugm ON ugm.group_id = fga.group_id
+    WHERE fga.folder_id = ? AND ugm.user_id = ?
+  `).all(folderId, user.id) as { role: string }[]
+  for (const grp of groupRoles) {
+    if (grp.role in ROLE_RANK) {
+      candidateRoles.push(grp.role as any)
+    }
+  }
+
+  // 4. Company visibility
+  if (user.company_id && user.company_id === folder.company_id && folder.visibility === 'company') {
+    candidateRoles.push('editor')
+  }
+
+  let role: 'owner' | 'admin' | 'editor' | 'viewer' | null = null
+  let maxRank = 0
+  for (const r of candidateRoles) {
+    const rank = ROLE_RANK[r] || 0
+    if (rank > maxRank) {
+      maxRank = rank
+      role = r
+    }
+  }
+
+  if (!role) {
+    throw createError({ statusCode: 404, statusMessage: 'Ordner nicht gefunden' })
+  }
+
+  if (action === 'write' && role === 'viewer') {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Viewer besitzen nur Leseberechtigung. Schreibzugriff verweigert.'
+    })
+  }
+
+  return {
+    folderId: folder.id,
+    ownerId: folder.owner_id,
+    companyId: folder.company_id,
+    userRole: role
+  }
+}
+
 
 /**
  * Stage 3: List Scope Check

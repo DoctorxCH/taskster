@@ -13,6 +13,7 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'system'
   density: 'comfortable' | 'compact'
   start_page: 'dashboard' | 'calendar' | 'time' | 'contacts'
+  timezone: string
 
   // --- Kalender ---
   calendar: {
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'light',
   density: 'comfortable',
   start_page: 'dashboard',
+  timezone: 'Europe/Zurich',
 
   calendar: {
     default_view: 'month',
@@ -116,6 +118,16 @@ function pickTime(value: any, fallback: string): string {
   return typeof value === 'string' && HHMM.test(value) ? value : fallback
 }
 
+function pickTimezone(value: any, fallback: string): string {
+  if (typeof value !== 'string' || !value.trim()) return fallback
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: value.trim() })
+    return value.trim()
+  } catch {
+    return fallback
+  }
+}
+
 /**
  * Führt gespeicherte Einstellungen mit den Defaults zusammen und validiert
  * jeden Wert. Unbekannte Schlüssel werden verworfen.
@@ -136,6 +148,7 @@ export function normalizeSettings(raw: any): UserSettings {
     theme: pickEnum(src.theme, ['light', 'dark', 'system'] as const, d.theme),
     density: pickEnum(src.density, ['comfortable', 'compact'] as const, d.density),
     start_page: pickEnum(src.start_page, ['dashboard', 'calendar', 'time', 'contacts'] as const, d.start_page),
+    timezone: pickTimezone(src.timezone, d.timezone),
 
     calendar: {
       default_view: pickEnum(cal.default_view, ['month', 'week', 'day'] as const, d.calendar.default_view),

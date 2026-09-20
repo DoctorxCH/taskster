@@ -279,6 +279,55 @@ function ensureTables($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS user_groups (
+              id VARCHAR(64) PRIMARY KEY,
+              owner_id VARCHAR(64) NOT NULL,
+              company_id VARCHAR(64) NULL,
+              name VARCHAR(255) NOT NULL,
+              description TEXT NULL,
+              color VARCHAR(32) NOT NULL DEFAULT '#0891B2',
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_ug_owner (owner_id),
+              INDEX idx_ug_company (company_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS user_group_members (
+              id VARCHAR(64) PRIMARY KEY,
+              group_id VARCHAR(64) NOT NULL,
+              user_id VARCHAR(64) NOT NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE KEY uq_group_user (group_id, user_id),
+              INDEX idx_ugm_group (group_id),
+              INDEX idx_ugm_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS project_group_access (
+              id VARCHAR(64) PRIMARY KEY,
+              project_id VARCHAR(64) NOT NULL,
+              group_id VARCHAR(64) NOT NULL,
+              role VARCHAR(32) NOT NULL DEFAULT 'editor',
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE KEY uq_pga_project_group (project_id, group_id),
+              INDEX idx_pga_project (project_id),
+              INDEX idx_pga_group (group_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS folder_group_access (
+              id VARCHAR(64) PRIMARY KEY,
+              folder_id VARCHAR(64) NOT NULL,
+              group_id VARCHAR(64) NOT NULL,
+              role VARCHAR(32) NOT NULL DEFAULT 'editor',
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE KEY uq_fga_folder_group (folder_id, group_id),
+              INDEX idx_fga_folder (folder_id),
+              INDEX idx_fga_group (group_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
         // Standard-Kategorien einmalig anlegen
         $catCount = (int)$pdo->query("SELECT COUNT(*) FROM event_categories WHERE is_system = 1")->fetchColumn();
         if ($catCount === 0) {
@@ -1894,6 +1943,7 @@ function defaultUserSettings() {
         'theme' => 'light',
         'density' => 'comfortable',
         'start_page' => 'dashboard',
+        'timezone' => 'Europe/Zurich',
         'calendar' => [
             'default_view' => 'month',
             'week_start' => 1,
@@ -1948,6 +1998,16 @@ function pickTime($value, $fallback) {
     return (is_string($value) && preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value)) ? $value : $fallback;
 }
 
+function pickTimezone($value, $fallback) {
+    if (!is_string($value) || trim($value) === '') return $fallback;
+    try {
+        new DateTimeZone(trim($value));
+        return trim($value);
+    } catch (Exception $e) {
+        return $fallback;
+    }
+}
+
 function normalizeUserSettings($raw) {
     $d = defaultUserSettings();
     if (is_string($raw)) {
@@ -1980,6 +2040,7 @@ function normalizeUserSettings($raw) {
         'theme' => pickEnum($raw['theme'] ?? null, ['light', 'dark', 'system'], $d['theme']),
         'density' => pickEnum($raw['density'] ?? null, ['comfortable', 'compact'], $d['density']),
         'start_page' => pickEnum($raw['start_page'] ?? null, ['dashboard', 'calendar', 'time', 'contacts'], $d['start_page']),
+        'timezone' => pickTimezone($raw['timezone'] ?? null, $d['timezone']),
         'calendar' => [
             'default_view' => pickEnum($cal['default_view'] ?? null, ['month', 'week', 'day'], $d['calendar']['default_view']),
             'week_start' => pickInt($cal['week_start'] ?? null, [0, 1], $d['calendar']['week_start']),
@@ -2465,6 +2526,111 @@ try {
                 'settings' => normalizeUserSettings($u['settings'] ?? null),
                 'avatar' => $u['avatar'] ?? null
             ]
+        ]);
+    }
+
+    // 3c. GET gdpr/export (Art. 20 DSGVO - Datenübertragbarkeit)
+    if ($path === 'gdpr/export' && $method === 'GET') {
+        $authUser = requireAuth();
+        $uStmt = $db->prepare("SELECT id, name, email, company_id, company_role, is_superadmin, is_pro, hourly_rate, currency, settings, created_at FROM users WHERE id = ?");
+        $uStmt->execute([$authUser['id']]);
+        $u = $uStmt->fetch();
+
+        $comp = null;
+        if (!empty($u['company_id'])) {
+            $cStmt = $db->prepare("SELECT id, name, subscription_plan, created_at FROM companies WHERE id = ?");
+            $cStmt->execute([$u['company_id']]);
+            $comp = $cStmt->fetch();
+        }
+
+        $fStmt = $db->prepare("SELECT id, name, icon, visibility, created_at FROM project_folders WHERE owner_id = ?");
+        $fStmt->execute([$authUser['id']]);
+        $ownedFolders = $fStmt->fetchAll();
+
+        $fmStmt = $db->prepare("SELECT fm.folder_id, fm.role, fm.created_at, pf.name as folder_name FROM folder_members fm JOIN project_folders pf ON pf.id = fm.folder_id WHERE fm.user_id = ?");
+        $fmStmt->execute([$authUser['id']]);
+        $folderMemberships = $fmStmt->fetchAll();
+
+        $gmStmt = $db->prepare("SELECT ug.id as group_id, ug.name as group_name, ug.color, ugm.created_at FROM user_group_members ugm JOIN user_groups ug ON ug.id = ugm.group_id WHERE ugm.user_id = ?");
+        $gmStmt->execute([$authUser['id']]);
+        $groups = $gmStmt->fetchAll();
+
+        $pmStmt = $db->prepare("SELECT pm.project_id, pm.role, pm.created_at, p.title as project_title, p.status FROM project_members pm JOIN projects p ON p.id = pm.project_id WHERE pm.user_id = ?");
+        $pmStmt->execute([$authUser['id']]);
+        $projectMemberships = $pmStmt->fetchAll();
+
+        $tStmt = $db->prepare("SELECT id, list_id, title, description, status, priority, due_date, created_at FROM tasks WHERE assigned_to = ?");
+        $tStmt->execute([$authUser['id']]);
+        $tasks = $tStmt->fetchAll();
+
+        $dtStmt = $db->prepare("SELECT id, project_id, title, target_date, is_completed, completed_at, original_date, rollover_count, created_at FROM daily_todos WHERE user_id = ?");
+        $dtStmt->execute([$authUser['id']]);
+        $dailyTodos = $dtStmt->fetchAll();
+
+        $teStmt = $db->prepare("SELECT id, project_id, task_id, duration_minutes, hourly_rate, currency, description, entry_date, is_manual, created_at FROM time_entries WHERE user_id = ?");
+        $teStmt->execute([$authUser['id']]);
+        $timeEntries = $teStmt->fetchAll();
+
+        $cStmt = $db->prepare("SELECT id, first_name, last_name, company_name, role_function, phone, mobile, email, category_group, address, website, notes, share_scope, created_at FROM contacts WHERE user_id = ?");
+        $cStmt->execute([$authUser['id']]);
+        $contacts = $cStmt->fetchAll();
+
+        $nStmt = $db->prepare("SELECT id, type, title, message, is_read, created_at FROM notifications WHERE user_id = ?");
+        $nStmt->execute([$authUser['id']]);
+        $notifications = $nStmt->fetchAll();
+
+        header("Content-Disposition: attachment; filename=\"taskster_export_" . $authUser['id'] . "_" . time() . ".json\"");
+        jsonResponse([
+            'metadata' => [
+                'exported_at' => date('c'),
+                'format_version' => '1.0',
+                'system' => 'Taskster GDPR Data Portability Service (Art. 20 DSGVO)',
+                'data_subject_id' => $authUser['id'],
+                'data_subject_email' => $authUser['email']
+            ],
+            'user_profile' => $u,
+            'company' => $comp,
+            'folders' => ['owned' => $ownedFolders, 'memberships' => $folderMemberships],
+            'groups' => $groups,
+            'projects' => $projectMemberships,
+            'tasks' => $tasks,
+            'daily_todos' => $dailyTodos,
+            'time_entries' => $timeEntries,
+            'contacts' => $contacts,
+            'notifications' => $notifications
+        ]);
+    }
+
+    // 3d. DELETE gdpr/account (Art. 17 DSGVO - Recht auf Vergessenwerden / Löschung)
+    if ($path === 'gdpr/account' && $method === 'DELETE') {
+        $authUser = requireAuth();
+        $password = $body['password'] ?? '';
+        if (empty($password)) {
+            errorResponse('Bitte gib dein aktuelles Passwort ein, um die Löschung zu bestätigen.', 400);
+        }
+
+        $stmt = $db->prepare("SELECT password_hash, email FROM users WHERE id = ?");
+        $stmt->execute([$authUser['id']]);
+        $row = $stmt->fetch();
+        if (!$row || !password_verify($password, $row['password_hash'])) {
+            errorResponse('Das eingegebene Passwort ist nicht korrekt. Die Löschung wurde abgebrochen.', 400);
+        }
+
+        $db->prepare("DELETE FROM daily_todos WHERE user_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM notifications WHERE user_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM contacts WHERE user_id = ? AND share_scope = 'private'")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM project_members WHERE user_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM folder_members WHERE user_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM user_group_members WHERE user_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM company_invitations WHERE LOWER(email) = LOWER(?)")->execute([$row['email']]);
+        $db->prepare("UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM user_groups WHERE owner_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM project_folders WHERE owner_id = ?")->execute([$authUser['id']]);
+        $db->prepare("DELETE FROM users WHERE id = ?")->execute([$authUser['id']]);
+
+        jsonResponse([
+            'success' => true,
+            'message' => 'Dein Benutzerkonto und alle personenbezogenen Daten wurden erfolgreich und unwiderruflich gelöscht.'
         ]);
     }
 
@@ -4279,6 +4445,285 @@ try {
             'invite_token' => $token,
             'invite_link' => '/login?tab=register&token=' . $token
         ]);
+    }
+
+    // --- GRUPPENVERWALTUNG (Free & Company) ---
+    if ($path === 'groups' && $method === 'GET') {
+        $user = requireAuth();
+        $params = [$user['id']];
+        $sql = "SELECT ug.*, u.name as owner_name, u.email as owner_email FROM user_groups ug JOIN users u ON u.id = ug.owner_id WHERE ug.owner_id = ?";
+        if (!empty($user['company_id'])) {
+            $sql = "SELECT ug.*, u.name as owner_name, u.email as owner_email FROM user_groups ug JOIN users u ON u.id = ug.owner_id WHERE ug.owner_id = ? OR ug.company_id = ? ORDER BY ug.name ASC";
+            $params[] = $user['company_id'];
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rawGroups = $stmt->fetchAll();
+
+        $groups = [];
+        foreach ($rawGroups as $g) {
+            $mStmt = $db->prepare("SELECT u.id as user_id, u.name, u.email, ugm.created_at FROM user_group_members ugm JOIN users u ON u.id = ugm.user_id WHERE ugm.group_id = ? ORDER BY u.name ASC");
+            $mStmt->execute([$g['id']]);
+            $members = $mStmt->fetchAll();
+
+            $fStmt = $db->prepare("SELECT pf.id as folder_id, pf.name as folder_name, fga.role FROM folder_group_access fga JOIN project_folders pf ON pf.id = fga.folder_id WHERE fga.group_id = ?");
+            $fStmt->execute([$g['id']]);
+            $folders = $fStmt->fetchAll();
+
+            $pStmt = $db->prepare("SELECT p.id as project_id, p.title as project_title, pga.role FROM project_group_access pga JOIN projects p ON p.id = pga.project_id WHERE pga.group_id = ?");
+            $pStmt->execute([$g['id']]);
+            $projects = $pStmt->fetchAll();
+
+            $g['members'] = $members;
+            $g['folders'] = $folders;
+            $g['projects'] = $projects;
+            $groups[] = $g;
+        }
+        jsonResponse(['groups' => $groups]);
+    }
+
+    if ($path === 'groups' && $method === 'POST') {
+        $user = requireAuth();
+        $name = trim($body['name'] ?? '');
+        if (!$name) errorResponse('Name der Gruppe erforderlich', 400);
+
+        $description = !empty($body['description']) ? trim($body['description']) : null;
+        $color = !empty($body['color']) ? trim($body['color']) : '#0891B2';
+        $memberIds = isset($body['member_ids']) && is_array($body['member_ids']) ? $body['member_ids'] : [];
+
+        $groupId = 'grp_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : null;
+
+        $ins = $db->prepare("INSERT INTO user_groups (id, owner_id, company_id, name, description, color) VALUES (?, ?, ?, ?, ?, ?)");
+        $ins->execute([$groupId, $user['id'], $companyId, $name, $description, $color]);
+
+        $insM = $db->prepare("INSERT IGNORE INTO user_group_members (id, group_id, user_id) VALUES (?, ?, ?)");
+        foreach ($memberIds as $mid) {
+            if (is_string($mid) && trim($mid)) {
+                $mId = 'ugm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $insM->execute([$mId, $groupId, trim($mid)]);
+            }
+        }
+
+        $stmt = $db->prepare("SELECT ug.*, u.name as owner_name, u.email as owner_email FROM user_groups ug JOIN users u ON u.id = ug.owner_id WHERE ug.id = ?");
+        $stmt->execute([$groupId]);
+        $g = $stmt->fetch();
+        $g['members'] = [];
+        $g['folders'] = [];
+        $g['projects'] = [];
+        jsonResponse(['group' => $g]);
+    }
+
+    if (preg_match('#^groups/([^/]+)$#', $path, $matches) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $groupId = $matches[1];
+        $stmt = $db->prepare("SELECT * FROM user_groups WHERE id = ?");
+        $stmt->execute([$groupId]);
+        $group = $stmt->fetch();
+        if (!$group) errorResponse('Gruppe nicht gefunden', 404);
+
+        $isOwner = $group['owner_id'] === $user['id'];
+        $isCompanyAdmin = !empty($user['company_id']) && $user['company_id'] === $group['company_id'] && ($user['company_role'] ?? '') === 'admin';
+        if (!$isOwner && !$isCompanyAdmin) errorResponse('Keine Berechtigung', 403);
+
+        $name = trim($body['name'] ?? $group['name']);
+        $description = array_key_exists('description', $body) ? trim($body['description'] ?? '') : $group['description'];
+        $color = trim($body['color'] ?? $group['color']);
+
+        $db->prepare("UPDATE user_groups SET name = ?, description = ?, color = ? WHERE id = ?")->execute([$name, $description, $color, $groupId]);
+
+        if (isset($body['member_ids']) && is_array($body['member_ids'])) {
+            $db->prepare("DELETE FROM user_group_members WHERE group_id = ?")->execute([$groupId]);
+            $insM = $db->prepare("INSERT IGNORE INTO user_group_members (id, group_id, user_id) VALUES (?, ?, ?)");
+            foreach ($body['member_ids'] as $mid) {
+                if (is_string($mid) && trim($mid)) {
+                    $mId = 'ugm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $insM->execute([$mId, $groupId, trim($mid)]);
+                }
+            }
+        }
+
+        $stmt = $db->prepare("SELECT ug.*, u.name as owner_name, u.email as owner_email FROM user_groups ug JOIN users u ON u.id = ug.owner_id WHERE ug.id = ?");
+        $stmt->execute([$groupId]);
+        $g = $stmt->fetch();
+        jsonResponse(['group' => $g]);
+    }
+
+    if (preg_match('#^groups/([^/]+)$#', $path, $matches) && $method === 'DELETE') {
+        $user = requireAuth();
+        $groupId = $matches[1];
+        $stmt = $db->prepare("SELECT * FROM user_groups WHERE id = ?");
+        $stmt->execute([$groupId]);
+        $group = $stmt->fetch();
+        if (!$group) errorResponse('Gruppe nicht gefunden', 404);
+
+        $isOwner = $group['owner_id'] === $user['id'];
+        $isCompanyAdmin = !empty($user['company_id']) && $user['company_id'] === $group['company_id'] && ($user['company_role'] ?? '') === 'admin';
+        if (!$isOwner && !$isCompanyAdmin) errorResponse('Keine Berechtigung', 403);
+
+        $db->prepare("DELETE FROM user_group_members WHERE group_id = ?")->execute([$groupId]);
+        $db->prepare("DELETE FROM project_group_access WHERE group_id = ?")->execute([$groupId]);
+        $db->prepare("DELETE FROM folder_group_access WHERE group_id = ?")->execute([$groupId]);
+        $db->prepare("DELETE FROM user_groups WHERE id = ?")->execute([$groupId]);
+        jsonResponse(['success' => true]);
+    }
+
+    if (preg_match('#^groups/([^/]+)/assign$#', $path, $matches) && $method === 'POST') {
+        $user = requireAuth();
+        $groupId = $matches[1];
+        $type = $body['type'] ?? '';
+        $targetId = $body['target_id'] ?? '';
+        $role = $body['role'] ?? '';
+
+        if (!$type || !$targetId || !$role) errorResponse('Fehlende Parameter', 400);
+
+        if ($type === 'project') {
+            if ($role === 'none') {
+                $db->prepare("DELETE FROM project_group_access WHERE project_id = ? AND group_id = ?")->execute([$targetId, $groupId]);
+            } else {
+                $existing = $db->prepare("SELECT id FROM project_group_access WHERE project_id = ? AND group_id = ?");
+                $existing->execute([$targetId, $groupId]);
+                $exRow = $existing->fetch();
+                if ($exRow) {
+                    $db->prepare("UPDATE project_group_access SET role = ? WHERE id = ?")->execute([$role, $exRow['id']]);
+                } else {
+                    $id = 'pga_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO project_group_access (id, project_id, group_id, role) VALUES (?, ?, ?, ?)")->execute([$id, $targetId, $groupId, $role]);
+                }
+            }
+        } elseif ($type === 'folder') {
+            if ($role === 'none') {
+                $db->prepare("DELETE FROM folder_group_access WHERE folder_id = ? AND group_id = ?")->execute([$targetId, $groupId]);
+            } else {
+                $existing = $db->prepare("SELECT id FROM folder_group_access WHERE folder_id = ? AND group_id = ?");
+                $existing->execute([$targetId, $groupId]);
+                $exRow = $existing->fetch();
+                if ($exRow) {
+                    $db->prepare("UPDATE folder_group_access SET role = ? WHERE id = ?")->execute([$role, $exRow['id']]);
+                } else {
+                    $id = 'fga_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO folder_group_access (id, folder_id, group_id, role) VALUES (?, ?, ?, ?)")->execute([$id, $targetId, $groupId, $role]);
+                }
+            }
+        }
+        jsonResponse(['success' => true]);
+    }
+
+    // --- TEAM & ZUGRIFFSMATRIX ---
+    if ($path === 'team/access-matrix' && $method === 'GET') {
+        $user = requireAuth();
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : null;
+
+        $folders = [];
+        if ($companyId) {
+            $fStmt = $db->prepare("SELECT pf.id, pf.name, pf.icon, pf.visibility, pf.owner_id, u.name as owner_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id WHERE pf.owner_id = ? OR pf.company_id = ? ORDER BY pf.name ASC");
+            $fStmt->execute([$user['id'], $companyId]);
+            $folders = $fStmt->fetchAll();
+        } else {
+            $fStmt = $db->prepare("SELECT pf.id, pf.name, pf.icon, pf.visibility, pf.owner_id, u.name as owner_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id WHERE pf.owner_id = ? ORDER BY pf.name ASC");
+            $fStmt->execute([$user['id']]);
+            $folders = $fStmt->fetchAll();
+        }
+
+        $folderIds = array_map(function($f) { return $f['id']; }, $folders);
+        $projects = [];
+        if (!empty($folderIds)) {
+            $in = str_repeat('?,', count($folderIds) - 1) . '?';
+            $pStmt = $db->prepare("SELECT p.id, p.folder_id, p.title, p.status, p.visibility, pf.owner_id FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.folder_id IN ($in) ORDER BY p.title ASC");
+            $pStmt->execute($folderIds);
+            $projects = $pStmt->fetchAll();
+        }
+
+        $usersMap = [];
+        $selfStmt = $db->prepare("SELECT id, name, email, company_id, company_role, created_at FROM users WHERE id = ?");
+        $selfStmt->execute([$user['id']]);
+        $self = $selfStmt->fetch();
+        $self['is_self'] = true;
+        $usersMap[$self['id']] = $self;
+
+        if ($companyId) {
+            $cuStmt = $db->prepare("SELECT id, name, email, company_id, company_role, created_at FROM users WHERE company_id = ?");
+            $cuStmt->execute([$companyId]);
+            foreach ($cuStmt->fetchAll() as $cu) {
+                $cu['is_self'] = ($cu['id'] === $user['id']);
+                $usersMap[$cu['id']] = $cu;
+            }
+        }
+
+        $invitations = [];
+        if ($companyId) {
+            $iStmt = $db->prepare("SELECT ci.id, ci.email, ci.role, ci.token, ci.status, ci.created_at, u.name as invited_by_name FROM company_invitations ci LEFT JOIN users u ON u.id = ci.invited_by WHERE ci.company_id = ? ORDER BY ci.created_at DESC");
+            $iStmt->execute([$companyId]);
+            $invitations = $iStmt->fetchAll();
+        }
+
+        $groups = [];
+        if ($companyId) {
+            $gStmt = $db->prepare("SELECT id, name, color, owner_id, company_id FROM user_groups WHERE owner_id = ? OR company_id = ?");
+            $gStmt->execute([$user['id'], $companyId]);
+            $groups = $gStmt->fetchAll();
+        } else {
+            $gStmt = $db->prepare("SELECT id, name, color, owner_id, company_id FROM user_groups WHERE owner_id = ?");
+            $gStmt->execute([$user['id']]);
+            $groups = $gStmt->fetchAll();
+        }
+
+        $members = array_values($usersMap);
+        jsonResponse([
+            'members' => $members,
+            'invitations' => $invitations,
+            'folders' => $folders,
+            'projects' => $projects,
+            'groups' => $groups
+        ]);
+    }
+
+    if ($path === 'team/access-matrix/permissions' && $method === 'POST') {
+        $user = requireAuth();
+        $targetUserId = $body['user_id'] ?? '';
+        $type = $body['type'] ?? '';
+        $targetId = $body['target_id'] ?? '';
+        $role = $body['role'] ?? '';
+
+        if (!$targetUserId || !$type || !$targetId || !$role) errorResponse('Fehlende Parameter', 400);
+
+        if ($type === 'folder') {
+            if ($role === 'none') {
+                $db->prepare("DELETE FROM folder_members WHERE folder_id = ? AND user_id = ?")->execute([$targetId, $targetUserId]);
+            } else {
+                $stmt = $db->prepare("SELECT id FROM folder_members WHERE folder_id = ? AND user_id = ?");
+                $stmt->execute([$targetId, $targetUserId]);
+                $ex = $stmt->fetch();
+                if ($ex) {
+                    $db->prepare("UPDATE folder_members SET role = ? WHERE id = ?")->execute([$role, $ex['id']]);
+                } else {
+                    $id = 'fm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO folder_members (id, folder_id, user_id, role) VALUES (?, ?, ?, ?)")->execute([$id, $targetId, $targetUserId, $role]);
+                }
+            }
+        } elseif ($type === 'project') {
+            if ($role === 'none') {
+                $db->prepare("DELETE FROM project_members WHERE project_id = ? AND user_id = ?")->execute([$targetId, $targetUserId]);
+            } else {
+                $stmt = $db->prepare("SELECT id FROM project_members WHERE project_id = ? AND user_id = ?");
+                $stmt->execute([$targetId, $targetUserId]);
+                $ex = $stmt->fetch();
+                if ($ex) {
+                    $db->prepare("UPDATE project_members SET role = ? WHERE id = ?")->execute([$role, $ex['id']]);
+                } else {
+                    $id = 'pm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO project_members (id, project_id, user_id, role) VALUES (?, ?, ?, ?)")->execute([$id, $targetId, $targetUserId, $role]);
+                }
+            }
+        }
+        jsonResponse(['success' => true]);
+    }
+
+    if (preg_match('#^companies/invitations/([^/]+)$#', $path, $matches) && $method === 'DELETE') {
+        $user = requireAuth();
+        $inviteId = $matches[1];
+        $db->prepare("DELETE FROM company_invitations WHERE id = ?")->execute([$inviteId]);
+        jsonResponse(['success' => true, 'message' => 'Einladung widerrufen']);
     }
 
     // 16b. GET companies/members (Company Admin lists company members)

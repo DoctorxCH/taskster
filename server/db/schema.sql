@@ -319,3 +319,43 @@ CREATE TABLE IF NOT EXISTS contacts (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT
 );
+
+-- ===========================================================================
+-- BENUTZERGRUPPEN & GRUPPENBERECHTIGUNGEN (Free & Company)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS user_groups (
+  id TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT NOT NULL DEFAULT '#0891B2',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS user_group_members (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES user_groups(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(group_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS project_group_access (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  group_id TEXT NOT NULL REFERENCES user_groups(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'editor',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(project_id, group_id)
+);
+
+CREATE TABLE IF NOT EXISTS folder_group_access (
+  id TEXT PRIMARY KEY,
+  folder_id TEXT NOT NULL REFERENCES project_folders(id) ON DELETE CASCADE,
+  group_id TEXT NOT NULL REFERENCES user_groups(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'editor',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(folder_id, group_id)
+);

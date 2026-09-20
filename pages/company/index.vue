@@ -246,6 +246,278 @@
         </div>
       </div>
 
+      <!-- TAB: ZUGRIFFSMATRIX -->
+      <div v-else-if="activeTab === 'matrix'" class="space-y-6">
+        <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Zugriffsmatrix &amp; Berechtigungsübersicht</h3>
+              <p class="text-xs text-slate-600 font-medium">Wer wurde wo eingeladen, wer hat Zugriff auf welche Ordner und Projekte.</p>
+            </div>
+            <input
+              v-model="matrixSearch"
+              type="text"
+              placeholder="Nach Name oder E-Mail filtern..."
+              class="w-full sm:w-64 px-3.5 py-2 bg-white/80 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
+            />
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200/80 rounded-2xl bg-white/70">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-white/90 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
+                <tr>
+                  <th class="py-3 px-4">Mitarbeiter</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Gruppen</th>
+                  <th class="py-3 px-4">Zugriff (Ordner &amp; Projekte)</th>
+                  <th class="py-3 px-4 text-right">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200/60 text-slate-800">
+                <tr v-for="m in filteredMatrixMembers" :key="m.id" class="hover:bg-white/60 transition">
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        {{ (m.name || m.email || '?').charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>{{ m.name }}</span>
+                          <span v-if="m.is_self" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">DU</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 truncate">{{ m.email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Aktiv
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex flex-wrap gap-1">
+                      <span
+                        v-for="g in m.groups"
+                        :key="g.id"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold text-white shrink-0"
+                        :style="{ backgroundColor: g.color || '#0891B2' }"
+                      >
+                        {{ g.name }}
+                      </span>
+                      <span v-if="!m.groups || m.groups.length === 0" class="text-slate-400 text-[11px] italic">
+                        —
+                      </span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex flex-wrap gap-1.5 max-w-md">
+                      <span
+                        v-for="f in matrixData.folders"
+                        v-show="m.folder_access && m.folder_access[f.id] && m.folder_access[f.id].role !== 'none'"
+                        :key="'f_' + f.id"
+                        class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
+                        :class="getRoleBadgeClass(m.folder_access[f.id].role)"
+                      >
+                        <span>📁 {{ f.name }}</span>
+                        <span class="font-bold uppercase text-[9px]">({{ m.folder_access[f.id].role }})</span>
+                      </span>
+
+                      <span
+                        v-for="p in matrixData.projects"
+                        v-show="m.project_access && m.project_access[p.id] && m.project_access[p.id].role !== 'none' && (!m.folder_access || !m.folder_access[p.folder_id] || m.folder_access[p.folder_id].role === 'none')"
+                        :key="'p_' + p.id"
+                        class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
+                        :class="getRoleBadgeClass(m.project_access[p.id].role)"
+                      >
+                        <span>📄 {{ p.title }}</span>
+                        <span class="font-bold uppercase text-[9px]">({{ m.project_access[p.id].role }})</span>
+                      </span>
+
+                      <span v-if="hasNoAccess(m)" class="text-slate-400 text-[11px] italic">
+                        Kein spezifischer Zugriff
+                      </span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      class="taskster_button_light px-3 text-xs h-[30px] rounded-md cursor-pointer"
+                      @click="openMemberAccessModal(m)"
+                    >
+                      Rechte anpassen
+                    </button>
+                  </td>
+                </tr>
+
+                <tr v-for="inv in matrixData.invitations" :key="inv.id" class="bg-amber-50/40 hover:bg-amber-50/60 transition">
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-xs font-bold shrink-0">
+                        ✉️
+                      </div>
+                      <div class="min-w-0">
+                        <div class="font-bold text-slate-900">{{ inv.email }}</div>
+                        <div class="text-[11px] text-slate-500">Eingeladen von {{ inv.invited_by_name || 'Admin' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      Ausstehend
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-slate-400 italic text-[11px]">—</td>
+                  <td class="py-3 px-4 text-slate-600 text-[11px]">
+                    {{ inv.role === 'admin' ? 'Co-Admin (Vollzugriff)' : 'Mitarbeiter' }}
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <div class="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        class="taskster_button_light px-2.5 text-xs h-[30px] rounded-md cursor-pointer"
+                        @click="copyInviteLink(inv.token)"
+                      >
+                        🔗 Link
+                      </button>
+                      <button
+                        type="button"
+                        class="taskster_button_accent px-2.5 text-xs h-[30px] rounded-md cursor-pointer"
+                        @click="revokeInvitation(inv.id)"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr v-if="filteredMatrixMembers.length === 0 && (!matrixData.invitations || matrixData.invitations.length === 0)">
+                  <td colspan="5" class="py-8 text-center text-slate-500 text-xs italic">
+                    Keine Mitarbeiter oder Einladungen gefunden.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: GRUPPEN -->
+      <div v-else-if="activeTab === 'groups'" class="space-y-6">
+        <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Benutzergruppen &amp; Gruppenrechte</h3>
+              <p class="text-xs text-slate-600 font-medium">Erstelle Gruppen und berechtige sie gebündelt auf Ordner und Projekte.</p>
+            </div>
+            <button
+              type="button"
+              class="taskster_button shrink-0"
+              @click="openCreateGroupModal"
+            >
+              <span>+ Neue Gruppe erstellen</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              v-for="g in groupsList"
+              :key="g.id"
+              class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-xs space-y-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-4 h-4 rounded-full shrink-0" :style="{ backgroundColor: g.color || '#0891B2' }" />
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-900 truncate">{{ g.name }}</h4>
+                    <p v-if="g.description" class="text-[11px] text-slate-500 line-clamp-1">{{ g.description }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    class="taskster_button_light px-2.5 text-xs h-[28px] rounded-md cursor-pointer"
+                    @click="openEditGroupModal(g)"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    class="taskster_button_accent px-2 text-xs h-[28px] rounded-md cursor-pointer"
+                    @click="deleteGroup(g.id)"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-bold text-slate-600 mb-1">
+                  Mitglieder ({{ g.members?.length || 0 }}):
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="m in g.members"
+                    :key="m.user_id"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                  >
+                    {{ m.user_name || m.user_email }}
+                  </span>
+                  <span v-if="!g.members || g.members.length === 0" class="text-[11px] text-slate-400 italic">
+                    Keine Mitglieder zugewiesen
+                  </span>
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="f in g.folders"
+                    :key="f.folder_id"
+                    class="px-2 py-0.5 rounded text-[10px] font-medium border border-cyan-200 bg-cyan-50 text-cyan-800"
+                  >
+                    📁 {{ f.folder_name }} ({{ f.role }})
+                  </span>
+                  <span
+                    v-for="p in g.projects"
+                    :key="p.project_id"
+                    class="px-2 py-0.5 rounded text-[10px] font-medium border border-teal-200 bg-teal-50 text-teal-800"
+                  >
+                    📄 {{ p.project_title }} ({{ p.role }})
+                  </span>
+                  <span v-if="(!g.folders || g.folders.length === 0) && (!g.projects || g.projects.length === 0)" class="text-[11px] text-slate-400 italic">
+                    Keine Ordner oder Projekte zugewiesen
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="taskster_button_light px-3 text-xs h-[30px] rounded-md cursor-pointer shrink-0"
+                  @click="openAssignGroupModal(g)"
+                >
+                  + Zuweisen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="groupsList.length === 0" class="p-8 text-center rounded-2xl border border-dashed border-slate-200">
+            <div class="text-3xl mb-2">🏷️</div>
+            <h4 class="text-sm font-bold text-slate-900 mb-1">Noch keine Gruppen vorhanden</h4>
+            <p class="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
+              Erstelle deine erste Gruppe (z.B. Bauleiter, Architekten, Finanzen) und weise ihr gezielt Berechtigungen zu.
+            </p>
+            <button
+              type="button"
+              class="taskster_button"
+              @click="openCreateGroupModal"
+            >
+              <span>Erste Gruppe erstellen</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB: FIRMENVORLAGEN -->
       <div v-else-if="activeTab === 'templates'" class="space-y-6">
         <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
@@ -783,6 +1055,241 @@
         </form>
       </div>
     </div>
+
+    <!-- MODAL: Gruppe erstellen / bearbeiten -->
+    <div v-if="showGroupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 class="text-base font-bold text-slate-900">
+            {{ editingGroupId ? 'Gruppe bearbeiten' : 'Neue Gruppe erstellen' }}
+          </h3>
+          <button @click="showGroupModal = false" class="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <form @submit.prevent="saveGroup" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Gruppenname</label>
+            <input
+              v-model="groupForm.name"
+              type="text"
+              required
+              placeholder="z.B. Bauleiter, Architekten, Finanzen"
+              class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung (optional)</label>
+            <input
+              v-model="groupForm.description"
+              type="text"
+              placeholder="Kurze Beschreibung der Gruppe"
+              class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Farbkennzeichnung</label>
+            <div class="flex items-center gap-2">
+              <button
+                v-for="c in colorOptions"
+                :key="c"
+                type="button"
+                class="w-7 h-7 rounded-full transition-transform cursor-pointer flex items-center justify-center"
+                :style="{ backgroundColor: c }"
+                :class="groupForm.color === c ? 'ring-2 ring-offset-2 ring-slate-800 scale-110' : ''"
+                @click="groupForm.color = c"
+              >
+                <Check v-if="groupForm.color === c" class="w-3.5 h-3.5 text-white" />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-2">
+              Mitglieder zuweisen ({{ groupForm.member_ids.length }})
+            </label>
+            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1">
+              <label
+                v-for="u in availableTeamUsers"
+                :key="u.id"
+                class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"
+              >
+                <input
+                  type="checkbox"
+                  :value="u.id"
+                  v-model="groupForm.member_ids"
+                  class="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                />
+                <span class="font-medium text-slate-800">{{ u.name }}</span>
+                <span class="text-slate-400 font-mono text-[10px]">({{ u.email }})</span>
+              </label>
+              <div v-if="availableTeamUsers.length === 0" class="text-[11px] text-slate-400 italic py-2 text-center">
+                Keine weiteren Mitglieder verfügbar.
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              class="taskster_button_light px-4 text-xs h-[38px] rounded-lg cursor-pointer"
+              @click="showGroupModal = false"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+              :disabled="savingGroup || !groupForm.name.trim()"
+            >
+              {{ savingGroup ? 'Speichern...' : 'Speichern' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Gruppenrechte zuweisen -->
+    <div v-if="showAssignGroupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Gruppenrechte zuweisen</h3>
+            <p class="text-xs text-slate-500">{{ assignGroupTarget?.name }}</p>
+          </div>
+          <button @click="showAssignGroupModal = false" class="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <form @submit.prevent="submitAssignGroup" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Typ auswählen</label>
+            <select v-model="assignForm.type" class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600">
+              <option value="folder">Ordner</option>
+              <option value="project">Projekt</option>
+            </select>
+          </div>
+
+          <div v-if="assignForm.type === 'folder'">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ordner</label>
+            <select v-model="assignForm.target_id" class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600" required>
+              <option value="">-- Ordner wählen --</option>
+              <option v-for="f in matrixData.folders" :key="f.id" :value="f.id">
+                📁 {{ f.name }}
+              </option>
+            </select>
+          </div>
+
+          <div v-else>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Projekt</label>
+            <select v-model="assignForm.target_id" class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600" required>
+              <option value="">-- Projekt wählen --</option>
+              <option v-for="p in matrixData.projects" :key="p.id" :value="p.id">
+                📄 {{ p.title }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Berechtigung</label>
+            <select v-model="assignForm.role" class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600">
+              <option value="editor">Editor (Bearbeiten &amp; Erstellen)</option>
+              <option value="viewer">Viewer (Nur Lesezugriff)</option>
+              <option value="admin">Admin (Vollzugriff inkl. Freigabe)</option>
+              <option value="none">Zugriff entfernen</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              class="taskster_button_light px-4 text-xs h-[38px] rounded-lg cursor-pointer"
+              @click="showAssignGroupModal = false"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+              :disabled="savingAssignment || !assignForm.target_id"
+            >
+              {{ savingAssignment ? 'Speichern...' : 'Zuweisen' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Individuelle Benutzerrechte bearbeiten -->
+    <div v-if="showMemberAccessModal && selectedMember" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Rechte für Mitarbeiter anpassen</h3>
+            <p class="text-xs text-slate-500">{{ selectedMember.name }} ({{ selectedMember.email }})</p>
+          </div>
+          <button @click="showMemberAccessModal = false" class="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Ordner-Berechtigungen</label>
+            <div class="space-y-2">
+              <div
+                v-for="f in matrixData.folders"
+                :key="f.id"
+                class="flex items-center justify-between p-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+              >
+                <span class="font-medium text-slate-900">📁 {{ f.name }}</span>
+                <select
+                  :value="selectedMember.folder_access?.[f.id]?.role || 'none'"
+                  @change="onUpdatePermission(selectedMember.id, 'folder', f.id, ($event.target as HTMLSelectElement).value)"
+                  class="px-2 py-1 text-xs bg-white border border-slate-300 rounded-lg"
+                >
+                  <option value="none">Kein Zugriff</option>
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Projekt-Berechtigungen</label>
+            <div class="space-y-2">
+              <div
+                v-for="p in matrixData.projects"
+                :key="p.id"
+                class="flex items-center justify-between p-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+              >
+                <span class="font-medium text-slate-900">📄 {{ p.title }}</span>
+                <select
+                  :value="selectedMember.project_access?.[p.id]?.role || 'none'"
+                  @change="onUpdatePermission(selectedMember.id, 'project', p.id, ($event.target as HTMLSelectElement).value)"
+                  class="px-2 py-1 text-xs bg-white border border-slate-300 rounded-lg"
+                >
+                  <option value="none">Kein Zugriff</option>
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            @click="showMemberAccessModal = false"
+          >
+            Fertig
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -818,10 +1325,12 @@ definePageMeta({
 
 const { user, authHeaders, initAuth } = useAuth()
 
-type TabKey = 'members' | 'templates' | 'billing' | 'settings' | 'support'
+type TabKey = 'members' | 'matrix' | 'groups' | 'templates' | 'billing' | 'settings' | 'support'
 
 const tabs: { key: TabKey; label: string; icon: string }[] = [
   { key: 'members', label: 'Mitarbeiter & Co-Admins', icon: '👥' },
+  { key: 'matrix', label: 'Zugriffsmatrix', icon: '🛡️' },
+  { key: 'groups', label: 'Gruppen & Berechtigungen', icon: '🏷️' },
   { key: 'templates', label: 'Firmenvorlagen', icon: '📋' },
   { key: 'billing', label: 'Plan & Lizenzen', icon: '💳' },
   { key: 'settings', label: 'Firmen-Einstellungen', icon: '⚙️' },
@@ -829,6 +1338,233 @@ const tabs: { key: TabKey; label: string; icon: string }[] = [
 ]
 
 const activeTab = ref<TabKey>('members')
+
+// ---------------------------------------------------------------
+// Zugriffsmatrix & Gruppen State
+// ---------------------------------------------------------------
+const matrixSearch = ref('')
+const matrixData = ref<{
+  members: any[]
+  invitations: any[]
+  folders: any[]
+  projects: any[]
+}>({
+  members: [],
+  invitations: [],
+  folders: [],
+  projects: []
+})
+
+const filteredMatrixMembers = computed(() => {
+  const q = matrixSearch.value.trim().toLowerCase()
+  if (!q) return matrixData.value.members
+  return matrixData.value.members.filter(m =>
+    m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q)
+  )
+})
+
+const groupsList = ref<any[]>([])
+const showGroupModal = ref(false)
+const editingGroupId = ref<string | null>(null)
+const savingGroup = ref(false)
+const colorOptions = ['#0891B2', '#0D9488', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#EF4444']
+
+const groupForm = ref({
+  name: '',
+  description: '',
+  color: '#0891B2',
+  member_ids: [] as string[]
+})
+
+const availableTeamUsers = computed(() => {
+  return matrixData.value.members.map(m => ({ id: m.id, name: m.name, email: m.email }))
+})
+
+const showAssignGroupModal = ref(false)
+const assignGroupTarget = ref<any>(null)
+const savingAssignment = ref(false)
+const assignForm = ref({
+  type: 'folder' as 'folder' | 'project',
+  target_id: '',
+  role: 'editor' as string
+})
+
+const showMemberAccessModal = ref(false)
+const selectedMember = ref<any>(null)
+
+function getRoleBadgeClass(role: string) {
+  if (role === 'owner') return 'bg-purple-100 text-purple-900 border-purple-300'
+  if (role === 'admin') return 'bg-emerald-100 text-emerald-900 border-emerald-300'
+  if (role === 'editor') return 'bg-cyan-100 text-cyan-900 border-cyan-300'
+  return 'bg-slate-100 text-slate-700 border-slate-300'
+}
+
+function hasNoAccess(m: any) {
+  const hasFolder = m.folder_access && Object.values(m.folder_access).some((a: any) => a.role !== 'none')
+  const hasProject = m.project_access && Object.values(m.project_access).some((a: any) => a.role !== 'none')
+  return !hasFolder && !hasProject
+}
+
+async function loadTeamData() {
+  try {
+    const [matrixRes, groupsRes] = await Promise.all([
+      $fetch<any>('/api/team/access-matrix', { headers: authHeaders() }).catch(() => ({ members: [], invitations: [], folders: [], projects: [] })),
+      $fetch<any>('/api/groups', { headers: authHeaders() }).catch(() => ({ groups: [] }))
+    ])
+    matrixData.value = matrixRes
+    groupsList.value = groupsRes.groups || []
+  } catch (err) {
+    console.error('Failed to load team data in company portal', err)
+  }
+}
+
+function openCreateGroupModal() {
+  editingGroupId.value = null
+  groupForm.value = {
+    name: '',
+    description: '',
+    color: '#0891B2',
+    member_ids: []
+  }
+  showGroupModal.value = true
+}
+
+function openEditGroupModal(g: any) {
+  editingGroupId.value = g.id
+  groupForm.value = {
+    name: g.name,
+    description: g.description || '',
+    color: g.color || '#0891B2',
+    member_ids: (g.members || []).map((m: any) => m.user_id)
+  }
+  showGroupModal.value = true
+}
+
+async function saveGroup() {
+  if (!groupForm.value.name.trim()) return
+  savingGroup.value = true
+  try {
+    if (editingGroupId.value) {
+      await $fetch(`/api/groups/${editingGroupId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: groupForm.value
+      })
+      flash('Gruppe aktualisiert.')
+    } else {
+      await $fetch('/api/groups', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: groupForm.value
+      })
+      flash('Gruppe erstellt.')
+    }
+    showGroupModal.value = false
+    await loadTeamData()
+  } catch (err: any) {
+    flashError(err, 'Fehler beim Speichern der Gruppe')
+  } finally {
+    savingGroup.value = false
+  }
+}
+
+async function deleteGroup(groupId: string) {
+  if (!confirm('Möchtest du diese Gruppe wirklich löschen?')) return
+  try {
+    await $fetch(`/api/groups/${groupId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    flash('Gruppe gelöscht.')
+    await loadTeamData()
+  } catch (err: any) {
+    flashError(err, 'Fehler beim Löschen der Gruppe')
+  }
+}
+
+function openAssignGroupModal(g: any) {
+  assignGroupTarget.value = g
+  assignForm.value = {
+    type: 'folder',
+    target_id: matrixData.value.folders[0]?.id || '',
+    role: 'editor'
+  }
+  showAssignGroupModal.value = true
+}
+
+async function submitAssignGroup() {
+  if (!assignGroupTarget.value || !assignForm.value.target_id) return
+  savingAssignment.value = true
+  try {
+    await $fetch(`/api/groups/${assignGroupTarget.value.id}/assign`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: assignForm.value
+    })
+    flash('Gruppenberechtigung zugewiesen.')
+    showAssignGroupModal.value = false
+    await loadTeamData()
+  } catch (err: any) {
+    flashError(err, 'Fehler beim Zuweisen der Gruppenberechtigung')
+  } finally {
+    savingAssignment.value = false
+  }
+}
+
+function openMemberAccessModal(m: any) {
+  selectedMember.value = m
+  showMemberAccessModal.value = true
+}
+
+async function onUpdatePermission(userId: string, targetType: 'folder' | 'project', targetId: string, role: string) {
+  try {
+    await $fetch('/api/team/access-matrix/permissions', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        user_id: userId,
+        target_type: targetType,
+        target_id: targetId,
+        role: role
+      }
+    })
+    if (selectedMember.value && selectedMember.value.id === userId) {
+      if (targetType === 'folder') {
+        if (!selectedMember.value.folder_access) selectedMember.value.folder_access = {}
+        if (role === 'none') delete selectedMember.value.folder_access[targetId]
+        else selectedMember.value.folder_access[targetId] = { role }
+      } else {
+        if (!selectedMember.value.project_access) selectedMember.value.project_access = {}
+        if (role === 'none') delete selectedMember.value.project_access[targetId]
+        else selectedMember.value.project_access[targetId] = { role }
+      }
+    }
+    flash('Berechtigung aktualisiert.')
+    await loadTeamData()
+  } catch (err: any) {
+    flashError(err, 'Fehler beim Aktualisieren der Berechtigung')
+  }
+}
+
+async function revokeInvitation(id: string) {
+  if (!confirm('Einladung wirklich widerrufen?')) return
+  try {
+    await $fetch(`/api/companies/invitations/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    flash('Einladung widerrufen.')
+    await loadTeamData()
+  } catch (err: any) {
+    flashError(err, 'Fehler beim Widerrufen der Einladung')
+  }
+}
+
+watch(activeTab, (v) => {
+  if (v === 'matrix' || v === 'groups') {
+    loadTeamData()
+  }
+})
 
 const company = ref<any>(null)
 const stats = ref<any>({})
@@ -918,7 +1654,7 @@ const loadCompanyData = async () => {
     settingsForm.value.name = details.company?.name || ''
     settingsForm.value.allow_document_upload = details.company?.settings?.allow_document_upload !== false
 
-    await Promise.all([loadTemplates(), loadInvitations()])
+    await Promise.all([loadTemplates(), loadInvitations(), loadTeamData()])
   } catch (err: any) {
     if (err?.statusCode === 403 || err?.statusCode === 401) {
       navigateTo('/dashboard')
