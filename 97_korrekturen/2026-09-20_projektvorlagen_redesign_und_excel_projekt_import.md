@@ -34,7 +34,7 @@
 ## 3. Änderungen Backend & DB
 - **Vorlagen-Bibliothek (Erweiterung auf 12 Standard-Vorlagen):**
   - Gewerbe:
-    1. Bau- & Tiefbauleitung (LWL / Glasfaser)
+    1. Neues Projekt
     2. IT-Systemhaus & Software-Entwicklung
     3. Handwerk & Elektroinstallation
     4. Sanitär, Heizung & Haustechnik (SHK) [NEU]

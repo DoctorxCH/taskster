@@ -1,7 +1,7 @@
 export const defaultProjectTemplates = [
   {
     id: 'tmpl_lwl_tiefbau',
-    name: 'Bau- & Tiefbauleitung (LWL / Glasfaser)',
+    name: 'Neues Projekt',
     category: 'job',
     subcategory: 'Tiefbau & Glasfaser',
     description: 'Vorkonfigurierte Bauleitung für Telekommunikation, Grabenbau, Rohrverlegung, Spleissen und OTDR-Dämpfungsmessung.',

@@ -40,10 +40,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const projectId = 'prj_' + randomUUID().substring(0, 8)
+  const currency = String(body.currency || 'CHF').trim()
+  const budgetHours = body.budget_hours != null && body.budget_hours !== '' ? Number(body.budget_hours) : 0
+  const budgetAmount = body.budget_amount != null && body.budget_amount !== '' ? Number(body.budget_amount) : 0
+  const customData = body.custom_data && typeof body.custom_data === 'object' ? JSON.stringify(body.custom_data) : '{}'
+  const visibility = (user.company_id && body.visibility === 'company') ? 'company' : 'private'
+
   db.prepare(`
-    INSERT INTO projects (id, folder_id, title, status)
-    VALUES (?, ?, ?, 'active')
-  `).run(projectId, folder_id, title.trim())
+    INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
+    VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)
+  `).run(projectId, folder_id, title.trim(), visibility, currency, budgetHours, budgetAmount, customData)
 
   // Determine lists to create
   const listsToCreate: string[] = []
