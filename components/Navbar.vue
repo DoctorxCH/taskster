@@ -67,6 +67,74 @@
 
       <!-- Right: Role Badges & User Actions -->
       <div v-if="user" class="flex items-center gap-2 sm:gap-3">
+        <!-- Benachrichtigungen -->
+        <div class="relative">
+          <button
+            type="button"
+            class="relative h-9 w-9 flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            :title="unreadCount > 0 ? `${unreadCount} ungelesene Benachrichtigungen` : 'Benachrichtigungen'"
+            @click="notifOpen = !notifOpen"
+          >
+            <Bell class="w-4.5 h-4.5" />
+            <span
+              v-if="unreadCount > 0"
+              class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center"
+            >
+              {{ unreadCount > 9 ? '9+' : unreadCount }}
+            </span>
+          </button>
+
+          <!-- Dropdown -->
+          <div v-if="notifOpen" class="fixed inset-0 z-40" @click="notifOpen = false" />
+          <div
+            v-if="notifOpen"
+            class="absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden"
+          >
+            <div class="flex items-center justify-between px-4 h-12 border-b border-slate-200">
+              <span class="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
+              <button
+                v-if="unreadCount > 0"
+                type="button"
+                class="text-[11px] font-semibold text-[#0891B2] hover:underline"
+                @click="markAllRead"
+              >
+                Alle gelesen
+              </button>
+            </div>
+
+            <div class="max-h-[360px] overflow-y-auto">
+              <div v-if="loading" class="py-8 text-center text-xs text-slate-500">Lade…</div>
+              <div v-else-if="recent.length === 0" class="py-8 px-4 text-center">
+                <Bell class="w-5 h-5 text-slate-300 mx-auto mb-2" />
+                <p class="text-xs text-slate-500">Keine Benachrichtigungen</p>
+              </div>
+              <button
+                v-for="n in recent"
+                :key="n.id"
+                type="button"
+                class="w-full text-left px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors flex gap-3"
+                :class="n.is_read ? 'opacity-60' : ''"
+                @click="openNotification(n)"
+              >
+                <span class="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" :class="n.is_read ? 'bg-transparent' : 'bg-[#0891B2]'" />
+                <span class="min-w-0 flex-1">
+                  <span class="block text-xs font-semibold text-slate-900 leading-snug">{{ n.title }}</span>
+                  <span v-if="n.message" class="block text-[11px] text-slate-500 mt-0.5 line-clamp-2">{{ n.message }}</span>
+                  <span class="block text-[10px] text-slate-400 mt-1">{{ relativeTime(n.created_at) }}</span>
+                </span>
+              </button>
+            </div>
+
+            <NuxtLink
+              to="/dashboard"
+              class="block px-4 h-11 flex items-center justify-center text-xs font-semibold text-slate-600 hover:bg-slate-50 border-t border-slate-200"
+              @click="notifOpen = false"
+            >
+              Alle im Dashboard anzeigen
+            </NuxtLink>
+          </div>
+        </div>
+
         <!-- Role / Plan Badges (Design v2 standard) -->
         <div class="hidden sm:flex items-center gap-1.5">
           <span
@@ -151,7 +219,8 @@
 import {
   Menu,
   Square,
-  LogOut
+  LogOut,
+  Bell
 } from 'lucide-vue-next'
 
 defineEmits<{
@@ -161,12 +230,42 @@ defineEmits<{
 
 const { user, logout, initAuth } = useAuth()
 const { state: stopwatchState, initStopwatch, openStopModal, formatSeconds } = useStopwatch()
+const { recent, unreadCount, loading, refresh, markRead, markAllRead } = useNotifications()
+
+const notifOpen = ref(false)
+
+function relativeTime(value: string) {
+  if (!value) return ''
+  const then = new Date(String(value).replace(' ', 'T')).getTime()
+  if (!Number.isFinite(then)) return ''
+  const diff = Math.floor((Date.now() - then) / 1000)
+  if (diff < 60) return 'gerade eben'
+  if (diff < 3600) return `vor ${Math.floor(diff / 60)} Min.`
+  if (diff < 86400) return `vor ${Math.floor(diff / 3600)} Std.`
+  if (diff < 604800) return `vor ${Math.floor(diff / 86400)} Tg.`
+  return new Date(then).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function openNotification(n: any) {
+  markRead(n)
+  notifOpen.value = false
+  if (n.reference_type === 'event') {
+    navigateTo('/calendar')
+  } else if (n.reference_type === 'task' && n.project_id) {
+    navigateTo(`/projects/${n.project_id}?task=${n.reference_id}`)
+  } else if (n.reference_type === 'project' && n.reference_id) {
+    navigateTo(`/projects/${n.reference_id}`)
+  } else {
+    navigateTo('/dashboard')
+  }
+}
 
 onMounted(async () => {
   initStopwatch()
   if (!user.value) {
     await initAuth()
   }
+  if (user.value) refresh(true)
 })
 </script>
 

@@ -342,6 +342,36 @@ const selectWallpaper = (file: string) => {
 onMounted(async () => {
   initWallpaper()
   await initAuth()
+  startNotificationPolling()
+})
+
+// ---------------------------------------------------------------------------
+// Benachrichtigungen: regelmässig nachladen und über die aktivierten Kanäle
+// (In-App, Browser, Ton) melden. Die Auswahl steuert users.settings.notifications.
+// ---------------------------------------------------------------------------
+let notificationTimer: ReturnType<typeof setInterval> | null = null
+
+async function startNotificationPolling() {
+  if (!import.meta.client) return
+  if (!user.value) return
+  const { refresh } = useNotifications()
+  await refresh(true)
+  if (notificationTimer) clearInterval(notificationTimer)
+  notificationTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refresh(true)
+  }, 60_000)
+}
+
+watch(user, (u) => {
+  if (u) startNotificationPolling()
+  else if (notificationTimer) {
+    clearInterval(notificationTimer)
+    notificationTimer = null
+  }
+})
+
+onBeforeUnmount(() => {
+  if (notificationTimer) clearInterval(notificationTimer)
 })
 </script>
 
