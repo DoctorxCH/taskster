@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto'
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { folder_id, title, template_id } = body
+  const { folder_id, title, template_id, custom_lists, import_tasks } = body
 
   if (!folder_id || !title || !title.trim()) {
     throw createError({ statusCode: 400, statusMessage: 'Ordner-ID und Projekttitel sind erforderlich' })
@@ -45,71 +45,113 @@ export default defineEventHandler(async (event) => {
     VALUES (?, ?, ?, 'active')
   `).run(projectId, folder_id, title.trim())
 
-  if (template_id) {
-    const tmpl = db.prepare('SELECT * FROM project_templates WHERE id = ?').get(template_id) as any
-    if (tmpl) {
-      const lists = tmpl.lists ? JSON.parse(tmpl.lists) : []
-      const fields = tmpl.fields ? JSON.parse(tmpl.fields) : []
-
-      if (lists && lists.length > 0) {
-        let order = 1
-        for (const listTitle of lists) {
-          const listId = 'lst_' + randomUUID().substring(0, 8)
-          db.prepare(`
-            INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-            VALUES (?, ?, ?, 'inherit', ?)
-          `).run(listId, projectId, listTitle, order++)
-        }
-      } else {
-        const listId = 'lst_' + randomUUID().substring(0, 8)
-        db.prepare(`
-          INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-          VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
-        `).run(listId, projectId)
+  // Determine lists to create
+  const listsToCreate: string[] = []
+  if (Array.isArray(custom_lists) && custom_lists.length > 0) {
+    for (const cl of custom_lists) {
+      const s = String(cl || '').trim()
+      if (s && !listsToCreate.includes(s)) {
+        listsToCreate.push(s)
       }
-
-      if (fields && fields.length > 0) {
-        const existingKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
-        const count = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
-        let sortOrder = count + 1
-
-        for (const f of fields) {
-          const fKey = f.field_key || f.label.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-          if (existingKeys.includes(fKey)) continue
-
-          const fId = 'fld_def_' + randomUUID().substring(0, 8)
-          db.prepare(`
-            INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            fId,
-            folder_id,
-            fKey,
-            f.label || fKey,
-            f.field_type || 'text',
-            f.entity_type || 'task',
-            JSON.stringify(f.options || []),
-            f.logic_rules ? JSON.stringify(f.logic_rules) : null,
-            f.is_required ? 1 : 0,
-            sortOrder++
-          )
-          existingKeys.push(fKey)
-        }
-      }
-    } else {
-      const listId = 'lst_' + randomUUID().substring(0, 8)
-      db.prepare(`
-        INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-        VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
-      `).run(listId, projectId)
     }
-  } else {
-    // Default initial list
+  }
+
+  let tmpl: any = null
+  if (template_id) {
+    tmpl = db.prepare('SELECT * FROM project_templates WHERE id = ?').get(template_id) as any
+    if (tmpl && listsToCreate.length === 0) {
+      const parsedLists = tmpl.lists ? JSON.parse(tmpl.lists) : []
+      if (Array.isArray(parsedLists)) {
+        for (const pl of parsedLists) {
+          const s = String(pl || '').trim()
+          if (s && !listsToCreate.includes(s)) {
+            listsToCreate.push(s)
+          }
+        }
+      }
+    }
+  }
+
+  if (Array.isArray(import_tasks) && import_tasks.length > 0) {
+    for (const it of import_tasks) {
+      const s = String(it.list_title || '').trim()
+      if (s && !listsToCreate.includes(s)) {
+        listsToCreate.push(s)
+      }
+    }
+  }
+
+  if (listsToCreate.length === 0) {
+    listsToCreate.push('Aufgabenliste 1')
+  }
+
+  const listMap = new Map<string, string>()
+  let firstListId = ''
+  let order = 1
+  for (const listTitle of listsToCreate) {
     const listId = 'lst_' + randomUUID().substring(0, 8)
+    if (!firstListId) firstListId = listId
     db.prepare(`
       INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-      VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
-    `).run(listId, projectId)
+      VALUES (?, ?, ?, 'inherit', ?)
+    `).run(listId, projectId, listTitle, order++)
+    listMap.set(listTitle.toLowerCase(), listId)
+  }
+
+  if (tmpl) {
+    const fields = tmpl.fields ? JSON.parse(tmpl.fields) : []
+    if (fields && fields.length > 0) {
+      const existingKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
+      const count = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
+      let sortOrder = count + 1
+
+      for (const f of fields) {
+        const fKey = f.field_key || f.label.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+        if (existingKeys.includes(fKey)) continue
+
+        const fId = 'fld_def_' + randomUUID().substring(0, 8)
+        db.prepare(`
+          INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          fId,
+          folder_id,
+          fKey,
+          f.label || fKey,
+          f.field_type || 'text',
+          f.entity_type || 'task',
+          JSON.stringify(f.options || []),
+          f.logic_rules ? JSON.stringify(f.logic_rules) : null,
+          f.is_required ? 1 : 0,
+          sortOrder++
+        )
+        existingKeys.push(fKey)
+      }
+    }
+  }
+
+  if (Array.isArray(import_tasks) && import_tasks.length > 0) {
+    const insTask = db.prepare(`
+      INSERT INTO tasks (id, list_id, title, description, status, priority, due_date, tags, custom_data)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    for (const taskItem of import_tasks) {
+      const tTitle = String(taskItem.title || '').trim()
+      if (!tTitle) continue
+
+      const targetSec = String(taskItem.list_title || '').trim().toLowerCase()
+      const targetListId = listMap.get(targetSec) || firstListId
+
+      const tId = 'tsk_' + randomUUID().substring(0, 8)
+      const tDesc = String(taskItem.description || '')
+      const tStatus = String(taskItem.status || 'todo')
+      const tPriority = String(taskItem.priority || 'normal')
+      const tDueDate = taskItem.due_date ? String(taskItem.due_date) : null
+      const tTags = taskItem.tags ? (Array.isArray(taskItem.tags) ? JSON.stringify(taskItem.tags) : JSON.stringify([taskItem.tags])) : '[]'
+      const tCustomData = taskItem.custom_data && typeof taskItem.custom_data === 'object' ? JSON.stringify(taskItem.custom_data) : '{}'
+
+      insTask.run(tId, targetListId, tTitle, tDesc, tStatus, tPriority, tDueDate, tTags, tCustomData)
+    }
   }
 
   return {

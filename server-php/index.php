@@ -52,8 +52,8 @@ function ensureTables($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        $count = $pdo->query("SELECT COUNT(*) FROM project_templates")->fetchColumn();
-        if ((int)$count === 0) {
+        $count = $pdo->query("SELECT COUNT(*) FROM project_templates WHERE is_system = 1")->fetchColumn();
+        if ((int)$count < 12) {
             seedTemplates($pdo);
         }
 
@@ -334,17 +334,17 @@ function seedTemplates($pdo) {
             'id' => 'tmpl_lwl_tiefbau',
             'name' => 'Bau- & Tiefbauleitung (LWL / Glasfaser)',
             'category' => 'job',
-            'subcategory' => 'bau',
+            'subcategory' => 'Tiefbau & Glasfaser',
             'description' => 'Vorkonfigurierte Bauleitung für Telekommunikation, Grabenbau, Rohrverlegung, Spleissen und OTDR-Dämpfungsmessung.',
             'icon' => 'HardHat',
-            'lists' => ["Planung / Trasse", "Tiefbau & Rohrverlegung", "Einblasen & Spleissen", "Messung & Abnahme", "Erledigt"],
+            'lists' => ["Planung & Trasse", "Tiefbau & Graben", "Rohrverlegung & Kalibrierung", "Einblasen & Spleissen", "Messung & Abnahme"],
             'fields' => [
                 [
                     'field_key' => 'gewerk',
                     'label' => 'Gewerk / Bauabschnitt',
                     'field_type' => 'select',
                     'entity_type' => 'project',
-                    'options' => ['Tiefbau & Graben', 'LWL / Spleissen', 'Kupfermontage'],
+                    'options' => ['Tiefbau & Graben', 'LWL / Spleissen', 'Kupfermontage', 'Oberflächenwiederherstellung'],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
@@ -371,7 +371,7 @@ function seedTemplates($pdo) {
                     'label' => 'OTDR Dämpfungsmessung',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Ja (Protokoll angehängt)', 'Nein (Mangel)', 'Nicht erforderlich'],
+                    'options' => ['Ja (Messprotokoll abgelegt)', 'Nein (Mangel / Nachprüfung)', 'Nicht erforderlich'],
                     'is_required' => false,
                     'logic_rules' => ['depends_on_field' => 'gewerk', 'depends_on_value' => 'LWL / Spleissen']
                 ],
@@ -390,17 +390,17 @@ function seedTemplates($pdo) {
             'id' => 'tmpl_it_software',
             'name' => 'IT-Systemhaus & Software-Entwicklung',
             'category' => 'job',
-            'subcategory' => 'it',
+            'subcategory' => 'IT & Software',
             'description' => 'Agiles Aufgaben- und Ticketmanagement für IT-Projekte, Bugtracking, Code-Reviews und Deployments.',
             'icon' => 'Laptop',
-            'lists' => ["Backlog", "In Bearbeitung (Sprint)", "Code Review & QA", "Deployment / Live"],
+            'lists' => ["Backlog & Anfragen", "In Bearbeitung (Sprint)", "Code Review & QA", "Deployment / Live"],
             'fields' => [
                 [
                     'field_key' => 'ticket_typ',
                     'label' => 'Ticket-Typ',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Feature', 'Bug / Fehler', 'Support / Wartung', 'Dokumentation'],
+                    'options' => ['Feature / Neuheit', 'Bug / Fehlfunktion', 'Support & Wartung', 'Dokumentation'],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
@@ -415,12 +415,12 @@ function seedTemplates($pdo) {
                 ],
                 [
                     'field_key' => 'bug_severity',
-                    'label' => 'Bug Severity',
+                    'label' => 'Fehler-Schweregrad',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Blocker (Systemausfall)', 'Major (Fehlfunktion)', 'Minor (Kosmetisch)'],
+                    'options' => ['Blocker (Systemausfall)', 'Major (Kernfunktion gestört)', 'Minor (Kosmetisch / UI)'],
                     'is_required' => false,
-                    'logic_rules' => ['depends_on_field' => 'ticket_typ', 'depends_on_value' => 'Bug / Fehler']
+                    'logic_rules' => ['depends_on_field' => 'ticket_typ', 'depends_on_value' => 'Bug / Fehlfunktion']
                 ],
                 [
                     'field_key' => 'aufwand_stunden',
@@ -437,8 +437,8 @@ function seedTemplates($pdo) {
             'id' => 'tmpl_elektro_handwerk',
             'name' => 'Handwerk & Elektroinstallation',
             'category' => 'job',
-            'subcategory' => 'handwerk',
-            'description' => 'Strukturierte Projektabwicklung vom Auftragseingang über Materialbeschaffung bis zur Abnahme und SiNa-Prüfung.',
+            'subcategory' => 'Handwerk & Montage',
+            'description' => 'Strukturierte Projektabwicklung vom Auftragseingang über Materialbeschaffung bis zur Montage und SiNa-Prüfung.',
             'icon' => 'Wrench',
             'lists' => ["Auftragseingang", "Materialbestellung", "Montage vor Ort", "Messung & SiNa-Prüfung", "Rechnung gestellt"],
             'fields' => [
@@ -481,20 +481,219 @@ function seedTemplates($pdo) {
             ]
         ],
         [
+            'id' => 'tmpl_shk_gebaeudetechnik',
+            'name' => 'Sanitär, Heizung & Haustechnik (SHK)',
+            'category' => 'job',
+            'subcategory' => 'Haustechnik',
+            'description' => 'Projektsteuerung für Heizungstausch, Badumbau, Wärmepumpen-Installation und Abnahmedokumentation.',
+            'icon' => 'Flame',
+            'lists' => ["Offerte & Vor-Ort-Check", "Bestellung & Disposition", "Demontage Altbestand", "Installation & Montage", "Inbetriebnahme & Übergabe"],
+            'fields' => [
+                [
+                    'field_key' => 'anlagenart',
+                    'label' => 'Art der Anlage',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Wärmepumpe Luft/Wasser', 'Wärmepumpe Erdsonde', 'Sanitär & Badumbau', 'Pellet / Holzheizung', 'Lüftung & Klima'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'hersteller_geraet',
+                    'label' => 'Hersteller & Modell',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'druckpruefung_ok',
+                    'label' => 'Druckprüfung erfolgt',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Ja (Protokoll vorhanden)', 'Ausstehend', 'Nicht erforderlich'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'foerdergelder_beantragt',
+                    'label' => 'Fördergelder beantragt',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Eingereicht', 'Bewilligt', 'Nicht zutreffend'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_marketing_social',
+            'name' => 'Marketing, Kampagnen & Social Media',
+            'category' => 'job',
+            'subcategory' => 'Marketing & Medien',
+            'description' => 'Redaktions- und Kampagnenplanung von Content-Erstellung bis zu Werbeschaltung und ROI-Erfolgsmessung.',
+            'icon' => 'Megaphone',
+            'lists' => ["Briefing & Ideen", "Texterstellung & Konzept", "Grafik & Video-Assets", "Review & Kundenfreigabe", "Veröffentlicht & Tracking"],
+            'fields' => [
+                [
+                    'field_key' => 'plattform',
+                    'label' => 'Kanal / Plattform',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Instagram & TikTok', 'LinkedIn & Xing', 'Website & Blog', 'E-Mail & Newsletter', 'Google Ads / Performance'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'werbebudget_chf',
+                    'label' => 'Ad-Spend / Budget (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'veroeffentlichungsdatum',
+                    'label' => 'Geplantes Go-Live-Datum',
+                    'field_type' => 'date',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_immobilien_bewirtschaftung',
+            'name' => 'Immobilien-Verkauf & Vermietung',
+            'category' => 'job',
+            'subcategory' => 'Immobilien',
+            'description' => 'Vollständige Abwicklung von Objektakquise, Exposé-Erstellung, Besichtigungsterminen bis zum Notartermin.',
+            'icon' => 'Building',
+            'lists' => ["Objektaufnahme & Unterlagen", "Marketing & Exposé", "Besichtigungstermine", "Kaufvertrags-Vorbereitung", "Notartermin & Übergabe"],
+            'fields' => [
+                [
+                    'field_key' => 'objekttyp',
+                    'label' => 'Objekt-Art',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Einfamilienhaus', 'Eigentumswohnung', 'Mehrfamilienhaus / Anlage', 'Gewerbe & Büro', 'Baugrundstück'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'verkaufspreis_chf',
+                    'label' => 'Richtpreis / Kaufpreis (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'grundbuch_auszug_vorhanden',
+                    'label' => 'Grundbuchauszug vorhanden',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Aktuell vorliegend', 'Bestellt / Ausstehend', 'Noch nicht angefordert'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_gastronomie_catering',
+            'name' => 'Gastronomie & Event-Catering',
+            'category' => 'job',
+            'subcategory' => 'Gastronomie & Events',
+            'description' => 'Planung von Banketten, Firmenfeiern, Menüabläufen, Personaleinsatz und Allergenmanagement.',
+            'icon' => 'Utensils',
+            'lists' => ["Anfrage & Menüauswahl", "Einkauf & Vorbereitung", "Equipment & Logistik", "Durchführung vor Ort", "Abrechnung & Feedback"],
+            'fields' => [
+                [
+                    'field_key' => 'anzahl_gaeste',
+                    'label' => 'Gästeanzahl (Personen)',
+                    'field_type' => 'number',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'menue_typ',
+                    'label' => 'Menü-Art',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['Mehrgang-Menü serviert', 'Buffet & Flying Dinner', 'Apéro Riche / Fingerfood', 'BBQ / Live-Cooking'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'allergene_hinweise',
+                    'label' => 'Diäten & Allergene',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_iso_qm_audit',
+            'name' => 'Qualitätsmanagement & ISO-Audit',
+            'category' => 'job',
+            'subcategory' => 'Qualitätsmanagement',
+            'description' => 'Auditvorbereitung, Prüfpfade, Korrekturmassnahmen (CAPA) und Sicherheits-Dokumentation.',
+            'icon' => 'ShieldCheck',
+            'lists' => ["Norm-Anforderungen & Lücken", "Interne Prüfung", "Korrekturmassnahmen (CAPA)", "Zertifizierungsaudit", "Abgeschlossen"],
+            'fields' => [
+                [
+                    'field_key' => 'iso_norm',
+                    'label' => 'Standard / Zertifizierung',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['ISO 9001 (Qualität)', 'ISO 27001 (Informationssicherheit)', 'ISO 14001 (Umwelt)', 'SUVA / Arbeitssicherheit'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'audit_befund',
+                    'label' => 'Audit-Befund',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Konform', 'Geringfügige Abweichung (Minor)', 'Schwere Abweichung (Major)', 'Empfehlung'],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'wirksamkeit_frist',
+                    'label' => 'Frist für Wirksamkeitsprüfung',
+                    'field_type' => 'date',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
             'id' => 'tmpl_hausbau_privat',
             'name' => 'Hausbau & Wohnungsrenovierung',
             'category' => 'private',
-            'subcategory' => 'renovierung',
+            'subcategory' => 'Renovierung & Bau',
             'description' => 'Perfekt für private Renovierungen, Sanierungen und Umbauten inklusive Gewerke- und Kostenübersicht.',
             'icon' => 'Home',
-            'lists' => ["Ideen & Recherche", "Offerten / Angebote einholen", "In Ausführung", "Fertiggestellt"],
+            'lists' => ["Ideen & Recherche", "Offerten / Angebote einholen", "In Ausführung", "Fertiggestellt & Abgenommen"],
             'fields' => [
                 [
                     'field_key' => 'raum',
                     'label' => 'Zimmer / Bereich',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Wohnzimmer', 'Küche', 'Badezimmer', 'Schlafzimmer', 'Garten / Terrasse', 'Keller / Technik'],
+                    'options' => ['Wohnzimmer', 'Küche', 'Badezimmer', 'Schlafzimmer', 'Garten & Terrasse', 'Keller & Technik'],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
@@ -540,17 +739,17 @@ function seedTemplates($pdo) {
             'id' => 'tmpl_event_privat',
             'name' => 'Event- & Feierplanung (Hochzeit, Fest)',
             'category' => 'private',
-            'subcategory' => 'event',
-            'description' => 'Organisation privater Feiern von Dienstleisterverträgen bis zum Ablaufplan am Eventtag.',
+            'subcategory' => 'Feier & Event',
+            'description' => 'Organisation privater Feiern von Dienstleisterverträgen bis zum detaillierten Ablaufplan am Eventtag.',
             'icon' => 'Sparkles',
-            'lists' => ["Planung & Ideen", "Buchungen & Verträge", "Woche vor dem Event", "Tag des Events", "Nachbereitung"],
+            'lists' => ["Planung & Inspiration", "Buchungen & Dienstleister", "Woche vor dem Event", "Tag des Events", "Nachbereitung & Danksagung"],
             'fields' => [
                 [
                     'field_key' => 'kategorie',
                     'label' => 'Event-Kategorie',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Location & Catering', 'Musik / DJ', 'Fotograf & Video', 'Deko & Blumen', 'Gäste & Einladungen'],
+                    'options' => ['Location & Catering', 'Musik / DJ / Band', 'Fotograf & Video', 'Deko & Floristik', 'Gäste & Einladungen'],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
@@ -559,7 +758,7 @@ function seedTemplates($pdo) {
                     'label' => 'Anzahlung geleistet',
                     'field_type' => 'select',
                     'entity_type' => 'task',
-                    'options' => ['Ja (Quittung vorhanden)', 'Nein (Offen)', 'Nicht erforderlich'],
+                    'options' => ['Ja (Quittung abgelegt)', 'Nein (Noch offen)', 'Nicht erforderlich'],
                     'is_required' => false,
                     'logic_rules' => []
                 ],
@@ -582,18 +781,111 @@ function seedTemplates($pdo) {
                     'logic_rules' => []
                 ]
             ]
+        ],
+        [
+            'id' => 'tmpl_umzug_privat',
+            'name' => 'Privater Umzug & Wohnungswechsel',
+            'category' => 'private',
+            'subcategory' => 'Wohnen & Umzug',
+            'description' => 'Reibungsloser Wohnungswechsel: Kündigungsfristen, Packliste, Transporter-Buchung und Adressänderungen.',
+            'icon' => 'Truck',
+            'lists' => ["Kündigungen & Verträge", "Vorbereitung & Kisten packen", "Umzugstag", "Neue Wohnung einrichten", "Behörden & Ummeldungen"],
+            'fields' => [
+                [
+                    'field_key' => 'umzug_kategorie',
+                    'label' => 'Aufgaben-Bereich',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Mietvertrag & Kündigung', 'Packen & Entrümpeln', 'Umzugshelfer / Transporter', 'Endreinigung & Abnahme', 'Ummeldung & Behörden'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'kisten_nummer',
+                    'label' => 'Kisten-Nr. / Zielraum',
+                    'field_type' => 'text',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'abnahmetermin',
+                    'label' => 'Wohnungsübergabetermin',
+                    'field_type' => 'date',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'tmpl_finanzen_steuer',
+            'name' => 'Finanzabschluss & Steuererklärung',
+            'category' => 'private',
+            'subcategory' => 'Finanzen & Vorsorge',
+            'description' => 'Sämtliche Steuerbelege, Lohnausweise, Vorsorgenachweise und Fristen übersichtlich gesammelt.',
+            'icon' => 'Calculator',
+            'lists' => ["Belege & Dokumente sammeln", "Abzüge & Vorsorge prüfen", "Erfassung in Steuer-Software", "Eingereicht & Prüfbescheid"],
+            'fields' => [
+                [
+                    'field_key' => 'steuerjahr',
+                    'label' => 'Steuerjahr',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => ['2024', '2025', '2026', '2027'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'beleg_art',
+                    'label' => 'Art des Nachweises',
+                    'field_type' => 'select',
+                    'entity_type' => 'task',
+                    'options' => ['Lohnausweis & Einkünfte', 'Säule 3a / Pensionskasseneinkauf', 'Krankheits- & Zahnarztkosten', 'Spendenbescheinigungen', 'Berufsauslagen & Weiterbildung', 'Liegenschaftskosten / Unterhalt'],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'beleg_betrag_chf',
+                    'label' => 'Betrag (CHF)',
+                    'field_type' => 'number',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'einreichfrist',
+                    'label' => 'Einreichungsfrist',
+                    'field_type' => 'date',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
         ]
     ];
 
-    $stmt = $pdo->prepare("
-        INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields)
-        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
-    ");
+    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM project_templates WHERE id = ?");
+    $insertStmt = $pdo->prepare("INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)");
+    $updateStmt = $pdo->prepare("UPDATE project_templates SET name = ?, category = ?, subcategory = ?, description = ?, icon = ?, is_system = 1, lists = ?, fields = ? WHERE id = ?");
+
     foreach ($defaults as $d) {
-        $stmt->execute([
-            $d['id'], $d['name'], $d['category'], $d['subcategory'], $d['description'],
-            $d['icon'], json_encode($d['lists']), json_encode($d['fields'])
-        ]);
+        $checkStmt->execute([$d['id']]);
+        if ((int)$checkStmt->fetchColumn() > 0) {
+            $updateStmt->execute([
+                $d['name'], $d['category'], $d['subcategory'], $d['description'],
+                $d['icon'], json_encode($d['lists']), json_encode($d['fields']), $d['id']
+            ]);
+        } else {
+            $insertStmt->execute([
+                $d['id'], $d['name'], $d['category'], $d['subcategory'], $d['description'],
+                $d['icon'], json_encode($d['lists']), json_encode($d['fields'])
+            ]);
+        }
     }
 }
 
@@ -2466,6 +2758,8 @@ try {
         $title = trim($body['title'] ?? '');
         $customData = $body['custom_data'] ?? [];
         $templateId = $body['template_id'] ?? null;
+        $customLists = $body['custom_lists'] ?? null;
+        $importTasks = $body['import_tasks'] ?? null;
         $currency = !empty($body['currency']) ? trim($body['currency']) : 'CHF';
         $budgetHours = array_key_exists('budget_hours', $body) && $body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : null;
         $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : null;
@@ -2496,59 +2790,112 @@ try {
             $pmId, $prjId, $user['id']
         ]);
 
+        // Listen / Abschnitte bestimmen
+        $listsToCreate = [];
+        if (!empty($customLists) && is_array($customLists)) {
+            foreach ($customLists as $cl) {
+                $cl = trim((string)$cl);
+                if ($cl !== '' && !in_array($cl, $listsToCreate)) {
+                    $listsToCreate[] = $cl;
+                }
+            }
+        }
+
+        $tmpl = null;
         if ($templateId) {
             $tStmt = $db->prepare("SELECT * FROM project_templates WHERE id = ?");
             $tStmt->execute([$templateId]);
             $tmpl = $tStmt->fetch();
-            if ($tmpl) {
-                $lists = !empty($tmpl['lists']) ? (is_string($tmpl['lists']) ? json_decode($tmpl['lists'], true) : $tmpl['lists']) : [];
-                $fields = !empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : [];
-
-                if (!empty($lists)) {
-                    $order = 1;
-                    foreach ($lists as $listTitle) {
-                        $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, 'inherit', ?)")
-                           ->execute([$lstId, $prjId, $listTitle, $order++]);
-                    }
-                } else {
-                    $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+            if ($tmpl && empty($listsToCreate)) {
+                $tLists = !empty($tmpl['lists']) ? (is_string($tmpl['lists']) ? json_decode($tmpl['lists'], true) : $tmpl['lists']) : [];
+                if (!empty($tLists) && is_array($tLists)) {
+                    $listsToCreate = $tLists;
                 }
-
-                if (!empty($fields)) {
-                    $existingFieldsStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
-                    $existingFieldsStmt->execute([$folderId]);
-                    $existingKeys = $existingFieldsStmt->fetchAll(PDO::FETCH_COLUMN);
-
-                    $countStmt = $db->prepare("SELECT COUNT(*) FROM folder_field_definitions WHERE folder_id = ?");
-                    $countStmt->execute([$folderId]);
-                    $sortOrder = (int)$countStmt->fetchColumn() + 1;
-
-                    foreach ($fields as $f) {
-                        $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
-                        if (in_array($fKey, $existingKeys)) continue;
-
-                        $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                        $fLabel = $f['label'] ?? $fKey;
-                        $fType = $f['field_type'] ?? 'text';
-                        $fEntity = $f['entity_type'] ?? 'task';
-                        $fOpts = $f['options'] ?? [];
-                        $fRules = $f['logic_rules'] ?? null;
-                        $fReq = !empty($f['is_required']) ? 1 : 0;
-
-                        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                           ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
-                        $existingKeys[] = $fKey;
-                    }
-                }
-            } else {
-                $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
             }
-        } else {
+        }
+
+        // Falls ueber import_tasks Abschnitte definiert wurden, die noch fehlen:
+        if (!empty($importTasks) && is_array($importTasks)) {
+            foreach ($importTasks as $it) {
+                $sec = trim((string)($it['list_title'] ?? ''));
+                if ($sec !== '' && !in_array($sec, $listsToCreate)) {
+                    $listsToCreate[] = $sec;
+                }
+            }
+        }
+
+        if (empty($listsToCreate)) {
+            $listsToCreate = ['Aufgabenliste 1'];
+        }
+
+        // Listen anlegen und Map speichern: strtolower(title) => list_id
+        $listMap = [];
+        $firstListId = null;
+        $order = 1;
+        foreach ($listsToCreate as $listTitle) {
             $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)")->execute([$lstId, $prjId]);
+            if (!$firstListId) $firstListId = $lstId;
+            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, 'inherit', ?)")
+               ->execute([$lstId, $prjId, $listTitle, $order++]);
+            $listMap[mb_strtolower(trim($listTitle))] = $lstId;
+        }
+
+        // Falls Vorlage gewaehlt wurde: Benutzerdefinierte Felder in den Ordner replizieren
+        if ($tmpl) {
+            $fields = !empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : [];
+            if (!empty($fields) && is_array($fields)) {
+                $existingFieldsStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
+                $existingFieldsStmt->execute([$folderId]);
+                $existingKeys = $existingFieldsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                $countStmt = $db->prepare("SELECT COUNT(*) FROM folder_field_definitions WHERE folder_id = ?");
+                $countStmt->execute([$folderId]);
+                $sortOrder = (int)$countStmt->fetchColumn() + 1;
+
+                foreach ($fields as $f) {
+                    $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
+                    if (in_array($fKey, $existingKeys)) continue;
+
+                    $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $fLabel = $f['label'] ?? $fKey;
+                    $fType = $f['field_type'] ?? 'text';
+                    $fEntity = $f['entity_type'] ?? 'task';
+                    $fOpts = $f['options'] ?? [];
+                    $fRules = $f['logic_rules'] ?? null;
+                    $fReq = !empty($f['is_required']) ? 1 : 0;
+
+                    $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                       ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
+                    $existingKeys[] = $fKey;
+                }
+            }
+        }
+
+        // Falls import_tasks uebergeben wurden: saemtliche Aufgaben anlegen
+        if (!empty($importTasks) && is_array($importTasks)) {
+            $insTask = $db->prepare("
+                INSERT INTO tasks (id, list_id, title, description, status, priority, due_date, tags, custom_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            foreach ($importTasks as $taskItem) {
+                $tTitle = trim((string)($taskItem['title'] ?? ''));
+                if ($tTitle === '') continue;
+
+                $targetSec = mb_strtolower(trim((string)($taskItem['list_title'] ?? '')));
+                $targetListId = isset($listMap[$targetSec]) ? $listMap[$targetSec] : $firstListId;
+
+                $tId = 'tsk_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $tDesc = (string)($taskItem['description'] ?? '');
+                $tStatus = (string)($taskItem['status'] ?? 'todo');
+                $tPriority = (string)($taskItem['priority'] ?? 'normal');
+                $tDueDate = !empty($taskItem['due_date']) ? (string)$taskItem['due_date'] : null;
+                $tTags = !empty($taskItem['tags']) ? (is_array($taskItem['tags']) ? json_encode($taskItem['tags']) : json_encode([$taskItem['tags']])) : '[]';
+                $tCustomData = !empty($taskItem['custom_data']) && is_array($taskItem['custom_data']) ? json_encode($taskItem['custom_data']) : '{}';
+
+                $insTask->execute([
+                    $tId, $targetListId, $tTitle, $tDesc, $tStatus, $tPriority, $tDueDate, $tTags, $tCustomData
+                ]);
+            }
         }
 
         jsonResponse(['project' => ['id' => $prjId, 'folder_id' => $folderId, 'title' => $title, 'status' => 'active']]);

@@ -23,7 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-vue-next": "^0.475.0",
     "mysql2": "^3.24.4",
-    "ssh2": "^1.17.0"
+    "ssh2": "^1.17.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nuxtjs/i18n": "^10.6.0",
