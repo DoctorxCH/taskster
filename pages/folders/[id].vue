@@ -93,6 +93,14 @@
               <span class="hidden sm:inline">Anpassen</span>
             </button>
             <button
+              @click="openImportProjectModal"
+              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
+              title="Projekt aus Excel / CSV importieren"
+            >
+              <FileUp class="w-3.5 h-3.5 text-slate-600" />
+              <span class="hidden sm:inline">Importieren</span>
+            </button>
+            <button
               @click="openNewProjectModal"
               class="taskster_button px-4 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1"
             >
@@ -1290,7 +1298,8 @@ import {
   ArrowRight,
   Star,
   LayoutGrid,
-  List
+  List,
+  FileUp
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 
@@ -1807,6 +1816,13 @@ const openNewProjectModal = () => {
   resetNewProjectForm()
   projectModalError.value = ''
   fetchTemplates()
+}
+
+const openImportProjectModal = () => {
+  showNewProjectModal.value = true
+  resetNewProjectForm()
+  projectCreationMode.value = 'import'
+  projectModalError.value = ''
 }
 
 const closeNewProjectModal = () => {
