@@ -286,6 +286,58 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS user_groups (
+      id VARCHAR(64) PRIMARY KEY,
+      owner_id VARCHAR(64) NOT NULL,
+      company_id VARCHAR(64) NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT NULL,
+      color VARCHAR(32) NOT NULL DEFAULT '#0891B2',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_ug_owner (owner_id),
+      INDEX idx_ug_company (company_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS user_group_members (
+      id VARCHAR(64) PRIMARY KEY,
+      group_id VARCHAR(64) NOT NULL,
+      user_id VARCHAR(64) NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_group_user (group_id, user_id),
+      INDEX idx_ugm_group (group_id),
+      INDEX idx_ugm_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS project_group_access (
+      id VARCHAR(64) PRIMARY KEY,
+      project_id VARCHAR(64) NOT NULL,
+      group_id VARCHAR(64) NOT NULL,
+      role VARCHAR(32) NOT NULL DEFAULT 'editor',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_pga_project_group (project_id, group_id),
+      INDEX idx_pga_project (project_id),
+      INDEX idx_pga_group (group_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS folder_group_access (
+      id VARCHAR(64) PRIMARY KEY,
+      folder_id VARCHAR(64) NOT NULL,
+      group_id VARCHAR(64) NOT NULL,
+      role VARCHAR(32) NOT NULL DEFAULT 'editor',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_fga_folder_group (folder_id, group_id),
+      INDEX idx_fga_folder (folder_id),
+      INDEX idx_fga_group (group_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   // Column migrations for MySQL
   const colMigrations = [
     "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",

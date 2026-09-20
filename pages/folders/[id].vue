@@ -1137,6 +1137,79 @@
           </form>
         </div>
 
+        <!-- Section 2b: Assign Group -->
+        <div class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-5">
+          <h4 class="text-xs font-bold text-slate-900 mb-2 flex items-center space-x-1.5">
+            <span>🏷️</span>
+            <span>Gruppe zum Ordner berechtigen</span>
+          </h4>
+          <form @submit.prevent="assignGroupToFolder" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Gruppe auswählen</label>
+                <select
+                  v-model="selectedAssignGroupId"
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
+                >
+                  <option value="">-- Gruppe wählen --</option>
+                  <option v-for="g in availableGroups" :key="g.id" :value="g.id">
+                    {{ g.name }} ({{ g.members?.length || 0 }} Mitglieder)
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Rolle für die Gruppe</label>
+                <div class="flex items-center space-x-2">
+                  <select
+                    v-model="selectedAssignGroupRole"
+                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
+                  >
+                    <option value="editor">Editor (Bearbeiten)</option>
+                    <option value="viewer">Viewer (Nur Lesen)</option>
+                    <option value="admin">Admin (Vollzugriff)</option>
+                  </select>
+                  <button
+                    type="submit"
+                    :disabled="assigningGroup || !selectedAssignGroupId"
+                    class="taskster_button px-4 text-xs h-[38px] rounded-lg cursor-pointer shrink-0"
+                  >
+                    <span>{{ assigningGroup ? '...' : '+ Zuweisen' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Assigned Groups List -->
+          <div v-if="assignedGroupsForFolder.length > 0" class="mt-3 pt-3 border-t border-slate-200 space-y-1.5">
+            <div class="text-[11px] font-bold text-slate-600">Zugewiesene Gruppen:</div>
+            <div
+              v-for="ag in assignedGroupsForFolder"
+              :key="ag.id"
+              class="flex items-center justify-between p-2 rounded-lg bg-cyan-50/60 border border-cyan-200 text-xs"
+            >
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: ag.color || '#0891B2' }"></span>
+                <span class="font-bold text-slate-900">{{ ag.name }}</span>
+                <span class="text-[10px] text-slate-500">({{ ag.members?.length || 0 }} Mitglieder)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white border border-cyan-300 text-cyan-800">
+                  {{ ag.role }}
+                </span>
+                <button
+                  type="button"
+                  @click="removeGroupFromFolder(ag.id)"
+                  class="text-rose-600 hover:text-rose-800 p-1 text-xs cursor-pointer font-bold"
+                  title="Gruppe entfernen"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Section 3: Current Members List -->
         <div>
           <h4 class="text-xs font-bold text-slate-900 mb-2.5 flex items-center justify-between">
@@ -1322,7 +1395,7 @@ const openShareFolderModal = async () => {
   newMemberEmail.value = ''
   newMemberUserId.value = ''
   newMemberRole.value = 'editor'
-  await loadFolderMembers()
+  await Promise.all([loadFolderMembers(), loadGroupsForFolder()])
 }
 
 const loadFolderMembers = async () => {
@@ -1409,6 +1482,78 @@ const removeFolderMember = async (userId: string) => {
     await loadFolderMembers()
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Entfernen des Mitglieds')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gruppen-Berechtigungen für Ordner
+// ---------------------------------------------------------------------------
+const availableGroups = ref<any[]>([])
+const selectedAssignGroupId = ref('')
+const selectedAssignGroupRole = ref('editor')
+const assigningGroup = ref(false)
+
+const assignedGroupsForFolder = computed(() => {
+  return availableGroups.value
+    .filter(g => (g.folders || []).some((f: any) => f.folder_id === folderId))
+    .map(g => {
+      const f = (g.folders || []).find((x: any) => x.folder_id === folderId)
+      return {
+        id: g.id,
+        name: g.name,
+        color: g.color,
+        members: g.members,
+        role: f?.role || 'editor'
+      }
+    })
+})
+
+const loadGroupsForFolder = async () => {
+  try {
+    const res = await $fetch<any>('/api/groups', { headers: authHeaders() })
+    availableGroups.value = res.groups || []
+  } catch {
+    availableGroups.value = []
+  }
+}
+
+const assignGroupToFolder = async () => {
+  if (!selectedAssignGroupId.value) return
+  assigningGroup.value = true
+  try {
+    await $fetch(`/api/groups/${selectedAssignGroupId.value}/assign`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        type: 'folder',
+        target_id: folderId,
+        role: selectedAssignGroupRole.value
+      }
+    })
+    selectedAssignGroupId.value = ''
+    await loadGroupsForFolder()
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || 'Fehler beim Zuweisen der Gruppe')
+  } finally {
+    assigningGroup.value = false
+  }
+}
+
+const removeGroupFromFolder = async (groupId: string) => {
+  if (!confirm('Gruppe wirklich von diesem Ordner entfernen?')) return
+  try {
+    await $fetch(`/api/groups/${groupId}/assign`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        type: 'folder',
+        target_id: folderId,
+        role: 'none'
+      }
+    })
+    await loadGroupsForFolder()
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || 'Fehler beim Entfernen der Gruppe')
   }
 }
 
