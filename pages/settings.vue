@@ -639,7 +639,11 @@ const { t, setLocale } = useI18n()
 
 async function onLanguageChange() {
   if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
-    await setLocale(settings.value.language)
+    try {
+      await setLocale(settings.value.language)
+    } catch (err) {
+      console.error('[i18n] Failed to switch locale:', err)
+    }
   }
 }
 
@@ -879,7 +883,11 @@ function applyUser() {
       }
     }
     if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
-      setLocale(settings.value.language)
+      try {
+        setLocale(settings.value.language)
+      } catch (err) {
+        console.error('[i18n] Failed to set initial locale:', err)
+      }
     }
   }
 
@@ -949,7 +957,11 @@ async function saveAll() {
     // Normalisierte Serverantwort als neue Basis übernehmen
     if (res.user?.settings) settings.value = res.user.settings
     if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
-      await setLocale(settings.value.language)
+      try {
+        await setLocale(settings.value.language)
+      } catch (err) {
+        console.error('[i18n] Failed to switch locale on save:', err)
+      }
     }
     baseline.value = snapshot()
 
