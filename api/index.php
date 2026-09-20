@@ -4794,7 +4794,19 @@ try {
         if (!$title) errorResponse('Betreff erforderlich', 400);
         if ($endAt < $startAt) errorResponse('Ende darf nicht vor dem Start liegen', 400);
 
-        $timeChanged = ($startAt !== $existing['start_at'] || $endAt !== $existing['end_at']);
+        $normStartNew = str_replace('T', ' ', trim($startAt));
+        if (strlen($normStartNew) === 16) $normStartNew .= ':00';
+
+        $normStartOld = str_replace('T', ' ', trim($existing['start_at']));
+        if (strlen($normStartOld) === 16) $normStartOld .= ':00';
+
+        $normEndNew = str_replace('T', ' ', trim($endAt));
+        if (strlen($normEndNew) === 16) $normEndNew .= ':00';
+
+        $normEndOld = str_replace('T', ' ', trim($existing['end_at']));
+        if (strlen($normEndOld) === 16) $normEndOld .= ':00';
+
+        $timeChanged = ($normStartNew !== $normStartOld || $normEndNew !== $normEndOld);
 
         $latitude = array_key_exists('latitude', $body)
             ? (($body['latitude'] === null || $body['latitude'] === '') ? null : floatval($body['latitude']))
