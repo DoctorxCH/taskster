@@ -118,7 +118,7 @@
                 type="button"
                 @click="showVoiceModal = true"
                 class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] border border-cyan-200 text-xs font-semibold transition shadow-2xs cursor-pointer"
-                title="Sprachaufnahme via openai/whisper-large-v3-turbo anfertigen"
+                :title="$t('dashboard.sprachaufnahme_via_openaiwhisperlar')"
               >
                 <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
                 <span>{{ $t('dashboard.neue_sprachnotiz') }}</span>
@@ -127,7 +127,7 @@
               <NuxtLink
                 to="/time"
                 class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
-                title="Zur globalen Zeitrapportierung"
+                :title="$t('dashboard.zur_globalen_zeitrapportierung')"
               >
                 <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
                 <span>{{ $t('dashboard.zeitrapporte') }}</span>
@@ -136,7 +136,7 @@
               <button
                 @click="activeTaskTab === 'daily' ? loadDailyTodos() : loadTasks()"
                 class="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer ml-auto border border-slate-200"
-                title="Aktualisieren"
+                :title="$t('common.aktualisieren')"
               >
                 <RotateCcw class="w-3.5 h-3.5" />
               </button>
@@ -150,7 +150,7 @@
               <input
                 v-model="newDailyTodoTitle"
                 type="text"
-                placeholder="+ Was steht heute an? (Todo eingeben & Enter drücken)..."
+                :placeholder="$t('dashboard.todo_today')"
                 class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs"
               />
 
@@ -159,7 +159,7 @@
                   v-model="newDailyTodoProjectId"
                   class="px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-medium text-slate-700 focus:outline-none focus:border-[#0891B2] shadow-2xs shrink-0 max-w-[190px] truncate"
                 >
-                  <option value="">Ohne Projekt (Persönlich)</option>
+                  <option value="">{{ $t('dashboard.ohne_projekt_persönlich') }}</option>
                   <option v-for="p in availableProjects" :key="p.id" :value="p.id">
                     {{ p.title }}
                   </option>
@@ -171,7 +171,7 @@
                   class="taskster_button px-3 text-xs h-[34px] rounded-md shrink-0 flex items-center space-x-1"
                 >
                   <Plus class="w-3.5 h-3.5" />
-                  <span>{{ creatingDailyTodo ? '...' : 'Hinzufügen' }}</span>
+                  <span>{{ creatingDailyTodo ? '...' : ($t('company.hinzufügen') || 'Hinzufügen') }}</span>
                 </button>
               </div>
             </form>
@@ -244,10 +244,10 @@
                       <span
                         v-if="todo.rollover_count > 0 && !todo.is_completed"
                         class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold border border-amber-300 text-[10px]"
-                        title="Automatisch vom Vortag übertragen, da noch nicht abgeschlossen"
+                        :title="$t('dashboard.automatisch_vom_vortag_übertragen_d')"
                       >
                         <RotateCcw class="w-3 h-3 text-amber-700" />
-                        <span>Übertrag {{ todo.rollover_count === 1 ? 'von gestern' : `von vor ${todo.rollover_count} Tagen` }}</span>
+                        <span>{{ $t('dashboard.übertrag') }} {{ todo.rollover_count === 1 ? $t('dashboard.von_gestern') : $t('dashboard.von_vor_tagen', { days: todo.rollover_count }) }}</span>
                       </span>
 
                       <!-- Project Link Pill (if assigned) -->
@@ -255,14 +255,14 @@
                         v-if="todo.project_id"
                         :to="`/projects/${todo.project_id}`"
                         class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] font-semibold border border-cyan-200 transition text-[10px]"
-                        title="Zum Projekt öffnen"
+                        :title="$t('dashboard.zum_projekt_öffnen')"
                       >
                         <Folder class="w-3 h-3" />
                         <span class="truncate max-w-[130px]">{{ todo.project_title }}</span>
                       </NuxtLink>
 
                       <span v-else class="text-[10px] text-slate-400">
-                        Persönlich
+                        {{ $t('dashboard.persönlich') }}
                       </span>
                     </div>
                   </div>
@@ -273,7 +273,7 @@
                     type="button"
                     @click="deleteDailyTodo(todo.id)"
                     class="opacity-0 group-hover/todo:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition text-xs cursor-pointer"
-                    title="Tages-Todo löschen"
+                    :title="$t('dashboard.tagestodo_löschen')"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -286,7 +286,7 @@
           <div v-else class="space-y-4">
             <!-- Loading Tasks -->
             <div v-if="loadingTasks" class="py-10 text-center text-xs text-slate-500 font-medium">
-              Lade offene Aufgaben...
+              {{ $t('dashboard.lade_offene_aufgaben') }}
             </div>
 
             <!-- Empty Tasks State -->
@@ -297,16 +297,16 @@
               <div class="w-10 h-10 rounded-lg bg-cyan-100 text-[#0891B2] flex items-center justify-center mb-2 border border-cyan-200">
                 <Sparkles class="w-5 h-5" />
               </div>
-              <h3 class="text-sm font-bold text-slate-900">Du hast keine anstehenden Aufgaben</h3>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.du_hast_keine_anstehenden_aufgaben') }}</h3>
               <p class="text-xs text-slate-500 mt-1 mb-4">
-                Deine zugewiesenen Aufgaben aus den Projekten erscheinen hier.
+                {{ $t('dashboard.deine_zugewiesenen_aufgaben_aus_den') }}
               </p>
               <NuxtLink
                 v-if="folders.length > 0"
                 :to="`/folders/${folders[0]?.id}`"
                 class="taskster_button px-4 text-xs h-9 rounded-md"
               >
-                Aufgabe in Projekten anzeigen
+                {{ $t('dashboard.aufgabe_in_projekten_anzeigen') }}
               </NuxtLink>
               <button
                 v-else
@@ -314,7 +314,7 @@
                 class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Ersten Ordner erstellen</span>
+                <span>{{ $t('dashboard.ersten_ordner_erstellen') }}</span>
               </button>
             </div>
 
@@ -361,9 +361,9 @@
                       type="button"
                       @click.stop="openStopModal"
                       class="ml-1 px-1.5 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold text-[9px] shadow-2xs cursor-pointer"
-                      title="Stoppen & buchen"
+                      :title="$t('dashboard.stoppen_buchen')"
                     >
-                      Stopp
+                      {{ $t('dashboard.stopp') }}
                     </button>
                   </div>
 
@@ -372,7 +372,7 @@
                     type="button"
                     @click.stop="startTaskTimer(task)"
                     class="p-1.5 rounded text-slate-400 hover:text-[#0891B2] hover:bg-cyan-50 transition text-xs font-bold cursor-pointer"
-                    title="Stoppuhr auf diese Aufgabe starten"
+                    :title="$t('dashboard.stoppuhr_auf_diese_aufgabe_starten')"
                   >
                     <Clock class="w-4 h-4" />
                   </button>
@@ -387,7 +387,7 @@
                   <NuxtLink
                     :to="`/projects/${task.project_id}?task=${task.id}`"
                     class="p-1.5 rounded text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 transition text-xs"
-                    title="Aufgabe öffnen"
+                    :title="$t('dashboard.aufgabe_öffnen')"
                   >
                     <ArrowRight class="w-4 h-4" />
                   </NuxtLink>
@@ -403,8 +403,8 @@
             <div class="flex items-center space-x-3">
               <Folder class="w-5 h-5 text-[#0891B2]" />
               <div>
-                <h2 class="text-base font-bold text-slate-900 tracking-tight">Projektordner & Initiativen</h2>
-                <p class="text-xs text-slate-500 font-medium">Übergeordnete Bereiche für Teams und Projekte</p>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('dashboard.projektordner_initiativen') }}</h2>
+                <p class="text-xs text-slate-500 font-medium">{{ $t('dashboard.übergeordnete_bereiche_für_teams_un') }}</p>
               </div>
             </div>
 
@@ -412,14 +412,14 @@
               @click="openNewFolderModal"
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
             >
-              <Plus class="w-4 h-4" />
-              <span>Neuer Ordner</span>
+              <Plus class="w-3.5 h-3.5" />
+              <span>{{ $t('dashboard.neuer_ordner') }}</span>
             </button>
           </div>
 
           <!-- Loading Folders -->
           <div v-if="loadingFolders" class="py-10 text-center text-xs text-slate-500 font-medium">
-            Lade Projektordner...
+            {{ $t('dashboard.lade_projektordner') }}
           </div>
 
           <!-- Empty Folders State -->
@@ -430,16 +430,16 @@
             <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
               <Folder class="w-6 h-6" />
             </div>
-            <h3 class="text-sm font-bold text-slate-900">Keine Projektordner gefunden</h3>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projektordner_gefunden') }}</h3>
             <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm">
-              {{ 'Erstelle deinen ersten Ordner, um Projekte und Teams zu strukturieren.' }}
+              {{ $t('dashboard.keine_projektordner_gefunden') }}
             </p>
             <button
               @click="openNewFolderModal"
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
             >
-              <Plus class="w-4 h-4" />
-              <span>Jetzt Ordner anlegen</span>
+              <Plus class="w-3.5 h-3.5" />
+              <span>{{ $t('dashboard.jetzt_ordner_anlegen') }}</span>
             </button>
           </div>
 
@@ -462,10 +462,10 @@
                     >
                       <Building2 v-if="folder.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
                       <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                      <span>{{ folder.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                      <span>{{ folder.visibility === 'company' ? $t('common.unternehmen') : $t('dashboard.privat') }}</span>
                     </span>
                     <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
-                      {{ folder.project_count }} {{ folder.project_count === 1 ? 'Projekt' : 'Projekte' }}
+                      {{ folder.project_count }} {{ folder.project_count === 1 ? $t('dashboard.projekt') : $t('dashboard.projekte') }}
                     </span>
                   </div>
                 </div>
@@ -474,10 +474,10 @@
                   {{ folder.name }}
                 </h3>
                 <p class="text-xs text-slate-500 flex items-center space-x-1">
-                  <span>Inhaber:</span>
+                  <span>{{ $t('dashboard.inhaber') }}</span>
                   <span class="text-slate-800 font-semibold">{{ folder.owner_name }}</span>
                   <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-[#0891B2] font-bold ml-1">
-                    Du
+                    {{ $t('settings.du') }}
                   </span>
                 </p>
                 <p v-if="folder.company_name" class="text-[11px] text-slate-600 mt-1 font-medium flex items-center space-x-1">
@@ -488,14 +488,14 @@
 
               <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span class="text-[11px] text-slate-400 font-medium">
-                  {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}
+                  {{ new Date(folder.created_at).toLocaleDateString(locale === 'sk' ? 'sk-SK' : (locale === 'en' ? 'en-US' : 'de-CH')) }}
                 </span>
                 <div class="flex items-center space-x-2">
                   <button
                     v-if="user?.id === folder.owner_id || user?.is_superadmin"
                     @click="openEditFolderModal(folder)"
                     class="p-1.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
-                    title="Projektordner anpassen (Name)"
+                    :title="$t('dashboard.projektordner_anpassen_name')"
                   >
                     <Pencil class="w-3.5 h-3.5" />
                   </button>
@@ -503,7 +503,7 @@
                     :to="`/folders/${folder.id}`"
                     class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center"
                   >
-                    <span>Öffnen</span>
+                    <span>{{ $t('dashboard.öffnen') }}</span>
                     <ArrowRight class="w-3.5 h-3.5 ml-1" />
                   </NuxtLink>
                 </div>
@@ -533,7 +533,7 @@
                 type="button"
                 @click="loadNotifications"
                 class="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer border border-slate-200"
-                title="Aktualisieren"
+                :title="$t('common.aktualisieren')"
               >
                 <RotateCcw class="w-3.5 h-3.5" />
               </button>
@@ -547,21 +547,21 @@
               class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'all' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
             >
-              {{ $t('dashboard.alle_projekte') === 'Alle Projekte' ? 'Alle' : 'All' }}
+              {{ $t('dashboard.alle') }}
             </button>
             <button
               @click="activeNotificationTab = 'mentions'"
               class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'mentions' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
             >
-              Kommentare & Einladungen
+              {{ $t('dashboard.kommentare_einladungen') }}
             </button>
             <button
               @click="activeNotificationTab = 'projects'"
               class="pb-1 transition border-b-2 cursor-pointer"
               :class="activeNotificationTab === 'projects' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
             >
-              Fälligkeiten & Budget
+              {{ $t('dashboard.fälligkeiten_budget') }}
             </button>
           </div>
 
@@ -617,21 +617,21 @@
                       :to="`/projects/${notif.project_id}?task=${notif.reference_id}`"
                       class="text-[#0891B2] hover:underline font-semibold"
                     >
-                      Zur Aufgabe →
+                      {{ $t('dashboard.zur_aufgabe') }}
                     </NuxtLink>
                     <NuxtLink
                       v-else-if="notif.project_id"
                       :to="`/projects/${notif.project_id}`"
                       class="text-[#0891B2] hover:underline font-semibold"
                     >
-                      Zum Projekt →
+                      {{ $t('dashboard.zum_projekt') }}
                     </NuxtLink>
                     <NuxtLink
                       v-else-if="notif.reference_type === 'folder' && notif.reference_id"
                       :to="`/folders/${notif.reference_id}`"
                       class="text-[#0891B2] hover:underline font-semibold"
                     >
-                      Zum Ordner →
+                      {{ $t('dashboard.zum_ordner') }}
                     </NuxtLink>
                   </div>
                 </div>
@@ -642,7 +642,7 @@
                 @click="markNotificationRead(notif)"
                 type="button"
                 class="shrink-0 p-1 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition text-xs font-bold cursor-pointer"
-                title="Als gelesen markieren"
+                :title="$t('dashboard.als_gelesen_markieren')"
               >
                 <Check class="w-3.5 h-3.5" />
               </button>
@@ -686,9 +686,9 @@
             <div class="p-3 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span class="text-xs font-semibold text-emerald-950">Zero-Trust Pipeline</span>
+                <span class="text-xs font-semibold text-emerald-950">{{ $t('dashboard.zerotrust_pipeline') }}</span>
               </div>
-              <span class="text-[10px] font-bold text-emerald-800">Aktiv</span>
+              <span class="text-[10px] font-bold text-emerald-800">{{ $t('common.aktiv') }}</span>
             </div>
           </div>
         </section>
@@ -699,13 +699,13 @@
     <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
       <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-900">Neuen Projektordner anlegen</h3>
+          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neuen_projektordner_anlegen') }}</h3>
           <button @click="showNewFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1">
             <X class="w-4 h-4" />
           </button>
         </div>
         <p class="text-xs text-slate-500 font-medium mb-4">
-          Projektordner bilden die oberste Organisationsebene für Bauträger, Standorte oder Großvorhaben.
+          {{ $t('dashboard.projektordner_bilden_die_oberste_or') }}
         </p>
 
         <div v-if="folderModalError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
@@ -714,19 +714,19 @@
 
         <form @submit.prevent="createFolder" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
             <input
               v-model="newFolderName"
               type="text"
               required
-              placeholder="z.B. FTTH Glasfaserausbau Region Nord"
+              :placeholder="$t('dashboard.zb_ftth_glasfaserausbau_region_nord')"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
             />
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
           <div v-if="user?.company_id || user?.is_superadmin" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
-            <label class="block text-xs font-bold text-slate-700">Sichtbarkeit des Ordners</label>
+            <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <label
                 class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
@@ -734,7 +734,7 @@
               >
                 <input type="radio" value="private" v-model="newFolderVisibility" class="sr-only" />
                 <Lock class="w-3.5 h-3.5" />
-                <span>Privat (Standard)</span>
+                <span>{{ $t('dashboard.privat_standard') }}</span>
               </label>
               <label
                 class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
@@ -742,15 +742,15 @@
               >
                 <input type="radio" value="company" v-model="newFolderVisibility" class="sr-only" />
                 <Building2 class="w-3.5 h-3.5" />
-                <span>Unternehmen</span>
+                <span>{{ $t('common.unternehmen') }}</span>
               </label>
             </div>
             <p class="text-[11px] text-slate-500">
-              {{ newFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : `Für alle Mitglieder des Unternehmens (${user?.company_name || 'Firma'}) sichtbar.` }}
+              {{ newFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: user?.company_name || $t('common.firma') }) }}
             </p>
           </div>
           <div v-else class="p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900">
-            <span class="font-bold">Hinweis:</span> Dieser Ordner ist standardmäßig privat. Du kannst ihn im Ordner selbst über <strong>"Ordner teilen"</strong> für Kollegen freigeben.
+            <span class="font-bold">{{ $t('dashboard.hinweis') }}</span> {{ $t('dashboard.dieser_ordner_ist_standardmäßig_pri') }} <strong>{{ $t('dashboard.ordner_teilen') }}</strong> {{ $t('dashboard.für_kollegen_freigeben') }}
           </div>
 
           <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
@@ -759,14 +759,14 @@
               @click="showNewFolderModal = false; folderModalError = ''"
               class="taskster_button_light px-4 text-xs h-9 rounded-md"
             >
-              Abbrechen
+              {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="creatingFolder || !newFolderName.trim()"
               class="taskster_button px-4 text-xs h-9 rounded-md"
             >
-              <span>{{ creatingFolder ? 'Erstelle...' : 'Ordner erstellen' }}</span>
+              <span>{{ creatingFolder ? $t('dashboard.erstelle') : $t('dashboard.ordner_erstellen') }}</span>
             </button>
           </div>
         </form>
@@ -777,13 +777,13 @@
     <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
       <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-900">Projektordner anpassen</h3>
+          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.projektordner_anpassen') }}</h3>
           <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1">
             <X class="w-4 h-4" />
           </button>
         </div>
         <p class="text-xs text-slate-500 font-medium mb-4">
-          Passe den Namen und die Sichtbarkeit dieses Projektordners an.
+          {{ $t('dashboard.passe_den_namen_und_die_sichtbarkei') }}
         </p>
 
         <div v-if="editFolderError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
@@ -792,19 +792,19 @@
 
         <form @submit.prevent="updateFolder" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
             <input
               v-model="editFolderName"
               type="text"
               required
-              placeholder="z.B. Privates Renovationsprojekt"
+              :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
             />
           </div>
 
           <!-- Sichtbarkeit im Unternehmen -->
           <div v-if="user?.company_id || editFolderCompanyId || user?.is_superadmin" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
-            <label class="block text-xs font-bold text-slate-700">Sichtbarkeit des Ordners</label>
+            <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <label
                 class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
@@ -812,19 +812,19 @@
               >
                 <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
                 <Lock class="w-3.5 h-3.5" />
-                <span>Privat (Standard)</span>
+                <span>{{ $t('dashboard.privat_standard') }}</span>
               </label>
               <label
                 class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                :class="editFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2] ring-1 ring-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
+                :class="editFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
               >
                 <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
                 <Building2 class="w-3.5 h-3.5" />
-                <span>Unternehmen</span>
+                <span>{{ $t('common.unternehmen') }}</span>
               </label>
             </div>
             <p class="text-[11px] text-slate-500">
-              {{ editFolderVisibility === 'private' ? 'Privater Ordner. Nur für dich und gezielt eingeladene Mitglieder sichtbar.' : `Für alle Mitglieder des Unternehmens (${editFolderCompanyName || user?.company_name || 'Firma'}) sichtbar.` }}
+              {{ editFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: editFolderCompanyName || user?.company_name || $t('common.firma') }) }}
             </p>
           </div>
 
@@ -834,14 +834,14 @@
               @click="showEditFolderModal = false; editFolderError = ''"
               class="taskster_button_light px-4 text-xs h-9 rounded-md"
             >
-              Abbrechen
+              {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="savingFolder || !editFolderName.trim()"
               class="taskster_button px-4 text-xs h-9 rounded-md"
             >
-              <span>{{ savingFolder ? 'Speichern...' : 'Änderungen speichern' }}</span>
+              <span>{{ savingFolder ? $t('dashboard.speichern_dot') : $t('dashboard.änderungen_speichern') }}</span>
             </button>
           </div>
         </form>
@@ -900,7 +900,7 @@ const startTaskTimer = (task: any) => {
   if (!task) return
   startTimer({
     projectId: task.project_id,
-    projectTitle: task.project_title || 'Projekt',
+    projectTitle: task.project_title || t('dashboard.projekt'),
     projectCurrency: 'CHF',
     taskId: task.id,
     taskTitle: task.title
@@ -1069,7 +1069,7 @@ const createDailyTodo = async () => {
     }
     newDailyTodoTitle.value = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Tages-Todo konnte nicht erstellt werden')
+    alert(err.data?.statusMessage || t('dashboard.tagestodo_konnte_nicht_erstellt_wer'))
   } finally {
     creatingDailyTodo.value = false
   }
@@ -1192,7 +1192,7 @@ const createFolder = async () => {
     newFolderVisibility.value = 'private'
     await loadFolders()
   } catch (err: any) {
-    folderModalError.value = err.data?.statusMessage || 'Ordner konnte nicht erstellt werden'
+    folderModalError.value = err.data?.statusMessage || t('dashboard.ordner_konnte_nicht_erstellt_werden')
   } finally {
     creatingFolder.value = false
   }
@@ -1213,7 +1213,7 @@ const updateFolder = async () => {
     showEditFolderModal.value = false
     await loadFolders()
   } catch (err: any) {
-    editFolderError.value = err.data?.statusMessage || 'Ordner konnte nicht aktualisiert werden'
+    editFolderError.value = err.data?.statusMessage || t('dashboard.ordner_konnte_nicht_aktualisiert_we')
   } finally {
     savingFolder.value = false
   }
