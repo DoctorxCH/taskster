@@ -2,6 +2,7 @@ import { db } from '~/server/db'
 import { randomUUID } from 'crypto'
 import * as net from 'net'
 import * as tls from 'tls'
+import { Resend } from 'resend'
 
 export interface SmtpConfig {
   smtp_host: string
@@ -52,9 +53,81 @@ export interface MailOptions {
 }
 
 /**
- * Native Socket/TLS SMTP Mailer (Zero External Dependencies)
+ * Sendet E-Mails über die Resend API mit noreply@kurka.ch
+ */
+export async function sendResendEmail(options: MailOptions, apiKey: string): Promise<{ success: boolean; log: string[] }> {
+  const log: string[] = []
+  const outboxId = 'out_' + randomUUID().substring(0, 8)
+  const resend = new Resend(apiKey)
+  const fromAddress = 'Taskster <noreply@kurka.ch>'
+
+  // Log pending to email_outbox
+  try {
+    db.prepare(`
+      INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
+    `).run(
+      outboxId,
+      options.to,
+      options.toName || null,
+      options.subject,
+      options.bodyHtml || options.bodyText || '',
+      options.icsContent || null
+    )
+  } catch (_) {}
+
+  log.push(`> [Resend API] Sende E-Mail an ${options.to} via ${fromAddress}`)
+
+  try {
+    const payload: any = {
+      from: fromAddress,
+      to: [options.to],
+      subject: options.subject,
+      html: options.bodyHtml || `<p>${(options.bodyText || '').replace(/\n/g, '<br>')}</p>`,
+      text: options.bodyText || undefined
+    }
+
+    if (options.icsContent) {
+      payload.headers = {
+        'Content-Class': 'urn:content-classes:calendarmessage'
+      }
+      payload.attachments = [
+        {
+          filename: 'invite.ics',
+          content: Buffer.from(options.icsContent).toString('base64')
+        }
+      ]
+    }
+
+    const { data, error } = await resend.emails.send(payload)
+
+    if (error) {
+      const errMsg = `${error.name}: ${error.message}`
+      log.push(`! [Resend Error] ${errMsg}`)
+      updateOutboxError(outboxId, errMsg)
+      return { success: false, log }
+    }
+
+    log.push(`< [Resend Success] id: ${data?.id}`)
+    updateOutboxSuccess(outboxId)
+    return { success: true, log }
+  } catch (err: any) {
+    const errMsg = err?.message || String(err)
+    log.push(`! [Resend Exception] ${errMsg}`)
+    updateOutboxError(outboxId, errMsg)
+    return { success: false, log }
+  }
+}
+
+/**
+ * Native Socket/TLS SMTP Mailer (Zero External Dependencies) mit automatischem Resend-Fallback
  */
 export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpConfig): Promise<{ success: boolean; log: string[] }> {
+  const resendApiKey = process.env.RESEND_API_KEY
+  if (resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 're_xxxxxxxxx') {
+    return sendResendEmail(options, resendApiKey)
+  }
+
   const cfg = customConfig || getSmtpConfig()
   const log: string[] = []
   const outboxId = 'out_' + randomUUID().substring(0, 8)
