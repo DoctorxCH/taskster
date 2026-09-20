@@ -1090,7 +1090,60 @@ function saveSmtpConfigDb($pdo, $config) {
     }
 }
 
-function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null, $fromEmail = null, $fromName = null) {
+function getEmailSenderForPurpose($triggerEvent = null, $purpose = null) {
+    $senders = [
+        'onboarding' => [
+            'email' => 'hey@kurka.ch',
+            'name' => 'Taskster',
+            'reply_to' => 'support@kurka.ch'
+        ],
+        'updates' => [
+            'email' => 'updates@kurka.ch',
+            'name' => 'Taskster',
+            'reply_to' => null
+        ],
+        'collaboration' => [
+            'email' => 'team@kurka.ch',
+            'name' => 'Taskster',
+            'reply_to' => null
+        ],
+        'notify' => [
+            'email' => 'notify@kurka.ch',
+            'name' => 'Taskster',
+            'reply_to' => null
+        ],
+        'system' => [
+            'email' => 'system@kurka.ch',
+            'name' => 'Taskster',
+            'reply_to' => null
+        ]
+    ];
+
+    $p = $purpose ?: 'notify';
+    if (!$purpose && $triggerEvent) {
+        if (in_array($triggerEvent, ['company_invite', 'user_welcome', 'onboarding', 'invite'])) {
+            $p = 'onboarding';
+        } elseif (in_array($triggerEvent, ['updates', 'changelog', 'newsletter', 'product_news'])) {
+            $p = 'updates';
+        } elseif (in_array($triggerEvent, ['task_assigned', 'task_comment', 'mention', 'calendar_invite', 'calendar_change', 'calendar_cancel'])) {
+            $p = 'collaboration';
+        } elseif (in_array($triggerEvent, ['task_due', 'calendar_reminder', 'budget_warning', 'digest'])) {
+            $p = 'notify';
+        } elseif (in_array($triggerEvent, ['password_reset', 'security_alert', 'account_change', '2fa', 'auth_verification'])) {
+            $p = 'system';
+        }
+    }
+
+    $sender = $senders[$p] ?? $senders['notify'];
+    return [
+        'from' => "{$sender['name']} <{$sender['email']}>",
+        'from_email' => $sender['email'],
+        'from_name' => $sender['name'],
+        'reply_to' => $sender['reply_to']
+    ];
+}
+
+function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null, $fromEmail = null, $fromName = null, $replyTo = null) {
     $log = [];
     $db = getDb();
 
@@ -1120,6 +1173,10 @@ function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', 
         'text' => $bodyText ?: strip_tags($bodyHtml)
     ];
 
+    if (!empty($replyTo)) {
+        $payload['reply_to'] = $replyTo;
+    }
+
     if (!empty($icsContent)) {
         $payload['headers'] = [
             'Content-Class' => 'urn:content-classes:calendarmessage'
@@ -1132,7 +1189,7 @@ function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', 
         ];
     }
 
-    $log[] = "> [Resend API] Sende E-Mail an {$to} via {$from}";
+    $log[] = "> [Resend API] Sende E-Mail an {$to} via {$from}" . (!empty($replyTo) ? " (Reply-To: {$replyTo})" : "");
 
     $ch = curl_init('https://api.resend.com/emails');
     curl_setopt_array($ch, [
@@ -1171,11 +1228,15 @@ function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', 
     }
 }
 
-function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
+function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null, $triggerEvent = null, $purpose = null, $customFromEmail = null, $customReplyTo = null) {
     $provider = $cfg['mail_provider'] ?? 'resend';
     $resendKey = $cfg['resend_api_key'] ?? getEnvValue('RESEND_API_KEY');
     if ($provider === 'resend' && !empty($resendKey) && strpos($resendKey, 're_') === 0 && $resendKey !== 're_xxxxxxxxx') {
-        return sendResendEmailNative($resendKey, $to, $toName, $subject, $bodyHtml, $bodyText, $icsContent, $outboxId, $cfg['smtp_from_email'] ?? null, $cfg['smtp_from_name'] ?? null);
+        $sender = getEmailSenderForPurpose($triggerEvent, $purpose);
+        $fromEmail = !empty($customFromEmail) ? $customFromEmail : $sender['from_email'];
+        $fromName = $sender['from_name'];
+        $replyTo = !empty($customReplyTo) ? $customReplyTo : $sender['reply_to'];
+        return sendResendEmailNative($resendKey, $to, $toName, $subject, $bodyHtml, $bodyText, $icsContent, $outboxId, $fromEmail, $fromName, $replyTo);
     }
 
     $log = [];
@@ -1442,7 +1503,7 @@ function sendTriggerEmailNative($pdo, $triggerEvent, $recipient, $data = []) {
     }
 
     $cfg = getSmtpConfigDb($pdo);
-    return sendSmtpEmailNative($cfg, $recipient['email'], $recipient['name'] ?? null, $subject, $bodyHtml, $bodyText, $data['ics_content'] ?? null);
+    return sendSmtpEmailNative($cfg, $recipient['email'], $recipient['name'] ?? null, $subject, $bodyHtml, $bodyText, $data['ics_content'] ?? null, null, $triggerEvent);
 }
 
 
@@ -7017,24 +7078,35 @@ try {
         }
 
         $provider = $cfg['mail_provider'] ?? 'resend';
-        $subject = 'Taskster Test-E-Mail ' . date('d.m.Y H:i:s');
+        $senderEmail = !empty($body['sender_email']) ? trim($body['sender_email']) : null;
+        $senderPurpose = !empty($body['purpose']) ? trim($body['purpose']) : null;
+        $senderInfo = getEmailSenderForPurpose(null, $senderPurpose);
+        if ($senderEmail) {
+            $senderInfo['from_email'] = $senderEmail;
+            $senderInfo['from'] = "Taskster <{$senderEmail}>";
+            if ($senderEmail === 'hey@kurka.ch') {
+                $senderInfo['reply_to'] = 'support@kurka.ch';
+            }
+        }
+
+        $subject = 'Taskster Test-E-Mail (' . $senderInfo['from_email'] . ') ' . date('d.m.Y H:i:s');
         $bodyHtml = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #00A3C4; border-radius: 8px;">
           <h2 style="color: #00A3C4; margin-top: 0;">Taskster E-Mail Test erfolgreich! 🎉</h2>
           <p>Diese Test-E-Mail bestätigt, dass der Versand über <strong>' . htmlspecialchars($provider === 'resend' ? 'Resend API (DKIM verifiziert)' : 'SMTP Server') . '</strong> einwandfrei funktioniert.</p>
           <div style="background: #f0fdfa; border-left: 4px solid #00A3C4; padding: 12px; margin: 16px 0;">
-            <div><strong>Methode:</strong> ' . htmlspecialchars($provider === 'resend' ? 'Resend REST API (noreply@kurka.ch)' : 'SMTP-Server (' . $cfg['smtp_host'] . ')') . '</div>
-            <div><strong>Absender:</strong> ' . htmlspecialchars(($cfg['smtp_from_name'] ?? 'Taskster') . ' <' . ($cfg['smtp_from_email'] ?? 'noreply@kurka.ch') . '>') . '</div>
+            <div><strong>Methode:</strong> ' . htmlspecialchars($provider === 'resend' ? 'Resend REST API' : 'SMTP-Server (' . $cfg['smtp_host'] . ')') . '</div>
+            <div><strong>Absender:</strong> ' . htmlspecialchars($senderInfo['from'] . (!empty($senderInfo['reply_to']) ? ' (Reply-To: ' . $senderInfo['reply_to'] . ')' : '')) . '</div>
             <div><strong>Empfänger:</strong> ' . htmlspecialchars($targetEmail) . '</div>
           </div>
           <p style="font-size: 13px; color: #64748b;">Gesendet am ' . date('d.m.Y \u\m H:i:s \U\h\r') . ' von Taskster.</p>
         </div>';
-        $bodyText = "Taskster E-Mail Test erfolgreich!\n\nMethode: " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . "\nAbsender: " . ($cfg['smtp_from_email'] ?? 'noreply@kurka.ch') . "\nEmpfänger: " . $targetEmail . "\n\nGesendet am " . date('d.m.Y H:i:s');
+        $bodyText = "Taskster E-Mail Test erfolgreich!\n\nMethode: " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . "\nAbsender: " . $senderInfo['from'] . "\nEmpfänger: " . $targetEmail . "\n\nGesendet am " . date('d.m.Y H:i:s');
 
-        $res = sendSmtpEmailNative($cfg, $targetEmail, $user['name'] ?? null, $subject, $bodyHtml, $bodyText);
+        $res = sendSmtpEmailNative($cfg, $targetEmail, $user['name'] ?? null, $subject, $bodyHtml, $bodyText, null, null, null, $senderPurpose, $senderInfo['from_email'], $senderInfo['reply_to']);
         if ($res['success']) {
             jsonResponse([
                 'success' => true,
-                'message' => "Test-E-Mail erfolgreich via " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . " an {$targetEmail} versendet.",
+                'message' => "Test-E-Mail erfolgreich via " . ($provider === 'resend' ? 'Resend API' : 'SMTP') . " von {$senderInfo['from_email']} an {$targetEmail} versendet.",
                 'log' => $res['log']
             ]);
         } else {

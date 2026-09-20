@@ -831,6 +831,109 @@
                 />
               </div>
             </div>
+
+            <!-- 5 Dedicated Sender Identities for kurka.ch -->
+            <div class="pt-4 border-t border-slate-200/80">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="text-xs font-black text-slate-900">Dedizierte Absender-Identitäten (@kurka.ch)</h4>
+                  <p class="text-[11px] text-slate-600 mt-0.5">
+                    Dank verifizierter Domain sofort einsatzbereit ohne separate Postfächer.
+                  </p>
+                </div>
+                <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-50 border border-cyan-200 text-[#00A3C4]">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#00A3C4]"></span>
+                  <span>5 Adressen aktiv</span>
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <!-- hey@kurka.ch -->
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-xs font-black text-slate-900 font-mono">hey@kurka.ch</span>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Onboarding</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug">
+                      Onboarding, Willkommensnachrichten &amp; direkte Ansprache.
+                    </p>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                    <span class="text-purple-700 font-medium">Reply-To: support@kurka.ch</span>
+                    <button type="button" @click="testSpecificSender('hey@kurka.ch')" class="text-[#00A3C4] font-bold hover:underline cursor-pointer">Testen</button>
+                  </div>
+                </div>
+
+                <!-- updates@kurka.ch -->
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-xs font-black text-slate-900 font-mono">updates@kurka.ch</span>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">News</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug">
+                      Changelogs, Produkt-News &amp; Newsletter.
+                    </p>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                    <span>Kein Reply-To</span>
+                    <button type="button" @click="testSpecificSender('updates@kurka.ch')" class="text-[#00A3C4] font-bold hover:underline cursor-pointer">Testen</button>
+                  </div>
+                </div>
+
+                <!-- team@kurka.ch -->
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-xs font-black text-slate-900 font-mono">team@kurka.ch</span>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Team</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug">
+                      Kollaboration: Zuweisungen, Erwähnungen, Kommentare, Termine.
+                    </p>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                    <span>Kein Reply-To</span>
+                    <button type="button" @click="testSpecificSender('team@kurka.ch')" class="text-[#00A3C4] font-bold hover:underline cursor-pointer">Testen</button>
+                  </div>
+                </div>
+
+                <!-- notify@kurka.ch -->
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-xs font-black text-slate-900 font-mono">notify@kurka.ch</span>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Fristen</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug">
+                      Benachrichtigungen, Fristen, Statusänderungen &amp; Erinnerungen.
+                    </p>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                    <span>Kein Reply-To</span>
+                    <button type="button" @click="testSpecificSender('notify@kurka.ch')" class="text-[#00A3C4] font-bold hover:underline cursor-pointer">Testen</button>
+                  </div>
+                </div>
+
+                <!-- system@kurka.ch -->
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-xs font-black text-slate-900 font-mono">system@kurka.ch</span>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Sicherheit</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-snug">
+                      Transaktionsmails: Passwort-Resets, Sicherheitswarnungen, Account.
+                    </p>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 flex items-center justify-between">
+                    <span>Kein Reply-To</span>
+                    <button type="button" @click="testSpecificSender('system@kurka.ch')" class="text-[#00A3C4] font-bold hover:underline cursor-pointer">Testen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- SMTP Settings Section -->
@@ -978,6 +1081,12 @@
                 <div class="flex items-center space-x-2">
                   <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
                     {{ tmpl.trigger_event }}
+                  </span>
+                  <span
+                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
+                    :class="getTemplateSenderInfo(tmpl.trigger_event).color"
+                  >
+                    Absender: {{ getTemplateSenderInfo(tmpl.trigger_event).email }}
                   </span>
                 </div>
                 <label class="inline-flex items-center cursor-pointer">
@@ -1875,6 +1984,24 @@
 
         <div class="space-y-4">
           <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Identität (@kurka.ch)</label>
+            <select
+              v-model="testEmailSender"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
+            >
+              <option value="hey@kurka.ch">Taskster &lt;hey@kurka.ch&gt; — Onboarding &amp; Willkommen (Reply-To: support@kurka.ch)</option>
+              <option value="updates@kurka.ch">Taskster &lt;updates@kurka.ch&gt; — Changelogs &amp; News</option>
+              <option value="team@kurka.ch">Taskster &lt;team@kurka.ch&gt; — Kollaboration &amp; Zuweisungen</option>
+              <option value="notify@kurka.ch">Taskster &lt;notify@kurka.ch&gt; — Benachrichtigungen &amp; Fristen</option>
+              <option value="system@kurka.ch">Taskster &lt;system@kurka.ch&gt; — Transaktionsmails &amp; Sicherheit</option>
+              <option :value="smtpConfig.smtp_from_email">Taskster &lt;{{ smtpConfig.smtp_from_email }}&gt; — Standard</option>
+            </select>
+            <p class="text-[11px] text-slate-500 mt-1">
+              Wird direkt als Absender im Mail-Header gesetzt.
+            </p>
+          </div>
+
+          <div>
             <label class="block text-xs font-bold text-slate-800 mb-1.5">Empfänger-E-Mail-Adresse *</label>
             <input
               v-model="testEmailTo"
@@ -2152,6 +2279,7 @@ const emailTemplatePreviewMode = ref<'html' | 'preview' | 'text'>('preview')
 const emailOutbox = ref<any[]>([])
 const showTestEmailModal = ref(false)
 const testEmailTo = ref('')
+const testEmailSender = ref('notify@kurka.ch')
 const testingEmail = ref(false)
 const testEmailResult = ref<{ success: boolean; message?: string; error?: string; log: string[] } | null>(null)
 
@@ -2882,10 +3010,38 @@ const loadEmailOutbox = async () => {
   }
 }
 
-const openTestEmailModal = () => {
+const openTestEmailModal = (sender?: string) => {
   testEmailTo.value = user.value?.email || 'noreply@kurka.ch'
+  if (sender) {
+    testEmailSender.value = sender
+  } else {
+    testEmailSender.value = smtpConfig.value.mail_provider === 'resend' ? 'notify@kurka.ch' : (smtpConfig.value.smtp_from_email || 'noreply@kurka.ch')
+  }
   testEmailResult.value = null
   showTestEmailModal.value = true
+}
+
+const testSpecificSender = (sender: string) => {
+  openTestEmailModal(sender)
+}
+
+const getTemplateSenderInfo = (triggerEvent: string) => {
+  if (['company_invite', 'user_welcome', 'onboarding', 'invite'].includes(triggerEvent)) {
+    return { email: 'hey@kurka.ch', badge: 'Onboarding', color: 'bg-purple-100 text-purple-800 border border-purple-200' }
+  }
+  if (['updates', 'changelog', 'newsletter'].includes(triggerEvent)) {
+    return { email: 'updates@kurka.ch', badge: 'News', color: 'bg-blue-100 text-blue-800 border border-blue-200' }
+  }
+  if (['task_assigned', 'task_comment', 'mention', 'calendar_invite', 'calendar_change', 'calendar_cancel'].includes(triggerEvent)) {
+    return { email: 'team@kurka.ch', badge: 'Team', color: 'bg-emerald-100 text-emerald-800 border border-emerald-200' }
+  }
+  if (['task_due', 'calendar_reminder', 'budget_warning', 'digest'].includes(triggerEvent)) {
+    return { email: 'notify@kurka.ch', badge: 'Fristen', color: 'bg-amber-100 text-amber-800 border border-amber-200' }
+  }
+  if (['password_reset', 'security_alert', 'account_change', '2fa'].includes(triggerEvent)) {
+    return { email: 'system@kurka.ch', badge: 'Sicherheit', color: 'bg-rose-100 text-rose-800 border border-rose-200' }
+  }
+  return { email: 'notify@kurka.ch', badge: 'Standard', color: 'bg-slate-100 text-slate-800 border border-slate-200' }
 }
 
 const sendTestEmail = async () => {
@@ -2897,6 +3053,7 @@ const sendTestEmail = async () => {
       headers: authHeaders(),
       body: {
         to_email: testEmailTo.value,
+        sender_email: testEmailSender.value,
         custom_config: smtpConfig.value
       }
     })

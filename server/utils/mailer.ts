@@ -48,6 +48,70 @@ export function saveSmtpConfig(config: Partial<SmtpConfig>) {
   }
 }
 
+export type EmailPurpose = 'onboarding' | 'updates' | 'collaboration' | 'notify' | 'system'
+
+export interface SenderIdentity {
+  email: string
+  name: string
+  replyTo?: string
+  description: string
+}
+
+export const EMAIL_SENDERS: Record<EmailPurpose, SenderIdentity> = {
+  onboarding: {
+    email: 'hey@kurka.ch',
+    name: 'Taskster',
+    replyTo: 'support@kurka.ch',
+    description: 'Onboarding, Willkommensnachrichten, direkte Ansprache'
+  },
+  updates: {
+    email: 'updates@kurka.ch',
+    name: 'Taskster',
+    description: 'Changelogs, Produkt-News, Newsletter'
+  },
+  collaboration: {
+    email: 'team@kurka.ch',
+    name: 'Taskster',
+    description: 'Kollaborations-Ereignisse (Zuweisungen, Erwähnungen, Kommentare, Termine)'
+  },
+  notify: {
+    email: 'notify@kurka.ch',
+    name: 'Taskster',
+    description: 'Allgemeine Benachrichtigungen, Fristen, Statusänderungen'
+  },
+  system: {
+    email: 'system@kurka.ch',
+    name: 'Taskster',
+    description: 'Technische Transaktionsmails (Passwort-Resets, Sicherheitswarnungen, Account-Änderungen)'
+  }
+}
+
+export function getSenderForTrigger(triggerEvent?: string, purpose?: EmailPurpose): { from: string; email: string; name: string; replyTo?: string } {
+  let p: EmailPurpose = purpose || 'notify'
+
+  if (!purpose && triggerEvent) {
+    if (['company_invite', 'user_welcome', 'onboarding', 'invite'].includes(triggerEvent)) {
+      p = 'onboarding'
+    } else if (['updates', 'changelog', 'newsletter', 'product_news'].includes(triggerEvent)) {
+      p = 'updates'
+    } else if (['task_assigned', 'task_comment', 'mention', 'calendar_invite', 'calendar_change', 'calendar_cancel'].includes(triggerEvent)) {
+      p = 'collaboration'
+    } else if (['task_due', 'calendar_reminder', 'budget_warning', 'digest'].includes(triggerEvent)) {
+      p = 'notify'
+    } else if (['password_reset', 'security_alert', 'account_change', '2fa', 'auth_verification'].includes(triggerEvent)) {
+      p = 'system'
+    }
+  }
+
+  const sender = EMAIL_SENDERS[p] || EMAIL_SENDERS.notify
+  return {
+    from: `${sender.name} <${sender.email}>`,
+    email: sender.email,
+    name: sender.name,
+    replyTo: sender.replyTo
+  }
+}
+
 export interface MailOptions {
   to: string
   toName?: string
@@ -55,17 +119,23 @@ export interface MailOptions {
   bodyHtml?: string
   bodyText?: string
   icsContent?: string
+  triggerEvent?: string
+  purpose?: EmailPurpose
+  from?: string
+  replyTo?: string
 }
 
 /**
- * Sendet E-Mails über die Resend API mit noreply@kurka.ch
+ * Sendet E-Mails über die Resend API mit dedizierten Absendern (@kurka.ch)
  */
-export async function sendResendEmail(options: MailOptions, apiKey: string, customFrom?: string): Promise<{ success: boolean; log: string[] }> {
+export async function sendResendEmail(options: MailOptions, apiKey: string, customFrom?: string, customReplyTo?: string): Promise<{ success: boolean; log: string[] }> {
   const log: string[] = []
   const outboxId = 'out_' + randomUUID().substring(0, 8)
   const resend = new Resend(apiKey)
-  const cfg = getSmtpConfig()
-  const fromAddress = customFrom || `${cfg.smtp_from_name || 'Taskster'} <${cfg.smtp_from_email || 'noreply@kurka.ch'}>`
+  
+  const sender = getSenderForTrigger(options.triggerEvent, options.purpose)
+  const fromAddress = customFrom || options.from || sender.from
+  const replyTo = customReplyTo || options.replyTo || sender.replyTo
 
   // Log pending to email_outbox
   try {
@@ -82,7 +152,7 @@ export async function sendResendEmail(options: MailOptions, apiKey: string, cust
     )
   } catch (_) {}
 
-  log.push(`> [Resend API] Sende E-Mail an ${options.to} via ${fromAddress}`)
+  log.push(`> [Resend API] Sende E-Mail an ${options.to} via ${fromAddress}${replyTo ? ` (Reply-To: ${replyTo})` : ''}`)
 
   try {
     const payload: any = {
@@ -91,6 +161,10 @@ export async function sendResendEmail(options: MailOptions, apiKey: string, cust
       subject: options.subject,
       html: options.bodyHtml || `<p>${(options.bodyText || '').replace(/\n/g, '<br>')}</p>`,
       text: options.bodyText || undefined
+    }
+
+    if (replyTo) {
+      payload.reply_to = replyTo
     }
 
     if (options.icsContent) {
@@ -126,14 +200,16 @@ export async function sendResendEmail(options: MailOptions, apiKey: string, cust
 }
 
 /**
- * Native Socket/TLS SMTP Mailer (Zero External Dependencies) mit automatischem Resend-Fallback
+ * Native Socket/TLS SMTP Mailer mit automatischem Resend-Routing
  */
 export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpConfig): Promise<{ success: boolean; log: string[] }> {
   const cfg = customConfig || getSmtpConfig()
   const resendApiKey = cfg.resend_api_key || process.env.RESEND_API_KEY
   if (cfg.mail_provider !== 'smtp' && resendApiKey && resendApiKey.startsWith('re_') && resendApiKey !== 're_xxxxxxxxx') {
-    const fromStr = `${cfg.smtp_from_name || 'Taskster'} <${cfg.smtp_from_email || 'noreply@kurka.ch'}>`
-    return sendResendEmail(options, resendApiKey, fromStr)
+    const sender = getSenderForTrigger(options.triggerEvent, options.purpose)
+    const fromStr = options.from || (customConfig?.smtp_from_email ? `${customConfig.smtp_from_name || 'Taskster'} <${customConfig.smtp_from_email}>` : sender.from)
+    const replyToStr = options.replyTo || sender.replyTo
+    return sendResendEmail(options, resendApiKey, fromStr, replyToStr)
   }
 
   const log: string[] = []
@@ -381,6 +457,7 @@ export async function sendTriggerEmail(
     subject,
     bodyHtml,
     bodyText,
-    icsContent: data.ics_content
+    icsContent: data.ics_content,
+    triggerEvent
   })
 }
