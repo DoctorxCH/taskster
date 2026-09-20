@@ -795,18 +795,24 @@ function saveSmtpConfigDb($pdo, $config) {
     }
 }
 
-function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null) {
+function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
     $log = [];
     $db = getDb();
-    $outboxId = 'mail_' . substr(bin2hex(random_bytes(6)), 0, 8);
-
-    try {
-        $stmt = $db->prepare("
-            INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
-        ");
-        $stmt->execute([$outboxId, $to, $toName ?: null, $subject, $bodyHtml ?: $bodyText, $icsContent]);
-    } catch (Exception $e) {}
+    
+    if (!$outboxId) {
+        $outboxId = 'mail_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
+            ");
+            $stmt->execute([$outboxId, $to, $toName ?: null, $subject, $bodyHtml ?: $bodyText, $icsContent]);
+        } catch (Exception $e) {}
+    } else {
+        try {
+            $db->prepare("UPDATE email_outbox SET status = 'processing', attempts = attempts + 1 WHERE id = ?")->execute([$outboxId]);
+        } catch (Exception $e) {}
+    }
 
     $host = !empty($cfg['smtp_host']) ? $cfg['smtp_host'] : 'mail.kurka.ch';
     $port = !empty($cfg['smtp_port']) ? (int)$cfg['smtp_port'] : 465;
@@ -1089,9 +1095,25 @@ function getJsonBody() {
     return $raw ? json_decode($raw, true) : [];
 }
 
+function processEmailOutbox() {
+    try {
+        $db = getDb();
+        $cfg = getSmtpConfigDb($db);
+        $stmt = $db->query("SELECT * FROM email_outbox WHERE status = 'pending' ORDER BY created_at ASC LIMIT 10");
+        $emails = $stmt->fetchAll();
+        foreach ($emails as $email) {
+            sendSmtpEmailNative($cfg, $email['to_email'], $email['to_name'], $email['subject'], $email['body'], $email['body'], $email['ics_content'], $email['id']);
+        }
+    } catch (Exception $e) {}
+}
+
 function jsonResponse($data, $status = 200) {
     http_response_code($status);
     echo json_encode($data);
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    processEmailOutbox();
     exit;
 }
 
