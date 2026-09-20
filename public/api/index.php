@@ -3080,7 +3080,25 @@ try {
         $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0;
         $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
-        if (!$folderId || !$title) errorResponse('Ordner und Titel erforderlich', 400);
+        if (!$title) errorResponse('Titel erforderlich', 400);
+
+        // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
+        // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
+        $isFreeUser = empty($user['is_pro']) && empty($user['company_id']) && empty($user['is_superadmin']);
+        if (!$folderId) {
+            if (!$isFreeUser) errorResponse('Ordner erforderlich', 400);
+            $defStmt = $db->prepare("SELECT * FROM project_folders WHERE owner_id = ? ORDER BY created_at ASC LIMIT 1");
+            $defStmt->execute([$user['id']]);
+            $defFolder = $defStmt->fetch();
+            if (!$defFolder) {
+                $defFolderId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, ?, ?, 'private')")
+                   ->execute([$defFolderId, $user['id'], $user['company_id'] ?? null, 'Meine Projekte', '📁']);
+                $defStmt->execute([$user['id']]);
+                $defFolder = $defStmt->fetch();
+            }
+            $folderId = $defFolder['id'];
+        }
 
         // Folder access check
         $fCheckStmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");

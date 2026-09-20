@@ -1,14 +1,26 @@
 import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
+import { getOrCreateDefaultFolder } from '~/server/utils/defaultFolder'
 import { randomUUID } from 'crypto'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { folder_id, title, template_id, custom_lists, import_tasks } = body
+  const { title, template_id, custom_lists, import_tasks } = body
+  let { folder_id } = body
 
-  if (!folder_id || !title || !title.trim()) {
-    throw createError({ statusCode: 400, statusMessage: 'Ordner-ID und Projekttitel sind erforderlich' })
+  if (!title || !title.trim()) {
+    throw createError({ statusCode: 400, statusMessage: 'Projekttitel ist erforderlich' })
+  }
+
+  // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
+  // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
+  const isFreeUser = !user.is_pro && !user.company_id && !user.is_superadmin
+  if (!folder_id) {
+    if (!isFreeUser) {
+      throw createError({ statusCode: 400, statusMessage: 'Ordner-ID ist erforderlich' })
+    }
+    folder_id = getOrCreateDefaultFolder(user).id
   }
 
   const folder = db.prepare('SELECT * FROM project_folders WHERE id = ?').get(folder_id) as any

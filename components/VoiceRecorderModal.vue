@@ -769,7 +769,7 @@ const createTaskInternal = async (projectId?: string) => {
 
   const listId = projData.lists?.[0]?.id
   if (!listId) {
-    throw new Error('Das gewählte Projekt hat noch keine Abschnitte/Listen')
+      throw new Error('Das gewählte Projekt hat noch keine Abschnitte')
   }
 
   const taskTitle = aiAnalysis.value?.extracted_task_title || (

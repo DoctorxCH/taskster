@@ -94,7 +94,7 @@
         <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
           <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
           <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
-          <div class="text-[10px] text-slate-400">In Listen gepflegt</div>
+          <div class="text-[10px] text-slate-400">In Abschnitten gepflegt</div>
         </div>
 
         <div class="p-3 rounded-lg bg-amber-50/50 border border-amber-200/60 text-center">
@@ -548,7 +548,7 @@
             <span>Projekt-Vorlagen (Gewerbe, Jobs & Privat)</span>
           </h3>
           <p class="text-xs text-slate-600 font-medium mt-1 max-w-2xl">
-            Verwalte strukturierte Vorlagen mit Standard-Listen und benutzerdefinierten Feldern inklusive bedingter IF-THEN-Logik. Benutzer können diese beim Erstellen eines neuen Projekts auswählen.
+            Verwalte strukturierte Vorlagen mit Standard-Abschnitten und benutzerdefinierten Feldern inklusive bedingter IF-THEN-Logik. Benutzer können diese beim Erstellen eines neuen Projekts auswählen.
           </p>
         </div>
 
@@ -640,7 +640,7 @@
             <!-- Pre-configured Lists -->
             <div class="mb-3">
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Vordefinierte Abschnitte / Listen ({{ tmpl.lists?.length || 0 }})</span>
+                <span>Vordefinierte Abschnitte ({{ tmpl.lists?.length || 0 }})</span>
               </div>
               <div class="flex flex-wrap gap-1.5">
                 <span
@@ -1315,10 +1315,10 @@
           <!-- Lists / Sections Editor -->
           <div class="pt-3 border-t border-slate-200">
             <label class="block text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">
-              Vordefinierte Abschnitte / Listen
+              Vordefinierte Abschnitte
             </label>
             <p class="text-[11px] text-slate-500 mb-2">
-              Diese Listen werden automatisch angelegt, wenn ein Projekt mit dieser Vorlage erstellt wird.
+              Diese Abschnitte werden automatisch angelegt, wenn ein Projekt mit dieser Vorlage erstellt wird.
             </p>
 
             <div class="flex flex-wrap gap-2 mb-2">

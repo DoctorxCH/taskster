@@ -7,11 +7,13 @@
         <span>Dashboard</span>
       </NuxtLink>
       <span>/</span>
-      <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
-        <Folder class="w-3.5 h-3.5" />
-        <span>{{ project?.folder_name || 'Ordner' }}</span>
-      </NuxtLink>
-      <span>/</span>
+      <template v-if="!isFreeUser">
+        <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+          <Folder class="w-3.5 h-3.5" />
+          <span>{{ project?.folder_name || 'Ordner' }}</span>
+        </NuxtLink>
+        <span>/</span>
+      </template>
       <span class="text-slate-800 font-semibold flex items-center gap-1">
         <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
         <span>{{ project?.title || 'Projekt' }}</span>
@@ -71,7 +73,7 @@
             </div>
 
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#0891B2] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="!isFreeUser">Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#0891B2] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
               <span v-if="project.company_name" class="text-slate-700 font-medium">• {{ project.company_name }}</span>
             </p>
 
@@ -1893,8 +1895,10 @@
             <div class="flex-1 min-w-0">
               <!-- Breadcrumbs -->
               <div class="flex items-center space-x-1.5 text-[11px] font-bold text-slate-500 mb-1.5 flex-wrap">
-                <span>📁 {{ project?.folder_name || 'Ordner' }}</span>
-                <span>/</span>
+                <template v-if="!isFreeUser">
+                  <span>📁 {{ project?.folder_name || 'Ordner' }}</span>
+                  <span>/</span>
+                </template>
                 <span>📋 {{ project?.title || 'Projekt' }}</span>
                 <span v-if="getTaskSectionTitle(drawerTask?.list_id)">/</span>
                 <span v-if="getTaskSectionTitle(drawerTask?.list_id)" class="text-cyan-800 font-extrabold">
@@ -3728,6 +3732,9 @@ const loading = ref(true)
 const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time' | 'contacts'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
 const showActionsMenu = ref(false)
+
+// Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
+const isFreeUser = computed(() => !user.value?.is_pro && !user.value?.company_id && !user.value?.is_superadmin)
 
 // Projekt-Kontakte State
 const projectContacts = ref<any[]>([])
