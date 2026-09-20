@@ -53,3 +53,5 @@
 - **Projekt-Erstellung (`POST /api/projects`):**
   - Akzeptiert optional `custom_lists` (vom Benutzer angepasste Phasen).
   - Akzeptiert `import_tasks` (Array von Aufgaben mit automatischer Zuordnung zur Ziel-Liste).
+  - **Bugfix MySQL NOT NULL:** Standardisierung von `budget_hours` und `budget_amount` auf `0.0` statt `null` (behebt `SQLSTATE[23000] Column 'budget_hours' cannot be null`).
+
