@@ -1,6 +1,7 @@
 {
   "$comment": "Zentrale AI-Konfiguration (Single Source of Truth) - wird von scripts/ai.cjs UND api/index.php gelesen. KEINE Secrets hier ablegen!",
   "model": "google/gemini-2.5-flash",
+  "audio_model": "openai/whisper-large-v3-turbo",
   "provider": {
     "allow_fallbacks": true
   },

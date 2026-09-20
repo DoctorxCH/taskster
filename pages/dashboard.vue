@@ -114,6 +114,16 @@
             </div>
 
             <div class="flex items-center space-x-2">
+              <button
+                type="button"
+                @click="showVoiceModal = true"
+                class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] border border-cyan-200 text-xs font-semibold transition shadow-2xs cursor-pointer"
+                title="Sprachaufnahme via openai/whisper-large-v3-turbo anfertigen"
+              >
+                <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
+                <span>Neue Sprachnotiz</span>
+              </button>
+
               <NuxtLink
                 to="/time"
                 class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
@@ -830,6 +840,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Voice Recorder (Whisper v3 Turbo) -->
+  <VoiceRecorderModal
+    v-model="showVoiceModal"
+    :projects="availableProjects"
+    @saved="onVoiceNoteSaved"
+  />
 </template>
 
 <script setup lang="ts">
@@ -856,11 +873,19 @@ import {
   MessageSquare,
   Mail,
   CreditCard,
-  X
+  X,
+  Mic
 } from 'lucide-vue-next'
 
 const { user, authHeaders } = useAuth()
 const { state: stopwatchState, startTimer, openStopModal, formatSeconds } = useStopwatch()
+const showVoiceModal = ref(false)
+
+const onVoiceNoteSaved = (payload: any) => {
+  if (payload.type === 'task') {
+    loadTasks()
+  }
+}
 
 const startTaskTimer = (task: any) => {
   if (!task) return

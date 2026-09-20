@@ -155,6 +155,17 @@
               <span class="hidden sm:inline">Import</span>
             </button>
 
+            <!-- Voice Note (openai/whisper-large-v3-turbo) -->
+            <button
+              v-if="userRole !== 'viewer'"
+              @click="showVoiceModal = true"
+              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
+              title="Sprachnotiz aufnehmen (openai/whisper-large-v3-turbo)"
+            >
+              <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
+              <span class="hidden sm:inline">Sprachnotiz</span>
+            </button>
+
             <!-- New Section -->
             <button
               v-if="userRole !== 'viewer'"
@@ -3379,6 +3390,14 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Voice Recorder (Whisper v3 Turbo) -->
+  <VoiceRecorderModal
+    v-model="showVoiceModal"
+    :default-project-id="project?.id"
+    :projects="[project].filter(Boolean)"
+    @saved="onVoiceNoteSaved"
+  />
 </template>
 
 <script setup lang="ts">
@@ -3405,12 +3424,22 @@ import {
   Phone,
   Mail,
   Globe,
-  MapPin
+  MapPin,
+  Mic
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const { user, authHeaders } = useAuth()
 const projectId = route.params.id as string
+const showVoiceModal = ref(false)
+
+const onVoiceNoteSaved = (payload: any) => {
+  if (payload.type === 'journal') {
+    loadJournals()
+  } else if (payload.type === 'task') {
+    loadProject()
+  }
+}
 
 const project = ref<any>(null)
 const userRole = ref<'owner' | 'admin' | 'editor' | 'viewer'>('viewer')
