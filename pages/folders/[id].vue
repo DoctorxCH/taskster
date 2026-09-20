@@ -397,30 +397,39 @@
         </div>
 
         <form @submit.prevent="createProject" class="p-6 space-y-6">
-          <!-- Creation Mode Selector (Template vs Blank) -->
-          <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl">
+          <!-- Creation Mode Selector (Template vs Import vs Blank) -->
+          <div class="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl">
             <button
               type="button"
-              @click="useTemplateMode = true"
-              class="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl text-xs font-bold transition cursor-pointer"
-              :class="useTemplateMode ? 'bg-white text-cyan-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+              @click="projectCreationMode = 'template'"
+              class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer text-center"
+              :class="projectCreationMode === 'template' ? 'bg-white text-[#00A3C4] shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             >
               <span>📋</span>
-              <span>Aus Vorlage erstellen (Empfohlen)</span>
+              <span class="truncate">Aus Vorlage (Empfohlen)</span>
             </button>
             <button
               type="button"
-              @click="useTemplateMode = false; selectedTemplateId = null"
-              class="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl text-xs font-bold transition cursor-pointer"
-              :class="!useTemplateMode ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+              @click="projectCreationMode = 'import'"
+              class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer text-center"
+              :class="projectCreationMode === 'import' ? 'bg-white text-[#00A3C4] shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            >
+              <span>📊</span>
+              <span class="truncate">Excel / CSV Import</span>
+            </button>
+            <button
+              type="button"
+              @click="projectCreationMode = 'blank'; selectedTemplateId = null"
+              class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer text-center"
+              :class="projectCreationMode === 'blank' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             >
               <span>📝</span>
-              <span>Leeres Projekt (Blanko)</span>
+              <span class="truncate">Leeres Projekt (Blanko)</span>
             </button>
           </div>
 
           <!-- SECTION A: TEMPLATE BROWSER -->
-          <div v-if="useTemplateMode" class="space-y-4">
+          <div v-if="projectCreationMode === 'template'" class="space-y-4">
             <!-- Search & Filters -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
               <!-- Category Pills -->
@@ -428,7 +437,7 @@
                 <button
                   type="button"
                   @click="templateFilterCategory = 'all'"
-                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer"
                   :class="templateFilterCategory === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'"
                 >
                   Alle Vorlagen ({{ templates.length }})
@@ -436,20 +445,20 @@
                 <button
                   type="button"
                   @click="templateFilterCategory = 'job'"
-                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer"
-                  :class="templateFilterCategory === 'job' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600 hover:text-cyan-700'"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer"
+                  :class="templateFilterCategory === 'job' ? 'bg-[#00A3C4] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:text-cyan-700'"
                 >
                   <span>💼</span>
-                  <span>Job & Gewerbe</span>
+                  <span>Job & Gewerbe ({{ templates.filter(t => t.category === 'job').length }})</span>
                 </button>
                 <button
                   type="button"
                   @click="templateFilterCategory = 'private'"
-                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer"
-                  :class="templateFilterCategory === 'private' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:text-purple-700'"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer"
+                  :class="templateFilterCategory === 'private' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:text-purple-700'"
                 >
-                  <span>🏠</span>
-                  <span>Privat</span>
+                  <span>🏡</span>
+                  <span>Privat & Familie ({{ templates.filter(t => t.category === 'private').length }})</span>
                 </button>
               </div>
 
@@ -459,7 +468,7 @@
                   v-model="templateSearchQuery"
                   type="text"
                   placeholder="🔍 Vorlage suchen..."
-                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+                  class="w-full px-3.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 />
               </div>
             </div>
@@ -471,101 +480,273 @@
 
             <!-- Empty State -->
             <div v-else-if="filteredTemplates.length === 0" class="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-500">
-              Keine Vorlagen gefunden.
+              Keine passenden Vorlagen gefunden.
             </div>
 
             <!-- Templates Grid -->
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
               <div
                 v-for="tmpl in filteredTemplates"
                 :key="tmpl.id"
                 @click="selectTemplate(tmpl)"
                 class="p-4 rounded-2xl border transition cursor-pointer flex flex-col justify-between text-left"
                 :class="selectedTemplateId === tmpl.id
-                  ? 'bg-cyan-50/70 border-cyan-500 ring-2 ring-cyan-500/30'
+                  ? 'bg-cyan-50/70 border-[#00A3C4] ring-2 ring-[#00A3C4]/30'
                   : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'"
               >
                 <div>
                   <div class="flex items-start justify-between mb-2">
-                    <div class="flex items-center space-x-2">
-                      <span class="text-xl">{{ tmpl.category === 'private' ? '🏠' : (tmpl.icon === 'Network' ? '🌐' : (tmpl.icon === 'Zap' ? '⚡' : '💼')) }}</span>
+                    <div class="flex items-center space-x-2.5">
+                      <span class="text-2xl">{{ getTemplateIcon(tmpl.icon, tmpl.category) }}</span>
                       <div>
-                        <h4 class="text-xs font-bold text-slate-900">{{ tmpl.name }}</h4>
-                        <span v-if="tmpl.subcategory" class="text-[10px] text-slate-500">{{ tmpl.subcategory }}</span>
+                        <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ tmpl.name }}</h4>
+                        <span v-if="tmpl.subcategory" class="text-[10px] text-slate-500 font-medium">{{ tmpl.subcategory }}</span>
                       </div>
                     </div>
                     <span
-                      class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                      class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ml-2"
                       :class="tmpl.category === 'job' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' : 'bg-purple-50 text-purple-700 border border-purple-200'"
                     >
-                      {{ tmpl.category === 'job' ? 'Job' : 'Privat' }}
+                      {{ tmpl.category === 'job' ? 'Gewerbe' : 'Privat' }}
                     </span>
                   </div>
-                  <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                  <p class="text-xs text-slate-600 line-clamp-2 mb-3 leading-relaxed">
                     {{ tmpl.description }}
                   </p>
                 </div>
 
                 <!-- Badges -->
-                <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 text-[10px]">
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
-                    📂 {{ (tmpl.lists || []).length }} Listen
+                <div class="flex flex-wrap items-center gap-1.5 pt-2.5 border-t border-slate-100 text-[10px]">
+                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold">
+                    📂 {{ (tmpl.lists || []).length }} Abschnitte
                   </span>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
-                    🏷️ {{ (tmpl.fields || tmpl.custom_fields || []).length }} Custom Fields
+                  <span v-if="(tmpl.fields || []).length > 0" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold">
+                    🏷️ {{ (tmpl.fields || []).length }} Zusatzfelder
                   </span>
                   <span
-                    v-if="(tmpl.fields || tmpl.custom_fields || []).some((f: any) => f.logic_rules)"
-                    class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-medium"
+                    v-if="(tmpl.fields || []).some((f: any) => f.logic_rules && f.logic_rules.depends_on_field)"
+                    class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-semibold"
                   >
-                    ⚡ Mit Feld-Logik
+                    ⚡ Mit Bedingungs-Logik
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- Preview of Selected Template Features -->
-            <div v-if="selectedTemplate" class="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-200 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-cyan-800 uppercase tracking-wider flex items-center space-x-1.5">
-                  <span>✓ Ausgewählte Vorlage:</span>
-                  <span class="text-slate-900 font-black">{{ selectedTemplate.name }}</span>
-                </span>
-                <span class="text-[11px] text-slate-500">Automatische Konfiguration</span>
+            <!-- Preview of Selected Template Features & Customization -->
+            <div v-if="selectedTemplate" class="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-200 space-y-4">
+              <div class="flex items-center justify-between border-b border-cyan-200/60 pb-2.5">
+                <div class="flex items-center space-x-2">
+                  <span class="text-cyan-700 font-bold text-sm">✓ Gewählte Vorlage:</span>
+                  <span class="text-slate-900 font-black text-sm">{{ selectedTemplate.name }}</span>
+                </div>
+                <span class="text-[11px] font-medium text-slate-500">Konfiguration anpassen</span>
               </div>
 
-              <!-- Included Lists -->
-              <div>
-                <span class="text-[11px] font-bold text-slate-600 block mb-1">Enthaltene Phasen / Abschnitte:</span>
+              <!-- Included Lists with Interactive Adjustments -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-800">
+                    Projektphasen / Abschnitte ({{ selectedTemplateLists.length }}):
+                  </span>
+                  <span class="text-[10px] text-slate-500">Du kannst Phasen vor der Erstellung anpassen oder entfernen</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                  <div
+                    v-for="(listName, idx) in selectedTemplateLists"
+                    :key="idx"
+                    class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs bg-cyan-50 border border-cyan-200 text-cyan-900 font-bold shadow-2xs"
+                  >
+                    <span class="text-cyan-600 text-[10px] font-mono">{{ idx + 1 }}.</span>
+                    <span>{{ listName }}</span>
+                    <button
+                      v-if="selectedTemplateLists.length > 1"
+                      type="button"
+                      @click="removeTemplatePhase(idx)"
+                      class="text-cyan-600 hover:text-rose-600 ml-1 font-bold text-xs"
+                      title="Phase entfernen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Inline Add Phase -->
+                  <div class="flex items-center space-x-1 pl-1">
+                    <input
+                      v-model="newTemplatePhaseInput"
+                      @keydown.enter.prevent="addTemplatePhase"
+                      type="text"
+                      placeholder="+ Phase hinzufügen..."
+                      class="px-2.5 py-1 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-[#00A3C4] w-36"
+                    />
+                    <button
+                      v-if="newTemplatePhaseInput.trim()"
+                      type="button"
+                      @click="addTemplatePhase"
+                      class="px-2 py-1 bg-[#00A3C4] text-white text-[11px] font-bold rounded-lg hover:opacity-90 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Included Custom Fields -->
+              <div v-if="(selectedTemplate.fields || []).length > 0" class="space-y-2">
+                <span class="text-xs font-bold text-slate-800 block">Zusatzfelder dieser Vorlage:</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div
+                    v-for="cf in selectedTemplate.fields"
+                    :key="cf.field_key"
+                    class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs"
+                  >
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-slate-800">{{ cf.label }}</span>
+                      <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
+                        {{ getFieldTypeLabel(cf.field_type) }}
+                      </span>
+                    </div>
+                    <!-- Conditional Logic Badge -->
+                    <div v-if="cf.logic_rules && cf.logic_rules.depends_on_value" class="mt-1 text-[10px] text-amber-800 flex items-center space-x-1 font-medium bg-amber-50/80 px-2 py-0.5 rounded border border-amber-200/60">
+                      <span>⚡</span>
+                      <span>Sichtbar bei: <strong>{{ cf.logic_rules.depends_on_value }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION IMPORT: EXCEL / CSV IMPORT -->
+          <div v-else-if="projectCreationMode === 'import'" class="space-y-5">
+            <!-- Step 1: Upload or sample download -->
+            <div
+              class="p-7 border-2 border-dashed rounded-3xl transition text-center cursor-pointer flex flex-col items-center justify-center"
+              :class="isImportDragging ? 'border-[#00A3C4] bg-cyan-50/50' : 'border-slate-300 hover:border-[#00A3C4] bg-slate-50 hover:bg-cyan-50/20'"
+              @click="importFileInput?.click()"
+              @dragover.prevent="isImportDragging = true"
+              @dragleave.prevent="isImportDragging = false"
+              @drop.prevent="onImportFileDrop"
+            >
+              <input
+                ref="importFileInput"
+                type="file"
+                accept=".xlsx,.xls,.csv,.tsv"
+                class="hidden"
+                @change="onImportFileSelected"
+              />
+              <span class="text-4xl mb-2">📊</span>
+              <p class="text-sm font-bold text-slate-800">
+                Excel (.xlsx, .xls) oder CSV / TSV Datei auswählen oder hier ablegen
+              </p>
+              <p class="text-xs text-slate-500 mt-1 max-w-md">
+                Erzeugt automatisch ein neues Projekt, alle enthaltenen Phasen/Abschnitte und importiert alle Aufgaben auf einen Klick.
+              </p>
+
+              <div class="mt-4 flex items-center space-x-3" @click.stop>
+                <button
+                  type="button"
+                  @click="downloadSampleExcel"
+                  class="taskster_button_light px-4 text-xs h-[36px] rounded-lg shadow-xs flex items-center space-x-1.5"
+                >
+                  <span>📥</span>
+                  <span>Muster-Excel herunterladen</span>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
+              {{ importError }}
+            </div>
+
+            <!-- Step 2: Mapping & Preview -->
+            <div v-if="importHeaders.length > 0" class="space-y-4 pt-2 border-t border-slate-100">
+              <div class="p-3 bg-cyan-50/80 border border-cyan-200 rounded-2xl flex items-center justify-between text-xs">
+                <span class="text-cyan-950 font-bold">
+                  📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Zeilen, {{ importHeaders.length }} Spalten)
+                </span>
+                <span class="text-cyan-800 font-semibold">
+                  {{ detectedImportPhases.length }} Abschnitt(e) erkannt
+                </span>
+              </div>
+
+              <!-- Detected Phases Chips -->
+              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">Zu erstellende Abschnitte / Phasen:</span>
+                  <span class="text-[11px] text-slate-500">Werden automatisch angelegt</span>
+                </div>
                 <div class="flex flex-wrap gap-1.5">
                   <span
-                    v-for="(listName, idx) in selectedTemplate.lists"
-                    :key="idx"
-                    class="px-2.5 py-1 rounded-lg text-xs bg-white border border-slate-200 text-slate-800 font-medium shadow-sm"
+                    v-for="(phaseName, pIdx) in detectedImportPhases"
+                    :key="pIdx"
+                    class="px-2.5 py-1 rounded-lg text-xs bg-white border border-slate-200 text-slate-800 font-bold shadow-2xs"
                   >
-                    {{ idx + 1 }}. {{ listName }}
+                    📂 {{ phaseName }}
                   </span>
                 </div>
               </div>
 
-              <!-- Included Custom Fields with Logic -->
-              <div v-if="(selectedTemplate.fields || selectedTemplate.custom_fields || []).length > 0">
-                <span class="text-[11px] font-bold text-slate-600 block mb-1">Benutzerdefinierte Felder mit Logik:</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Column Mapping -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
+                    Spaltenzuweisung (Mapping):
+                  </label>
+                  <span class="text-[11px] text-slate-500 font-medium">Aufgabentitel ist Pflichtfeld</span>
+                </div>
+
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
+                      <tr>
+                        <th class="py-2.5 px-4">Spalte in Excel / CSV</th>
+                        <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
+                        <th class="py-2.5 px-4">Zuweisung an Taskster-Feld</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
+                      <tr v-for="(header, hIdx) in importHeaders" :key="hIdx" class="hover:bg-slate-50/80">
+                        <td class="py-2.5 px-4 font-bold text-slate-900">{{ header }}</td>
+                        <td class="py-2.5 px-4 text-slate-500 font-mono text-[11px] truncate max-w-xs">
+                          {{ importParsedRows[0]?.[hIdx] || '-' }}
+                        </td>
+                        <td class="py-2.5 px-4">
+                          <select
+                            v-model="importColumnMapping[hIdx]"
+                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#00A3C4]"
+                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#00A3C4] bg-cyan-50/50 text-cyan-950 font-bold' : ''"
+                          >
+                            <option value="">-- Nicht importieren --</option>
+                            <option value="list_title">📂 Phase / Abschnitt (Erzeugt Listen)</option>
+                            <option value="title">📌 Aufgabentitel (Pflicht)</option>
+                            <option value="description">📋 Beschreibung</option>
+                            <option value="due_date">📅 Fälligkeitsdatum</option>
+                            <option value="priority">⚡ Priorität (niedrig/normal/hoch/dringend)</option>
+                            <option value="status">🔄 Status (todo/in_progress/done)</option>
+                            <option value="tags">🏷️ Tags / Schlagwörter</option>
+                          </select>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Preview Table (first 3 rows) -->
+              <div class="space-y-1.5">
+                <span class="text-[11px] font-bold text-slate-600 block uppercase tracking-wider">
+                  Vorschau der ersten Datenzeilen:
+                </span>
+                <div class="border border-slate-200 rounded-xl overflow-x-auto max-h-36 bg-slate-50 p-2 text-[11px] font-mono">
                   <div
-                    v-for="cf in (selectedTemplate.fields || selectedTemplate.custom_fields || [])"
-                    :key="cf.field_key"
-                    class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs"
+                    v-for="(row, rIdx) in importParsedRows.slice(0, 3)"
+                    :key="rIdx"
+                    class="py-1 border-b border-slate-200 last:border-0 flex gap-2"
                   >
-                    <div class="flex items-center justify-between">
-                      <span class="font-bold text-slate-800">{{ cf.label }}</span>
-                      <span class="text-[10px] text-slate-400 font-mono">({{ cf.field_type }})</span>
-                    </div>
-                    <!-- Conditional Logic Badge -->
-                    <div v-if="cf.logic_rules" class="mt-1 text-[10px] text-amber-700 flex items-center space-x-1">
-                      <span>⚡</span>
-                      <span>Nur sichtbar wenn <code class="text-amber-800 font-bold">{{ cf.logic_rules.depends_on_field }}</code> = "{{ cf.logic_rules.depends_on_value }}"</span>
-                    </div>
+                    <span class="text-slate-400 font-bold">#{{ rIdx + 1 }}:</span>
+                    <span class="text-slate-700 truncate">{{ row.join(' | ') }}</span>
                   </div>
                 </div>
               </div>
@@ -615,7 +796,7 @@
             </div>
 
             <!-- If Blanko Mode and folder has existing project fields -->
-            <div v-if="!useTemplateMode && projectFields.length > 0" class="space-y-3 pt-3 border-t border-slate-100">
+            <div v-if="projectCreationMode === 'blank' && projectFields.length > 0" class="space-y-3 pt-3 border-t border-slate-100">
               <h4 class="text-xs font-bold text-cyan-700 uppercase tracking-wider">
                 Projekt-Felder dieses Ordners
               </h4>
@@ -722,10 +903,10 @@
             </button>
             <button
               type="submit"
-              :disabled="creatingProject || (useTemplateMode && !selectedTemplateId) || !newProjectTitle.trim()"
+              :disabled="creatingProject || (projectCreationMode === 'template' && !selectedTemplateId) || (projectCreationMode === 'import' && (!importParsedRows.length || !Object.values(importColumnMapping).includes('title'))) || !newProjectTitle.trim()"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span>{{ creatingProject ? 'Wird erstellt...' : (useTemplateMode ? 'Projekt aus Vorlage erstellen' : 'Projekt erstellen') }}</span>
+              <span>{{ creatingProject ? 'Wird erstellt...' : (projectCreationMode === 'template' ? 'Projekt aus Vorlage erstellen' : (projectCreationMode === 'import' ? `Projekt mit allen ${importParsedRows.length} Aufgaben importieren` : 'Projekt erstellen')) }}</span>
             </button>
           </div>
         </form>
@@ -1038,6 +1219,7 @@ import {
   LayoutGrid,
   List
 } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 
 const route = useRoute()
 const { user, authHeaders } = useAuth()
@@ -1240,10 +1422,57 @@ const projectModalError = ref('')
 
 const templates = ref<any[]>([])
 const loadingTemplates = ref(false)
-const useTemplateMode = ref(true)
+const projectCreationMode = ref<'template' | 'import' | 'blank'>('template')
 const selectedTemplateId = ref<string | null>(null)
+const selectedTemplateLists = ref<string[]>([])
+const newTemplatePhaseInput = ref('')
 const templateFilterCategory = ref<'all' | 'job' | 'private'>('all')
 const templateSearchQuery = ref('')
+
+// Excel / CSV Project Import State
+const importFileInput = ref<HTMLInputElement | null>(null)
+const importFileName = ref('')
+const importHeaders = ref<string[]>([])
+const importParsedRows = ref<any[][]>([])
+const importColumnMapping = ref<Record<number, string>>({})
+const importError = ref('')
+const isImportDragging = ref(false)
+
+const getFieldTypeLabel = (type: string) => {
+  switch (type) {
+    case 'select': return 'Auswahlfeld'
+    case 'text': return 'Textfeld'
+    case 'number': return 'Zahlenfeld'
+    case 'date': return 'Datum'
+    case 'checkbox': return 'Ja/Nein'
+    case 'textarea': return 'Langer Text'
+    case 'url': return 'Link / URL'
+    case 'email': return 'E-Mail'
+    case 'phone': return 'Telefon'
+    default: return 'Zusatzfeld'
+  }
+}
+
+const getTemplateIcon = (iconName: string, category: string) => {
+  if (category === 'private') {
+    if (iconName === 'Sparkles') return '✨'
+    if (iconName === 'Truck') return '🚚'
+    if (iconName === 'Calculator') return '🧮'
+    return '🏡'
+  }
+  switch (iconName) {
+    case 'HardHat': return '👷'
+    case 'Laptop': return '💻'
+    case 'Wrench': return '🔧'
+    case 'Flame': return '🔥'
+    case 'Megaphone': return '📣'
+    case 'Building': return '🏢'
+    case 'Utensils': return '🍽️'
+    case 'ShieldCheck': return '🛡️'
+    case 'Calculator': return '🧮'
+    default: return '💼'
+  }
+}
 
 const selectedTemplate = computed(() => {
   return templates.value.find((t: any) => t.id === selectedTemplateId.value)
@@ -1291,16 +1520,146 @@ const fetchTemplates = async () => {
 
 const selectTemplate = (tmpl: any) => {
   selectedTemplateId.value = tmpl.id
+  selectedTemplateLists.value = [...(tmpl.lists || [])]
   if (!newProjectTitle.value || templates.value.some((t: any) => t.name === newProjectTitle.value)) {
     newProjectTitle.value = tmpl.name
   }
 }
 
-const openNewProjectModal = () => {
-  showNewProjectModal.value = true
+const removeTemplatePhase = (idx: number) => {
+  if (selectedTemplateLists.value.length > 1) {
+    selectedTemplateLists.value.splice(idx, 1)
+  }
+}
+
+const addTemplatePhase = () => {
+  const p = newTemplatePhaseInput.value.trim()
+  if (p && !selectedTemplateLists.value.includes(p)) {
+    selectedTemplateLists.value.push(p)
+    newTemplatePhaseInput.value = ''
+  }
+}
+
+// Download Sample Excel Template
+const downloadSampleExcel = () => {
+  const sampleData = [
+    ['Phase / Abschnitt', 'Aufgabentitel', 'Beschreibung', 'Fälligkeitsdatum', 'Priorität', 'Status', 'Tags'],
+    ['1. Planung & Vorbereitung', 'Bedarfsanalyse & Anforderungen', 'Ziele mit Stakeholdern abstimmen und dokumentieren', '2026-10-15', 'hoch', 'done', 'Planung, Analyse'],
+    ['1. Planung & Vorbereitung', 'Offerten einholen & vergleichen', 'Mindestens 2 Vergleichsangebote anfordern', '2026-10-20', 'normal', 'in_progress', 'Einkauf'],
+    ['2. Ausführung & Umsetzung', 'Material & Ressourcen bereitstellen', 'Lieferung auf Vollständigkeit und Qualität prüfen', '2026-10-25', 'dringend', 'todo', 'Material'],
+    ['2. Ausführung & Umsetzung', 'Montage & Arbeiten vor Ort', 'Umsetzung gemäss Pflichtenheft durchführen', '2026-10-30', 'normal', 'todo', 'Montage'],
+    ['3. Abschluss & Abnahme', 'Abschluss-Check & Protokoll', 'Mängelfreie Abnahme mit Auftraggeber dokumentieren', '2026-11-05', 'hoch', 'todo', 'Abnahme']
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(sampleData)
+  ws['!cols'] = [
+    { wch: 28 },
+    { wch: 34 },
+    { wch: 45 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 24 }
+  ]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Projektplan')
+  XLSX.writeFile(wb, 'Taskster_Projekt_Import_Muster.xlsx')
+}
+
+const onImportFileDrop = (e: DragEvent) => {
+  isImportDragging.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    processImportFile(files[0])
+  }
+}
+
+const onImportFileSelected = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    processImportFile(target.files[0])
+  }
+}
+
+const processImportFile = async (file: File) => {
+  importError.value = ''
+  importFileName.value = file.name
+  if (!newProjectTitle.value.trim()) {
+    newProjectTitle.value = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+  }
+
+  try {
+    const data = await file.arrayBuffer()
+    const wb = XLSX.read(data, { type: 'array' })
+    const sheetName = wb.SheetNames[0]
+    if (!sheetName) throw new Error('Kein Tabellenblatt in der Datei gefunden.')
+    const sheet = wb.Sheets[sheetName]
+    const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+
+    if (rawRows.length < 2) {
+      throw new Error('Die Datei enthält keine Datenzeilen (mindestens 1 Kopfzeile und 1 Datenzeile erforderlich).')
+    }
+
+    importHeaders.value = rawRows[0].map((h: any) => String(h || '').trim())
+    importParsedRows.value = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+
+    // Auto-detect columns
+    const mapping: Record<number, string> = {}
+    importHeaders.value.forEach((h, idx) => {
+      const lower = h.toLowerCase()
+      if (!Object.values(mapping).includes('list_title') && (lower.includes('phase') || lower.includes('abschnitt') || lower.includes('liste') || lower.includes('stage') || lower.includes('bereich'))) {
+        mapping[idx] = 'list_title'
+      } else if (!Object.values(mapping).includes('title') && (lower.includes('titel') || lower.includes('title') || lower.includes('aufgabe') || lower.includes('task') || lower.includes('name'))) {
+        mapping[idx] = 'title'
+      } else if (!Object.values(mapping).includes('description') && (lower.includes('beschreib') || lower.includes('desc') || lower.includes('detail') || lower.includes('notiz'))) {
+        mapping[idx] = 'description'
+      } else if (!Object.values(mapping).includes('due_date') && (lower.includes('fällig') || lower.includes('due') || lower.includes('datum') || lower.includes('date') || lower.includes('termin'))) {
+        mapping[idx] = 'due_date'
+      } else if (!Object.values(mapping).includes('priority') && (lower.includes('prio') || lower.includes('dring'))) {
+        mapping[idx] = 'priority'
+      } else if (!Object.values(mapping).includes('status') && (lower.includes('status') || lower.includes('zustand') || lower.includes('state'))) {
+        mapping[idx] = 'status'
+      } else if (!Object.values(mapping).includes('tags') && (lower.includes('tag') || lower.includes('label') || lower.includes('kategorie') || lower.includes('schlagwort'))) {
+        mapping[idx] = 'tags'
+      }
+    })
+    importColumnMapping.value = mapping
+  } catch (err: any) {
+    importError.value = 'Fehler beim Lesen der Excel/CSV-Datei: ' + (err.message || err)
+  }
+}
+
+const detectedImportPhases = computed(() => {
+  const phaseColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'list_title')?.[0]
+  if (phaseColIdxStr === undefined) return ['Aufgaben']
+  const phaseColIdx = parseInt(phaseColIdxStr)
+  const phases: string[] = []
+  for (const row of importParsedRows.value) {
+    const val = String(row[phaseColIdx] || '').trim()
+    if (val && !phases.includes(val)) {
+      phases.push(val)
+    }
+  }
+  return phases.length > 0 ? phases : ['Aufgaben']
+})
+
+const resetNewProjectForm = () => {
   newProjectTitle.value = ''
   newProjectVisibility.value = 'private'
   newProjectCustomData.value = {}
+  selectedTemplateId.value = null
+  selectedTemplateLists.value = []
+  newTemplatePhaseInput.value = ''
+  importFileName.value = ''
+  importHeaders.value = []
+  importParsedRows.value = []
+  importColumnMapping.value = {}
+  importError.value = ''
+  projectCreationMode.value = 'template'
+}
+
+const openNewProjectModal = () => {
+  showNewProjectModal.value = true
+  resetNewProjectForm()
   projectModalError.value = ''
   fetchTemplates()
 }
@@ -1335,29 +1694,101 @@ const createProject = async () => {
   try {
     const payload: any = {
       folder_id: folderId,
-      title: newProjectTitle.value,
+      title: newProjectTitle.value.trim(),
       visibility: newProjectVisibility.value,
       custom_data: newProjectCustomData.value
     }
-    if (useTemplateMode.value && selectedTemplateId.value) {
-      payload.template_id = selectedTemplateId.value
+
+    if (projectCreationMode.value === 'template') {
+      if (selectedTemplateId.value) {
+        payload.template_id = selectedTemplateId.value
+      }
+      if (selectedTemplateLists.value.length > 0) {
+        payload.custom_lists = selectedTemplateLists.value
+      }
+    } else if (projectCreationMode.value === 'import') {
+      const titleColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'title')?.[0]
+      if (titleColIdxStr === undefined) {
+        throw new Error('Bitte weise mindestens einer Spalte das Pflichtfeld "Aufgabentitel" zu.')
+      }
+      const titleColIdx = parseInt(titleColIdxStr)
+      const phaseColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'list_title')?.[0]
+      const phaseColIdx = phaseColIdxStr !== undefined ? parseInt(phaseColIdxStr) : null
+      const descColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'description')?.[0]
+      const descColIdx = descColIdxStr !== undefined ? parseInt(descColIdxStr) : null
+      const dueColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'due_date')?.[0]
+      const dueColIdx = dueColIdxStr !== undefined ? parseInt(dueColIdxStr) : null
+      const prioColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'priority')?.[0]
+      const prioColIdx = prioColIdxStr !== undefined ? parseInt(prioColIdxStr) : null
+      const statusColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'status')?.[0]
+      const statusColIdx = statusColIdxStr !== undefined ? parseInt(statusColIdxStr) : null
+      const tagColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'tags')?.[0]
+      const tagColIdx = tagColIdxStr !== undefined ? parseInt(tagColIdxStr) : null
+
+      payload.custom_lists = detectedImportPhases.value
+
+      const tasksToImport: any[] = []
+      for (const row of importParsedRows.value) {
+        const taskTitle = String(row[titleColIdx] || '').trim()
+        if (!taskTitle) continue
+
+        const secTitle = phaseColIdx !== null ? String(row[phaseColIdx] || '').trim() : ''
+        const desc = descColIdx !== null ? String(row[descColIdx] || '').trim() : ''
+        let rawDate = dueColIdx !== null ? String(row[dueColIdx] || '').trim() : ''
+        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(rawDate)) {
+          const parts = rawDate.split('.')
+          rawDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+        }
+        let prio = 'normal'
+        if (prioColIdx !== null) {
+          const p = String(row[prioColIdx] || '').toLowerCase()
+          if (p.includes('dring') || p.includes('urgent')) prio = 'dringend'
+          else if (p.includes('hoch') || p.includes('high')) prio = 'hoch'
+          else if (p.includes('niedrig') || p.includes('low')) prio = 'niedrig'
+        }
+        let stat = 'todo'
+        if (statusColIdx !== null) {
+          const s = String(row[statusColIdx] || '').toLowerCase()
+          if (s.includes('done') || s.includes('erledigt') || s.includes('abgeschlossen')) stat = 'done'
+          else if (s.includes('in_progress') || s.includes('arbeit') || s.includes('lauf')) stat = 'in_progress'
+        }
+        let tagList: string[] = []
+        if (tagColIdx !== null) {
+          tagList = String(row[tagColIdx] || '').split(/[,;|]/).map(t => t.trim()).filter(Boolean)
+        }
+
+        tasksToImport.push({
+          list_title: secTitle || detectedImportPhases.value[0] || 'Aufgaben',
+          title: taskTitle,
+          description: desc,
+          due_date: rawDate || null,
+          priority: prio,
+          status: stat,
+          tags: tagList
+        })
+      }
+
+      if (tasksToImport.length === 0) {
+        throw new Error('Keine gültigen Aufgaben in der Datei gefunden.')
+      }
+
+      payload.import_tasks = tasksToImport
     }
+
     const res = await $fetch<any>('/api/projects', {
       method: 'POST',
       headers: authHeaders(),
       body: payload
     })
+
     showNewProjectModal.value = false
-    newProjectTitle.value = ''
-    newProjectVisibility.value = 'private'
-    newProjectCustomData.value = {}
-    selectedTemplateId.value = null
+    resetNewProjectForm()
     await loadFolderData()
     if (res?.project?.id) {
       navigateTo(`/projects/${res.project.id}`)
     }
   } catch (err: any) {
-    projectModalError.value = err.data?.statusMessage || 'Projekt konnte nicht erstellt werden'
+    projectModalError.value = err.data?.statusMessage || err.message || 'Projekt konnte nicht erstellt werden'
   } finally {
     creatingProject.value = false
   }

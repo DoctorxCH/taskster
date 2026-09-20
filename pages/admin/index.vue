@@ -623,8 +623,9 @@
                 >
                   <div class="flex items-center space-x-2 min-w-0">
                     <span class="font-bold text-slate-900 truncate">{{ f.label }}</span>
-                    <span class="text-[10px] font-mono text-slate-400">({{ f.field_key }})</span>
-                    <span class="text-slate-500 font-mono text-[11px]">[{{ f.field_type }}]</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
+                      {{ getFieldTypeLabel(f.field_type) }}
+                    </span>
                     <span
                       class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
                       :class="f.entity_type === 'project' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-cyan-100 text-cyan-800 border border-cyan-200'"
@@ -634,11 +635,11 @@
                   </div>
 
                   <span
-                    v-if="f.logic_rules && f.logic_rules.depends_on_field"
-                    class="text-[10px] text-amber-900 font-mono bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg shrink-0 ml-2 font-bold"
-                    :title="`Nur sichtbar wenn ${f.logic_rules.depends_on_field} == ${f.logic_rules.depends_on_value}`"
+                    v-if="f.logic_rules && f.logic_rules.depends_on_value"
+                    class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0 ml-2 font-medium"
+                    :title="`Nur sichtbar wenn Bedingung erfüllt ist`"
                   >
-                    ⚡ Wenn {{ f.logic_rules.depends_on_field }} == "{{ f.logic_rules.depends_on_value }}"
+                    ⚡ Sichtbar bei: "{{ f.logic_rules.depends_on_value }}"
                   </span>
                 </div>
               </div>
@@ -2253,6 +2254,21 @@ const templateCategoryFilter = ref('all')
 const templateSearch = ref('')
 const showTemplateModal = ref(false)
 const editingTemplate = ref<any>(null)
+
+const getFieldTypeLabel = (type: string) => {
+  switch (type) {
+    case 'select': return 'Auswahlfeld'
+    case 'text': return 'Textfeld'
+    case 'number': return 'Zahlenfeld'
+    case 'date': return 'Datum'
+    case 'checkbox': return 'Ja/Nein'
+    case 'textarea': return 'Langer Text'
+    case 'url': return 'Link / URL'
+    case 'email': return 'E-Mail'
+    case 'phone': return 'Telefon'
+    default: return 'Zusatzfeld'
+  }
+}
 
 const tmplForm = ref({
   name: '',

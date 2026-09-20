@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { join } from 'path'
 import { readFileSync, existsSync, mkdirSync } from 'fs'
+import { defaultProjectTemplates } from './default-templates'
 
 const dataDir = join(process.cwd(), '.data')
 if (!existsSync(dataDir)) {
@@ -417,6 +418,33 @@ export function initDatabase() {
     `)
     for (const t of defaultTemplates) {
       insTmpl.run(t.id, t.trigger_event, t.name, t.subject, t.variables, t.body_text, t.body_html)
+    }
+
+    // Standard-Projektvorlagen anlegen / aktualisieren
+    const insProjTmpl = db.prepare(`
+      INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        category = excluded.category,
+        subcategory = excluded.subcategory,
+        description = excluded.description,
+        icon = excluded.icon,
+        is_system = 1,
+        lists = excluded.lists,
+        fields = excluded.fields
+    `)
+    for (const pt of defaultProjectTemplates) {
+      insProjTmpl.run(
+        pt.id,
+        pt.name,
+        pt.category,
+        pt.subcategory,
+        pt.description,
+        pt.icon,
+        JSON.stringify(pt.lists),
+        JSON.stringify(pt.fields)
+      )
     }
   } catch (_) { /* ignore */ }
 }
