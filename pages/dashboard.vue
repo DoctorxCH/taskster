@@ -21,21 +21,22 @@
         </p>
       </div>
 
-      <!-- Centered Floating Search Pill -->
+      <!-- Command-Palette Trigger (öffnet die globale Suche) -->
       <div class="w-full max-w-xl mt-4 relative">
-        <div class="relative flex items-center">
-          <Search class="absolute left-3.5 w-4 h-4 text-slate-400" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Suchen Sie nach Aufgaben, Projekten und Ordnern..."
-            class="w-full pl-10 pr-20 py-2.5 rounded-lg bg-white text-xs sm:text-sm text-slate-900 placeholder-slate-400 shadow-xs border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0891B2]/30 focus:border-[#0891B2] transition-all"
-          />
-          <div class="absolute right-3 hidden sm:flex items-center space-x-1">
+        <button
+          type="button"
+          @click="openCommandPalette"
+          class="w-full flex items-center gap-3 pl-3.5 pr-3 py-2.5 rounded-lg bg-white text-left shadow-xs border border-slate-300 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0891B2]/30 focus:border-[#0891B2] transition-all cursor-pointer"
+        >
+          <Search class="w-4 h-4 text-slate-400 shrink-0" />
+          <span class="flex-1 text-xs sm:text-sm text-slate-400 truncate">
+            Aufgaben, Projekte, Ordner, Personen durchsuchen…
+          </span>
+          <span class="hidden sm:flex items-center gap-1 shrink-0">
             <kbd class="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded">Strg</kbd>
             <kbd class="px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded">K</kbd>
-          </div>
-        </div>
+          </span>
+        </button>
       </div>
     </div>
 
@@ -421,7 +422,7 @@
             </div>
             <h3 class="text-sm font-bold text-slate-900">Keine Projektordner gefunden</h3>
             <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm">
-              {{ searchQuery ? 'Keine Treffer für deine Suche.' : 'Erstelle deinen ersten Ordner, um Projekte und Teams zu strukturieren.' }}
+              {{ 'Erstelle deinen ersten Ordner, um Projekte und Teams zu strukturieren.' }}
             </p>
             <button
               @click="openNewFolderModal"
@@ -878,6 +879,11 @@ const loadingFolders = ref(true)
 const loadingTasks = ref(true)
 const searchQuery = ref('')
 
+// Öffnet die globale Command-Palette (Strg+K)
+const openCommandPalette = () => {
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))
+}
+
 // Tasks Tab Switcher: 'daily' (Mein Tag) vs 'assigned' (Projekt-Aufgaben)
 const activeTaskTab = ref<'daily' | 'assigned'>('daily')
 
@@ -940,21 +946,9 @@ const totalProjects = computed(() => {
   return folders.value.reduce((acc, f) => acc + (f.project_count || 0), 0)
 })
 
-const filteredFolders = computed(() => {
-  if (!searchQuery.value.trim()) return folders.value
-  const q = searchQuery.value.toLowerCase()
-  return folders.value.filter(f => f.name?.toLowerCase().includes(q) || f.owner_name?.toLowerCase().includes(q))
-})
+const filteredFolders = computed(() => folders.value)
 
-const filteredTasks = computed(() => {
-  if (!searchQuery.value.trim()) return tasks.value
-  const q = searchQuery.value.toLowerCase()
-  return tasks.value.filter(t => 
-    t.title?.toLowerCase().includes(q) ||
-    t.project_title?.toLowerCase().includes(q) ||
-    t.folder_name?.toLowerCase().includes(q)
-  )
-})
+const filteredTasks = computed(() => tasks.value)
 
 const openNewFolderModal = () => {
   newFolderName.value = ''

@@ -37,6 +37,10 @@ export function initDatabase() {
     "ALTER TABLE projects ADD COLUMN budget_hours REAL DEFAULT 0",
     "ALTER TABLE projects ADD COLUMN budget_amount REAL DEFAULT 0",
     "ALTER TABLE users ADD COLUMN admin_permissions TEXT DEFAULT '[]'",
+    "ALTER TABLE project_folders ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'",
+    "ALTER TABLE projects ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'",
+    "ALTER TABLE projects ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE projects ADD COLUMN custom_data TEXT NOT NULL DEFAULT '{}'",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
