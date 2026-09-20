@@ -56,14 +56,68 @@
         <!-- Ort -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1.5">Ort</label>
-          <div class="relative">
-            <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              v-model="form.location"
-              type="text"
-              placeholder="z.B. Baustelle Zürcherstrasse 45"
-              class="w-full h-9 pl-9 pr-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
-            />
+          <AddressAutocomplete
+            v-model="form.location"
+            v-model:latitude="form.latitude"
+            v-model:longitude="form.longitude"
+            placeholder="z.B. Baustelle Zürcherstrasse 45"
+          />
+
+          <!-- Karte & Route -->
+          <div v-if="form.location" class="mt-2">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button
+                type="button"
+                class="text-[11px] font-semibold text-[#0891B2] hover:underline"
+                @click="toggleMap"
+              >
+                {{ showMap ? 'Karte einklappen' : 'Karte anzeigen' }}
+              </button>
+              <a
+                :href="googleMapsUrl(form.location)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+              >
+                Google Maps
+              </a>
+              <a
+                :href="osmUrl(form.location)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+              >
+                OpenStreetMap
+              </a>
+              <button
+                type="button"
+                class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                title="Route ab meinem Standort"
+                @click="openRoute"
+              >
+                Route
+              </button>
+            </div>
+
+            <div
+              v-if="showMap"
+              class="mt-2 rounded-md overflow-hidden border border-slate-200 bg-slate-100 relative h-[170px]"
+            >
+              <div v-if="mapLoading" class="absolute inset-0 flex items-center justify-center bg-slate-50/90 text-xs font-medium text-slate-600 gap-2">
+                <Loader2 class="w-3.5 h-3.5 animate-spin" />
+                Karte wird geladen…
+              </div>
+              <iframe
+                v-if="mapEmbedUrl"
+                :src="mapEmbedUrl"
+                class="w-full h-full border-0"
+                loading="lazy"
+                title="OpenStreetMap Karte"
+              />
+              <div v-else-if="!mapLoading" class="p-3 text-center text-[11px] text-slate-500">
+                Standort konnte nicht ermittelt werden.
+              </div>
+            </div>
           </div>
         </div>
 
@@ -280,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-import { X, MapPin, Users, Plus, Download } from 'lucide-vue-next'
+import { X, MapPin, Users, Plus, Download, Loader2 } from 'lucide-vue-next'
 
 const props = defineProps<{
   event?: any
@@ -299,10 +353,53 @@ const emit = defineEmits<{
 }>()
 
 const { user, authHeaders } = useAuth()
+const { geocode, embedUrl, osmUrl, googleMapsUrl, routeFromHere } = useAddressSearch()
 
 const isEdit = computed(() => Boolean(props.event?.id))
 const saving = ref(false)
 const attendeeInput = ref('')
+
+// ---------------------------------------------------------------------------
+// Karte & Route
+// ---------------------------------------------------------------------------
+const showMap = ref(false)
+const mapLoading = ref(false)
+const mapPoint = ref<{ lat: number; lon: number } | null>(null)
+
+const mapEmbedUrl = computed(() => mapPoint.value ? embedUrl(mapPoint.value) : '')
+
+/** Koordinaten aus dem Formular, sonst einmalig geocodieren. */
+async function ensurePoint() {
+  if (mapPoint.value) return mapPoint.value
+  if (form.value.latitude !== null && form.value.longitude !== null) {
+    mapPoint.value = { lat: Number(form.value.latitude), lon: Number(form.value.longitude) }
+    return mapPoint.value
+  }
+  if (!form.value.location) return null
+  mapLoading.value = true
+  try {
+    const point = await geocode(form.value.location)
+    mapPoint.value = point
+    if (point) {
+      form.value.latitude = point.lat
+      form.value.longitude = point.lon
+    }
+    return point
+  } finally {
+    mapLoading.value = false
+  }
+}
+
+async function toggleMap() {
+  showMap.value = !showMap.value
+  if (showMap.value) await ensurePoint()
+}
+
+async function openRoute() {
+  if (!form.value.location) return
+  const url = await routeFromHere(form.value.location, 'driving')
+  window.open(url, '_blank', 'noopener')
+}
 
 // ---------------------------------------------------------------------------
 // Formular initialisieren
@@ -321,6 +418,8 @@ const form = ref<any>({
   title: '',
   description: '',
   location: '',
+  latitude: null,
+  longitude: null,
   start_at: '',
   end_at: '',
   all_day: false,
@@ -340,6 +439,8 @@ function initForm() {
       title: e.title || '',
       description: e.description || '',
       location: e.location || '',
+      latitude: e.latitude ?? null,
+      longitude: e.longitude ?? null,
       start_at: allDay ? String(e.start).slice(0, 10) : toLocalInput(new Date(String(e.start).replace(' ', 'T'))),
       end_at: allDay ? String(e.end).slice(0, 10) : toLocalInput(new Date(String(e.end).replace(' ', 'T'))),
       all_day: allDay,
@@ -373,6 +474,8 @@ function initForm() {
       title: '',
       description: '',
       location: '',
+      latitude: null,
+      longitude: null,
       start_at: toLocalInput(base),
       end_at: toLocalInput(end),
       all_day: false,
@@ -443,6 +546,8 @@ async function save() {
       title: form.value.title.trim(),
       description: form.value.description || null,
       location: form.value.location || null,
+      latitude: form.value.latitude,
+      longitude: form.value.longitude,
       start_at: startAt,
       end_at: endAt,
       all_day: allDay,

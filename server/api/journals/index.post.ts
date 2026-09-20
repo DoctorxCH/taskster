@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     const existing = db.prepare(`
       SELECT p.id FROM projects p
       JOIN project_folders pf ON pf.id = p.folder_id
-      WHERE pf.company_id = ? OR pf.user_id = ?
+      WHERE pf.company_id = ? OR pf.owner_id = ?
       ORDER BY p.is_default DESC, p.created_at ASC
       LIMIT 1
     `).get(user.company_id || '', user.id) as any
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       } else {
         const folderId = 'fld_' + randomUUID().substring(0, 8)
         db.prepare(`
-          INSERT INTO project_folders (id, user_id, company_id, name, visibility)
+          INSERT INTO project_folders (id, owner_id, company_id, name, visibility)
           VALUES (?, ?, ?, ?, ?)
         `).run(folderId, user.id, user.company_id || null, 'Persönliche Notizen', 'private')
 

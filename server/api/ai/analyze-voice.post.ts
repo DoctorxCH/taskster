@@ -13,7 +13,7 @@ function getAiConfig() {
   return {
     model: 'deepseek/deepseek-v4-flash-0731',
     provider: { only: ['baidu/fp8'], allow_fallbacks: false },
-    temperature: 0.2,
+    temperature: 0.1,
     max_tokens: 2048,
     timeout_seconds: 60
   }
@@ -53,72 +53,85 @@ export default defineEventHandler(async (event) => {
     SELECT DISTINCT p.id, p.title, p.description
     FROM projects p
     JOIN project_folders pf ON pf.id = p.folder_id
-    WHERE pf.company_id = ? OR pf.user_id = ? OR p.visibility = 'public'
+    WHERE pf.company_id = ? OR pf.owner_id = ? OR p.visibility = 'public'
     ORDER BY p.is_default DESC, p.created_at DESC
     LIMIT 30
   `).all(user.company_id || '', user.id) as any[]
 
-  // 2. Fetch accessible active tasks
+  // 2. Fetch accessible active tasks (including custom_data!)
   const projectIds = projects.map(p => p.id)
   let tasks: any[] = []
   if (projectIds.length > 0) {
     const placeholders = projectIds.map(() => '?').join(',')
     tasks = db.prepare(`
-      SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date,
+      SELECT t.id, t.title, t.description, t.custom_data, t.status, t.priority, t.due_date,
              t.checklist, t.list_id, l.title as list_title, p.id as project_id, p.title as project_title
       FROM tasks t
       JOIN lists l ON l.id = t.list_id
       JOIN projects p ON p.id = l.project_id
       WHERE p.id IN (${placeholders}) AND t.status != 'done'
       ORDER BY t.created_at DESC
-      LIMIT 80
+      LIMIT 100
     `).all(...projectIds) as any[]
   }
 
-  // Build context summary for AI
+  // Build rich context summary for AI
   const projectContext = projects.map(p => ({ id: p.id, title: p.title })).slice(0, 20)
-  const taskContext = tasks.map(t => ({
-    id: t.id,
-    title: t.title,
-    project_id: t.project_id,
-    project_title: t.project_title,
-    status: t.status,
-    desc_snippet: (t.description || '').slice(0, 100)
-  })).slice(0, 50)
+  const taskContext = tasks.map(t => {
+    let customFields: Record<string, any> = {}
+    if (t.custom_data) {
+      try {
+        customFields = typeof t.custom_data === 'string' ? JSON.parse(t.custom_data) : t.custom_data
+      } catch (_) {}
+    }
+    return {
+      id: t.id,
+      title: t.title,
+      project_id: t.project_id,
+      project_title: t.project_title,
+      status: t.status,
+      custom_fields: customFields,
+      desc_snippet: (t.description || '').slice(0, 150)
+    }
+  }).slice(0, 70)
 
   const apiKey = getApiKey()
   const config = getAiConfig()
 
   const systemPrompt = `Du bist der intelligente Sprachnotiz-Assistent von Taskster (Projekt- & Baustellenmanagement).
-Deine Aufgabe: Analysiere den transkribierten Sprachnotiz-Text des Benutzers und erkenne, um welche Aufgabe oder welches Projekt es geht (z.B. nach Name, Nummer #, Adresse, Raum wie '2. OG', Bauteil wie 'Heizung', 'Elektro', etc.).
+Deine Aufgabe: Analysiere den transkribierten Sprachnotiz-Text des Benutzers und erkenne präzise, um welche Aufgabe oder welches Projekt es geht.
+
+WICHTIGE REGELN FÜR DIE ZUORDNUNG:
+1. Der Aufgabentitel ist oft eine Auftrags- oder Ticketnummer (z.B. "0100314559", "#123").
+2. Die Adresse, Straße, Hausnummer oder der Ort steht oft in 'custom_fields' (z.B. Strasse: "Zentralstr. 14B", Ort: "Ebikon") oder in der Beschreibung.
+3. Beachte typische Abkürzungen: "Zentralstr. 14B" = "Zentralstrasse 14b", "Bahnhofstr." = "Bahnhofstrasse", "Weg", "Gasse", etc.
+4. Absichten:
+   - "complete_task": Wenn der Nutzer sagt, dass die Aufgabe storniert ("kann storniert werden", "storniert von Swisscom"), erledigt, fertig, montiert, repariert oder abgeschlossen ist.
+   - "update_task": Wenn der Nutzer Informationen, Notizen, Messwerte oder Statusberichte zu einer Aufgabe diktiert.
+   - "add_checklist": Wenn konkrete Schritte oder Checklisten-Punkte genannt werden.
+   - "create_task": Wenn eine komplett neue Aufgabe beschrieben wird.
+   - "create_journal": Allgemeine Notiz oder Journal-Eintrag.
 
 Kontext der vorhandenen Projekte:
 ${JSON.stringify(projectContext)}
 
-Kontext der aktuell offenen Aufgaben:
+Kontext der aktuell offenen Aufgaben (inkl. benutzerdefinierte Felder & Adressen):
 ${JSON.stringify(taskContext)}
-
-Erkenne die Absicht des Nutzers:
-- "complete_task": Der Nutzer sagt, dass eine Aufgabe erledigt, fertig, montiert, repariert oder abgeschlossen ist.
-- "update_task": Der Nutzer hat Neuigkeiten, Status-Updates, Notizen oder Maße zu einer bestehenden Aufgabe.
-- "add_checklist": Der Nutzer nennt Checklisten-Punkte oder Unteraufgaben, die gemacht werden müssen.
-- "create_task": Der Nutzer beschreibt eine neue Aufgabe, die erledigt werden soll.
-- "create_journal": Der Nutzer diktiert eine Notiz, Bautagebuch oder Beobachtung.
 
 Antworte AUSSCHLIESSLICH als gültiges JSON-Objekt mit folgender Struktur:
 {
-  "summary": "1 prägnanter Satz auf Deutsch, was erkannt wurde (z.B. 'Aufgabe Heizkörper entlüften im Projekt Umbau erkannt.')",
+  "summary": "1 prägnanter Satz auf Deutsch (z.B. 'Aufgabe 0100314559 (Zentralstr. 14B, Ebikon) erkannt.')",
   "intent": "complete_task" | "update_task" | "add_checklist" | "create_task" | "create_journal",
   "matched_task": { "id": "...", "title": "...", "project_id": "...", "project_title": "..." } | null,
   "matched_project": { "id": "...", "title": "..." } | null,
   "extracted_task_title": "Kurzer, prägnanter Titel für neue Aufgabe oder Update",
   "note_to_append": "Sauber formulierter Text aus der Sprachnotiz zum Anhängen",
-  "checklist_items": ["Punkt 1", "Punkt 2"] // falls Checkliste/Schritte erkannt wurden, sonst leer [],
+  "checklist_items": ["Punkt 1", "Punkt 2"],
   "suggested_actions": [
     {
       "id": "action_key",
       "type": "update_task" | "complete_task" | "add_checklist" | "create_task" | "create_journal",
-      "label": "Button-Text für den Benutzer (z.B. 'Aufgabe als erledigt markieren' oder 'Notiz an Aufgabe anhängen')",
+      "label": "Button-Text für den Benutzer (z.B. 'Aufgabe 0100314559 als storniert/erledigt markieren' oder 'Notiz an Aufgabe 0100314559 anhängen')",
       "description": "Kurze Erklärung für den Benutzer",
       "task_id": "...",
       "project_id": "..."
@@ -170,14 +183,34 @@ Antworte AUSSCHLIESSLICH als gültiges JSON-Objekt mit folgender Struktur:
 
   // Fallback heuristic if AI call didn't complete
   if (!analysis) {
-    const lowerText = text.toLowerCase()
-    let matchedTask = null
-    let matchedProject = null
+    const normalizeStr = (s: string) => s.toLowerCase()
+      .replace(/strasse\b/g, 'str')
+      .replace(/str\.\b/g, 'str')
+      .replace(/[^a-z0-9]/g, '')
 
-    // Find task match
+    const lowerText = text.toLowerCase()
+    const normText = normalizeStr(text)
+    let matchedTask: any = null
+    let matchedProject: any = null
+
+    // Find task match across title, description, and all custom_data fields
     for (const t of tasks) {
-      const titleLower = t.title.toLowerCase()
-      if (lowerText.includes(titleLower) || (titleLower.length > 5 && lowerText.includes(titleLower.slice(0, 8)))) {
+      const titleNorm = normalizeStr(t.title)
+      const descNorm = normalizeStr(t.description || '')
+      
+      let customNormValues = ''
+      if (t.custom_data) {
+        try {
+          const parsed = typeof t.custom_data === 'string' ? JSON.parse(t.custom_data) : t.custom_data
+          customNormValues = normalizeStr(Object.values(parsed).join(' '))
+        } catch (_) {}
+      }
+
+      if (
+        (titleNorm.length >= 4 && normText.includes(titleNorm)) ||
+        (customNormValues.length >= 4 && (normText.includes(customNormValues) || customNormValues.split(' ').some(w => w.length >= 5 && normText.includes(w)))) ||
+        (descNorm.length >= 6 && normText.includes(descNorm.slice(0, 15)))
+      ) {
         matchedTask = { id: t.id, title: t.title, project_id: t.project_id, project_title: t.project_title }
         matchedProject = { id: t.project_id, title: t.project_title }
         break
@@ -189,23 +222,26 @@ Antworte AUSSCHLIESSLICH als gültiges JSON-Objekt mit folgender Struktur:
       if (cur) matchedProject = { id: cur.id, title: cur.title }
     }
 
-    const isDone = lowerText.includes('erledigt') || lowerText.includes('fertig') || lowerText.includes('abgeschlossen') || lowerText.includes('gemacht')
+    const isDoneOrCancelled = lowerText.includes('erledigt') || lowerText.includes('fertig') || 
+                              lowerText.includes('abgeschlossen') || lowerText.includes('gemacht') ||
+                              lowerText.includes('storniert') || lowerText.includes('stornieren')
     const hasList = lowerText.includes('checkliste') || lowerText.includes('punkte') || lowerText.includes('schritte')
 
     let intent = 'create_journal'
-    if (matchedTask && isDone) intent = 'complete_task'
+    if (matchedTask && isDoneOrCancelled) intent = 'complete_task'
     else if (matchedTask && hasList) intent = 'add_checklist'
     else if (matchedTask) intent = 'update_task'
     else if (lowerText.includes('aufgabe') || lowerText.includes('todo') || lowerText.includes('muss noch')) intent = 'create_task'
 
     const suggestedActions = []
     if (matchedTask) {
-      if (isDone) {
+      if (isDoneOrCancelled) {
+        const isCancel = lowerText.includes('stornier')
         suggestedActions.push({
           id: 'complete_task',
           type: 'complete_task',
-          label: `'${matchedTask.title}' als erledigt markieren`,
-          description: 'Setzt den Status der Aufgabe auf Erledigt',
+          label: isCancel ? `'${matchedTask.title}' als storniert / erledigt markieren` : `'${matchedTask.title}' als erledigt markieren`,
+          description: isCancel ? 'Setzt Status auf Erledigt und hinterlegt Stornierungsnotiz' : 'Setzt den Status der Aufgabe auf Erledigt',
           task_id: matchedTask.id,
           project_id: matchedTask.project_id
         })
