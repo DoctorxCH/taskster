@@ -2818,7 +2818,10 @@ try {
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => [
                 'file' => $cFile,
-                'model' => $targetModel
+                'model' => $targetModel,
+                'language' => 'de',
+                'prompt' => 'Transkription auf Deutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.',
+                'temperature' => '0.0'
             ],
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $apiKey,

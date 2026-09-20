@@ -74,8 +74,13 @@
               {{ formattedRecordingTime }}
             </div>
             <p class="text-xs text-rose-600 font-bold mt-1 tracking-wide uppercase">
-              Aufnahme läuft... (Sprechen Sie jetzt)
+              Aufnahme läuft... (Sprechen Sie auf Deutsch)
             </p>
+          </div>
+
+          <!-- Live German Speech Preview -->
+          <div v-if="liveTranscript" class="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium italic max-h-24 overflow-y-auto">
+            "{{ liveTranscript }}"
           </div>
 
           <div class="flex items-center justify-center space-x-3 pt-2">
@@ -205,11 +210,13 @@ const selectedProjectId = ref('')
 const saving = ref(false)
 const copied = ref(false)
 
-// MediaRecorder setup
+// MediaRecorder & SpeechRecognition setup
 let mediaRecorder: MediaRecorder | null = null
+let speechRecognition: any = null
 let audioChunks: Blob[] = []
 let recordingTimer: any = null
 const recordingSeconds = ref(0)
+const liveTranscript = ref('')
 
 const formattedRecordingTime = computed(() => {
   const mins = Math.floor(recordingSeconds.value / 60)
@@ -222,6 +229,7 @@ watch(() => props.modelValue, (isOpen) => {
     state.value = 'idle'
     errorMessage.value = ''
     transcribedText.value = ''
+    liveTranscript.value = ''
     selectedProjectId.value = props.defaultProjectId || ''
     copied.value = false
   } else {
@@ -239,6 +247,12 @@ const stopMediaStream = () => {
     clearInterval(recordingTimer)
     recordingTimer = null
   }
+  if (speechRecognition) {
+    try {
+      speechRecognition.stop()
+    } catch (_) {}
+    speechRecognition = null
+  }
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     try {
       mediaRecorder.stop()
@@ -252,16 +266,30 @@ const stopMediaStream = () => {
 
 const startRecording = async () => {
   errorMessage.value = ''
+  liveTranscript.value = ''
   audioChunks = []
   recordingSeconds.value = 0
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? { mimeType: 'audio/webm;codecs=opus' }
-      : (MediaRecorder.isTypeSupported('audio/mp4') ? { mimeType: 'audio/mp4' } : {})
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 44100
+      }
+    })
 
-    mediaRecorder = new MediaRecorder(stream, options)
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm')
+
+    mediaRecorder = new MediaRecorder(stream, {
+      mimeType,
+      audioBitsPerSecond: 128000
+    })
+
     mediaRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) {
         audioChunks.push(event.data)
@@ -273,6 +301,27 @@ const startRecording = async () => {
         state.value = 'transcribing'
         await processAudioForTranscription()
       }
+    }
+
+    // Start native Web Speech Recognition in German (de-DE/de-CH) for live preview & backup
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      try {
+        const SpeechRecognitionApi = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        speechRecognition = new SpeechRecognitionApi()
+        speechRecognition.continuous = true
+        speechRecognition.interimResults = true
+        speechRecognition.lang = 'de-DE'
+        speechRecognition.onresult = (event: any) => {
+          let text = ''
+          for (let i = 0; i < event.results.length; i++) {
+            text += event.results[i][0].transcript + ' '
+          }
+          if (text.trim()) {
+            liveTranscript.value = text.trim()
+          }
+        }
+        speechRecognition.start()
+      } catch (_) {}
     }
 
     mediaRecorder.start(250)
@@ -290,6 +339,11 @@ const stopRecording = () => {
     clearInterval(recordingTimer)
     recordingTimer = null
   }
+  if (speechRecognition) {
+    try {
+      speechRecognition.stop()
+    } catch (_) {}
+  }
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop()
   }
@@ -306,7 +360,7 @@ const processAudioForTranscription = async () => {
     const audioBlob = new Blob(audioChunks, { type: mimeType })
     stopMediaStream()
 
-    if (audioBlob.size === 0) {
+    if (audioBlob.size === 0 && !liveTranscript.value) {
       errorMessage.value = 'Keine Audio-Daten aufgenommen.'
       state.value = 'idle'
       return
@@ -324,26 +378,42 @@ const processAudioForTranscription = async () => {
     reader.readAsDataURL(audioBlob)
     const base64Data = await base64Promise
 
-    const response = await $fetch<{ success: boolean; text: string; model?: string }>('/api/ai/transcribe', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        audio: base64Data,
-        mimeType,
-        model: 'openai/whisper-large-v3-turbo'
+    let resultText = ''
+    try {
+      const response = await $fetch<{ success: boolean; text: string; model?: string }>('/api/ai/transcribe', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          audio: base64Data,
+          mimeType,
+          model: 'openai/whisper-large-v3-turbo'
+        }
+      })
+      if (response.success && response.text) {
+        resultText = response.text
       }
-    })
+    } catch (e) {
+      console.warn('[Whisper API] Upstream error, checking live transcript fallback:', e)
+    }
 
-    if (response.success && response.text) {
-      transcribedText.value = response.text
+    // Use Whisper result if available; otherwise use live German speech transcript fallback
+    const finalText = (resultText || liveTranscript.value || '').trim()
+    if (finalText) {
+      transcribedText.value = finalText
       state.value = 'result'
     } else {
-      errorMessage.value = 'Keine Sprache erkannt oder Transkription fehlgeschlagen.'
+      errorMessage.value = 'Keine Sprache auf Deutsch erkannt. Bitte lauter und deutlicher ins Mikrofon sprechen.'
       state.value = 'idle'
     }
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.message || 'Fehler bei der Transkription'
-    state.value = 'idle'
+    const fallback = liveTranscript.value.trim()
+    if (fallback) {
+      transcribedText.value = fallback
+      state.value = 'result'
+    } else {
+      errorMessage.value = err.data?.statusMessage || err.message || 'Fehler bei der Transkription'
+      state.value = 'idle'
+    }
   }
 }
 

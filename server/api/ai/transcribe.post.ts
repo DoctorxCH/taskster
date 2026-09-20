@@ -68,8 +68,12 @@ export default defineEventHandler(async (event) => {
   try {
     const formData = new FormData()
     const blob = new Blob([audioBuffer], { type: mimeType })
-    formData.append('file', blob, `recording.${mimeType.split('/')[1] || 'webm'}`)
+    const ext = mimeType.includes('mp4') ? 'mp4' : (mimeType.includes('wav') ? 'wav' : 'webm')
+    formData.append('file', blob, `recording.${ext}`)
     formData.append('model', targetModel)
+    formData.append('language', 'de')
+    formData.append('prompt', 'Transkription auf Deutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.')
+    formData.append('temperature', '0.0')
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
