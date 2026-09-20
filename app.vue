@@ -151,6 +151,16 @@
             </NuxtLink>
 
             <NuxtLink
+              to="/calendar"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/calendar') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              title="Kalender"
+            >
+              <CalendarDays class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>Kalender</span>
+            </NuxtLink>
+
+            <NuxtLink
               v-if="isPlatformAdmin"
               to="/admin"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"

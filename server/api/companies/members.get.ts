@@ -4,16 +4,14 @@ import { requireAuth } from '~/server/utils/auth'
 /**
  * GET /api/companies/members
  * Listet alle Mitarbeiter des eigenen Unternehmens.
- * Nur Company Admin (company_role === 'admin') oder Superadmin.
+ *
+ * Jeder authentifizierte Benutzer darf die Mitglieder seiner eigenen Firma
+ * sehen — das ist nötig für Zuweisungen und Termineinladungen (der Kalender
+ * nutzt diese Route für die "Aus dem Team"-Vorschläge).
+ * Zero-Trust: Firmenfremde Mitglieder werden nie zurückgegeben.
  */
 export default defineEventHandler((event) => {
   const user = requireAuth(event)
-  const isSuperadmin = Boolean(user.is_superadmin)
-  const isCompanyAdmin = Boolean(user.company_id) && user.company_role === 'admin'
-
-  if (!isSuperadmin && !isCompanyAdmin) {
-    throw createError({ statusCode: 403, statusMessage: 'Nur Company-Admins dürfen Mitarbeiter einsehen' })
-  }
 
   const companyId = user.company_id || (getQuery(event).company_id as string | undefined)
   if (!companyId) {

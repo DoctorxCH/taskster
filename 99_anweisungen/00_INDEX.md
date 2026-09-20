@@ -12,3 +12,5 @@
 | [06_Multi_Agenten_System.md](file:///c:/Users/marti/Taskster/99_anweisungen/06_Multi_Agenten_System.md) | Rollen & Delegationsprotokoll |
 | [design-system.md](file:///c:/Users/marti/Taskster/99_anweisungen/design-system.md) | **Design-System (verbindlich)** – Farben, Buttons, Liquid Glass, Regeln |
 | [design-tokens.json](file:///c:/Users/marti/Taskster/99_anweisungen/design-tokens.json) | Design-Tokens maschinenlesbar (für KI-Agenten) |
+| [96_ios_app_strategie/](file:///c:/Users/marti/Taskster/96_ios_app_strategie/00_INDEX.md) | **iOS App Store Strategie & Spezifikation** (Capacitor, HIG, Compliance, Hardware) |
+
