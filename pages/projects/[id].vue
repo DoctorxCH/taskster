@@ -412,7 +412,7 @@
                     :key="key"
                     class="text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                   >
-                    {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ val }}</strong>
+                    {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val) }}</strong>
                   </span>
                 </div>
 
@@ -618,7 +618,7 @@
                           :key="key"
                           class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                         >
-                          {{ getFieldLabel(key) }}: {{ val }}
+                          {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val) }}</strong>
                         </span>
                       </div>
                       <span v-else class="text-slate-400">-</span>
@@ -870,6 +870,8 @@
               </h4>
               <div v-for="f in projectCustomFields" :key="f.id">
                 <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
+
+                <!-- Select -->
                 <select
                   v-if="f.field_type === 'select'"
                   v-model="settingsForm.custom_data[f.field_key]"
@@ -878,10 +880,80 @@
                   <option value="">-- Nicht ausgewählt --</option>
                   <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
+
+                <!-- Textarea (Längerer Text) -->
+                <textarea
+                  v-else-if="f.field_type === 'textarea'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  rows="3"
+                  placeholder="Details, Notizen oder Beschreibung..."
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 resize-y"
+                ></textarea>
+
+                <!-- Checkbox -->
+                <div v-else-if="f.field_type === 'checkbox'" class="pt-1">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      v-model="settingsForm.custom_data[f.field_key]"
+                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                    />
+                    <span class="text-xs font-medium text-slate-700">
+                      {{ settingsForm.custom_data[f.field_key] ? '✓ Ja / Aktiv' : 'Nein / Inaktiv' }}
+                    </span>
+                  </label>
+                </div>
+
+                <!-- Date -->
+                <input
+                  v-else-if="f.field_type === 'date'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  type="date"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Number -->
+                <input
+                  v-else-if="f.field_type === 'number'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  type="number"
+                  step="any"
+                  placeholder="0.00"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- URL -->
+                <input
+                  v-else-if="f.field_type === 'url'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  type="url"
+                  placeholder="https://..."
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Email -->
+                <input
+                  v-else-if="f.field_type === 'email'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  type="email"
+                  placeholder="kontakt@firma.ch"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Phone -->
+                <input
+                  v-else-if="f.field_type === 'phone'"
+                  v-model="settingsForm.custom_data[f.field_key]"
+                  type="tel"
+                  placeholder="+41 79 123 45 67"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Default Text -->
                 <input
                   v-else
                   v-model="settingsForm.custom_data[f.field_key]"
-                  :type="f.field_type === 'number' ? 'number' : 'text'"
+                  type="text"
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
               </div>
@@ -1672,13 +1744,78 @@
                 <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
               </select>
 
+              <!-- Textarea (Längerer Text) -->
+              <textarea
+                v-else-if="f.field_type === 'textarea'"
+                v-model="taskForm.custom_data[f.field_key]"
+                :disabled="userRole === 'viewer'"
+                rows="3"
+                placeholder="Längeren Text / Notizen eingeben..."
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60 resize-y"
+              ></textarea>
+
+              <!-- Checkbox (Ja / Nein) -->
+              <div v-else-if="f.field_type === 'checkbox'" class="pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="taskForm.custom_data[f.field_key]"
+                    :disabled="userRole === 'viewer'"
+                    class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                  />
+                  <span class="text-xs font-semibold" :class="taskForm.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
+                    {{ taskForm.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
+                  </span>
+                </label>
+              </div>
+
+              <!-- Date -->
+              <input
+                v-else-if="f.field_type === 'date'"
+                v-model="taskForm.custom_data[f.field_key]"
+                :disabled="userRole === 'viewer'"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+              />
+
               <!-- Number -->
               <input
                 v-else-if="f.field_type === 'number'"
                 v-model="taskForm.custom_data[f.field_key]"
                 :disabled="userRole === 'viewer'"
                 type="number"
+                step="any"
                 placeholder="0.00"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+              />
+
+              <!-- URL -->
+              <input
+                v-else-if="f.field_type === 'url'"
+                v-model="taskForm.custom_data[f.field_key]"
+                :disabled="userRole === 'viewer'"
+                type="url"
+                placeholder="https://..."
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+              />
+
+              <!-- Email -->
+              <input
+                v-else-if="f.field_type === 'email'"
+                v-model="taskForm.custom_data[f.field_key]"
+                :disabled="userRole === 'viewer'"
+                type="email"
+                placeholder="kontakt@firma.ch"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
+              />
+
+              <!-- Phone -->
+              <input
+                v-else-if="f.field_type === 'phone'"
+                v-model="taskForm.custom_data[f.field_key]"
+                :disabled="userRole === 'viewer'"
+                type="tel"
+                placeholder="+41 79 123 45 67"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               />
 
@@ -1859,10 +1996,17 @@
               <span>Zusatzfelder</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-              <div v-for="f in visibleDrawerFields" :key="f.id" class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div
+                v-for="f in visibleDrawerFields"
+                :key="f.id"
+                class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"
+                :class="f.field_type === 'textarea' ? 'sm:col-span-2 md:col-span-3 lg:col-span-4' : ''"
+              >
                 <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label">
                   {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
                 </label>
+
+                <!-- Select dropdown -->
                 <select
                   v-if="f.field_type === 'select'"
                   v-model="drawerTask.custom_data[f.field_key]"
@@ -1873,6 +2017,35 @@
                   <option value="">-- Keine Auswahl --</option>
                   <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
+
+                <!-- Textarea (Längerer Text) -->
+                <textarea
+                  v-else-if="f.field_type === 'textarea'"
+                  v-model="drawerTask.custom_data[f.field_key]"
+                  @blur="autoSaveDrawer"
+                  rows="3"
+                  :disabled="userRole === 'viewer'"
+                  placeholder="Details, Notizen oder Beschreibung..."
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs resize-y"
+                ></textarea>
+
+                <!-- Checkbox (Ja / Nein) -->
+                <div v-else-if="f.field_type === 'checkbox'" class="pt-0.5">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      v-model="drawerTask.custom_data[f.field_key]"
+                      @change="autoSaveDrawer"
+                      :disabled="userRole === 'viewer'"
+                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                    />
+                    <span class="text-xs font-semibold" :class="drawerTask.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
+                      {{ drawerTask.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
+                    </span>
+                  </label>
+                </div>
+
+                <!-- Date -->
                 <input
                   v-else-if="f.field_type === 'date'"
                   v-model="drawerTask.custom_data[f.field_key]"
@@ -1881,14 +2054,82 @@
                   :disabled="userRole === 'viewer'"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
                 />
+
+                <!-- Number -->
                 <input
                   v-else-if="f.field_type === 'number'"
                   v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
+                  @blur="autoSaveDrawer"
                   type="number"
+                  step="any"
                   :disabled="userRole === 'viewer'"
+                  placeholder="0.00"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
                 />
+
+                <!-- URL -->
+                <div v-else-if="f.field_type === 'url'" class="flex items-center gap-1.5">
+                  <input
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    type="url"
+                    placeholder="https://..."
+                    :disabled="userRole === 'viewer'"
+                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+                  <a
+                    v-if="drawerTask.custom_data[f.field_key]"
+                    :href="drawerTask.custom_data[f.field_key]"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                    title="Link öffnen"
+                  >
+                    <ExternalLink class="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <!-- Email -->
+                <div v-else-if="f.field_type === 'email'" class="flex items-center gap-1.5">
+                  <input
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    type="email"
+                    placeholder="kontakt@beispiel.ch"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+                  <a
+                    v-if="drawerTask.custom_data[f.field_key]"
+                    :href="'mailto:' + drawerTask.custom_data[f.field_key]"
+                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                    title="E-Mail senden"
+                  >
+                    <Mail class="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <!-- Phone -->
+                <div v-else-if="f.field_type === 'phone'" class="flex items-center gap-1.5">
+                  <input
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    type="tel"
+                    placeholder="+41 79 123 45 67"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+                  <a
+                    v-if="drawerTask.custom_data[f.field_key]"
+                    :href="'tel:' + drawerTask.custom_data[f.field_key]"
+                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                    title="Anrufen"
+                  >
+                    <Phone class="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <!-- Default Text -->
                 <input
                   v-else
                   v-model="drawerTask.custom_data[f.field_key]"
@@ -2800,12 +3041,17 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer"
             >
-              <option value="text">Textzeile</option>
+              <option value="text">Textzeile (kurz)</option>
+              <option value="textarea">Längerer Text / Notizfeld (mehrzeilig)</option>
+              <option value="number">Zahl / Währung / Messwert</option>
               <option value="select">Auswahlliste (Dropdown)</option>
-              <option value="number">Zahl / Währung</option>
               <option value="date">Datum</option>
+              <option value="checkbox">Checkbox (Ja / Nein)</option>
+              <option value="url">Weblink / URL (z.B. Plan, Dokument)</option>
+              <option value="email">E-Mail-Adresse</option>
+              <option value="phone">Telefonnummer</option>
             </select>
           </div>
 
@@ -3446,7 +3692,8 @@ import {
   Mail,
   Globe,
   MapPin,
-  Mic
+  Mic,
+  ExternalLink
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -3822,6 +4069,13 @@ const filteredTimeEntries = computed(() => {
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
   return f ? f.label : key
+}
+
+const formatCustomFieldValue = (val: any) => {
+  if (val === true || val === 'true') return '✓ Ja'
+  if (val === false || val === 'false') return 'Nein'
+  if (val === null || val === undefined || val === '') return '-'
+  return String(val)
 }
 
 // Check conditional visibility of a task field

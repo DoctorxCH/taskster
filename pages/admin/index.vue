@@ -1150,12 +1150,17 @@
                   <label class="block text-[10px] text-slate-500 mb-1">Feldtyp</label>
                   <select
                     v-model="newField.field_type"
-                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 cursor-pointer"
                   >
-                    <option value="text">Textzeile</option>
-                    <option value="number">Zahl / Währung</option>
+                    <option value="text">Textzeile (kurz)</option>
+                    <option value="textarea">Längerer Text / Notizfeld</option>
+                    <option value="number">Zahl / Währung / Messwert</option>
                     <option value="select">Auswahlliste (Dropdown)</option>
                     <option value="date">Datum</option>
+                    <option value="checkbox">Checkbox (Ja / Nein)</option>
+                    <option value="url">Weblink / URL</option>
+                    <option value="email">E-Mail-Adresse</option>
+                    <option value="phone">Telefonnummer</option>
                   </select>
                 </div>
                 <div>

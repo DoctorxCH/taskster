@@ -1,4 +1,4 @@
-{
+﻿{
   "common.dashboard": "Dashboard",
   "common.zeitrapporte": "Time Tracking",
   "common.kontakte": "Contacts",
@@ -1040,11 +1040,6 @@
   "projects.die_csvdatei_muss_mindestens_eine_k": "The CSV file must contain at least one header row and one data row.",
   "projects.fällig": "due",
   "projects.fehler_beim_parsen_der_csvdatei": "Error while parsing the CSV file:",
-  "projects.g_resultpushrow_return_result_const": "']$/g, ''))\n    result.push(row)\n  }\n  return result\n}\n\nconst executeImport = async () => {\n  // Validate that title is mapped\n  const hasTitle = Object.values(importColumnMapping.value).includes('title')\n  if (!hasTitle) {\n    importError.value = 'Please assign the required field to at least one column",
-  "projects.status_1": ",\n        status:",
-  "projects.taskpayloadstatus": ")) taskPayload.status =",
-  "projects.else_taskpayloadstatus": "else taskPayload.status =",
-  "projects.onglobaltimeentrysaved_öffnet_eine_": ", onGlobalTimeEntrySaved)\n  }\n})\n\n/**\n * Opens a task directly if the URL contains a ?task=<id> parameter.\n * Linked from the calendar, notifications and search.\n */\nasync function openTaskFromQuery() {\n  const taskId = route.query.task\n  if (!taskId || typeof taskId !==",
   "AddressAutocomplete.adresse_leeren": "Clear address",
   "AddressAutocomplete.keine_adresse_gefunden": "No address found.",
   "AddressAutocomplete.standort_erkannt": "Location detected",
@@ -1126,7 +1121,6 @@
   "VoiceRecorderModal.newitemslength_checklistenpunkte_hi": "${newItems.length} checklist items added!",
   "VoiceRecorderModal.neue_aufgabe_erfolgreich_erstellt": "New task created successfully!",
   "VoiceRecorderModal.fehler_beim_ausführen_der_aktion": "Error while executing the action",
-  "VoiceRecorderModal.transcribedtextvalue_checklist_chec": "+ transcribedText.value,\n      checklist: checklistObj,\n      status:",
   "composables.nominatim_resstatus": "Nominatim ${res.status}",
   "composables.fehler_beim_speichern_der_zeiterfas": "Error while saving the time tracking",
   "composables.nordische_dünen": "Nordic Dunes",

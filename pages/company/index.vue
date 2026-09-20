@@ -742,13 +742,17 @@
               />
               <select
                 v-model="newFieldForm.field_type"
-                class="px-3 py-2 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-cyan-600"
+                class="px-3 py-2 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-cyan-600 cursor-pointer"
               >
-                <option value="text">Text</option>
-                <option value="number">Zahl</option>
+                <option value="text">Textzeile (kurz)</option>
+                <option value="textarea">Längerer Text / Notizfeld</option>
+                <option value="number">Zahl / Währung</option>
                 <option value="date">Datum</option>
-                <option value="select">Auswahl</option>
-                <option value="checkbox">Checkbox</option>
+                <option value="select">Auswahlliste (Dropdown)</option>
+                <option value="checkbox">Checkbox (Ja / Nein)</option>
+                <option value="url">Weblink / URL</option>
+                <option value="email">E-Mail-Adresse</option>
+                <option value="phone">Telefonnummer</option>
               </select>
               <select
                 v-model="newFieldForm.entity_type"
