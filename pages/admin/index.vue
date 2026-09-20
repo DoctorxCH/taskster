@@ -102,6 +102,16 @@
         <ClipboardList class="w-4 h-4" />
         <span>Projekt-Vorlagen (Job & Privat)</span>
       </button>
+
+      <button
+        v-if="hasPermission('company_settings')"
+        @click="activeTab = 'email'"
+        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        :class="activeTab === 'email' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
+      >
+        <Mail class="w-4 h-4" />
+        <span>E-Mail & Benachrichtigungen</span>
+      </button>
     </div>
 
     <!-- TAB 1: USERS & CUSTOMERS (Liquid Glass Table Card) -->
@@ -650,6 +660,333 @@
               Löschen
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: EMAIL & NOTIFICATIONS MANAGEMENT -->
+    <div v-if="activeTab === 'email'" class="space-y-6">
+      <!-- Sub-Navigation -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-xl">
+        <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto">
+          <button
+            @click="emailSubTab = 'settings'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+            :class="emailSubTab === 'settings' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'"
+          >
+            <Server class="w-4 h-4" />
+            <span>SMTP-Server Konfiguration</span>
+          </button>
+          <button
+            @click="emailSubTab = 'templates'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+            :class="emailSubTab === 'templates' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'"
+          >
+            <FileText class="w-4 h-4" />
+            <span>Trigger-Vorlagen</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 text-current">{{ emailTemplates.length }}</span>
+          </button>
+          <button
+            @click="emailSubTab = 'outbox'"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 cursor-pointer"
+            :class="emailSubTab === 'outbox' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'"
+          >
+            <Inbox class="w-4 h-4" />
+            <span>Versand-Protokoll</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0">
+          <button
+            @click="openTestEmailModal"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-1.5 shadow-sm"
+          >
+            <Send class="w-3.5 h-3.5" />
+            <span>Test-E-Mail senden</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 1: SMTP Settings -->
+      <div v-if="emailSubTab === 'settings'" class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 mb-6">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Zentrale SMTP-Server Einstellungen</h3>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Alle automatischen E-Mails und Benachrichtigungen werden über diese Verbindung versendet.
+            </p>
+          </div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[#00A3C4] text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-[#00A3C4] animate-pulse"></span>
+            <span>Aktiv: {{ smtpConfig.smtp_user || 'noreply@kurka.ch' }}</span>
+          </div>
+        </div>
+
+        <div v-if="smtpSavedMessage" class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center space-x-2">
+          <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{{ smtpSavedMessage }}</span>
+        </div>
+
+        <form @submit.prevent="saveEmailSettings" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Host / Server *</label>
+              <input
+                v-model="smtpConfig.smtp_host"
+                type="text"
+                required
+                placeholder="mail.kurka.ch"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">z.B. mail.kurka.ch oder smtp.ihredomain.ch</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">Port & Verschlüsselung *</label>
+              <div class="grid grid-cols-2 gap-3">
+                <input
+                  v-model.number="smtpConfig.smtp_port"
+                  type="number"
+                  required
+                  placeholder="465"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                />
+                <select
+                  v-model="smtpConfig.smtp_secure"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                >
+                  <option value="ssl">SSL / TLS (Port 465)</option>
+                  <option value="tls">STARTTLS (Port 587)</option>
+                  <option value="none">Keine Verschlüsselung (Port 25)</option>
+                </select>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: SSL (465) oder STARTTLS (587)</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Benutzername *</label>
+              <input
+                v-model="smtpConfig.smtp_user"
+                type="text"
+                required
+                placeholder="noreply@kurka.ch"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-800">SMTP Passwort *</label>
+                <button
+                  type="button"
+                  @click="showSmtpPassword = !showSmtpPassword"
+                  class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <span v-if="showSmtpPassword">Passwort verbergen</span>
+                  <span v-else>Passwort anzeigen</span>
+                </button>
+              </div>
+              <input
+                v-model="smtpConfig.smtp_password"
+                :type="showSmtpPassword ? 'text' : 'password'"
+                placeholder="SMTP Kennwort"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
+              <input
+                v-model="smtpConfig.smtp_from_email"
+                type="email"
+                required
+                placeholder="noreply@kurka.ch"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
+              <input
+                v-model="smtpConfig.smtp_from_name"
+                type="text"
+                required
+                placeholder="Taskster Benachrichtigungen"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-6 border-t border-slate-200/80">
+            <button
+              type="button"
+              @click="openTestEmailModal"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Testverbindung prüfen
+            </button>
+
+            <button
+              type="submit"
+              :disabled="savingSmtp"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              <span v-if="savingSmtp">Wird gespeichert...</span>
+              <span v-else>SMTP-Einstellungen speichern</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sub-Tab 2: Trigger Templates -->
+      <div v-if="emailSubTab === 'templates'" class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white border border-slate-200 rounded-xl">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">E-Mail Trigger & Vorlagen</h3>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Automatische Benachrichtigungen für Aktionen wie Zuweisungen, Fristen, Kommentare, Einladungen und Budget-Warnungen.
+            </p>
+          </div>
+          <button
+            @click="resetAllEmailTemplates"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg shrink-0"
+          >
+            Alle auf Standard zurücksetzen
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            v-for="tmpl in emailTemplates"
+            :key="tmpl.id"
+            class="liquid_glass_card rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4 border border-slate-200"
+          >
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    {{ tmpl.trigger_event }}
+                  </span>
+                </div>
+                <label class="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    :checked="tmpl.is_active"
+                    @change="toggleEmailTemplateActive(tmpl)"
+                    class="sr-only peer"
+                  />
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00A3C4]"></div>
+                  <span class="ml-2 text-xs font-bold" :class="tmpl.is_active ? 'text-emerald-700' : 'text-slate-400'">
+                    {{ tmpl.is_active ? 'Aktiv' : 'Deaktiviert' }}
+                  </span>
+                </label>
+              </div>
+
+              <h4 class="text-sm font-bold text-slate-900 mb-1">{{ tmpl.name }}</h4>
+              <p class="text-xs text-slate-600 mb-3">{{ tmpl.description || 'Automatische Systemvorlage' }}</p>
+
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 mb-3">
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Betreff</div>
+                <div class="text-xs font-mono font-medium text-slate-800 break-all">{{ tmpl.subject }}</div>
+              </div>
+
+              <div>
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Verfügbare Variablen</div>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="v in tmpl.variables"
+                    :key="v"
+                    class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-50 text-[#0891B2] border border-cyan-200"
+                  >
+                    &#123;&#123;{{ v }}&#125;&#125;
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-200/80">
+              <button
+                @click="resetSingleEmailTemplate(tmpl.id)"
+                class="text-xs text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+              >
+                Zurücksetzen
+              </button>
+              <button
+                @click="openEditEmailTemplateModal(tmpl)"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+              >
+                Vorlage bearbeiten
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 3: Outbox Logs -->
+      <div v-if="emailSubTab === 'outbox'" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">E-Mail Versand-Protokoll (Outbox)</h3>
+            <p class="text-xs text-slate-600 font-medium">Verlauf der letzten E-Mail-Sendungen und Status.</p>
+          </div>
+          <button
+            @click="loadEmailOutbox"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg shrink-0"
+          >
+            Aktualisieren
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
+              <tr>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Empfänger</th>
+                <th class="py-3 px-4">Betreff</th>
+                <th class="py-3 px-4">Erstellt am</th>
+                <th class="py-3 px-4">Gesendet am / Fehler</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200/60 text-slate-800">
+              <tr v-if="emailOutbox.length === 0">
+                <td colspan="5" class="py-8 text-center text-slate-500 italic">Noch keine E-Mails im Protokoll vorhanden.</td>
+              </tr>
+              <tr v-for="item in emailOutbox" :key="item.id" class="hover:bg-white/60 transition">
+                <td class="py-3 px-4">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                    :class="{
+                      'bg-emerald-100 text-emerald-900 border border-emerald-300': item.status === 'sent',
+                      'bg-amber-100 text-amber-900 border border-amber-300': item.status === 'pending',
+                      'bg-rose-100 text-rose-900 border border-rose-300': item.status === 'error'
+                    }"
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="font-bold text-slate-900">{{ item.to_name || item.to_email }}</div>
+                  <div class="text-[11px] text-slate-500 font-mono">{{ item.to_email }}</div>
+                </td>
+                <td class="py-3 px-4 font-medium text-slate-800 max-w-xs truncate">
+                  {{ item.subject }}
+                </td>
+                <td class="py-3 px-4 text-slate-500 whitespace-nowrap">
+                  {{ item.created_at ? new Date(item.created_at).toLocaleString('de-CH') : '-' }}
+                </td>
+                <td class="py-3 px-4">
+                  <span v-if="item.status === 'sent'" class="text-emerald-700 font-medium">
+                    {{ item.sent_at ? new Date(item.sent_at).toLocaleString('de-CH') : 'Gesendet' }}
+                  </span>
+                  <span v-else-if="item.error" class="text-rose-600 font-mono text-[11px]" :title="item.error">
+                    {{ item.error.substring(0, 45) }}{{ item.error.length > 45 ? '...' : '' }}
+                  </span>
+                  <span v-else class="text-slate-400">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1405,6 +1742,196 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal: Test Email -->
+    <div v-if="showTestEmailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
+          <div>
+            <h3 class="text-base font-black text-slate-900">SMTP Test-E-Mail senden</h3>
+            <p class="text-xs text-slate-600">Überprüfe die Verbindung zu {{ smtpConfig.smtp_host }}:{{ smtpConfig.smtp_port }}</p>
+          </div>
+          <button @click="showTestEmailModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">Empfänger-E-Mail-Adresse *</label>
+            <input
+              v-model="testEmailTo"
+              type="email"
+              required
+              placeholder="ihre-email@adresse.ch"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
+            />
+          </div>
+
+          <div v-if="testEmailResult" class="p-3.5 rounded-xl border text-xs" :class="testEmailResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'">
+            <div class="font-bold mb-1 flex items-center space-x-1.5">
+              <span v-if="testEmailResult.success">✅ {{ testEmailResult.message || 'E-Mail erfolgreich gesendet!' }}</span>
+              <span v-else>❌ Fehler: {{ testEmailResult.error }}</span>
+            </div>
+            <details v-if="testEmailResult.log && testEmailResult.log.length > 0" class="mt-2">
+              <summary class="cursor-pointer text-[11px] font-bold text-slate-600 hover:text-slate-900">SMTP Protokoll anzeigen ({{ testEmailResult.log.length }} Zeilen)</summary>
+              <pre class="mt-2 p-2 bg-slate-900 text-emerald-400 rounded text-[10px] font-mono max-h-40 overflow-y-auto whitespace-pre-wrap">{{ testEmailResult.log.join('\n') }}</pre>
+            </details>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
+            <button
+              type="button"
+              @click="showTestEmailModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Schliessen
+            </button>
+            <button
+              type="button"
+              @click="sendTestEmail"
+              :disabled="testingEmail || !testEmailTo"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              <span v-if="testingEmail">Wird gesendet...</span>
+              <span v-else>Jetzt Test-Mail senden</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Edit Email Template -->
+    <div v-if="showEmailTemplateModal && editingEmailTemplate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl my-8 border border-white/80 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
+          <div>
+            <div class="inline-flex items-center space-x-1 text-[11px] font-mono font-bold text-[#00A3C4] px-2 py-0.5 rounded bg-cyan-50 border border-cyan-200 mb-1">
+              <span>Trigger: {{ editingEmailTemplate.trigger_event }}</span>
+            </div>
+            <h3 class="text-base font-black text-slate-900">E-Mail-Vorlage anpassen</h3>
+          </div>
+          <button @click="showEmailTemplateModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
+        </div>
+
+        <form @submit.prevent="saveEmailTemplate" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">Vorlagen-Name</label>
+              <input
+                v-model="editingEmailTemplate.name"
+                type="text"
+                required
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-bold"
+              />
+            </div>
+
+            <div class="flex items-end pb-1.5">
+              <label class="flex items-center space-x-2.5 cursor-pointer select-none">
+                <input
+                  v-model="editingEmailTemplate.is_active"
+                  type="checkbox"
+                  class="w-4 h-4 rounded text-[#00A3C4] focus:ring-[#00A3C4] border-slate-300"
+                />
+                <span class="text-xs font-bold text-slate-800">Vorlage aktiv (E-Mails für diesen Trigger versenden)</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">E-Mail-Betreff *</label>
+            <input
+              v-model="editingEmailTemplate.subject"
+              type="text"
+              required
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-mono"
+            />
+          </div>
+
+          <!-- Variable chips helper -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Klick zum Einfügen einer Variable in Betreff / Body:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="v in editingEmailTemplate.variables"
+                :key="v"
+                type="button"
+                @click="insertVariableInTemplate(v)"
+                class="px-2.5 py-1 rounded-lg text-xs font-mono bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] border border-cyan-300 transition cursor-pointer font-bold"
+              >
+                + &#123;&#123;{{ v }}&#125;&#125;
+              </button>
+            </div>
+          </div>
+
+          <!-- Body Tabs: HTML vs Preview -->
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-200 mb-2">
+              <div class="flex items-center space-x-2">
+                <button
+                  type="button"
+                  @click="emailTemplatePreviewMode = 'html'"
+                  class="px-3 py-1.5 text-xs font-bold border-b-2 transition"
+                  :class="emailTemplatePreviewMode === 'html' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+                >
+                  HTML-Code
+                </button>
+                <button
+                  type="button"
+                  @click="emailTemplatePreviewMode = 'preview'"
+                  class="px-3 py-1.5 text-xs font-bold border-b-2 transition"
+                  :class="emailTemplatePreviewMode === 'preview' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+                >
+                  Vorschau (HTML)
+                </button>
+                <button
+                  type="button"
+                  @click="emailTemplatePreviewMode = 'text'"
+                  class="px-3 py-1.5 text-xs font-bold border-b-2 transition"
+                  :class="emailTemplatePreviewMode === 'text' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent text-slate-500 hover:text-slate-800'"
+                >
+                  Klartext-Version
+                </button>
+              </div>
+            </div>
+
+            <div v-if="emailTemplatePreviewMode === 'html'">
+              <textarea
+                v-model="editingEmailTemplate.body_html"
+                rows="8"
+                class="w-full px-3.5 py-2.5 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#00A3C4] shadow-xs"
+              ></textarea>
+            </div>
+
+            <div v-else-if="emailTemplatePreviewMode === 'preview'" class="p-4 bg-white border border-slate-200 rounded-xl min-h-[160px] max-h-72 overflow-y-auto">
+              <div v-html="renderEmailPreview(editingEmailTemplate)"></div>
+            </div>
+
+            <div v-else-if="emailTemplatePreviewMode === 'text'">
+              <textarea
+                v-model="editingEmailTemplate.body_text"
+                rows="8"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
+            <button
+              type="button"
+              @click="showEmailTemplateModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              Vorlage speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
   <div v-else class="max-w-md mx-auto py-24 text-center">
     <div class="liquid_glass rounded-3xl p-8 shadow-xl">
@@ -1431,7 +1958,17 @@ import {
   Lock,
   Search,
   Check,
-  X
+  X,
+  Mail,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  FileText,
+  Server,
+  Inbox
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -1466,11 +2003,35 @@ definePageMeta({
 
 const { user, authHeaders } = useAuth()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'templates'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
 const loading = ref(true)
+
+// Email Settings & Trigger Templates state
+const emailSubTab = ref<'settings' | 'templates' | 'outbox'>('settings')
+const smtpConfig = ref({
+  smtp_host: 'mail.kurka.ch',
+  smtp_port: 465,
+  smtp_secure: 'ssl',
+  smtp_user: 'noreply@kurka.ch',
+  smtp_password: '',
+  smtp_from_email: 'noreply@kurka.ch',
+  smtp_from_name: 'Taskster'
+})
+const showSmtpPassword = ref(false)
+const savingSmtp = ref(false)
+const smtpSavedMessage = ref('')
+const emailTemplates = ref<any[]>([])
+const editingEmailTemplate = ref<any | null>(null)
+const showEmailTemplateModal = ref(false)
+const emailTemplatePreviewMode = ref<'html' | 'preview' | 'text'>('preview')
+const emailOutbox = ref<any[]>([])
+const showTestEmailModal = ref(false)
+const testEmailTo = ref('')
+const testingEmail = ref(false)
+const testEmailResult = ref<{ success: boolean; message?: string; error?: string; log: string[] } | null>(null)
 
 // Permissions system
 const availablePermissions = [
@@ -2009,6 +2570,224 @@ const createCompany = async () => {
   }
 }
 
+// Email Management Methods
+const loadEmailSettings = async () => {
+  try {
+    const res = await $fetch<any>('/api/admin/email-settings', {
+      headers: authHeaders()
+    })
+    if (res?.settings) {
+      smtpConfig.value = { ...smtpConfig.value, ...res.settings }
+    }
+  } catch (err) {
+    console.error('Fehler beim Laden der E-Mail-Einstellungen:', err)
+  }
+}
+
+const saveEmailSettings = async () => {
+  savingSmtp.value = true
+  smtpSavedMessage.value = ''
+  try {
+    const res = await $fetch<any>('/api/admin/email-settings', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: smtpConfig.value
+    })
+    if (res?.settings) {
+      smtpConfig.value = { ...smtpConfig.value, ...res.settings }
+    }
+    smtpSavedMessage.value = 'SMTP-Einstellungen erfolgreich gespeichert!'
+    setTimeout(() => { smtpSavedMessage.value = '' }, 4000)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der SMTP-Einstellungen')
+  } finally {
+    savingSmtp.value = false
+  }
+}
+
+const loadEmailTemplates = async () => {
+  try {
+    const res = await $fetch<any>('/api/admin/email-templates', {
+      headers: authHeaders()
+    })
+    if (res?.templates) {
+      emailTemplates.value = res.templates
+    }
+  } catch (err) {
+    console.error('Fehler beim Laden der E-Mail-Vorlagen:', err)
+  }
+}
+
+const openEditEmailTemplateModal = (tmpl: any) => {
+  editingEmailTemplate.value = JSON.parse(JSON.stringify(tmpl))
+  emailTemplatePreviewMode.value = 'preview'
+  showEmailTemplateModal.value = true
+}
+
+const insertVariableInTemplate = (varName: string) => {
+  if (!editingEmailTemplate.value) return
+  const token = `{{${varName}}}`
+  if (emailTemplatePreviewMode.value === 'text') {
+    editingEmailTemplate.value.body_text = (editingEmailTemplate.value.body_text || '') + ' ' + token
+  } else {
+    editingEmailTemplate.value.body_html = (editingEmailTemplate.value.body_html || '') + ' ' + token
+  }
+}
+
+const renderEmailPreview = (tmpl: any) => {
+  if (!tmpl || !tmpl.body_html) return ''
+  let html = tmpl.body_html
+  const dummyMap: Record<string, string> = {
+    user_name: 'Beat Meier',
+    user_email: 'beat.meier@muster.ch',
+    task_title: 'LWL-Spleissung Hauptverteiler',
+    project_title: 'FTTH Ausbau Zürich Nord',
+    assigned_by: 'Martin Kurka',
+    due_date: '28.09.2026',
+    author_name: 'Martin Kurka',
+    comment_content: 'Messprotokoll wurde soeben hochgeladen.',
+    event_title: 'Bauabnahme vor Ort',
+    event_start: '25.09.2026 14:00',
+    event_end: '25.09.2026 15:30',
+    event_location: 'Zentralstrasse 14, 8003 Zürich',
+    context_title: 'Projekt FTTH Ausbau',
+    mention_text: 'Bitte bis morgen prüfen',
+    budget_percent: '85',
+    tracked_hours: '34',
+    budget_hours: '40',
+    company_name: 'Kurka Telecom AG',
+    inviter_name: 'Martin Kurka',
+    invite_link: 'https://taskster.ch/register?token=demo',
+    action_url: 'https://taskster.ch'
+  }
+  for (const [k, v] of Object.entries(dummyMap)) {
+    const regex = new RegExp(`{{\\s*${k}\\s*}}`, 'g')
+    html = html.replace(regex, v)
+  }
+  return html
+}
+
+const saveEmailTemplate = async () => {
+  if (!editingEmailTemplate.value) return
+  try {
+    const res = await $fetch<any>(`/api/admin/email-templates/${editingEmailTemplate.value.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        name: editingEmailTemplate.value.name,
+        subject: editingEmailTemplate.value.subject,
+        body_html: editingEmailTemplate.value.body_html,
+        body_text: editingEmailTemplate.value.body_text,
+        is_active: editingEmailTemplate.value.is_active
+      }
+    })
+    showEmailTemplateModal.value = false
+    await loadEmailTemplates()
+    alert('E-Mail-Vorlage erfolgreich gespeichert!')
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage')
+  }
+}
+
+const toggleEmailTemplateActive = async (tmpl: any) => {
+  try {
+    const nextState = !tmpl.is_active
+    await $fetch<any>(`/api/admin/email-templates/${tmpl.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { is_active: nextState }
+    })
+    tmpl.is_active = nextState
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Umschalten der Vorlage')
+  }
+}
+
+const resetSingleEmailTemplate = async (tmplId: string) => {
+  if (!confirm('Möchtest du diese Vorlage wirklich auf den Systemstandard zurücksetzen?')) return
+  try {
+    await $fetch<any>('/api/admin/email-templates/reset', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { id: tmplId }
+    })
+    await loadEmailTemplates()
+    alert('Vorlage zurückgesetzt!')
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Zurücksetzen der Vorlage')
+  }
+}
+
+const resetAllEmailTemplates = async () => {
+  if (!confirm('Möchtest du wirklich ALLE Vorlagen auf den Systemstandard zurücksetzen?')) return
+  try {
+    await $fetch<any>('/api/admin/email-templates/reset', {
+      method: 'POST',
+      headers: authHeaders()
+    })
+    await loadEmailTemplates()
+    alert('Alle Vorlagen erfolgreich zurückgesetzt!')
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Zurücksetzen aller Vorlagen')
+  }
+}
+
+const loadEmailOutbox = async () => {
+  try {
+    const res = await $fetch<any>('/api/admin/email-outbox', {
+      headers: authHeaders()
+    })
+    if (res?.outbox) {
+      emailOutbox.value = res.outbox
+    }
+  } catch (err) {
+    console.error('Fehler beim Laden der Outbox:', err)
+  }
+}
+
+const openTestEmailModal = () => {
+  testEmailTo.value = user.value?.email || 'noreply@kurka.ch'
+  testEmailResult.value = null
+  showTestEmailModal.value = true
+}
+
+const sendTestEmail = async () => {
+  testingEmail.value = true
+  testEmailResult.value = null
+  try {
+    const res = await $fetch<any>('/api/admin/email-test', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        to_email: testEmailTo.value,
+        custom_config: smtpConfig.value
+      }
+    })
+    testEmailResult.value = {
+      success: true,
+      message: res.message || 'Test-E-Mail erfolgreich versendet!',
+      log: res.log || []
+    }
+    await loadEmailOutbox()
+  } catch (err: any) {
+    testEmailResult.value = {
+      success: false,
+      error: err.data?.statusMessage || err.message || 'Fehler beim Senden',
+      log: err.data?.log || []
+    }
+  } finally {
+    testingEmail.value = false
+  }
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'email') {
+    loadEmailSettings()
+    loadEmailTemplates()
+    loadEmailOutbox()
+  }
+})
+
 onMounted(async () => {
   if (!user.value) {
     const { initAuth } = useAuth()
@@ -2031,5 +2810,10 @@ onMounted(async () => {
   }
 
   await loadAdminData()
+  if (hasPermission('company_settings')) {
+    loadEmailSettings()
+    loadEmailTemplates()
+    loadEmailOutbox()
+  }
 })
 </script>

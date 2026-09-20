@@ -362,9 +362,9 @@
                 <label class="ts-toggle">
                   <input v-model="settings.notifications.email" type="checkbox" class="ts-check" />
                   <span>
-                    <span class="block text-sm font-medium text-slate-800">E-Mail</span>
+                    <span class="block text-sm font-medium text-slate-800">E-Mail-Benachrichtigungen</span>
                     <span class="block text-[11px] text-slate-500">
-                      Termineinladungen und Absagen zusätzlich per Mail (inkl. Kalenderdatei).
+                      Erhalte E-Mails für zugewiesene Aufgaben, Termineinladungen, Fälligkeiten und Kommentare.
                     </span>
                   </span>
                 </label>

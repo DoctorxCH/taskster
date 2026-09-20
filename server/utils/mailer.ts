@@ -1,0 +1,284 @@
+import { db } from '~/server/db'
+import { randomUUID } from 'crypto'
+import * as net from 'net'
+import * as tls from 'tls'
+
+export interface SmtpConfig {
+  smtp_host: string
+  smtp_port: number
+  smtp_secure: 'ssl' | 'tls' | 'none'
+  smtp_user: string
+  smtp_password?: string
+  smtp_from_email: string
+  smtp_from_name: string
+}
+
+export function getSmtpConfig(): SmtpConfig {
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'smtp_%'").all() as any[]
+  const map: Record<string, string> = {}
+  for (const r of rows) map[r.key] = r.value
+
+  return {
+    smtp_host: map.smtp_host || 'mail.kurka.ch',
+    smtp_port: parseInt(map.smtp_port || '465', 10),
+    smtp_secure: (map.smtp_secure as any) || 'ssl',
+    smtp_user: map.smtp_user || 'noreply@kurka.ch',
+    smtp_password: map.smtp_password || 'Ckeesjb6&M',
+    smtp_from_email: map.smtp_from_email || 'noreply@kurka.ch',
+    smtp_from_name: map.smtp_from_name || 'Taskster'
+  }
+}
+
+export function saveSmtpConfig(config: Partial<SmtpConfig>) {
+  const stmt = db.prepare(`
+    INSERT INTO system_settings (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `)
+  for (const [k, v] of Object.entries(config)) {
+    if (v !== undefined) {
+      stmt.run(k, String(v))
+    }
+  }
+}
+
+export interface MailOptions {
+  to: string
+  toName?: string
+  subject: string
+  bodyHtml?: string
+  bodyText?: string
+  icsContent?: string
+}
+
+/**
+ * Native Socket/TLS SMTP Mailer (Zero External Dependencies)
+ */
+export async function sendSmtpEmail(options: MailOptions, customConfig?: SmtpConfig): Promise<{ success: boolean; log: string[] }> {
+  const cfg = customConfig || getSmtpConfig()
+  const log: string[] = []
+  const outboxId = 'out_' + randomUUID().substring(0, 8)
+
+  // Log pending to email_outbox
+  try {
+    db.prepare(`
+      INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
+    `).run(
+      outboxId,
+      options.to,
+      options.toName || null,
+      options.subject,
+      options.bodyHtml || options.bodyText || '',
+      options.icsContent || null
+    )
+  } catch (_) {}
+
+  return new Promise((resolve, reject) => {
+    let socket: net.Socket | tls.TLSSocket
+    const host = cfg.smtp_host
+    const port = cfg.smtp_port
+    const isSsl = cfg.smtp_secure === 'ssl' || port === 465
+
+    let step = 0
+    let buffer = ''
+
+    const sendLine = (line: string, maskInLog = false) => {
+      log.push(`> ${maskInLog ? '********' : line}`)
+      socket.write(line + '\r\n')
+    }
+
+    const onData = (data: Buffer) => {
+      buffer += data.toString()
+      const lines = buffer.split('\r\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+        log.push(`< ${line}`)
+        const code = parseInt(line.substring(0, 3), 10)
+
+        // Only process completion replies (e.g. "250 " or "220 ")
+        if (line.length >= 4 && line.charAt(3) === '-') continue
+
+        if (step === 0 && code === 220) {
+          step = 1
+          sendLine(`EHLO taskster.ch`)
+        } else if (step === 1 && code === 250) {
+          if (cfg.smtp_user && cfg.smtp_password) {
+            step = 2
+            sendLine('AUTH LOGIN')
+          } else {
+            step = 4
+            sendLine(`MAIL FROM:<${cfg.smtp_from_email}>`)
+          }
+        } else if (step === 2 && code === 334) {
+          step = 3
+          sendLine(Buffer.from(cfg.smtp_user).toString('base64'))
+        } else if (step === 3 && code === 334) {
+          step = 4
+          sendLine(Buffer.from(cfg.smtp_password || '').toString('base64'), true)
+        } else if (step === 4 && code === 235) {
+          step = 5
+          sendLine(`MAIL FROM:<${cfg.smtp_from_email}>`)
+        } else if (step === 5 && code === 250) {
+          step = 6
+          sendLine(`RCPT TO:<${options.to}>`)
+        } else if (step === 6 && code === 250) {
+          step = 7
+          sendLine('DATA')
+        } else if (step === 7 && code === 354) {
+          step = 8
+
+          const boundary = '----=_Part_' + Date.now()
+          const fromHeader = cfg.smtp_from_name ? `"${cfg.smtp_from_name}" <${cfg.smtp_from_email}>` : cfg.smtp_from_email
+          const toHeader = options.toName ? `"${options.toName}" <${options.to}>` : options.to
+
+          let message = `From: ${fromHeader}\r\n`
+          message += `To: ${toHeader}\r\n`
+          message += `Subject: =?UTF-8?B?${Buffer.from(options.subject).toString('base64')}?=\r\n`
+          message += `Date: ${new Date().toUTCString()}\r\n`
+          message += `MIME-Version: 1.0\r\n`
+
+          if (options.icsContent) {
+            message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`
+            message += `--${boundary}\r\n`
+            message += `Content-Type: text/html; charset=UTF-8\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
+            message += Buffer.from(options.bodyHtml || options.bodyText || '').toString('base64') + '\r\n\r\n'
+
+            message += `--${boundary}\r\n`
+            message += `Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="invite.ics"\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n`
+            message += `Content-Disposition: attachment; filename="invite.ics"\r\n\r\n`
+            message += Buffer.from(options.icsContent).toString('base64') + '\r\n\r\n'
+            message += `--${boundary}--\r\n`
+          } else if (options.bodyHtml) {
+            message += `Content-Type: text/html; charset=UTF-8\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
+            message += Buffer.from(options.bodyHtml).toString('base64') + '\r\n'
+          } else {
+            message += `Content-Type: text/plain; charset=UTF-8\r\n`
+            message += `Content-Transfer-Encoding: base64\r\n\r\n`
+            message += Buffer.from(options.bodyText || '').toString('base64') + '\r\n'
+          }
+
+          message += '\r\n.'
+          sendLine(message)
+        } else if (step === 8 && code === 250) {
+          step = 9
+          sendLine('QUIT')
+        } else if (step === 9 && code === 221) {
+          socket.end()
+          updateOutboxSuccess(outboxId)
+          resolve({ success: true, log })
+        } else if (code >= 400) {
+          const errMsg = `SMTP Fehler ${code}: ${line}`
+          socket.destroy()
+          updateOutboxError(outboxId, errMsg)
+          reject(new Error(errMsg))
+        }
+      }
+    }
+
+    const onError = (err: Error) => {
+      log.push(`! Fehler: ${err.message}`)
+      updateOutboxError(outboxId, err.message)
+      reject(err)
+    }
+
+    const timer = setTimeout(() => {
+      socket.destroy()
+      const timeoutErr = new Error(`SMTP Timeout nach 15 Sekunden bei ${host}:${port}`)
+      updateOutboxError(outboxId, timeoutErr.message)
+      reject(timeoutErr)
+    }, 15000)
+
+    try {
+      if (isSsl) {
+        socket = tls.connect({
+          host,
+          port,
+          rejectUnauthorized: false
+        }, () => {
+          log.push(`* TLS/SSL Verbindung zu ${host}:${port} erfolgreich aufgebaut.`)
+        })
+      } else {
+        socket = net.createConnection({ host, port }, () => {
+          log.push(`* TCP Verbindung zu ${host}:${port} erfolgreich aufgebaut.`)
+        })
+      }
+
+      socket.on('data', onData)
+      socket.on('error', onError)
+      socket.on('close', () => {
+        clearTimeout(timer)
+      })
+    } catch (e: any) {
+      clearTimeout(timer)
+      updateOutboxError(outboxId, e.message)
+      reject(e)
+    }
+  })
+}
+
+function updateOutboxSuccess(id: string) {
+  try {
+    db.prepare("UPDATE email_outbox SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(id)
+  } catch (_) {}
+}
+
+function updateOutboxError(id: string, error: string) {
+  try {
+    db.prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?").run(error, id)
+  } catch (_) {}
+}
+
+/**
+ * Render and send trigger-based email with user preference check
+ */
+export async function sendTriggerEmail(
+  triggerEvent: string,
+  recipient: { id?: string; email: string; name?: string; settings?: any },
+  data: Record<string, any>
+) {
+  // 1. Check if recipient wants this notification
+  if (recipient.settings && recipient.settings.notifications) {
+    if (recipient.settings.notifications.email === false) return null
+    if (recipient.settings.notifications.events && recipient.settings.notifications.events[triggerEvent] === false) {
+      return null
+    }
+  }
+
+  // 2. Fetch template
+  const template = db.prepare('SELECT * FROM email_templates WHERE trigger_event = ? AND is_active = 1').get(triggerEvent) as any
+  if (!template) return null
+
+  // 3. Compile variables
+  let subject = template.subject
+  let bodyHtml = template.body_html
+  let bodyText = template.body_text
+
+  const mergedData = {
+    user_name: recipient.name || recipient.email,
+    user_email: recipient.email,
+    action_url: 'https://taskster.ch',
+    ...data
+  }
+
+  for (const [k, v] of Object.entries(mergedData)) {
+    const placeholder = new RegExp(`{{\\s*${k}\\s*}}`, 'g')
+    subject = subject.replace(placeholder, String(v || ''))
+    bodyHtml = bodyHtml.replace(placeholder, String(v || ''))
+    bodyText = bodyText.replace(placeholder, String(v || ''))
+  }
+
+  return sendSmtpEmail({
+    to: recipient.email,
+    toName: recipient.name,
+    subject,
+    bodyHtml,
+    bodyText,
+    icsContent: data.ics_content
+  })
+}

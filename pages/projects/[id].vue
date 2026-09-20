@@ -4748,6 +4748,12 @@ const openEditTaskModal = (task: any) => openTaskDrawer(task)
 
 const closeTaskDrawer = () => {
   showTaskDrawer.value = false
+  // ?task= aus der URL entfernen, damit der Drawer beim Neuladen nicht wieder aufgeht
+  if (route.query.task) {
+    const query = { ...route.query }
+    delete query.task
+    navigateTo({ path: route.path, query }, { replace: true })
+  }
   loadProjectData()
 }
 
@@ -5340,9 +5346,44 @@ watch(currentView, (val) => {
 
 onMounted(async () => {
   await loadProjectData()
+  await openTaskFromQuery()
   if (import.meta.client) {
     window.addEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
   }
+})
+
+/**
+ * Öffnet eine Aufgabe direkt, wenn die URL einen ?task=<id> Parameter enthält.
+ * Wird von Kalender, Benachrichtigungen und der Suche verlinkt.
+ */
+async function openTaskFromQuery() {
+  const taskId = route.query.task
+  if (!taskId || typeof taskId !== 'string') return
+
+  // Aufgabe in den geladenen Abschnitten suchen
+  let found: any = null
+  for (const l of lists.value) {
+    const t = (l.tasks || []).find((x: any) => x.id === taskId)
+    if (t) { found = t; break }
+  }
+
+  if (found) {
+    await openTaskDrawer(found)
+    return
+  }
+
+  // Nicht in der Liste (z. B. anderer Abschnitt oder Filter): direkt laden
+  try {
+    const res = await $fetch<any>(`/api/tasks/${taskId}`, { headers: authHeaders() })
+    if (res?.task) await openTaskDrawer(res.task)
+  } catch {
+    // Aufgabe existiert nicht (mehr) oder kein Zugriff – Seite bleibt normal nutzbar
+  }
+}
+
+// Reagiert auf ?task= Änderungen, wenn die Projektseite bereits offen ist
+watch(() => route.query.task, (id) => {
+  if (id && typeof id === 'string') openTaskFromQuery()
 })
 
 onUnmounted(() => {
