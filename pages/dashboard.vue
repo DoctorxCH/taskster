@@ -492,7 +492,7 @@
                 </span>
                 <div class="flex items-center space-x-2">
                   <button
-                    v-if="user?.id === folder.owner_id || user?.is_superadmin"
+                    v-if="user?.id === folder.owner_id"
                     @click="openEditFolderModal(folder)"
                     class="p-1.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
                     :title="$t('dashboard.projektordner_anpassen_name')"
@@ -725,7 +725,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id || user?.is_superadmin" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
+          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
             <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <label
@@ -803,7 +803,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen -->
-          <div v-if="user?.company_id || editFolderCompanyId || user?.is_superadmin" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
+          <div v-if="user?.company_id || editFolderCompanyId" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
             <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <label

@@ -75,7 +75,7 @@
             </div>
 
             <button
-              v-if="user?.id === folder.owner_id || user?.is_superadmin"
+              v-if="user?.id === folder.owner_id"
               @click="openShareFolderModal"
               class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
               title="Projektordner mit Mitgliedern oder dem Unternehmen teilen"
@@ -84,7 +84,7 @@
               <span class="hidden sm:inline">Teilen</span>
             </button>
             <button
-              v-if="user?.id === folder.owner_id || user?.is_superadmin"
+              v-if="user?.id === folder.owner_id"
               @click="openEditFolderModal"
               class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
               title="Projektordner anpassen"
@@ -960,7 +960,7 @@
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id || folder?.company_id || user?.is_superadmin" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div v-if="user?.company_id || folder?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
             <div class="grid grid-cols-2 gap-2">
               <label
@@ -1178,7 +1178,7 @@
                 </span>
 
                 <button
-                  v-if="m.role !== 'owner' && (user?.id === folder?.owner_id || user?.is_superadmin)"
+                  v-if="m.role !== 'owner' && (user?.id === folder?.owner_id)"
                   @click="removeFolderMember(m.user_id)"
                   class="text-rose-500 hover:text-rose-700 font-bold p-1 text-xs cursor-pointer"
                   title="Mitglied entfernen"

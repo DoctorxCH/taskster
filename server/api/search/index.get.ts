@@ -85,8 +85,7 @@ export default defineEventHandler((event) => {
     // Zero-Trust: 'custom'-Abschnitt nur für Owner/Admin oder explizit Freigegebene
     if (t.list_access_mode === 'custom') {
       const isOwner = t.folder_owner_id === user.id
-      const isSuperadmin = Boolean(user.is_superadmin)
-      if (!isOwner && !isSuperadmin && !visibleListIds.has(t.id)) {
+      if (!isOwner && !visibleListIds.has(t.id)) {
         // Prüfen, ob der Nutzer Projekt-Admin ist
         const isProjectAdmin = db.prepare(`
           SELECT 1 FROM project_members
@@ -198,8 +197,7 @@ export default defineEventHandler((event) => {
   for (const l of lists) {
     if (l.access_mode === 'custom') {
       const isOwner = l.folder_owner_id === user.id
-      const isSuperadmin = Boolean(user.is_superadmin)
-      if (!isOwner && !isSuperadmin && !visibleListIds.has(l.id)) {
+      if (!isOwner && !visibleListIds.has(l.id)) {
         const isProjectAdmin = db.prepare(`
           SELECT 1 FROM project_members
           WHERE project_id = ? AND user_id = ? AND role IN ('owner', 'admin')

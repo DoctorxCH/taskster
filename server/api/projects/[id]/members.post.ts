@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   // Must be owner or admin to add members
   const context = evaluateProjectAccess(user, projectId, event, 'write')
-  if (context.userRole !== 'owner' && context.userRole !== 'admin' && !user.is_superadmin) {
+  if (context.userRole !== 'owner' && context.userRole !== 'admin') {
     throw createError({ statusCode: 403, statusMessage: 'Nur Projekt-Owner oder Admins dürfen Teammitglieder einladen' })
   }
 

@@ -14,7 +14,7 @@ export default defineEventHandler((event) => {
   // Permission: author or project editor/owner
   const context = evaluateProjectAccess(user, entry.project_id, event, 'write')
   const isAuthor = entry.user_id === user.id
-  const isElevated = context.userRole === 'owner' || context.userRole === 'admin' || user.is_superadmin
+  const isElevated = context.userRole === 'owner' || context.userRole === 'admin'
 
   if (!isAuthor && !isElevated) {
     throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung zum Löschen dieses Eintrags' })

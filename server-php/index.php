@@ -2094,20 +2094,6 @@ function createNotification($userId, $type, $title, $message, $refType = null, $
 
 function evaluateProjectAccess($user, $projectId, $action = 'read') {
     $db = getDb();
-    if (!empty($user['is_superadmin'])) {
-        $stmt = $db->prepare("SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
-        $stmt->execute([$projectId]);
-        $prj = $stmt->fetch();
-        if (!$prj) errorResponse('Projekt nicht gefunden', 404);
-        return [
-            'projectId' => $prj['id'],
-            'folderId' => $prj['folder_id'],
-            'ownerId' => $prj['owner_id'],
-            'companyId' => $prj['company_id'],
-            'userRole' => 'owner'
-        ];
-    }
-
     $stmt = $db->prepare("SELECT p.id, p.folder_id, p.visibility as project_visibility, pf.owner_id, pf.company_id, pf.visibility as folder_visibility FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
     $stmt->execute([$projectId]);
     $prj = $stmt->fetch();
@@ -2181,7 +2167,7 @@ function evaluateListAccess($user, $listId, $action = 'read') {
     $projectContext = evaluateProjectAccess($user, $list['project_id'], $action);
 
     if ($list['access_mode'] === 'custom') {
-        if ($projectContext['userRole'] !== 'owner' && $projectContext['userRole'] !== 'admin' && empty($user['is_superadmin'])) {
+        if ($projectContext['userRole'] !== 'owner' && $projectContext['userRole'] !== 'admin') {
             $aStmt = $db->prepare("SELECT is_visible FROM list_access WHERE list_id = ? AND user_id = ?");
             $aStmt->execute([$listId, $user['id']]);
             $acc = $aStmt->fetch();
@@ -2580,7 +2566,7 @@ try {
         $folder = $stmt->fetch();
         if (!$folder) errorResponse('Ordner nicht gefunden', 404);
 
-        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id']) {
+        if ($folder['owner_id'] !== $user['id']) {
             errorResponse('Nur der Eigentümer kann diesen Projektordner bearbeiten', 403);
         }
 
@@ -2620,7 +2606,7 @@ try {
 
         // Zero-Trust Zugriffsprüfung:
         $canAccessFolder = false;
-        if (!empty($user['is_superadmin']) || $folder['owner_id'] === $user['id']) {
+        if ($folder['owner_id'] === $user['id']) {
             $canAccessFolder = true;
         } elseif (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && ($folder['visibility'] ?? 'private') === 'company') {
             $canAccessFolder = true;
@@ -2655,9 +2641,9 @@ try {
         }, $fStmt->fetchAll());
 
         // Projekte im Ordner filtern:
-        // Ordner-Inhaber & Superadmins sehen alle Projekte des Ordners.
+        // Ordner-Inhaber sieht alle Projekte des Ordners.
         // Andere Nutzer sehen nur Projekte, die auf company stehen (im selben Unternehmen) oder bei denen sie Mitglied sind.
-        if ($folder['owner_id'] === $user['id'] || !empty($user['is_superadmin'])) {
+        if ($folder['owner_id'] === $user['id']) {
             $pStmt = $db->prepare("
                 SELECT p.*,
                   (SELECT COUNT(*) FROM lists l WHERE l.project_id = p.id) as list_count,
@@ -2800,7 +2786,7 @@ try {
         $folder = $stmt->fetch();
         if (!$folder) errorResponse('Ordner nicht gefunden', 404);
 
-        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id']) {
+        if ($folder['owner_id'] !== $user['id']) {
             errorResponse('Nur der Ordner-Eigentümer kann Mitglieder hinzufügen', 403);
         }
 
@@ -2856,7 +2842,7 @@ try {
         $folder = $stmt->fetch();
         if (!$folder) errorResponse('Ordner nicht gefunden', 404);
 
-        if (empty($user['is_superadmin']) && $folder['owner_id'] !== $user['id'] && $user['id'] !== $targetUserId) {
+        if ($folder['owner_id'] !== $user['id'] && $user['id'] !== $targetUserId) {
             errorResponse('Nur der Ordner-Eigentümer kann Mitglieder entfernen', 403);
         }
 
@@ -2895,32 +2881,21 @@ try {
     // 8b. GET projects (List all accessible projects for dropdowns & time reporting)
     if ($path === 'projects' && $method === 'GET') {
         $user = requireAuth();
-        if (!empty($user['is_superadmin'])) {
-            $stmt = $db->prepare("
-                SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
-                       pf.name as folder_name, pf.icon as folder_icon, pf.owner_id
-                FROM projects p
-                JOIN project_folders pf ON pf.id = p.folder_id
-                ORDER BY p.title ASC
-            ");
-            $stmt->execute();
-        } else {
-            $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
-            $stmt = $db->prepare("
-                SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
-                       pf.name as folder_name, pf.icon as folder_icon, pf.owner_id
-                FROM projects p
-                JOIN project_folders pf ON pf.id = p.folder_id
-                WHERE pf.owner_id = ?
-                   OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
-                   OR pf.id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
-                   OR (p.visibility = 'company' AND pf.company_id = ?)
-                   OR (pf.visibility = 'company' AND pf.company_id = ?)
-                GROUP BY p.id
-                ORDER BY p.title ASC
-            ");
-            $stmt->execute([$user['id'], $user['id'], $user['id'], $companyId, $companyId]);
-        }
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+        $stmt = $db->prepare("
+            SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
+                   pf.name as folder_name, pf.icon as folder_icon, pf.owner_id
+            FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE pf.owner_id = ?
+               OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+               OR pf.id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
+               OR (p.visibility = 'company' AND pf.company_id = ?)
+               OR (pf.visibility = 'company' AND pf.company_id = ?)
+            GROUP BY p.id
+            ORDER BY p.title ASC
+        ");
+        $stmt->execute([$user['id'], $user['id'], $user['id'], $companyId, $companyId]);
         $projects = $stmt->fetchAll();
         jsonResponse(['projects' => $projects]);
     }
@@ -2947,7 +2922,7 @@ try {
         $folder = $fCheckStmt->fetch();
         if (!$folder) errorResponse('Ordner nicht gefunden', 404);
 
-        if ($folder['owner_id'] !== $user['id'] && empty($user['is_superadmin'])) {
+        if ($folder['owner_id'] !== $user['id']) {
             if ($folder['visibility'] !== 'company' || empty($user['company_id']) || $user['company_id'] !== $folder['company_id']) {
                 errorResponse('Ordner nicht gefunden', 404);
             }
@@ -3119,7 +3094,7 @@ try {
 
         $accessibleLists = [];
         foreach ($allLists as $l) {
-            if ($l['access_mode'] === 'inherit' || $context['userRole'] === 'owner' || $context['userRole'] === 'admin' || !empty($user['is_superadmin'])) {
+            if ($l['access_mode'] === 'inherit' || $context['userRole'] === 'owner' || $context['userRole'] === 'admin') {
                 $accessibleLists[] = $l;
             } else {
                 $aStmt = $db->prepare("SELECT is_visible FROM list_access WHERE list_id = ? AND user_id = ?");
@@ -3415,7 +3390,7 @@ try {
         $userRole = $listAccess['projectContext']['userRole'] ?? 'viewer';
 
         // Viewer-Rolle: Eingeladener Viewer kann Aufgaben sehen und abhaken!
-        if ($userRole === 'viewer' && empty($user['is_superadmin'])) {
+        if ($userRole === 'viewer') {
             $newStatus = $body['status'] ?? $task['status'];
             $db->prepare("UPDATE tasks SET status = ? WHERE id = ?")->execute([$newStatus, $taskId]);
             jsonResponse(['success' => true]);
@@ -3513,7 +3488,7 @@ try {
         $userRole = $listAccess['projectContext']['userRole'] ?? 'viewer';
 
         // Editor darf Aufgaben bearbeiten, aber NICHT löschen!
-        if (($userRole === 'editor' || $userRole === 'viewer') && empty($user['is_superadmin'])) {
+        if ($userRole === 'editor' || $userRole === 'viewer') {
             errorResponse('Nur der Projekt-Owner oder Administrator darf Aufgaben löschen.', 403);
         }
 
@@ -6599,7 +6574,7 @@ try {
         }
 
         $pAcc = evaluateProjectAccess($user, $existing['project_id'], 'write');
-        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin']) && empty($user['is_superadmin'])) {
+        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin'])) {
             errorResponse('Nur der Ersteller oder Projektleiter darf diesen Zeiteintrag bearbeiten', 403);
         }
 
@@ -6631,7 +6606,7 @@ try {
         }
 
         $pAcc = evaluateProjectAccess($user, $existing['project_id'], 'write');
-        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin']) && empty($user['is_superadmin'])) {
+        if ($existing['user_id'] !== $user['id'] && !in_array($pAcc['userRole'], ['owner', 'admin'])) {
             errorResponse('Nur der Ersteller oder Projektleiter darf diesen Zeiteintrag löschen', 403);
         }
 

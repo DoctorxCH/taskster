@@ -28,17 +28,15 @@ export default defineEventHandler((event) => {
     whereClauses.push('p.folder_id = ?')
     params.push(folderId)
   } else {
-    // Scoped access if not superadmin
-    if (!user.is_superadmin) {
-      whereClauses.push(`(
-        te.user_id = ?
-        OR p.owner_id = ?
-        OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
-        OR p.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?)
-        OR p.folder_id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
-      )`)
-      params.push(user.id, user.id, user.id, user.id, user.id)
-    }
+    // Scoped access for all users
+    whereClauses.push(`(
+      te.user_id = ?
+      OR p.owner_id = ?
+      OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+      OR p.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?)
+      OR p.folder_id IN (SELECT folder_id FROM folder_members WHERE user_id = ?)
+    )`)
+    params.push(user.id, user.id, user.id, user.id, user.id)
   }
 
   if (filterUserId) {
