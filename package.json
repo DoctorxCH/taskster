@@ -15,7 +15,8 @@
     "index": "python generate_index.py",
     "index:stats": "python generate_index.py --stats",
     "php:check": "python scripts/check-php-syntax.py",
-    "i18n:extract": "python scripts/extract_i18n.py"
+    "i18n:extract": "python scripts/extract_i18n.py",
+    "mail:test": "node scripts/test-resend.cjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -23,6 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-vue-next": "^0.475.0",
     "mysql2": "^3.24.4",
+    "resend": "^6.28.1",
     "ssh2": "^1.17.0",
     "xlsx": "^0.18.5"
   },

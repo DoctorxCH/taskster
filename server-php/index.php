@@ -1087,7 +1087,91 @@ function saveSmtpConfigDb($pdo, $config) {
     }
 }
 
+function sendResendEmailNative($apiKey, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
+    $log = [];
+    $db = getDb();
+
+    if (!$outboxId) {
+        $outboxId = 'mail_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status, attempts)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', 1)
+            ");
+            $stmt->execute([$outboxId, $to, $toName ?: null, $subject, $bodyHtml ?: $bodyText, $icsContent]);
+        } catch (Exception $e) {}
+    } else {
+        try {
+            $db->prepare("UPDATE email_outbox SET status = 'processing', attempts = attempts + 1 WHERE id = ?")->execute([$outboxId]);
+        } catch (Exception $e) {}
+    }
+
+    $from = 'Taskster <noreply@kurka.ch>';
+    $payload = [
+        'from' => $from,
+        'to' => [$to],
+        'subject' => $subject,
+        'html' => $bodyHtml ?: nl2br(htmlspecialchars($bodyText)),
+        'text' => $bodyText ?: strip_tags($bodyHtml)
+    ];
+
+    if (!empty($icsContent)) {
+        $payload['headers'] = [
+            'Content-Class' => 'urn:content-classes:calendarmessage'
+        ];
+        $payload['attachments'] = [
+            [
+                'filename' => 'invite.ics',
+                'content' => base64_encode($icsContent)
+            ]
+        ];
+    }
+
+    $log[] = "> [Resend API] Sende E-Mail an {$to} via {$from}";
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT => 15
+    ]);
+
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($res === false) {
+        $errMsg = 'Netzwerkfehler zu Resend: ' . $curlErr;
+        $log[] = '! ' . $errMsg;
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+
+    $data = json_decode($res, true);
+    if ($httpCode >= 200 && $httpCode < 300) {
+        $log[] = '< [Resend Success] id: ' . ($data['id'] ?? '');
+        try { $db->prepare("UPDATE email_outbox SET status = 'sent', sent_at = NOW() WHERE id = ?")->execute([$outboxId]); } catch (Exception $e) {}
+        return ['success' => true, 'log' => $log];
+    } else {
+        $errMsg = 'Resend Fehler (' . $httpCode . '): ' . ($data['message'] ?? $res);
+        $log[] = '! ' . $errMsg;
+        try { $db->prepare("UPDATE email_outbox SET status = 'error', error = ? WHERE id = ?")->execute([$errMsg, $outboxId]); } catch (Exception $e) {}
+        return ['success' => false, 'error' => $errMsg, 'log' => $log];
+    }
+}
+
 function sendSmtpEmailNative($cfg, $to, $toName, $subject, $bodyHtml = '', $bodyText = '', $icsContent = null, $outboxId = null) {
+    $resendKey = getEnvValue('RESEND_API_KEY');
+    if (!empty($resendKey) && strpos($resendKey, 're_') === 0 && $resendKey !== 're_xxxxxxxxx') {
+        return sendResendEmailNative($resendKey, $to, $toName, $subject, $bodyHtml, $bodyText, $icsContent, $outboxId);
+    }
+
     $log = [];
     $db = getDb();
     
