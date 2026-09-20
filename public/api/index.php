@@ -3901,9 +3901,17 @@ try {
                 'max_tokens' => isset($body['max_tokens']) ? (int)$body['max_tokens'] : null
             ]);
 
+            $responseText = $result['text'];
+            if ($jsonMode) {
+                $responseText = preg_replace('/^```(?:json)?\s*/i', '', $responseText);
+                $responseText = preg_replace('/\s*```$/', '', $responseText);
+                $responseText = trim($responseText);
+            }
+
             jsonResponse([
                 'success' => true,
-                'response' => $result['text'],
+                'text' => $responseText,
+                'response' => $responseText,
                 'model' => $result['model'],
                 'usage' => $result['usage']
             ]);
