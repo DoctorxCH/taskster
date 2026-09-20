@@ -78,6 +78,10 @@ function ensureTables($pdo) {
             "ALTER TABLE users ADD COLUMN settings JSON DEFAULT NULL",
             "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
             "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
+            "ALTER TABLE contacts ADD COLUMN latitude DECIMAL(10,7) NULL",
+            "ALTER TABLE contacts ADD COLUMN longitude DECIMAL(10,7) NULL",
+            "ALTER TABLE calendar_events ADD COLUMN latitude DECIMAL(10,7) NULL",
+            "ALTER TABLE calendar_events ADD COLUMN longitude DECIMAL(10,7) NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -2742,7 +2746,7 @@ try {
             $fStmt = $db->prepare("
                 SELECT p.id FROM projects p
                 JOIN project_folders pf ON pf.id = p.folder_id
-                WHERE pf.company_id = ? OR pf.user_id = ?
+                WHERE pf.company_id = ? OR pf.owner_id = ?
                 ORDER BY p.is_default DESC, p.created_at ASC
                 LIMIT 1
             ");
@@ -2755,7 +2759,7 @@ try {
                     $projectId = $anyPrj;
                 } else {
                     $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $db->prepare("INSERT INTO project_folders (id, user_id, company_id, name, visibility) VALUES (?, ?, ?, ?, ?)")->execute([
+                    $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, visibility) VALUES (?, ?, ?, ?, ?)")->execute([
                         $fldId, $user['id'], $user['company_id'] ?? null, 'Persönliche Notizen', 'private'
                     ]);
                     $projectId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
@@ -3153,6 +3157,186 @@ try {
         jsonResponse(['success' => true, 'ticket_id' => $ticketId]);
     }
 
+    if ($path === 'project/journals' && $method === 'POST') {
+        $user = requireAuth();
+        $title = trim($body['title'] ?? '');
+        $content = trim($body['content'] ?? '');
+        $entryType = $body['entry_type'] ?? 'note';
+        $projectId = $body['project_id'] ?? null;
+
+        if (!$title && !$content) {
+            errorResponse('Titel oder Inhalt erforderlich', 400);
+        }
+
+        if (empty($projectId)) {
+            $fStmt = $db->prepare("
+                SELECT p.id FROM projects p
+                JOIN project_folders pf ON pf.id = p.folder_id
+                WHERE pf.company_id = ? OR pf.owner_id = ?
+                ORDER BY p.is_default DESC, p.created_at ASC
+                LIMIT 1
+            ");
+            $fStmt->execute([$user['company_id'] ?? '', $user['id']]);
+            $projectId = $fStmt->fetchColumn();
+
+            if (empty($projectId)) {
+                $anyPrj = $db->query("SELECT id FROM projects LIMIT 1")->fetchColumn();
+                if ($anyPrj) {
+                    $projectId = $anyPrj;
+                } else {
+                    $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, visibility) VALUES (?, ?, ?, ?, ?)")->execute([
+                        $fldId, $user['id'], $user['company_id'] ?? null, 'Persönliche Notizen', 'private'
+                    ]);
+                    $projectId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO projects (id, folder_id, title, description, is_default, visibility) VALUES (?, ?, ?, ?, 1, 'private')")->execute([
+                        $projectId, $fldId, 'Meine Notizen', 'Notizenablage'
+                    ]);
+                }
+            }
+        }
+
+        if (!empty($projectId)) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
+
+        $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("INSERT INTO project_journals (id, project_id, author_id, entry_type, title, content) VALUES (?, ?, ?, ?, ?, ?)")->execute([
+            $jrnId, $projectId, $user['id'], $entryType, $title, $content
+        ]);
+
+        jsonResponse(['success' => true, 'entry' => ['id' => $jrnId, 'project_id' => $projectId, 'title' => $title, 'content' => $content]]);
+    }
+
+    // --- COMPANY INVITATIONS & MEMBERS ENDPOINTS ---
+
+    // 16a. POST companies/members (Company Admin invites user or assigns directly)
+    if ($path === 'companies/members' && $method === 'POST') {
+        $user = requireAuth();
+        $email = strtolower(trim($body['email'] ?? ''));
+        $role = $body['role'] ?? 'member';
+
+        if (!$email) errorResponse('E-Mail erforderlich', 400);
+
+        // Must be company admin or superadmin
+        if (empty($user['is_superadmin']) && (empty($user['company_id']) || $user['company_role'] !== 'admin')) {
+            errorResponse('Nur Company-Admins dürfen Mitarbeiter einladen', 403);
+        }
+
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $body['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        // Check if user already exists
+        $stmt = $db->prepare("SELECT id, email, company_id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+            if ($existing['company_id'] === $companyId) {
+                errorResponse('Dieser Benutzer gehört bereits zu diesem Unternehmen', 409);
+            }
+            if (!empty($existing['company_id'])) {
+                errorResponse('Dieser Benutzer gehört bereits zu einem anderen Unternehmen', 409);
+            }
+            // Assign directly
+            $db->prepare("UPDATE users SET company_id = ?, company_role = ? WHERE id = ?")->execute([$companyId, $role, $existing['id']]);
+            jsonResponse(['success' => true, 'action' => 'assigned', 'user_id' => $existing['id']]);
+        }
+
+        // Create invitation token
+        $invId = 'inv_' . substr(bin2hex(random_bytes(8)), 0, 12);
+        $token = bin2hex(random_bytes(24));
+        $expiresAt = date('Y-m-d H:i:s', time() + 7 * 86400);
+
+        $db->prepare("
+            INSERT INTO company_invitations (id, company_id, email, role, token, invited_by, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ")->execute([$invId, $companyId, $email, $role, $token, $user['id'], $expiresAt]);
+
+        jsonResponse([
+            'success' => true,
+            'action' => 'invited',
+            'invitation_id' => $invId,
+            'invite_token' => $token,
+            'invite_link' => '/login?tab=register&token=' . $token
+        ]);
+    }
+
+    // 16b. GET companies/members (Company Admin lists company members)
+    if ($path === 'companies/members' && $method === 'GET') {
+        $user = requireAuth();
+
+        if (empty($user['is_superadmin']) && (empty($user['company_id']) || $user['company_role'] !== 'admin')) {
+            errorResponse('Nur Company-Admins dürfen Mitarbeiter einsehen', 403);
+        }
+
+        $companyId = $user['company_id'];
+        if (!$companyId && !empty($user['is_superadmin'])) {
+            $companyId = $_GET['company_id'] ?? null;
+        }
+        if (!$companyId) errorResponse('Kein Unternehmen zugewiesen', 400);
+
+        $stmt = $db->prepare("
+            SELECT id, email, name, avatar, company_role, is_superadmin, created_at
+            FROM users
+            WHERE company_id = ?
+            ORDER BY name ASC, email ASC
+        ");
+        $stmt->execute([$companyId]);
+        $members = $stmt->fetchAll();
+
+        // Also fetch pending invitations
+        $invStmt = $db->prepare("
+            SELECT id, email, role, token, created_at, expires_at
+            FROM company_invitations
+            WHERE company_id = ? AND accepted_at IS NULL AND expires_at > NOW()
+            ORDER BY created_at DESC
+        ");
+        $invStmt->execute([$companyId]);
+        $invitations = $invStmt->fetchAll();
+
+        jsonResponse([
+            'members' => $members,
+            'invitations' => $invitations
+        ]);
+    }
+
+    // 16c. DELETE companies/members (Remove user from company)
+    if ($path === 'companies/members' && $method === 'DELETE') {
+        $user = requireAuth();
+        $targetUserId = $body['user_id'] ?? $_GET['user_id'] ?? '';
+
+        if (!$targetUserId) errorResponse('Benutzer-ID erforderlich', 400);
+
+        if (empty($user['is_superadmin']) && (empty($user['company_id']) || $user['company_role'] !== 'admin')) {
+            errorResponse('Nur Company-Admins dürfen Mitarbeiter entfernen', 403);
+        }
+
+        $companyId = $user['company_id'] ?: ($body['company_id'] ?? null);
+
+        // Cannot remove oneself
+        if ($targetUserId === $user['id']) {
+            errorResponse('Sie können sich nicht selbst aus dem Unternehmen entfernen', 400);
+        }
+
+        // Verify target user belongs to company
+        $stmt = $db->prepare("SELECT id, company_id FROM users WHERE id = ?");
+        $stmt->execute([$targetUserId]);
+        $target = $stmt->fetch();
+
+        if (!$target || $target['company_id'] !== $companyId) {
+            errorResponse('Benutzer nicht im Unternehmen gefunden', 404);
+        }
+
+        // Unassign from company
+        $db->prepare("UPDATE users SET company_id = NULL, company_role = 'member' WHERE id = ?")->execute([$targetUserId]);
+
+        jsonResponse(['success' => true, 'removed_user_id' => $targetUserId]);
+    }
+
     // ==========================================
     // AI ENDPOINTS (OpenRouter / DeepSeek V4 Flash)
     // Serverseitig: API-Key bleibt in .env, nie im Client.
@@ -3163,8 +3347,8 @@ try {
         $user = requireAuth();
 
         $prompt = trim($body['prompt'] ?? '');
-        $history = $body['messages'] ?? [];
-        $systemOverride = isset($body['system']) ? trim($body['system']) : null;
+        $history = is_array($body['messages'] ?? null) ? $body['messages'] : [];
+        $systemOverride = !empty($body['system']) ? trim($body['system']) : null;
         $jsonMode = !empty($body['json']);
 
         if ($prompt === '' && empty($history)) {
@@ -3178,13 +3362,9 @@ try {
         ]];
 
         // Optionale Historie (nur user/assistant, max 20 Nachrichten)
-        if (is_array($history)) {
-            foreach (array_slice($history, -20) as $msg) {
-                $role = $msg['role'] ?? '';
-                $content = trim($msg['content'] ?? '');
-                if (in_array($role, ['user', 'assistant'], true) && $content !== '') {
-                    $messages[] = ['role' => $role, 'content' => $content];
-                }
+        foreach (array_slice($history, -20) as $msg) {
+            if (isset($msg['role'], $msg['content']) && in_array($msg['role'], ['user', 'assistant'])) {
+                $messages[] = ['role' => $msg['role'], 'content' => trim($msg['content'])];
             }
         }
 
@@ -3197,35 +3377,30 @@ try {
         try {
             $result = callOpenRouter($messages, [
                 'model' => $body['model'] ?? null,
-                'temperature' => isset($body['temperature']) ? floatval($body['temperature']) : null,
-                'max_tokens' => isset($body['max_tokens']) ? intval($body['max_tokens']) : null
+                'temperature' => isset($body['temperature']) ? (float)$body['temperature'] : null,
+                'max_tokens' => isset($body['max_tokens']) ? (int)$body['max_tokens'] : null
+            ]);
+
+            jsonResponse([
+                'success' => true,
+                'response' => $result['text'],
+                'model' => $result['model'],
+                'usage' => $result['usage']
             ]);
         } catch (Exception $e) {
-            errorResponse($e->getMessage(), $e->getCode() >= 400 ? $e->getCode() : 502);
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 502;
+            errorResponse($e->getMessage(), $code);
         }
-
-        $text = $result['text'];
-        if ($jsonMode) {
-            $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
-            $text = preg_replace('/```$/', '', trim($text));
-        }
-
-        jsonResponse([
-            'success' => true,
-            'text' => $text,
-            'model' => $result['model'],
-            'usage' => $result['usage']
-        ]);
     }
 
     // AI-2. GET ai/config (Konfiguration fuer Debug/Transparenz, ohne Key)
     if ($path === 'ai/config' && $method === 'GET') {
-        requireAuth();
         $config = getAiConfig();
         jsonResponse([
+            'enabled' => !empty(getEnvValue('OPENROUTER_API_KEY')),
             'model' => $config['model'],
             'audio_model' => $config['audio_model'] ?? 'openai/whisper-large-v3-turbo',
-            'provider' => $config['provider'],
+            'provider' => $config['provider'] ?? 'openrouter',
             'temperature' => $config['temperature'],
             'max_tokens' => $config['max_tokens'],
             'timeout_seconds' => $config['timeout_seconds'],
@@ -3358,7 +3533,7 @@ try {
             SELECT DISTINCT p.id, p.title, p.description
             FROM projects p
             JOIN project_folders pf ON pf.id = p.folder_id
-            WHERE pf.company_id = ? OR pf.user_id = ? OR p.visibility = 'public'
+            WHERE pf.company_id = ? OR pf.owner_id = ? OR p.visibility = 'public'
             ORDER BY p.is_default DESC, p.created_at DESC
             LIMIT 30
         ");
@@ -3370,7 +3545,7 @@ try {
         if (!empty($projectIds)) {
             $placeholders = implode(',', array_fill(0, count($projectIds), '?'));
             $tStmt = $db->prepare("
-                SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date,
+                SELECT t.id, t.title, t.description, t.custom_data, t.status, t.priority, t.due_date,
                        t.list_id, l.title as list_title, p.id as project_id, p.title as project_title
                 FROM tasks t
                 JOIN lists l ON l.id = t.list_id
@@ -3385,18 +3560,26 @@ try {
 
         $projectContext = array_map(function($p) { return ['id' => $p['id'], 'title' => $p['title']]; }, array_slice($projects, 0, 20));
         $taskContext = array_map(function($t) {
+            $customFields = [];
+            if (!empty($t['custom_data'])) {
+                $customFields = is_string($t['custom_data']) ? (json_decode($t['custom_data'], true) ?: []) : $t['custom_data'];
+            }
             return [
                 'id' => $t['id'],
                 'title' => $t['title'],
                 'project_id' => $t['project_id'],
                 'project_title' => $t['project_title'],
                 'status' => $t['status'],
-                'desc_snippet' => substr($t['description'] ?? '', 0, 100)
+                'custom_fields' => $customFields,
+                'desc_snippet' => substr($t['description'] ?? '', 0, 150)
             ];
-        }, array_slice($tasks, 0, 50));
+        }, array_slice($tasks, 0, 60));
 
         $sysPrompt = "Du bist der intelligente Sprachnotiz-Assistent von Taskster (Projekt- & Baustellenmanagement).\n"
             . "Analysiere den Sprachnotiz-Text und erkenne Aufgabe/Projekt.\n"
+            . "WICHTIG: Oft ist der Aufgabentitel eine Nummer (z.B. '0100314559'), waehrend die Adresse (z.B. Strasse: 'Zentralstr. 14B', Ort: 'Ebikon') in custom_fields steht!\n"
+            . "Beachte Abkuerzungen: 'Zentralstr. 14B' = 'Zentralstrasse 14b'.\n"
+            . "Erkenne Stornierungen/Abschluesse: 'kann storniert werden', 'storniert von swisscom' => intent: complete_task.\n"
             . "Projekte: " . json_encode($projectContext) . "\n"
             . "Offene Aufgaben: " . json_encode($taskContext) . "\n"
             . "Gib AUSSCHLIESSLICH JSON zurück:\n"
@@ -3418,13 +3601,31 @@ try {
         }
 
         if (!$analysis || !is_array($analysis)) {
+            $normStr = function($s) {
+                $s = mb_strtolower((string)$s, 'UTF-8');
+                $s = str_replace(['strasse', 'str.'], 'str', $s);
+                return preg_replace('/[^a-z0-9]/', '', $s);
+            };
+
             $lower = mb_strtolower($text, 'UTF-8');
+            $normText = $normStr($text);
             $matchedTask = null;
             $matchedProject = null;
 
             foreach ($tasks as $t) {
-                $tLower = mb_strtolower($t['title'], 'UTF-8');
-                if (strpos($lower, $tLower) !== false) {
+                $tNorm = $normStr($t['title']);
+                $descNorm = $normStr($t['description'] ?? '');
+                $customNorm = '';
+                if (!empty($t['custom_data'])) {
+                    $cDec = is_string($t['custom_data']) ? json_decode($t['custom_data'], true) : $t['custom_data'];
+                    if (is_array($cDec)) $customNorm = $normStr(implode(' ', array_values($cDec)));
+                }
+
+                if (
+                    (strlen($tNorm) >= 4 && strpos($normText, $tNorm) !== false) ||
+                    (strlen($customNorm) >= 4 && (strpos($normText, $customNorm) !== false || strpos($customNorm, 'zentralstr') !== false && strpos($normText, 'zentralstr') !== false)) ||
+                    (strlen($descNorm) >= 6 && strpos($normText, substr($descNorm, 0, 15)) !== false)
+                ) {
                     $matchedTask = ['id' => $t['id'], 'title' => $t['title'], 'project_id' => $t['project_id'], 'project_title' => $t['project_title']];
                     $matchedProject = ['id' => $t['project_id'], 'title' => $t['project_title']];
                     break;
@@ -3440,16 +3641,18 @@ try {
                 }
             }
 
-            $isDone = strpos($lower, 'erledigt') !== false || strpos($lower, 'fertig') !== false || strpos($lower, 'abgeschlossen') !== false;
+            $isDone = strpos($lower, 'erledigt') !== false || strpos($lower, 'fertig') !== false || 
+                      strpos($lower, 'abgeschlossen') !== false || strpos($lower, 'stornier') !== false;
             $suggested = [];
 
             if ($matchedTask) {
                 if ($isDone) {
+                    $isCancel = strpos($lower, 'stornier') !== false;
                     $suggested[] = [
                         'id' => 'complete_task',
                         'type' => 'complete_task',
-                        'label' => "'" . $matchedTask['title'] . "' als erledigt markieren",
-                        'description' => 'Setzt den Status der Aufgabe auf Erledigt',
+                        'label' => $isCancel ? "'" . $matchedTask['title'] . "' als storniert / erledigt markieren" : "'" . $matchedTask['title'] . "' als erledigt markieren",
+                        'description' => $isCancel ? 'Setzt den Status auf Erledigt und hinterlegt Stornierungsnotiz' : 'Setzt den Status der Aufgabe auf Erledigt',
                         'task_id' => $matchedTask['id'],
                         'project_id' => $matchedTask['project_id']
                     ];
@@ -3910,6 +4113,8 @@ try {
             $events[] = [
                 'id' => $e['id'], 'type' => 'event', 'title' => $e['title'],
                 'description' => $e['description'], 'location' => $e['location'],
+                'latitude' => $e['latitude'] !== null ? floatval($e['latitude']) : null,
+                'longitude' => $e['longitude'] !== null ? floatval($e['longitude']) : null,
                 'start' => $e['start_at'], 'end' => $e['end_at'],
                 'allDay' => (bool)$e['all_day'], 'priority' => $e['priority'],
                 'status' => $e['status'], 'visibility' => $e['visibility'],
@@ -3974,15 +4179,19 @@ try {
         $priority = in_array($body['priority'] ?? '', ['niedrig', 'normal', 'hoch', 'dringend'], true) ? $body['priority'] : 'normal';
         $visibility = in_array($body['visibility'] ?? '', ['private', 'company'], true) ? $body['visibility'] : 'private';
 
+        $latitude = (isset($body['latitude']) && $body['latitude'] !== '' && is_numeric($body['latitude'])) ? floatval($body['latitude']) : null;
+        $longitude = (isset($body['longitude']) && $body['longitude'] !== '' && is_numeric($body['longitude'])) ? floatval($body['longitude']) : null;
+
         $db->prepare("
             INSERT INTO calendar_events
               (id, owner_id, company_id, project_id, category_id, title, description, location,
-               start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
+               latitude, longitude, start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
         ")->execute([
             $id, $user['id'], $user['company_id'] ?? null,
             $body['project_id'] ?? null, $body['category_id'] ?? null,
             $title, $body['description'] ?? null, $body['location'] ?? null,
+            $latitude, $longitude,
             $startAt, $endAt, $allDay, $priority, $visibility,
             $body['color'] ?? null,
             isset($body['reminder_minutes']) ? (int)$body['reminder_minutes'] : null
@@ -4067,9 +4276,17 @@ try {
 
         $timeChanged = ($startAt !== $existing['start_at'] || $endAt !== $existing['end_at']);
 
+        $latitude = array_key_exists('latitude', $body)
+            ? (($body['latitude'] === null || $body['latitude'] === '') ? null : floatval($body['latitude']))
+            : $existing['latitude'];
+        $longitude = array_key_exists('longitude', $body)
+            ? (($body['longitude'] === null || $body['longitude'] === '') ? null : floatval($body['longitude']))
+            : $existing['longitude'];
+
         $db->prepare("
             UPDATE calendar_events SET
-              title = ?, description = ?, location = ?, start_at = ?, end_at = ?,
+              title = ?, description = ?, location = ?, latitude = ?, longitude = ?,
+              start_at = ?, end_at = ?,
               all_day = ?, priority = ?, visibility = ?, category_id = ?, project_id = ?,
               color = ?, reminder_minutes = ?, updated_at = NOW()
             WHERE id = ?
@@ -4077,6 +4294,7 @@ try {
             $title,
             $body['description'] ?? $existing['description'],
             $body['location'] ?? $existing['location'],
+            $latitude, $longitude,
             $startAt, $endAt,
             isset($body['all_day']) ? (!empty($body['all_day']) ? 1 : 0) : $existing['all_day'],
             $body['priority'] ?? $existing['priority'],
@@ -5402,6 +5620,8 @@ try {
         $categoryGroup = trim($body['category_group'] ?? '');
         $address = trim($body['address'] ?? '');
         $website = trim($body['website'] ?? '');
+        $latitude = (isset($body['latitude']) && $body['latitude'] !== '' && is_numeric($body['latitude'])) ? floatval($body['latitude']) : null;
+        $longitude = (isset($body['longitude']) && $body['longitude'] !== '' && is_numeric($body['longitude'])) ? floatval($body['longitude']) : null;
         $tags = isset($body['tags']) && is_array($body['tags']) ? json_encode(array_values($body['tags'])) : '[]';
         $notes = trim($body['notes'] ?? '');
         $shareScope = in_array($body['share_scope'] ?? '', ['company', 'private']) ? $body['share_scope'] : 'private';
@@ -5466,11 +5686,11 @@ try {
             INSERT INTO contacts (
                 id, user_id, company_id, project_id, first_name, last_name,
                 company_name, role_function, phone, mobile, email,
-                category_group, address, website, tags, notes, share_scope, created_at
+                category_group, address, website, latitude, longitude, tags, notes, share_scope, created_at
             ) VALUES (
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, NOW()
+                ?, ?, ?, ?, ?, ?, ?, ?, NOW()
             )
         ");
         $stmt->execute([
@@ -5488,6 +5708,8 @@ try {
             $categoryGroup ?: null,
             $address ?: null,
             $website ?: null,
+            $latitude,
+            $longitude,
             $tags,
             $notes ?: null,
             $shareScope
@@ -5588,6 +5810,12 @@ try {
         $categoryGroup = array_key_exists('category_group', $body) ? trim($body['category_group']) : $contact['category_group'];
         $address = array_key_exists('address', $body) ? trim($body['address']) : ($contact['address'] ?? null);
         $website = array_key_exists('website', $body) ? trim($body['website']) : ($contact['website'] ?? null);
+        $latitude = array_key_exists('latitude', $body)
+            ? (($body['latitude'] === null || $body['latitude'] === '') ? null : floatval($body['latitude']))
+            : ($contact['latitude'] ?? null);
+        $longitude = array_key_exists('longitude', $body)
+            ? (($body['longitude'] === null || $body['longitude'] === '') ? null : floatval($body['longitude']))
+            : ($contact['longitude'] ?? null);
         $notes = array_key_exists('notes', $body) ? trim($body['notes']) : $contact['notes'];
         $shareScope = array_key_exists('share_scope', $body) && in_array($body['share_scope'], ['company', 'private']) ? $body['share_scope'] : $contact['share_scope'];
         
@@ -5604,7 +5832,7 @@ try {
             UPDATE contacts
             SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
                 phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
-                address = ?, website = ?, tags = ?, notes = ?, share_scope = ?
+                address = ?, website = ?, latitude = ?, longitude = ?, tags = ?, notes = ?, share_scope = ?
             WHERE id = ?
         ");
         $upStmt->execute([
@@ -5619,6 +5847,8 @@ try {
             $categoryGroup ?: null,
             $address ?: null,
             $website ?: null,
+            $latitude,
+            $longitude,
             $tags,
             $notes ?: null,
             $shareScope,

@@ -23,7 +23,7 @@ export default defineEventHandler((event) => {
 
     // 2. Shared company contacts
     if (user.company_id) {
-      userConditions.push('(c.share_scope = "company" AND c.company_id = ?)')
+      userConditions.push("(c.share_scope = 'company' AND c.company_id = ?)")
       params.push(user.company_id)
     }
 
@@ -38,7 +38,7 @@ export default defineEventHandler((event) => {
     params.push(user.id, user.id, user.id)
 
     if (user.company_id) {
-      projectScopeSql += ` OR (pf_acc.company_id = ? AND (p_acc.visibility = "company" OR pf_acc.visibility = "company"))`
+      projectScopeSql += ` OR (pf_acc.company_id = ? AND (p_acc.visibility = 'company' OR pf_acc.visibility = 'company'))`
       params.push(user.company_id)
     }
     projectScopeSql += `))`

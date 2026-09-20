@@ -292,6 +292,70 @@
                   {{ c.address }}
                 </span>
               </div>
+
+              <!-- Karten- und Routenaktionen -->
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 pl-5.5">
+                <button
+                  type="button"
+                  class="text-[11px] font-semibold text-[#0891B2] hover:underline"
+                  @click="toggleMap(c)"
+                >
+                  {{ openMaps[c.id] ? 'Karte einklappen' : 'Karte anzeigen' }}
+                </button>
+                <a
+                  :href="getGoogleMapsUrl(c.address)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                >
+                  Google Maps
+                </a>
+                <a
+                  :href="getOsmSearchUrl(c.address)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                >
+                  OpenStreetMap
+                </a>
+                <button
+                  type="button"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  title="Route ab meinem Standort"
+                  @click="openRoute(c)"
+                >
+                  Route
+                </button>
+              </div>
+
+              <!-- Miniaturkarte (OpenStreetMap, kein API-Schlüssel) -->
+              <div
+                v-if="openMaps[c.id]"
+                class="mt-2.5 rounded-md overflow-hidden border border-slate-200 bg-slate-100 relative h-[150px]"
+              >
+                <div v-if="mapLoading[c.id]" class="absolute inset-0 flex items-center justify-center bg-slate-50/90 text-xs font-medium text-slate-600 gap-2">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin" />
+                  Karte wird geladen…
+                </div>
+                <iframe
+                  v-if="getOsmEmbedUrl(c)"
+                  :src="getOsmEmbedUrl(c)"
+                  class="w-full h-full border-0"
+                  loading="lazy"
+                  title="OpenStreetMap Karte"
+                />
+                <div v-else-if="!mapLoading[c.id]" class="p-3 text-center text-[11px] text-slate-500">
+                  <span>Standort konnte nicht ermittelt werden.</span>
+                  <a
+                    :href="getOsmSearchUrl(c.address)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="block font-semibold text-[#0891B2] hover:underline mt-1"
+                  >
+                    Auf OpenStreetMap suchen →
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -685,11 +749,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-800 mb-1">Geschäftsadresse</label>
-              <input
+              <AddressAutocomplete
                 v-model="form.address"
-                type="text"
+                v-model:latitude="form.latitude"
+                v-model:longitude="form.longitude"
                 placeholder="z.B. Flurstrasse 30, 8048 Zürich"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
               />
             </div>
             <div>
@@ -832,7 +896,8 @@ import {
   X,
   Check,
   LayoutGrid,
-  List
+  List,
+  Loader2
 } from 'lucide-vue-next'
 
 const { user, token } = useAuth()
@@ -876,6 +941,8 @@ const form = ref({
   mobile: '',
   email: '',
   address: '',
+  latitude: null as number | null,
+  longitude: null as number | null,
   website: '',
   project_id: '',
   category_group: 'Handwerker',
@@ -884,7 +951,8 @@ const form = ref({
   is_company_shared: true
 })
 
-// OpenStreetMap & Miniature Map State
+// OpenStreetMap & Miniaturkarte
+const { geocode, embedUrl, osmUrl, googleMapsUrl, routeFromHere } = useAddressSearch()
 const mapCoordinates = ref<Record<string, { lat: number; lon: number } | null>>({})
 const openMaps = ref<Record<string, boolean>>({})
 const mapLoading = ref<Record<string, boolean>>({})
@@ -901,56 +969,48 @@ const displayWebsite = (url?: string) => {
   return url.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '')
 }
 
-const getOsmSearchUrl = (address: string) => {
-  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
-}
+const getOsmSearchUrl = (address: string) => osmUrl(address)
+const getGoogleMapsUrl = (address: string) => googleMapsUrl(address)
 
-const getGoogleMapsUrl = (address: string) => {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+/** Koordinaten: bevorzugt aus der DB, sonst einmalig geocodieren. */
+async function ensureCoordinates(c: any) {
+  if (mapCoordinates.value[c.id]) return mapCoordinates.value[c.id]
+
+  // Gespeicherte Koordinaten verwenden (kein externer Aufruf nötig)
+  if (c.latitude !== null && c.latitude !== undefined && c.longitude !== null && c.longitude !== undefined) {
+    mapCoordinates.value[c.id] = { lat: Number(c.latitude), lon: Number(c.longitude) }
+    return mapCoordinates.value[c.id]
+  }
+
+  if (!c.address) return null
+  mapLoading.value[c.id] = true
+  try {
+    const point = await geocode(c.address)
+    mapCoordinates.value[c.id] = point
+    return point
+  } finally {
+    mapLoading.value[c.id] = false
+  }
 }
 
 const toggleMap = async (c: any) => {
   if (!c.address) return
   const current = Boolean(openMaps.value[c.id])
   openMaps.value[c.id] = !current
-
-  if (!current && !mapCoordinates.value[c.id]) {
-    await resolveCoordinates(c.id, c.address)
-  }
+  if (!current) await ensureCoordinates(c)
 }
 
-const resolveCoordinates = async (contactId: string, address: string) => {
-  if (!address) return
-  mapLoading.value[contactId] = true
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
-      headers: { 'Accept-Language': 'de,en' }
-    })
-    const data = await res.json()
-    if (data && data[0] && data[0].lat && data[0].lon) {
-      mapCoordinates.value[contactId] = {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon)
-      }
-    } else {
-      mapCoordinates.value[contactId] = null
-    }
-  } catch {
-    mapCoordinates.value[contactId] = null
-  } finally {
-    mapLoading.value[contactId] = false
-  }
+/** Route ab dem aktuellen Standort öffnen. */
+async function openRoute(c: any) {
+  if (!c.address) return
+  const url = await routeFromHere(c.address, 'driving')
+  window.open(url, '_blank', 'noopener')
 }
 
 const getOsmEmbedUrl = (c: any) => {
   const coords = mapCoordinates.value[c.id]
   if (!coords) return ''
-  const { lat, lon } = coords
-  const minLon = (lon - 0.006).toFixed(5)
-  const maxLon = (lon + 0.006).toFixed(5)
-  const minLat = (lat - 0.004).toFixed(5)
-  const maxLat = (lat + 0.004).toFixed(5)
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${minLon}%2C${minLat}%2C${maxLon}%2C${maxLat}&layer=mapnik&marker=${lat}%2C${lon}`
+  return embedUrl(coords)
 }
 
 const groupOptions = [
@@ -1076,6 +1136,8 @@ const mergeIntoExistingContact = async (target: any) => {
     mobile: form.value.mobile.trim() || target.mobile || '',
     email: form.value.email.trim() || target.email || '',
     address: form.value.address.trim() || target.address || '',
+    latitude: form.value.latitude ?? target.latitude ?? null,
+    longitude: form.value.longitude ?? target.longitude ?? null,
     website: form.value.website.trim() || target.website || '',
     project_id: form.value.project_id || target.project_id || null,
     category_group: form.value.category_group || target.category_group || 'Handwerker',
@@ -1118,6 +1180,8 @@ const openCreateModal = (defaultProjectId?: string) => {
     mobile: '',
     email: '',
     address: '',
+    latitude: null,
+    longitude: null,
     website: '',
     project_id: defaultProjectId || '',
     category_group: 'Handwerker',
@@ -1146,6 +1210,8 @@ const openEditModal = (contact: any) => {
     mobile: contact.mobile || '',
     email: contact.email || '',
     address: contact.address || '',
+    latitude: contact.latitude ?? null,
+    longitude: contact.longitude ?? null,
     website: contact.website || '',
     project_id: contact.project_id || '',
     category_group: contact.category_group || 'Handwerker',
@@ -1278,6 +1344,8 @@ const saveContact = async () => {
     mobile: form.value.mobile.trim(),
     email: form.value.email.trim(),
     address: form.value.address.trim(),
+    latitude: form.value.latitude,
+    longitude: form.value.longitude,
     website: form.value.website.trim(),
     project_id: form.value.project_id || null,
     category_group: form.value.category_group,

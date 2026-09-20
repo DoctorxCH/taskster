@@ -336,6 +336,66 @@
               <MapPin class="w-3 h-3" />
               {{ ev.location }}
             </div>
+
+            <!-- Karte & Route für Termine mit Ort -->
+            <div v-if="ev.location" class="mt-2">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <button
+                  type="button"
+                  class="text-[11px] font-semibold text-[#0891B2] hover:underline"
+                  @click.stop="toggleEventMap(ev)"
+                >
+                  {{ openEventMaps[ev.id] ? 'Karte einklappen' : 'Karte anzeigen' }}
+                </button>
+                <a
+                  :href="googleMapsUrl(ev.location)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  @click.stop
+                >
+                  Google Maps
+                </a>
+                <a
+                  :href="osmUrl(ev.location)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  @click.stop
+                >
+                  OpenStreetMap
+                </a>
+                <button
+                  type="button"
+                  class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  title="Route ab meinem Standort"
+                  @click.stop="openEventRoute(ev)"
+                >
+                  Route
+                </button>
+              </div>
+
+              <div
+                v-if="openEventMaps[ev.id]"
+                class="mt-2 rounded-md overflow-hidden border border-slate-200 bg-slate-100 relative h-[170px]"
+              >
+                <div v-if="eventMapLoading[ev.id]" class="absolute inset-0 flex items-center justify-center bg-slate-50/90 text-xs font-medium text-slate-600 gap-2">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin" />
+                  Karte wird geladen…
+                </div>
+                <iframe
+                  v-if="eventMapUrl(ev)"
+                  :src="eventMapUrl(ev)"
+                  class="w-full h-full border-0"
+                  loading="lazy"
+                  title="OpenStreetMap Karte"
+                />
+                <div v-else-if="!eventMapLoading[ev.id]" class="p-3 text-center text-[11px] text-slate-500">
+                  Standort konnte nicht ermittelt werden.
+                </div>
+              </div>
+            </div>
+
             <div v-if="ev.description" class="text-xs text-slate-500 mt-0.5 line-clamp-2">{{ ev.description }}</div>
             <div v-if="ev.attendee_count > 1" class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
               <Users class="w-3 h-3" />
@@ -838,6 +898,52 @@ async function moveEvent(ev: any, startAt: string, endAt: string) {
     ev.end = prevEnd
     alert(err?.data?.statusMessage || 'Termin konnte nicht verschoben werden')
   }
+}
+
+// ---------------------------------------------------------------------------
+// Karte & Route für Termine
+// ---------------------------------------------------------------------------
+const { geocode, embedUrl, osmUrl, googleMapsUrl, routeFromHere } = useAddressSearch()
+
+const openEventMaps = ref<Record<string, boolean>>({})
+const eventMapLoading = ref<Record<string, boolean>>({})
+const eventMapPoints = ref<Record<string, { lat: number; lon: number } | null>>({})
+
+/** Koordinaten: bevorzugt aus der DB, sonst einmalig geocodieren. */
+async function ensureEventPoint(ev: any) {
+  if (eventMapPoints.value[ev.id]) return eventMapPoints.value[ev.id]
+
+  if (ev.latitude !== null && ev.latitude !== undefined && ev.longitude !== null && ev.longitude !== undefined) {
+    eventMapPoints.value[ev.id] = { lat: Number(ev.latitude), lon: Number(ev.longitude) }
+    return eventMapPoints.value[ev.id]
+  }
+
+  if (!ev.location) return null
+  eventMapLoading.value[ev.id] = true
+  try {
+    const point = await geocode(ev.location)
+    eventMapPoints.value[ev.id] = point
+    return point
+  } finally {
+    eventMapLoading.value[ev.id] = false
+  }
+}
+
+async function toggleEventMap(ev: any) {
+  const current = Boolean(openEventMaps.value[ev.id])
+  openEventMaps.value[ev.id] = !current
+  if (!current) await ensureEventPoint(ev)
+}
+
+function eventMapUrl(ev: any) {
+  const point = eventMapPoints.value[ev.id]
+  return point ? embedUrl(point) : ''
+}
+
+async function openEventRoute(ev: any) {
+  if (!ev.location) return
+  const url = await routeFromHere(ev.location, 'driving')
+  window.open(url, '_blank', 'noopener')
 }
 
 // ---------------------------------------------------------------------------
