@@ -17,11 +17,14 @@
    - Whisper-Sprache: Deutsch (de), Schweizerdeutsch (de-CH), English (en), Français (fr), Italiano (it), Automatisch erkennen (auto)
    - Konfigurierbar in `pages/settings.vue` und direkt im `VoiceRecorderModal.vue`.
 
+4. **Bugfix `pf.owner_id` (SQLSTATE 42S22):** In der Tabelle `project_folders` lautet die Spalte `owner_id` (nicht `user_id`). Alle SQL-Abfragen in `api/index.php`, `public/api/index.php`, `server-php/index.php` und `server/api/journals/` wurden korrigiert.
+5. **Erkennung von Adressen in benutzerdefinierten Feldern (`custom_data`):** Wenn eine Aufgabe z. B. eine Auftragsnummer im Titel hat (`0100314559`) und die Adresse (`Strasse: Zentralstr. 14B`, `Ort: Ebikon`) in den Custom Fields steht, werden alle `custom_fields` inkl. typischer Schweizer Strassen-Abkürzungen (`Zentralstr.` = `Zentralstrasse`) und Stornierungs-Intents ("kann storniert werden") zuverlässig von der KI und der Heuristik gematcht.
+
 ## 2. Geänderte Dateien
-- `server/api/ai/analyze-voice.post.ts` (NEU: KI-Kontexterkennung mit DeepSeek V4 Flash und Fallback-Heuristik)
+- `server/api/ai/analyze-voice.post.ts` (KI-Kontexterkennung mit `custom_data`, Adress-Matching und `owner_id` Fix)
 - `server/api/ai/transcribe.post.ts` (Dynamische Sprachen & Prompts für Whisper v3 Turbo)
-- `server/api/journals/index.post.ts` & `server/api/journals/index.get.ts` (Unterstützung für Notizen ohne Projekt)
-- `api/index.php`, `public/api/index.php`, `server-php/index.php` (PHP-Routen `ai/analyze-voice`, `ai/transcribe`, `journals`)
+- `server/api/journals/index.post.ts` & `server/api/journals/index.get.ts` (Unterstützung für Notizen ohne Projekt + `owner_id` Fix)
+- `api/index.php`, `public/api/index.php`, `server-php/index.php` (PHP-Routen `ai/analyze-voice`, `ai/transcribe`, `journals`, `owner_id` Fix)
 - `components/VoiceRecorderModal.vue` (Komplettes Upgrade auf interaktive KI-Vorschläge, Sprachauswahl, 1-Klick-Ausführung)
 - `pages/settings.vue` (Profil > Darstellung & Sprache > App-Sprache & Whisper-Sprache)
 
