@@ -52,54 +52,68 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-            <!-- View Mode Switcher -->
-            <div class="bg-slate-100 border border-slate-200 rounded-md p-1 flex items-center space-x-1 mr-1">
+            <!-- More Actions Dropdown -->
+            <div class="relative">
               <button
-                @click="projectViewMode = 'grid'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
-                :class="projectViewMode === 'grid' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-                title="Kachel-Ansicht"
+                @click="showActionsMenu = !showActionsMenu"
+                class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
+                :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
+                title="Weitere Aktionen"
               >
-                <LayoutGrid class="w-3.5 h-3.5" />
-                <span>Kacheln</span>
+                <MoreVertical class="w-4 h-4 text-slate-600" />
+                <span class="hidden sm:inline">Mehr</span>
               </button>
-              <button
-                @click="projectViewMode = 'list'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1 cursor-pointer"
-                :class="projectViewMode === 'list' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-                title="Listenansicht"
-              >
-                <List class="w-3.5 h-3.5" />
-                <span>Liste</span>
-              </button>
-            </div>
+              <div v-if="showActionsMenu" class="fixed inset-0 z-40" @click="showActionsMenu = false"></div>
+              <div v-if="showActionsMenu" class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
+                <!-- Ansicht -->
+                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ansicht</div>
+                <button
+                  @click="projectViewMode = 'grid'; showActionsMenu = false"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
+                  :class="projectViewMode === 'grid' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                >
+                  <LayoutGrid class="w-4 h-4" />
+                  <span>Kacheln</span>
+                  <Check v-if="projectViewMode === 'grid'" class="w-3.5 h-3.5 ml-auto" />
+                </button>
+                <button
+                  @click="projectViewMode = 'list'; showActionsMenu = false"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
+                  :class="projectViewMode === 'list' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                >
+                  <List class="w-4 h-4" />
+                  <span>Liste</span>
+                  <Check v-if="projectViewMode === 'list'" class="w-3.5 h-3.5 ml-auto" />
+                </button>
 
-            <button
-              v-if="user?.id === folder.owner_id"
-              @click="openShareFolderModal"
-              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
-              title="Projektordner mit Mitgliedern oder dem Unternehmen teilen"
-            >
-              <Users class="w-3.5 h-3.5 text-slate-600" />
-              <span class="hidden sm:inline">Teilen</span>
-            </button>
-            <button
-              v-if="user?.id === folder.owner_id"
-              @click="openEditFolderModal"
-              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
-              title="Projektordner anpassen"
-            >
-              <Pencil class="w-3.5 h-3.5 text-slate-600" />
-              <span class="hidden sm:inline">Anpassen</span>
-            </button>
-            <button
-              @click="openImportProjectModal"
-              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
-              title="Projekt aus Excel / CSV importieren"
-            >
-              <FileUp class="w-3.5 h-3.5 text-slate-600" />
-              <span class="hidden sm:inline">Importieren</span>
-            </button>
+                <div class="my-1 border-t border-slate-100"></div>
+
+                <!-- Aktionen -->
+                <button
+                  v-if="user?.id === folder.owner_id"
+                  @click="showActionsMenu = false; openShareFolderModal()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Users class="w-4 h-4 text-slate-500" />
+                  <span>Ordner teilen</span>
+                </button>
+                <button
+                  v-if="user?.id === folder.owner_id"
+                  @click="showActionsMenu = false; openEditFolderModal()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Pencil class="w-4 h-4 text-slate-500" />
+                  <span>Ordner anpassen</span>
+                </button>
+                <button
+                  @click="showActionsMenu = false; openImportProjectModal()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <FileUp class="w-4 h-4 text-slate-500" />
+                  <span>Projekt importieren</span>
+                </button>
+              </div>
+            </div>
             <button
               @click="openNewProjectModal"
               class="taskster_button px-4 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1"
@@ -1299,7 +1313,8 @@ import {
   Star,
   LayoutGrid,
   List,
-  FileUp
+  FileUp,
+  MoreVertical
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 
@@ -1314,6 +1329,7 @@ const loading = ref(true)
 const projectViewMode = ref<'grid' | 'list'>('grid')
 const timeSummary = ref<any>(null)
 const showControllingDetails = ref(false)
+const showActionsMenu = ref(false)
 
 // Folder edit state
 const showEditFolderModal = ref(false)
