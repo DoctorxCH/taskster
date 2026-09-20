@@ -45,7 +45,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Mehrstufige Struktur</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
-            Ordner → Unterprojekte → Meilensteine → Listen → Aufgaben. Logische Organisation über Ebenen hinweg statt unübersichtlicher flacher Boards.
+            Ordner → Projekte → Abschnitte → Aufgaben. Logische Organisation über Ebenen hinweg statt unübersichtlicher flacher Boards.
           </p>
         </div>
 
@@ -55,7 +55,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2">Präzise Rollen & Rechte</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
-            Granulare Zugriffssteuerung auf Projekt- und Listenebene. Jeder sieht und bearbeitet nur das, wofür er ausdrücklich berechtigt ist.
+            Granulare Zugriffssteuerung auf Projekt- und Abschnittsebene. Jeder sieht und bearbeitet nur das, wofür er ausdrücklich berechtigt ist.
           </p>
         </div>
 

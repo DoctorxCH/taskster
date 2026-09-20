@@ -279,7 +279,7 @@
 
               <div class="grid grid-cols-4 gap-1.5 py-2.5 border-y border-slate-100 my-3 text-center">
                 <div>
-                  <div class="text-[9px] text-slate-500 uppercase font-semibold">Listen</div>
+                  <div class="text-[9px] text-slate-500 uppercase font-semibold">Abschnitte</div>
                   <div class="text-xs font-bold text-slate-900">{{ project.list_count }}</div>
                 </div>
                 <div>
@@ -742,7 +742,7 @@
                           >
                             <option value="">-- Nicht importieren --</option>
                             <optgroup label="Standard-Felder">
-                              <option value="list_title">📂 Phase / Abschnitt (Erzeugt Listen)</option>
+                              <option value="list_title">📂 Phase / Abschnitt (Erzeugt Abschnitte)</option>
                               <option value="title">📌 Aufgabentitel (Pflicht)</option>
                               <option value="description">📋 Beschreibung</option>
                               <option value="due_date">📅 Fälligkeitsdatum</option>
@@ -2005,6 +2005,16 @@ const createProject = async () => {
 }
 
 onMounted(async () => {
+  // Free-/Single-User (ohne Company) haben keine Ordner-Ebene.
+  // Direkter Aufruf einer Ordner-URL wird auf das Dashboard umgeleitet.
+  if (!user.value) {
+    const { initAuth } = useAuth()
+    await initAuth()
+  }
+  if (user.value && !user.value.is_pro && !user.value.company_id && !user.value.is_superadmin) {
+    navigateTo('/dashboard')
+    return
+  }
   await loadFolderData()
 })
 </script>

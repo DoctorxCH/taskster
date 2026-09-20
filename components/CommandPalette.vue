@@ -203,7 +203,7 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const listRef = ref<HTMLElement | null>(null)
 const itemEls = new Map<string, HTMLElement>()
 
-const { authHeaders } = useAuth()
+const { authHeaders, user } = useAuth()
 
 // ---------------------------------------------------------------------------
 // Icon-Registry (Lucide)
@@ -220,12 +220,19 @@ const iconFor = (name: string) => ICONS[name] || ClipboardList
 // ---------------------------------------------------------------------------
 // Schnellzugriff (leere Suche)
 // ---------------------------------------------------------------------------
-const quickActions = [
-  { title: 'Dashboard', hint: 'Startseite', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Zeitrapporte', hint: 'Zeiterfassung', url: '/time', icon: Clock },
-  { title: 'Neuer Projektordner', hint: 'Erstellen', url: '/dashboard?new=folder', icon: Plus },
-  { title: 'Einstellungen', hint: 'Profil & Tarif', url: '/settings', icon: Settings }
-]
+const quickActions = computed(() => {
+  // Free-/Single-User (ohne Company) haben keine Ordner-Ebene.
+  const isFreeUser = !user.value?.is_pro && !user.value?.company_id && !user.value?.is_superadmin
+  const actions = [
+    { title: 'Dashboard', hint: 'Startseite', url: '/dashboard', icon: LayoutDashboard },
+    { title: 'Zeitrapporte', hint: 'Zeiterfassung', url: '/time', icon: Clock }
+  ]
+  if (!isFreeUser) {
+    actions.push({ title: 'Neuer Projektordner', hint: 'Erstellen', url: '/dashboard?new=folder', icon: Plus })
+  }
+  actions.push({ title: 'Einstellungen', hint: 'Profil & Tarif', url: '/settings', icon: Settings })
+  return actions
+})
 
 // ---------------------------------------------------------------------------
 // Flache Liste für Tastatur-Navigation

@@ -98,7 +98,7 @@
         <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
           <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufgaben</div>
           <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ stats.tasks || 0 }}</div>
-          <div class="text-xs text-slate-500">in Listen gepflegt</div>
+          <div class="text-xs text-slate-500">in Abschnitten gepflegt</div>
         </div>
 
         <div class="p-4 rounded-2xl liquid_glass_card text-center">
@@ -541,7 +541,7 @@
           <div class="text-4xl mb-3">📋</div>
           <h3 class="text-sm font-black text-slate-900 mb-1">Noch keine Firmenvorlagen</h3>
           <p class="text-xs text-slate-600 mb-5 font-medium">
-            Erstelle eigene Vorlagen mit Listen und Custom Fields – passend zu deinen Abläufen.
+            Erstelle eigene Vorlagen mit Abschnitten und Custom Fields – passend zu deinen Abläufen.
           </p>
           <button @click="openTemplateModal()" class="taskster_button px-6 text-xs h-[42px] rounded-lg">
             Erste Vorlage erstellen
@@ -568,7 +568,7 @@
 
               <div class="flex flex-wrap gap-1.5 mt-3">
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/90 border border-slate-200 text-slate-700">
-                  {{ (t.lists || []).length }} Listen
+                  {{ (t.lists || []).length }} Abschnitte
                 </span>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/90 border border-slate-200 text-slate-700">
                   {{ (t.fields || []).length }} Felder
@@ -962,7 +962,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-2">Listen (Spalten im Board)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-2">Abschnitte (Spalten im Board)</label>
             <div class="flex flex-wrap gap-2 mb-2">
               <span
                 v-for="(l, i) in templateForm.lists"
@@ -977,7 +977,7 @@
               <input
                 v-model="newListInput"
                 type="text"
-                placeholder="Listenname hinzufügen"
+                placeholder="Abschnittsname hinzufügen"
                 class="flex-1 px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
               />
               <button type="button" @click="addList" class="taskster_button_light px-4 text-xs h-[42px] rounded-lg">Hinzufügen</button>

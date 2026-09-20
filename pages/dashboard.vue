@@ -302,12 +302,27 @@
                 {{ $t('dashboard.deine_zugewiesenen_aufgaben_aus_den') }}
               </p>
               <NuxtLink
-                v-if="folders.length > 0"
+                v-if="!isFreeUser && folders.length > 0"
                 :to="`/folders/${folders[0]?.id}`"
                 class="taskster_button px-4 text-xs h-9 rounded-md"
               >
                 {{ $t('dashboard.aufgabe_in_projekten_anzeigen') }}
               </NuxtLink>
+              <NuxtLink
+                v-else-if="isFreeUser && projects.length > 0"
+                :to="`/projects/${projects[0]?.id}`"
+                class="taskster_button px-4 text-xs h-9 rounded-md"
+              >
+                {{ $t('dashboard.aufgabe_in_projekten_anzeigen') }}
+              </NuxtLink>
+              <button
+                v-else-if="isFreeUser"
+                @click="openNewProjectModal"
+                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>{{ $t('dashboard.erstes_projekt_erstellen') }}</span>
+              </button>
               <button
                 v-else
                 @click="openNewFolderModal"
@@ -403,12 +418,25 @@
             <div class="flex items-center space-x-3">
               <Folder class="w-5 h-5 text-[#0891B2]" />
               <div>
-                <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('dashboard.projektordner_initiativen') }}</h2>
-                <p class="text-xs text-slate-500 font-medium">{{ $t('dashboard.übergeordnete_bereiche_für_teams_un') }}</p>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  {{ isFreeUser ? $t('dashboard.projekte') : $t('dashboard.projektordner_initiativen') }}
+                </h2>
+                <p class="text-xs text-slate-500 font-medium">
+                  {{ isFreeUser ? $t('dashboard.deine_projekte_und_aufgaben') : $t('dashboard.übergeordnete_bereiche_für_teams_un') }}
+                </p>
               </div>
             </div>
 
             <button
+              v-if="isFreeUser"
+              @click="openNewProjectModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>{{ $t('dashboard.neues_projekt') }}</span>
+            </button>
+            <button
+              v-else
               @click="openNewFolderModal"
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
             >
@@ -417,90 +445,60 @@
             </button>
           </div>
 
-          <!-- Loading Folders -->
+          <!-- Loading -->
           <div v-if="loadingFolders" class="py-10 text-center text-xs text-slate-500 font-medium">
-            {{ $t('dashboard.lade_projektordner') }}
+            {{ isFreeUser ? $t('dashboard.lade_projekte') : $t('dashboard.lade_projektordner') }}
           </div>
 
-          <!-- Empty Folders State -->
-          <div
-            v-else-if="filteredFolders.length === 0"
-            class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
-          >
-            <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
-              <Folder class="w-6 h-6" />
-            </div>
-            <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projektordner_gefunden') }}</h3>
-            <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm">
-              {{ $t('dashboard.keine_projektordner_gefunden') }}
-            </p>
-            <button
-              @click="openNewFolderModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>{{ $t('dashboard.jetzt_ordner_anlegen') }}</span>
-            </button>
-          </div>
-
-          <!-- Folders Grid -->
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- FREE-USER: Direct Project List (no folder level) -->
+          <template v-else-if="isFreeUser">
             <div
-              v-for="folder in filteredFolders"
-              :key="folder.id"
-              class="group/card bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+              v-if="filteredProjects.length === 0"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
             >
-              <div>
-                <div class="flex items-start justify-between mb-3">
-                  <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
-                    <Folder class="w-5 h-5" />
-                  </div>
-                  <div class="flex items-center space-x-1.5">
-                    <span
-                      class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
-                      :class="folder.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
-                    >
-                      <Building2 v-if="folder.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
-                      <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                      <span>{{ folder.visibility === 'company' ? $t('common.unternehmen') : $t('dashboard.privat') }}</span>
+              <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+                <Folder class="w-6 h-6" />
+              </div>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projekte_gefunden') }}</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm">
+                {{ $t('dashboard.erstelle_dein_erstes_projekt') }}
+              </p>
+              <button
+                @click="openNewProjectModal"
+                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>{{ $t('dashboard.jetzt_projekt_anlegen') }}</span>
+              </button>
+            </div>
+
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                v-for="project in filteredProjects"
+                :key="project.id"
+                class="group/card bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+              >
+                <div>
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
+                      <ClipboardList class="w-5 h-5" />
+                    </div>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 capitalize">
+                      {{ project.status }}
                     </span>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
-                      {{ folder.project_count }} {{ folder.project_count === 1 ? $t('dashboard.projekt') : $t('dashboard.projekte') }}
-                    </span>
                   </div>
+
+                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
+                    {{ project.title }}
+                  </h3>
+                  <p class="text-xs text-slate-500 flex items-center space-x-1">
+                    <span>{{ project.currency || 'CHF' }}</span>
+                  </p>
                 </div>
 
-                <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
-                  {{ folder.name }}
-                </h3>
-                <p class="text-xs text-slate-500 flex items-center space-x-1">
-                  <span>{{ $t('dashboard.inhaber') }}</span>
-                  <span class="text-slate-800 font-semibold">{{ folder.owner_name }}</span>
-                  <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-[#0891B2] font-bold ml-1">
-                    {{ $t('settings.du') }}
-                  </span>
-                </p>
-                <p v-if="folder.company_name" class="text-[11px] text-slate-600 mt-1 font-medium flex items-center space-x-1">
-                  <Building2 class="w-3 h-3 text-slate-400" />
-                  <span>{{ folder.company_name }}</span>
-                </p>
-              </div>
-
-              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-[11px] text-slate-400 font-medium">
-                  {{ new Date(folder.created_at).toLocaleDateString(locale === 'sk' ? 'sk-SK' : (locale === 'en' ? 'en-US' : 'de-CH')) }}
-                </span>
-                <div class="flex items-center space-x-2">
-                  <button
-                    v-if="user?.id === folder.owner_id"
-                    @click="openEditFolderModal(folder)"
-                    class="p-1.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
-                    :title="$t('dashboard.projektordner_anpassen_name')"
-                  >
-                    <Pencil class="w-3.5 h-3.5" />
-                  </button>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end">
                   <NuxtLink
-                    :to="`/folders/${folder.id}`"
+                    :to="`/projects/${project.id}`"
                     class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center"
                   >
                     <span>{{ $t('dashboard.öffnen') }}</span>
@@ -509,7 +507,99 @@
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+
+          <!-- COMPANY / PRO: Folder Grid -->
+          <template v-else>
+            <!-- Empty Folders State -->
+            <div
+              v-if="filteredFolders.length === 0"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
+            >
+              <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+                <Folder class="w-6 h-6" />
+              </div>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projektordner_gefunden') }}</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 max-w-sm">
+                {{ $t('dashboard.keine_projektordner_gefunden') }}
+              </p>
+              <button
+                @click="openNewFolderModal"
+                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>{{ $t('dashboard.jetzt_ordner_anlegen') }}</span>
+              </button>
+            </div>
+
+            <!-- Folders Grid -->
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                v-for="folder in filteredFolders"
+                :key="folder.id"
+                class="group/card bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+              >
+                <div>
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
+                      <Folder class="w-5 h-5" />
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                      <span
+                        class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
+                        :class="folder.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                      >
+                        <Building2 v-if="folder.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
+                        <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
+                        <span>{{ folder.visibility === 'company' ? $t('common.unternehmen') : $t('dashboard.privat') }}</span>
+                      </span>
+                      <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
+                        {{ folder.project_count }} {{ folder.project_count === 1 ? $t('dashboard.projekt') : $t('dashboard.projekte') }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
+                    {{ folder.name }}
+                  </h3>
+                  <p class="text-xs text-slate-500 flex items-center space-x-1">
+                    <span>{{ $t('dashboard.inhaber') }}</span>
+                    <span class="text-slate-800 font-semibold">{{ folder.owner_name }}</span>
+                    <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-[#0891B2] font-bold ml-1">
+                      {{ $t('settings.du') }}
+                    </span>
+                  </p>
+                  <p v-if="folder.company_name" class="text-[11px] text-slate-600 mt-1 font-medium flex items-center space-x-1">
+                    <Building2 class="w-3 h-3 text-slate-400" />
+                    <span>{{ folder.company_name }}</span>
+                  </p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-[11px] text-slate-400 font-medium">
+                    {{ new Date(folder.created_at).toLocaleDateString(locale === 'sk' ? 'sk-SK' : (locale === 'en' ? 'en-US' : 'de-CH')) }}
+                  </span>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      v-if="user?.id === folder.owner_id"
+                      @click="openEditFolderModal(folder)"
+                      class="p-1.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
+                      :title="$t('dashboard.projektordner_anpassen_name')"
+                    >
+                      <Pencil class="w-3.5 h-3.5" />
+                    </button>
+                    <NuxtLink
+                      :to="`/folders/${folder.id}`"
+                      class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center"
+                    >
+                      <span>{{ $t('dashboard.öffnen') }}</span>
+                      <ArrowRight class="w-3.5 h-3.5 ml-1" />
+                    </NuxtLink>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </section>
       </div>
 
@@ -847,6 +937,55 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal: New Project (nur Free-/Single-User, ohne Ordner-Ebene) -->
+    <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
+      <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neues_projekt') }}</h3>
+          <button @click="showNewProjectModal = false" class="text-slate-400 hover:text-slate-700 p-1">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 font-medium mb-4">
+          {{ $t('dashboard.erstelle_ein_neues_projekt') }}
+        </p>
+
+        <div v-if="projectModalError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+          {{ projectModalError }}
+        </div>
+
+        <form @submit.prevent="createProject" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.projekttitel') }}</label>
+            <input
+              v-model="newProjectTitle"
+              type="text"
+              required
+              :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
+              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
+            />
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+            <button
+              type="button"
+              @click="showNewProjectModal = false; projectModalError = ''"
+              class="taskster_button_light px-4 text-xs h-9 rounded-md"
+            >
+              {{ $t('common.abbrechen') }}
+            </button>
+            <button
+              type="submit"
+              :disabled="creatingProject || !newProjectTitle.trim()"
+              class="taskster_button px-4 text-xs h-9 rounded-md"
+            >
+              <span>{{ creatingProject ? $t('dashboard.erstelle') : $t('dashboard.projekt_erstellen') }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- Modal: Voice Recorder (Whisper v3 Turbo) -->
@@ -886,6 +1025,7 @@ import {
 } from 'lucide-vue-next'
 
 const { user, authHeaders } = useAuth()
+const route = useRoute()
 const { t, locale } = useI18n()
 const { state: stopwatchState, startTimer, openStopModal, formatSeconds } = useStopwatch()
 const showVoiceModal = ref(false)
@@ -908,10 +1048,15 @@ const startTaskTimer = (task: any) => {
 }
 
 const folders = ref<any[]>([])
+const projects = ref<any[]>([])
 const tasks = ref<any[]>([])
 const loadingFolders = ref(true)
 const loadingTasks = ref(true)
 const searchQuery = ref('')
+
+// Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
+// Projekte werden direkt auf dem Dashboard angezeigt.
+const isFreeUser = computed(() => !user.value?.is_pro && !user.value?.company_id && !user.value?.is_superadmin)
 
 // Öffnet die globale Command-Palette (Strg+K)
 const openCommandPalette = () => {
@@ -978,10 +1123,48 @@ const savingFolder = ref(false)
 const editFolderError = ref('')
 
 const totalProjects = computed(() => {
+  if (isFreeUser.value) return projects.value.length
   return folders.value.reduce((acc, f) => acc + (f.project_count || 0), 0)
 })
 
 const filteredFolders = computed(() => folders.value)
+
+const filteredProjects = computed(() => projects.value)
+
+// New Project Modal (nur für Free-/Single-User, ohne Ordner-Ebene)
+const showNewProjectModal = ref(false)
+const newProjectTitle = ref('')
+const creatingProject = ref(false)
+const projectModalError = ref('')
+
+const openNewProjectModal = () => {
+  newProjectTitle.value = ''
+  projectModalError.value = ''
+  showNewProjectModal.value = true
+}
+
+const createProject = async () => {
+  projectModalError.value = ''
+  if (!newProjectTitle.value.trim()) {
+    projectModalError.value = t('dashboard.projekttitel_erforderlich')
+    return
+  }
+  creatingProject.value = true
+  try {
+    await $fetch('/api/projects', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { title: newProjectTitle.value.trim() }
+    })
+    showNewProjectModal.value = false
+    newProjectTitle.value = ''
+    await loadProjects()
+  } catch (err: any) {
+    projectModalError.value = err.data?.statusMessage || t('dashboard.projekt_konnte_nicht_erstellt_werden')
+  } finally {
+    creatingProject.value = false
+  }
+}
 
 const filteredTasks = computed(() => tasks.value)
 
@@ -1012,6 +1195,22 @@ const loadFolders = async () => {
       headers: authHeaders()
     })
     folders.value = res.folders || []
+  } catch (err: any) {
+    if (err.statusCode === 401) {
+      navigateTo('/login')
+    }
+  } finally {
+    loadingFolders.value = false
+  }
+}
+
+const loadProjects = async () => {
+  loadingFolders.value = true
+  try {
+    const res = await $fetch<{ projects: any[] }>('/api/projects', {
+      headers: authHeaders()
+    })
+    projects.value = res.projects || []
   } catch (err: any) {
     if (err.statusCode === 401) {
       navigateTo('/login')
@@ -1232,7 +1431,19 @@ onMounted(async () => {
     navigateTo('/login')
     return
   }
-  await Promise.all([loadFolders(), loadTasks(), loadDailyTodos(), loadNotifications()])
+  await Promise.all([
+    isFreeUser.value ? loadProjects() : loadFolders(),
+    loadTasks(),
+    loadDailyTodos(),
+    loadNotifications()
+  ])
+  // Deep-Link: /dashboard?new=folder bzw. ?new=project öffnet das passende Modal
+  const newParam = route.query.new
+  if (newParam === 'folder' && !isFreeUser.value) {
+    openNewFolderModal()
+  } else if (newParam === 'project' && isFreeUser.value) {
+    openNewProjectModal()
+  }
   if (import.meta.client) {
     window.addEventListener('taskster-time-entry-saved', onGlobalTimeEntrySaved)
   }
