@@ -175,24 +175,11 @@
           </span>
         </div>
 
-        <!-- Language Switcher -->
-        <div class="hidden sm:flex items-center mr-1">
-          <select
-            v-model="$i18n.locale"
-            class="h-7 px-1.5 rounded-md text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-            title="Sprache / Language / Jazyk"
-          >
-            <option value="de">DE</option>
-            <option value="en">EN</option>
-            <option value="sk">SK</option>
-          </select>
-        </div>
-
         <!-- User Profile Link -->
         <NuxtLink
           to="/settings"
           class="flex items-center gap-2 p-1 rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
-          title="Mein Profil & Einstellungen"
+          :title="$t('common.mein_profil')"
         >
           <div class="w-7 h-7 rounded-md bg-[#0891B2] text-white flex items-center justify-center text-xs font-bold shrink-0">
             {{ user.name?.charAt(0).toUpperCase() }}
@@ -204,11 +191,11 @@
         <button
           @click="logout"
           type="button"
-          class="h-8 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition-colors flex items-center gap-1.5"
-          title="Abmelden"
+          class="h-8 px-2.5 rounded-md text-xs font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+          :title="$t('common.abmelden')"
         >
           <LogOut class="w-3.5 h-3.5" />
-          <span class="hidden sm:inline">Abmelden</span>
+          <span class="hidden sm:inline">{{ $t('common.abmelden') }}</span>
         </button>
       </div>
 

@@ -16,9 +16,9 @@
     <!-- Header -->
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Einstellungen</h1>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ $t('common.einstellungen') }}</h1>
         <p class="text-sm text-slate-600 mt-1">
-          Profil, Kalender, Benachrichtigungen und Abrechnung an einem Ort.
+          {{ $t('settings.profil_kalender_benachrichtigungen_') }}
         </p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
@@ -27,16 +27,16 @@
           class="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-800"
         >
           <CircleDot class="w-3.5 h-3.5" />
-          Ungespeicherte Änderungen
+          {{ $t('common.ungespeicherte_anderungen') }}
         </span>
         <button
           type="button"
-          class="taskster_button"
+          class="taskster_button cursor-pointer"
           :disabled="saving || !dirty"
           @click="saveAll"
         >
           <Save class="w-4 h-4" />
-          <span>{{ saving ? 'Speichern…' : 'Alle Änderungen speichern' }}</span>
+          <span>{{ saving ? 'Speichern…' : $t('common.alle_anderungen_speichern') }}</span>
         </button>
       </div>
     </div>
@@ -120,15 +120,14 @@
             </div>
 
             <div class="pt-4 border-t border-slate-100">
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Darstellung & Sprache</h3>
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ $t('settings.darstellung_sprache') }}</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">App-Sprache</label>
-                  <select v-model="settings.language" class="ts-input">
-                    <option value="de">Deutsch</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                    <option value="it">Italiano</option>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $t('common.app_sprache') }}</label>
+                  <select v-model="settings.language" @change="onLanguageChange" class="ts-input cursor-pointer">
+                    <option value="de">Deutsch (DE)</option>
+                    <option value="en">English (EN)</option>
+                    <option value="sk">Slovenčina (SK)</option>
                   </select>
                 </div>
                 <div>
@@ -583,6 +582,13 @@ import {
 } from 'lucide-vue-next'
 
 const { user, authHeaders, initAuth } = useAuth()
+const { t, setLocale } = useI18n()
+
+async function onLanguageChange() {
+  if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
+    await setLocale(settings.value.language)
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Kategorien-Navigation
@@ -591,14 +597,14 @@ const isCompanyAdmin = computed(() => user.value?.company_role === 'admin' && Bo
 
 const sections = computed(() => {
   const list: any[] = [
-    { key: 'profile', label: 'Profil', icon: User },
-    { key: 'calendar', label: 'Kalender', icon: CalendarDays },
-    { key: 'notifications', label: 'Benachrichtigungen', icon: Bell },
-    { key: 'billing', label: 'Abrechnung', icon: Clock },
-    { key: 'security', label: 'Sicherheit', icon: Lock },
-    { key: 'plan', label: 'Tarifplan', icon: Zap }
+    { key: 'profile', label: t('common.profil'), icon: User },
+    { key: 'calendar', label: t('common.kalender'), icon: CalendarDays },
+    { key: 'notifications', label: t('common.benachrichtigungen'), icon: Bell },
+    { key: 'billing', label: t('common.abrechnung'), icon: Clock },
+    { key: 'security', label: t('common.sicherheit'), icon: Lock },
+    { key: 'plan', label: t('common.tarifplan'), icon: Zap }
   ]
-  if (isCompanyAdmin.value) list.push({ key: 'company', label: 'Unternehmen', icon: Building2 })
+  if (isCompanyAdmin.value) list.push({ key: 'company', label: t('common.unternehmen'), icon: Building2 })
   return list
 })
 
@@ -760,6 +766,9 @@ function applyUser() {
         events: { ...settings.value.notifications.events, ...(u.settings.notifications?.events || {}) }
       }
     }
+    if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
+      setLocale(settings.value.language)
+    }
   }
 
   baseline.value = snapshot()
@@ -824,12 +833,15 @@ async function saveAll() {
 
     // Normalisierte Serverantwort als neue Basis übernehmen
     if (res.user?.settings) settings.value = res.user.settings
+    if (settings.value.language && ['de', 'en', 'sk'].includes(settings.value.language)) {
+      await setLocale(settings.value.language)
+    }
     baseline.value = snapshot()
 
-    successMsg.value = 'Einstellungen gespeichert.'
+    successMsg.value = t('settings.einstellungen_gespeichert') || 'Einstellungen gespeichert.'
     setTimeout(() => { successMsg.value = '' }, 4000)
   } catch (err: any) {
-    errorMsg.value = err?.data?.statusMessage || 'Einstellungen konnten nicht gespeichert werden.'
+    errorMsg.value = err?.data?.statusMessage || t('settings.einstellungen_konnten_nicht_gespeic') || 'Einstellungen konnten nicht gespeichert werden.'
   } finally {
     saving.value = false
   }

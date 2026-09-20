@@ -43,7 +43,7 @@
               :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <LayoutDashboard class="w-4 h-4 shrink-0" />
-              <span>Dashboard</span>
+              <span>{{ $t('common.dashboard') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -53,7 +53,7 @@
               :class="$route.path === '/time' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <Clock class="w-4 h-4 shrink-0" />
-              <span>Zeitrapporte</span>
+              <span>{{ $t('common.zeitrapporte') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -63,7 +63,7 @@
               :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <BookUser class="w-4 h-4 shrink-0" />
-              <span>Kontakte</span>
+              <span>{{ $t('common.kontakte') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -74,7 +74,7 @@
               :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <ShieldCheck class="w-4 h-4 shrink-0" />
-              <span>Administration</span>
+              <span>{{ $t('common.administration') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -85,7 +85,7 @@
               :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <Building2 class="w-4 h-4 shrink-0" />
-              <span>Firmen-Admin</span>
+              <span>{{ $t('common.firmen_admin') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -95,7 +95,7 @@
               :class="$route.path === '/settings' ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
             >
               <Settings class="w-4 h-4 shrink-0" />
-              <span>Mein Profil</span>
+              <span>{{ $t('common.mein_profil') }}</span>
             </NuxtLink>
           </nav>
 
@@ -103,10 +103,10 @@
             <button
               @click="showWallpaperPicker = true; mobileMenuOpen = false"
               type="button"
-              class="w-full flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              class="w-full flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <Image class="w-4 h-4" />
-              <span>Hintergrund</span>
+              <span>{{ $t('common.hintergrund') }}</span>
             </button>
           </div>
         </aside>
@@ -124,40 +124,40 @@
               to="/dashboard"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              title="Dashboard"
+              :title="$t('common.dashboard')"
             >
               <LayoutDashboard class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>Dashboard</span>
+              <span>{{ $t('common.dashboard') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/time"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path === '/time' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              title="Zeitrapporte"
+              :title="$t('common.zeitrapporte')"
             >
               <Clock class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>Zeitrapporte</span>
+              <span>{{ $t('common.zeitrapporte') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/contacts"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              title="Kontakte"
+              :title="$t('common.kontakte')"
             >
               <BookUser class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>Kontakte</span>
+              <span>{{ $t('common.kontakte') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/calendar"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path.startsWith('/calendar') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              title="Kalender"
+              :title="$t('common.kalender')"
             >
               <CalendarDays class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>Kalender</span>
+              <span>{{ $t('common.kalender') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -165,10 +165,10 @@
               to="/admin"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800 font-semibold' : 'text-slate-600 hover:bg-purple-50/60 hover:text-purple-900'"
-              title="Site-Administration"
+              :title="$t('common.administration')"
             >
               <ShieldCheck class="w-4 h-4 shrink-0 text-purple-600" />
-              <span>Administration</span>
+              <span>{{ $t('common.administration') }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -176,20 +176,20 @@
               to="/company"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-emerald-50/60 hover:text-emerald-900'"
-              title="Firmen-Administration"
+              :title="$t('common.firmen_admin')"
             >
               <Building2 class="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>Firmen-Admin</span>
+              <span>{{ $t('common.firmen_admin') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/settings"
               class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
               :class="$route.path === '/settings' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              title="Mein Profil & Tarif"
+              :title="$t('common.mein_profil')"
             >
               <Settings class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>Einstellungen</span>
+              <span>{{ $t('common.einstellungen') }}</span>
             </NuxtLink>
           </nav>
 
@@ -197,7 +197,7 @@
           <div class="border-t border-slate-200 pt-3">
             <div class="px-4 pb-1 flex items-center gap-2">
               <CalendarDays class="w-3.5 h-3.5 text-slate-400" />
-              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kalender</span>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{{ $t('common.kalender') }}</span>
             </div>
             <MiniCalendar />
           </div>
@@ -207,10 +207,10 @@
             <button
               @click="showWallpaperPicker = true"
               type="button"
-              class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-md hover:bg-slate-100"
+              class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 cursor-pointer"
             >
               <Image class="w-3.5 h-3.5" />
-              <span>Hintergrund</span>
+              <span>{{ $t('common.hintergrund') }}</span>
             </button>
             <span class="text-[11px] font-mono text-slate-400">v2.0</span>
           </div>
@@ -312,6 +312,7 @@ import {
 const route = useRoute()
 const { user, initAuth } = useAuth()
 const { wallpapers, currentWallpaper, initWallpaper, setWallpaper } = useWallpaper()
+const { setLocale } = useI18n()
 
 const showWallpaperPicker = ref(false)
 const mobileMenuOpen = ref(false)
@@ -339,9 +340,17 @@ const selectWallpaper = (file: string) => {
   setWallpaper(file)
 }
 
+function syncUserLanguage() {
+  const lang = user.value?.settings?.language
+  if (lang && ['de', 'en', 'sk'].includes(lang)) {
+    setLocale(lang)
+  }
+}
+
 onMounted(async () => {
   initWallpaper()
   await initAuth()
+  syncUserLanguage()
   startNotificationPolling()
 })
 
