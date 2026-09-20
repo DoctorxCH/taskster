@@ -78,8 +78,9 @@
         <!-- Konto-Info -->
         <div class="mt-3 bg-white border border-slate-200 rounded-lg p-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
-              {{ (user?.name || '?').charAt(0).toUpperCase() }}
+            <div class="w-10 h-10 rounded-full bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+              <img v-if="user?.avatar" :src="user.avatar" :alt="user.name" class="w-full h-full object-cover" />
+              <span v-else>{{ (user?.name || '?').charAt(0).toUpperCase() }}</span>
             </div>
             <div class="min-w-0">
               <div class="text-sm font-semibold text-slate-900 truncate">{{ user?.name }}</div>
@@ -107,6 +108,59 @@
             <h2 class="text-base font-semibold text-slate-900">Profil</h2>
           </header>
           <div class="p-5 space-y-5">
+            <!-- Profilbild (Avatar) -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="relative group">
+                <div class="w-20 h-20 rounded-2xl bg-[#0891B2] text-white flex items-center justify-center font-black text-2xl shrink-0 overflow-hidden shadow-md border-2 border-white">
+                  <img v-if="profileAvatar" :src="profileAvatar" :alt="profileName" class="w-full h-full object-cover" />
+                  <span v-else>{{ (profileName || user?.name || '?').charAt(0).toUpperCase() }}</span>
+                </div>
+                <button
+                  type="button"
+                  @click="triggerAvatarUpload"
+                  class="absolute inset-0 bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
+                  title="Bild ändern"
+                >
+                  <Camera class="w-5 h-5 mb-0.5" />
+                  <span>Ändern</span>
+                </button>
+              </div>
+
+              <div class="space-y-1.5 flex-1">
+                <h4 class="text-xs font-bold text-slate-900">Dein Profilbild</h4>
+                <p class="text-[11px] text-slate-500 leading-relaxed">
+                  Dieses Bild wird im Team, in der Navigation und bei deinen Aufgaben angezeigt.
+                  Empfohlen: Quadratisch, mind. 150×150 px (JPG, PNG oder WebP).
+                </p>
+                <div class="flex items-center gap-2 pt-1">
+                  <input
+                    ref="avatarInputRef"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    class="hidden"
+                    @change="onAvatarFileSelected"
+                  />
+                  <button
+                    type="button"
+                    class="taskster_button_light px-4 text-xs h-[34px] rounded-lg cursor-pointer"
+                    @click="triggerAvatarUpload"
+                  >
+                    <Upload class="w-3.5 h-3.5 mr-1" />
+                    <span>Bild hochladen</span>
+                  </button>
+                  <button
+                    v-if="profileAvatar"
+                    type="button"
+                    class="taskster_button_accent px-4 text-xs h-[34px] rounded-lg cursor-pointer"
+                    @click="removeAvatar"
+                  >
+                    <Trash2 class="w-3.5 h-3.5 mr-1" />
+                    <span>Entfernen</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5">Vollständiger Name</label>
@@ -578,10 +632,11 @@
 <script setup lang="ts">
 import {
   LayoutDashboard, Settings, User, Clock, Lock, Zap, Building2,
-  ShieldCheck, CalendarDays, Bell, Save, CircleDot, CheckCircle2, AlertCircle, Plus
+  ShieldCheck, CalendarDays, Bell, Save, CircleDot, CheckCircle2, AlertCircle, Plus,
+  Camera, Upload, Trash2
 } from 'lucide-vue-next'
 
-const { user, authHeaders, initAuth } = useAuth()
+const { user, token, setAuth, authHeaders, initAuth } = useAuth()
 const { t, setLocale } = useI18n()
 
 async function onLanguageChange() {
@@ -614,6 +669,8 @@ const active = ref('profile')
 // Formular-Zustand
 // ---------------------------------------------------------------------------
 const profileName = ref('')
+const profileAvatar = ref<string | null>(null)
+const avatarInputRef = ref<HTMLInputElement | null>(null)
 const hourlyRate = ref<number | string>(120)
 const userCurrency = ref('CHF')
 const currentPassword = ref('')
@@ -677,6 +734,7 @@ const baseline = ref('')
 function snapshot() {
   return JSON.stringify({
     name: profileName.value,
+    avatar: profileAvatar.value,
     hourly_rate: Number(hourlyRate.value) || 0,
     currency: userCurrency.value,
     settings: settings.value
@@ -745,12 +803,68 @@ async function onBrowserToggle() {
 }
 
 // ---------------------------------------------------------------------------
+// Profilbild (Avatar) Handling
+// ---------------------------------------------------------------------------
+function triggerAvatarUpload() {
+  avatarInputRef.value?.click()
+}
+
+function removeAvatar() {
+  profileAvatar.value = null
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = ''
+  }
+}
+
+function onAvatarFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    errorMsg.value = 'Bitte wähle eine gültige Bilddatei (JPG, PNG oder WebP).'
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    const img = new Image()
+    img.onload = () => {
+      // Quadratisch auf 256x256 px skalieren & zuschneiden
+      const size = 256
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      const minDim = Math.min(img.width, img.height)
+      const sx = (img.width - minDim) / 2
+      const sy = (img.height - minDim) / 2
+
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size)
+
+      let dataUrl = canvas.toDataURL('image/webp', 0.85)
+      if (!dataUrl.startsWith('data:image/webp')) {
+        dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      }
+
+      profileAvatar.value = dataUrl
+      input.value = ''
+    }
+    img.src = event.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+// ---------------------------------------------------------------------------
 // Laden
 // ---------------------------------------------------------------------------
 function applyUser() {
   const u = user.value
   if (!u) return
   profileName.value = u.name || ''
+  profileAvatar.value = u.avatar || null
   hourlyRate.value = u.hourly_rate !== undefined && u.hourly_rate !== null ? u.hourly_rate : 120
   userCurrency.value = u.currency || 'CHF'
 
@@ -818,6 +932,7 @@ async function saveAll() {
       headers: authHeaders(),
       body: {
         name: profileName.value.trim(),
+        avatar: profileAvatar.value,
         hourly_rate: Number(hourlyRate.value) || 0,
         currency: userCurrency.value,
         settings: settings.value
@@ -828,7 +943,9 @@ async function saveAll() {
       user.value.name = res.user.name
       user.value.hourly_rate = res.user.hourly_rate
       user.value.currency = res.user.currency
+      user.value.avatar = res.user.avatar || null
       if (res.user.settings) user.value.settings = res.user.settings
+      setAuth(token.value || '', res.user)
     }
 
     // Normalisierte Serverantwort als neue Basis übernehmen

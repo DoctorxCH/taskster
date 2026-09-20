@@ -13,6 +13,7 @@ export interface User {
   hourly_rate?: number
   currency?: string
   settings?: any
+  avatar?: string | null
 }
 
 export const useAuth = () => {

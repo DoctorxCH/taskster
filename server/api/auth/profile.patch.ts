@@ -43,6 +43,11 @@ export default defineEventHandler(async (event) => {
     db.prepare('UPDATE users SET currency = ? WHERE id = ?').run(currency, authUser.id)
   }
 
+  if (body.avatar !== undefined) {
+    const avatarVal = body.avatar ? String(body.avatar) : null
+    db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatarVal, authUser.id)
+  }
+
   // Persönliche Einstellungen: immer vollständig normalisiert speichern,
   // damit manipulierte oder unvollständige Werte nie in die DB gelangen.
   if (settings !== undefined) {
@@ -52,7 +57,7 @@ export default defineEventHandler(async (event) => {
 
   const updatedUser = db.prepare(`
     SELECT u.id, u.company_id, u.company_role, u.is_superadmin, u.is_pro, u.name, u.email,
-           u.hourly_rate, u.currency, u.settings,
+           u.hourly_rate, u.currency, u.settings, u.avatar,
            c.name as company_name, c.subscription_plan as company_plan
     FROM users u
     LEFT JOIN companies c ON c.id = u.company_id
@@ -73,7 +78,8 @@ export default defineEventHandler(async (event) => {
       currency: updatedUser.currency || 'CHF',
       settings: readUserSettings(updatedUser.settings),
       is_superadmin: Boolean(updatedUser.is_superadmin),
-      is_pro: Boolean(updatedUser.is_pro)
+      is_pro: Boolean(updatedUser.is_pro),
+      avatar: updatedUser.avatar || null
     }
   }
 })

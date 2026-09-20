@@ -2108,6 +2108,7 @@ try {
                 'is_superadmin' => (bool)$u['is_superadmin'],
                 'is_pro' => (bool)$u['is_pro'],
                 'settings' => normalizeUserSettings($u['settings'] ?? null),
+                'avatar' => $u['avatar'] ?? null,
                 'admin_permissions' => $perms
             ]
         ]);
@@ -2195,7 +2196,8 @@ try {
                 'company_name' => $compName,
                 'company_plan' => $compPlan,
                 'is_superadmin' => false,
-                'is_pro' => (bool)$isPro
+                'is_pro' => (bool)$isPro,
+                'avatar' => null
             ]
         ]);
     }
@@ -2238,6 +2240,7 @@ try {
                 'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
                 'currency' => $u['currency'] ?? 'CHF',
                 'settings' => normalizeUserSettings($u['settings'] ?? null),
+                'avatar' => $u['avatar'] ?? null,
                 'admin_permissions' => $perms
             ]
         ]);
@@ -2279,6 +2282,12 @@ try {
             $db->prepare("UPDATE users SET settings = ? WHERE id = ?")->execute([json_encode($normalized), $authUser['id']]);
         }
 
+        // Profilbild (Avatar)
+        if (array_key_exists('avatar', $body)) {
+            $avatarVal = !empty($body['avatar']) ? (string)$body['avatar'] : null;
+            $db->prepare("UPDATE users SET avatar = ? WHERE id = ?")->execute([$avatarVal, $authUser['id']]);
+        }
+
         // Return updated user
         $uStmt = $db->prepare("
             SELECT u.*, c.name as company_name, c.subscription_plan as company_plan
@@ -2303,7 +2312,8 @@ try {
                 'is_pro' => (bool)$u['is_pro'],
                 'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
                 'currency' => $u['currency'] ?? 'CHF',
-                'settings' => normalizeUserSettings($u['settings'] ?? null)
+                'settings' => normalizeUserSettings($u['settings'] ?? null),
+                'avatar' => $u['avatar'] ?? null
             ]
         ]);
     }

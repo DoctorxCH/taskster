@@ -301,6 +301,7 @@ async function migrate() {
     "ALTER TABLE tasks MODIFY COLUMN assigned_to TEXT NULL",
     "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
     "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
+    "ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }
