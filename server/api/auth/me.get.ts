@@ -7,7 +7,7 @@ export default defineEventHandler((event) => {
 
   const user = db.prepare(`
     SELECT u.id, u.company_id, u.company_role, u.is_superadmin, u.is_pro, u.name, u.email,
-           u.hourly_rate, u.currency, u.admin_permissions, u.settings,
+           u.hourly_rate, u.currency, u.admin_permissions, u.settings, u.avatar,
            c.name as company_name, c.subscription_plan as company_plan, c.settings as company_settings
     FROM users u
     LEFT JOIN companies c ON c.id = u.company_id
@@ -55,6 +55,7 @@ export default defineEventHandler((event) => {
       settings: readUserSettings(user.settings),
       is_superadmin: Boolean(user.is_superadmin),
       is_pro: Boolean(user.is_pro),
+      avatar: user.avatar || null,
       admin_permissions: perms
     }
   }

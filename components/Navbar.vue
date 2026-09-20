@@ -181,8 +181,9 @@
           class="flex items-center gap-2 p-1 rounded-md text-slate-700 hover:bg-slate-100 transition-colors"
           :title="$t('common.mein_profil')"
         >
-          <div class="w-7 h-7 rounded-md bg-[#0891B2] text-white flex items-center justify-center text-xs font-bold shrink-0">
-            {{ user.name?.charAt(0).toUpperCase() }}
+          <div class="w-7 h-7 rounded-md bg-[#0891B2] text-white flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+            <img v-if="user.avatar" :src="user.avatar" :alt="user.name" class="w-full h-full object-cover" />
+            <span v-else>{{ user.name?.charAt(0).toUpperCase() }}</span>
           </div>
           <span class="hidden md:inline text-sm font-medium text-slate-800">{{ user.name }}</span>
         </NuxtLink>
