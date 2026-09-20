@@ -5668,32 +5668,38 @@ try {
     // GET notifications
     if ($path === 'notifications' && $method === 'GET') {
         $user = requireAuth();
+        $uid = $user['id'];
 
-        // 1. Gespeicherte Benachrichtigungen (Kommentare, Bearbeitungen, Einladungen)
+        // 1. Gespeicherte Benachrichtigungen (Kommentare, Bearbeitungen, Einladungen & gespeicherte Status)
         $sStmt = $db->prepare("
             SELECT n.*
             FROM notifications n
             WHERE n.user_id = ?
             ORDER BY n.created_at DESC
-            LIMIT 50
+            LIMIT 100
         ");
-        $sStmt->execute([$user['id']]);
+        $sStmt->execute([$uid]);
         $dbNotifs = $sStmt->fetchAll();
 
         $notifications = [];
+        $readMap = [];
+
         foreach ($dbNotifs as $dn) {
-            $notifications[] = [
-                'id' => $dn['id'],
-                'type' => $dn['type'],
-                'title' => $dn['title'],
-                'message' => $dn['message'],
-                'reference_type' => $dn['reference_type'],
-                'reference_id' => $dn['reference_id'],
-                'project_id' => $dn['project_id'],
-                'is_read' => (bool)$dn['is_read'],
-                'created_at' => $dn['created_at'],
-                'is_realtime' => false
-            ];
+            $readMap[$dn['id']] = (bool)$dn['is_read'];
+            if (strpos($dn['id'], 'due_') !== 0 && strpos($dn['id'], 'budget_') !== 0) {
+                $notifications[] = [
+                    'id' => $dn['id'],
+                    'type' => $dn['type'],
+                    'title' => $dn['title'],
+                    'message' => $dn['message'],
+                    'reference_type' => $dn['reference_type'],
+                    'reference_id' => $dn['reference_id'],
+                    'project_id' => $dn['project_id'],
+                    'is_read' => (bool)$dn['is_read'],
+                    'created_at' => $dn['created_at'],
+                    'is_realtime' => false
+                ];
+            }
         }
 
         // 2. Echtzeit-Ermittlung: Ablaufende Aufgaben in 3 Tagen (due_soon)
@@ -5713,21 +5719,22 @@ try {
             ORDER BY t.due_date ASC
             LIMIT 10
         ");
-        $dStmt->execute([$user['id'], $user['id'], $user['id']]);
+        $dStmt->execute([$uid, $uid, $uid]);
         $dueTasks = $dStmt->fetchAll();
 
         foreach ($dueTasks as $dt) {
+            $nId = 'due_' . $dt['id'];
             $days = (int)$dt['days_left'];
             $dayText = $days === 0 ? 'Heute fällig' : ($days === 1 ? 'Morgen fällig' : "Fällig in {$days} Tagen");
             $notifications[] = [
-                'id' => 'due_' . $dt['id'],
+                'id' => $nId,
                 'type' => 'due_soon',
                 'title' => "⏰ {$dayText}: {$dt['title']}",
                 'message' => "Aufgabe im Projekt \"{$dt['project_title']}\" ist fällig am " . date('d.m.Y', strtotime($dt['due_date'])) . ".",
                 'reference_type' => 'task',
                 'reference_id' => $dt['id'],
                 'project_id' => $dt['project_id'],
-                'is_read' => false,
+                'is_read' => !empty($readMap[$nId]),
                 'created_at' => date('Y-m-d H:i:s', strtotime($dt['due_date'] . ' 08:00:00')),
                 'is_realtime' => true
             ];
@@ -5743,7 +5750,7 @@ try {
             WHERE pf.owner_id = ?
               AND ((p.budget_hours > 0) OR (p.budget_amount > 0))
         ");
-        $bStmt->execute([$user['id']]);
+        $bStmt->execute([$uid]);
         $budgetProjects = $bStmt->fetchAll();
 
         foreach ($budgetProjects as $bp) {
@@ -5763,15 +5770,16 @@ try {
             }
 
             if ($exceeded) {
+                $nId = 'budget_' . $bp['id'];
                 $notifications[] = [
-                    'id' => 'budget_' . $bp['id'],
+                    'id' => $nId,
                     'type' => 'budget_exceeded',
                     'title' => "💰 Budgetwarnung: {$bp['title']}",
                     'message' => "{$reason} im Projekt \"{$bp['title']}\".",
                     'reference_type' => 'project',
                     'reference_id' => $bp['id'],
                     'project_id' => $bp['id'],
-                    'is_read' => false,
+                    'is_read' => !empty($readMap[$nId]),
                     'created_at' => date('Y-m-d H:i:s'),
                     'is_realtime' => true
                 ];
@@ -5798,17 +5806,84 @@ try {
     if (preg_match('#^notifications/([^/]+)/read$#', $path, $m) && $method === 'POST') {
         $user = requireAuth();
         $notifId = $m[1];
+        $uid = $user['id'];
 
-        if (strpos($notifId, 'due_') !== 0 && strpos($notifId, 'budget_') !== 0) {
-            $db->prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?")->execute([$notifId, $user['id']]);
+        $uStmt = $db->prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?");
+        $uStmt->execute([$notifId, $uid]);
+
+        if ($uStmt->rowCount() === 0) {
+            $type = 'due_soon';
+            $refType = 'task';
+            $refId = null;
+            if (strpos($notifId, 'due_') === 0) {
+                $refId = substr($notifId, 4);
+                $type = 'due_soon';
+                $refType = 'task';
+            } elseif (strpos($notifId, 'budget_') === 0) {
+                $refId = substr($notifId, 7);
+                $type = 'budget_exceeded';
+                $refType = 'project';
+            }
+
+            try {
+                $db->prepare("
+                    INSERT INTO notifications (id, user_id, type, title, message, reference_type, reference_id, is_read, created_at)
+                    VALUES (?, ?, ?, 'Benachrichtigung', 'Gelesen', ?, ?, 1, NOW())
+                ")->execute([$notifId, $uid, $type, $refType, $refId]);
+            } catch (Exception $e) {
+                // Ignore if duplicate
+            }
         }
+
         jsonResponse(['success' => true]);
     }
 
     // POST notifications/read-all
     if ($path === 'notifications/read-all' && $method === 'POST') {
         $user = requireAuth();
-        $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")->execute([$user['id']]);
+        $uid = $user['id'];
+        $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")->execute([$uid]);
+
+        // 1. due_soon Benachrichtigungen als gelesen speichern
+        $dStmt = $db->prepare("
+            SELECT t.id
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE (t.assigned_to = ? OR pf.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
+              AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date != ''
+              AND t.due_date >= CURRENT_DATE() AND t.due_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 3 DAY)
+        ");
+        $dStmt->execute([$uid, $uid, $uid]);
+        foreach ($dStmt->fetchAll() as $dt) {
+            $nId = 'due_' . $dt['id'];
+            try {
+                $db->prepare("
+                    INSERT INTO notifications (id, user_id, type, title, message, reference_type, reference_id, is_read, created_at)
+                    VALUES (?, ?, 'due_soon', 'Fällig', 'Gelesen', 'task', ?, 1, NOW())
+                ")->execute([$nId, $uid, $dt['id']]);
+            } catch (Exception $e) {}
+        }
+
+        // 2. budget_exceeded Benachrichtigungen als gelesen speichern
+        $bStmt = $db->prepare("
+            SELECT p.id
+            FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE pf.owner_id = ? AND ((p.budget_hours > 0) OR (p.budget_amount > 0))
+        ");
+        $bStmt->execute([$uid]);
+        foreach ($bStmt->fetchAll() as $bp) {
+            $nId = 'budget_' . $bp['id'];
+            try {
+                $db->prepare("
+                    INSERT INTO notifications (id, user_id, type, title, message, reference_type, reference_id, is_read, created_at)
+                    VALUES (?, ?, 'budget_exceeded', 'Budget', 'Gelesen', 'project', ?, 1, NOW())
+                ")->execute([$nId, $uid, $bp['id']]);
+            } catch (Exception $e) {}
+        }
+
         jsonResponse(['success' => true]);
     }
 
