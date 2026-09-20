@@ -75,6 +75,7 @@ function ensureTables($pdo) {
             "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
             "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
             "ALTER TABLE users ADD COLUMN admin_permissions JSON DEFAULT NULL",
+            "ALTER TABLE users ADD COLUMN settings JSON DEFAULT NULL",
             "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
             "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
         ];
@@ -903,6 +904,139 @@ function canEditEvent($user, $evt) {
     return !empty($user['is_superadmin']);
 }
 
+/**
+ * Persoenliche Benutzer-Einstellungen (users.settings, JSON).
+ * Serverseitige Normalisierung: fehlende oder manipulierte Werte koennen nie
+ * zu ungueltigen Zustaenden im Client fuehren.
+ */
+function defaultUserSettings() {
+    return [
+        'language' => 'de',
+        'theme' => 'light',
+        'density' => 'comfortable',
+        'start_page' => 'dashboard',
+        'calendar' => [
+            'default_view' => 'month',
+            'week_start' => 1,
+            'show_week_numbers' => false,
+            'show_weekends' => true,
+            'workday_start' => '07:00',
+            'workday_end' => '17:00',
+            'slot_minutes' => 30,
+            'default_duration_minutes' => 60,
+            'default_reminder_minutes' => 15,
+            'default_category_id' => null,
+            'default_visibility' => 'private',
+            'show_tasks' => true,
+            'show_declined' => false,
+            'time_format' => '24h',
+        ],
+        'notifications' => [
+            'browser' => false,
+            'email' => true,
+            'in_app' => true,
+            'sound' => false,
+            'digest' => 'off',
+            'events' => [
+                'calendar_invite' => true,
+                'calendar_change' => true,
+                'calendar_cancel' => true,
+                'calendar_reminder' => true,
+                'task_assigned' => true,
+                'task_due' => true,
+                'task_comment' => true,
+                'mention' => true,
+                'budget_warning' => true,
+            ],
+        ],
+    ];
+}
+
+function pickEnum($value, $allowed, $fallback) {
+    return (is_string($value) && in_array($value, $allowed, true)) ? $value : $fallback;
+}
+
+function pickBool($value, $fallback) {
+    return is_bool($value) ? $value : $fallback;
+}
+
+function pickInt($value, $allowed, $fallback) {
+    $n = is_numeric($value) ? (int)$value : null;
+    return ($n !== null && in_array($n, $allowed, true)) ? $n : $fallback;
+}
+
+function pickTime($value, $fallback) {
+    return (is_string($value) && preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value)) ? $value : $fallback;
+}
+
+function normalizeUserSettings($raw) {
+    $d = defaultUserSettings();
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) $raw = [];
+
+    $cal = (isset($raw['calendar']) && is_array($raw['calendar'])) ? $raw['calendar'] : [];
+    $notif = (isset($raw['notifications']) && is_array($raw['notifications'])) ? $raw['notifications'] : [];
+    $ev = (isset($notif['events']) && is_array($notif['events'])) ? $notif['events'] : [];
+
+    $duration = isset($cal['default_duration_minutes']) && is_numeric($cal['default_duration_minutes'])
+        ? (int)$cal['default_duration_minutes'] : null;
+    if ($duration !== null && ($duration < 5 || $duration > 1440)) $duration = null;
+
+    $reminder = array_key_exists('default_reminder_minutes', $cal) ? $cal['default_reminder_minutes'] : null;
+    if ($reminder !== null && (!is_numeric($reminder) || (int)$reminder < 0)) {
+        $reminder = $d['calendar']['default_reminder_minutes'];
+    } elseif ($reminder !== null) {
+        $reminder = (int)$reminder;
+    }
+
+    $catId = (isset($cal['default_category_id']) && is_string($cal['default_category_id']) && $cal['default_category_id'] !== '')
+        ? $cal['default_category_id'] : null;
+
+    return [
+        'language' => pickEnum($raw['language'] ?? null, ['de', 'en'], $d['language']),
+        'theme' => pickEnum($raw['theme'] ?? null, ['light', 'dark', 'system'], $d['theme']),
+        'density' => pickEnum($raw['density'] ?? null, ['comfortable', 'compact'], $d['density']),
+        'start_page' => pickEnum($raw['start_page'] ?? null, ['dashboard', 'calendar', 'time', 'contacts'], $d['start_page']),
+        'calendar' => [
+            'default_view' => pickEnum($cal['default_view'] ?? null, ['month', 'week', 'day'], $d['calendar']['default_view']),
+            'week_start' => pickInt($cal['week_start'] ?? null, [0, 1], $d['calendar']['week_start']),
+            'show_week_numbers' => pickBool($cal['show_week_numbers'] ?? null, $d['calendar']['show_week_numbers']),
+            'show_weekends' => pickBool($cal['show_weekends'] ?? null, $d['calendar']['show_weekends']),
+            'workday_start' => pickTime($cal['workday_start'] ?? null, $d['calendar']['workday_start']),
+            'workday_end' => pickTime($cal['workday_end'] ?? null, $d['calendar']['workday_end']),
+            'slot_minutes' => pickInt($cal['slot_minutes'] ?? null, [15, 30, 60], $d['calendar']['slot_minutes']),
+            'default_duration_minutes' => $duration ?? $d['calendar']['default_duration_minutes'],
+            'default_reminder_minutes' => $reminder,
+            'default_category_id' => $catId,
+            'default_visibility' => pickEnum($cal['default_visibility'] ?? null, ['private', 'company'], $d['calendar']['default_visibility']),
+            'show_tasks' => pickBool($cal['show_tasks'] ?? null, $d['calendar']['show_tasks']),
+            'show_declined' => pickBool($cal['show_declined'] ?? null, $d['calendar']['show_declined']),
+            'time_format' => pickEnum($cal['time_format'] ?? null, ['24h', '12h'], $d['calendar']['time_format']),
+        ],
+        'notifications' => [
+            'browser' => pickBool($notif['browser'] ?? null, $d['notifications']['browser']),
+            'email' => pickBool($notif['email'] ?? null, $d['notifications']['email']),
+            'in_app' => pickBool($notif['in_app'] ?? null, $d['notifications']['in_app']),
+            'sound' => pickBool($notif['sound'] ?? null, $d['notifications']['sound']),
+            'digest' => pickEnum($notif['digest'] ?? null, ['off', 'daily', 'weekly'], $d['notifications']['digest']),
+            'events' => [
+                'calendar_invite' => pickBool($ev['calendar_invite'] ?? null, $d['notifications']['events']['calendar_invite']),
+                'calendar_change' => pickBool($ev['calendar_change'] ?? null, $d['notifications']['events']['calendar_change']),
+                'calendar_cancel' => pickBool($ev['calendar_cancel'] ?? null, $d['notifications']['events']['calendar_cancel']),
+                'calendar_reminder' => pickBool($ev['calendar_reminder'] ?? null, $d['notifications']['events']['calendar_reminder']),
+                'task_assigned' => pickBool($ev['task_assigned'] ?? null, $d['notifications']['events']['task_assigned']),
+                'task_due' => pickBool($ev['task_due'] ?? null, $d['notifications']['events']['task_due']),
+                'task_comment' => pickBool($ev['task_comment'] ?? null, $d['notifications']['events']['task_comment']),
+                'mention' => pickBool($ev['mention'] ?? null, $d['notifications']['events']['mention']),
+                'budget_warning' => pickBool($ev['budget_warning'] ?? null, $d['notifications']['events']['budget_warning']),
+            ],
+        ],
+    ];
+}
+
 function getAuthUser() {    global $jwtSecret;
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
@@ -914,7 +1048,7 @@ function getAuthUser() {    global $jwtSecret;
     $db = getDb();
     // admin_permissions MUSS mitgeladen werden, sonst kann checkAdminPermission()
     // Plattform-Admins (ohne is_superadmin) nie autorisieren.
-    $stmt = $db->prepare("SELECT id, name, email, company_id, company_role, is_superadmin, is_pro, admin_permissions FROM users WHERE id = ?");
+    $stmt = $db->prepare("SELECT id, name, email, company_id, company_role, is_superadmin, is_pro, admin_permissions, settings FROM users WHERE id = ?");
     $stmt->execute([$decoded['id']]);
     return $stmt->fetch() ?: null;
 }
@@ -1157,6 +1291,7 @@ try {
                 'company_plan' => $u['company_plan'],
                 'is_superadmin' => (bool)$u['is_superadmin'],
                 'is_pro' => (bool)$u['is_pro'],
+                'settings' => normalizeUserSettings($u['settings'] ?? null),
                 'admin_permissions' => $perms
             ]
         ]);
@@ -1286,6 +1421,7 @@ try {
                 'is_pro' => (bool)$u['is_pro'],
                 'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
                 'currency' => $u['currency'] ?? 'CHF',
+                'settings' => normalizeUserSettings($u['settings'] ?? null),
                 'admin_permissions' => $perms
             ]
         ]);
@@ -1299,6 +1435,7 @@ try {
         $newPassword = $body['new_password'] ?? '';
         $hourlyRate = array_key_exists('hourly_rate', $body) ? ($body['hourly_rate'] !== null ? floatval($body['hourly_rate']) : null) : null;
         $currency = isset($body['currency']) ? trim($body['currency']) : null;
+        $hasSettings = array_key_exists('settings', $body);
 
         if (!$name) errorResponse('Name erforderlich', 400);
 
@@ -1318,6 +1455,12 @@ try {
             $db->prepare("UPDATE users SET name = ?, password_hash = ?, hourly_rate = COALESCE(?, hourly_rate), currency = COALESCE(?, currency) WHERE id = ?")->execute([$name, $newHash, $hourlyRate, $currency, $authUser['id']]);
         } else {
             $db->prepare("UPDATE users SET name = ?, hourly_rate = COALESCE(?, hourly_rate), currency = COALESCE(?, currency) WHERE id = ?")->execute([$name, $hourlyRate, $currency, $authUser['id']]);
+        }
+
+        // Persoenliche Einstellungen: immer vollstaendig normalisiert speichern.
+        if ($hasSettings) {
+            $normalized = normalizeUserSettings($body['settings']);
+            $db->prepare("UPDATE users SET settings = ? WHERE id = ?")->execute([json_encode($normalized), $authUser['id']]);
         }
 
         // Return updated user
@@ -1343,7 +1486,8 @@ try {
                 'is_superadmin' => (bool)$u['is_superadmin'],
                 'is_pro' => (bool)$u['is_pro'],
                 'hourly_rate' => $u['hourly_rate'] !== null ? floatval($u['hourly_rate']) : null,
-                'currency' => $u['currency'] ?? 'CHF'
+                'currency' => $u['currency'] ?? 'CHF',
+                'settings' => normalizeUserSettings($u['settings'] ?? null)
             ]
         ]);
     }

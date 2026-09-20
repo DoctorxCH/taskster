@@ -96,7 +96,10 @@
     <!-- MONATSANSICHT -->
     <div v-else-if="view === 'month'" class="bg-white border border-slate-200 rounded-lg overflow-hidden">
       <!-- Wochentage -->
-      <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+      <div class="grid border-b border-slate-200 bg-slate-50" :style="{ gridTemplateColumns: monthGridCols }">
+        <div v-if="calSettings.show_week_numbers" class="py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-200">
+          KW
+        </div>
         <div
           v-for="d in weekdays"
           :key="d"
@@ -107,20 +110,27 @@
       </div>
 
       <!-- Raster -->
-      <div class="grid grid-cols-7">
-        <div
-          v-for="(cell, i) in monthCells"
-          :key="i"
-          class="min-h-[110px] border-b border-r border-slate-100 p-1.5 transition-colors relative group/cell"
-          :class="[
-            !cell.inMonth ? 'bg-slate-50/60' : 'bg-white',
-            dragOverKey === cell.key ? 'bg-cyan-50 ring-2 ring-inset ring-[#0891B2]' : ''
-          ]"
-          @dragover.prevent="onDragOver(cell)"
-          @dragleave="onDragLeave(cell)"
-          @drop.prevent="onDrop(cell)"
-          @dblclick="openCreate(cell.key)"
-        >
+      <div class="grid" :style="{ gridTemplateColumns: monthGridCols }">
+        <template v-for="(cell, i) in monthCells" :key="i">
+          <!-- Kalenderwoche (nur am Wochenanfang) -->
+          <div
+            v-if="calSettings.show_week_numbers && i % visibleWeekdayIndexes.length === 0"
+            class="border-b border-r border-slate-100 bg-slate-50/60 flex items-start justify-center pt-1.5"
+          >
+            <span class="text-[10px] font-semibold text-slate-400">{{ monthWeekNumbers[Math.floor(i / visibleWeekdayIndexes.length)] }}</span>
+          </div>
+
+          <div
+            class="min-h-[110px] border-b border-r border-slate-100 p-1.5 transition-colors relative group/cell"
+            :class="[
+              !cell.inMonth ? 'bg-slate-50/60' : 'bg-white',
+              dragOverKey === cell.key ? 'bg-cyan-50 ring-2 ring-inset ring-[#0891B2]' : ''
+            ]"
+            @dragover.prevent="onDragOver(cell)"
+            @dragleave="onDragLeave(cell)"
+            @drop.prevent="onDrop(cell)"
+            @dblclick="openCreate(cell.key)"
+          >
           <!-- Tagesnummer -->
           <div class="flex items-center justify-between mb-1">
             <button
@@ -171,18 +181,23 @@
               +{{ cell.events.length - 3 }} weitere
             </button>
           </div>
-        </div>
+          </div>
+        </template>
       </div>
     </div>
 
     <!-- WOCHENANSICHT -->
     <div v-else-if="view === 'week'" class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-      <div class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50">
-        <div class="py-2" />
+      <div class="grid border-b border-slate-200 bg-slate-50" :style="{ gridTemplateColumns: weekGridCols }">
+        <div class="py-2 flex flex-col items-center justify-center">
+          <span v-if="calSettings.show_week_numbers" class="text-[10px] font-semibold text-slate-400 leading-tight">KW</span>
+          <span v-if="calSettings.show_week_numbers" class="text-xs font-bold text-slate-600 leading-tight">{{ currentWeekNumber }}</span>
+        </div>
         <div
           v-for="d in weekDays"
           :key="d.key"
           class="py-2 text-center border-l border-slate-200"
+          :class="d.isWeekend ? 'bg-slate-100/60' : ''"
         >
           <div class="text-[11px] font-semibold text-slate-500 uppercase">{{ d.weekday }}</div>
           <button
@@ -197,7 +212,7 @@
       </div>
 
       <!-- Ganztägige Termine (eigene Zeile wie in Outlook) -->
-      <div v-if="weekAllDay.some((c: any) => c.items.length)" class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50/50">
+      <div v-if="weekAllDay.some((c: any) => c.items.length)" class="grid border-b border-slate-200 bg-slate-50/50" :style="{ gridTemplateColumns: weekGridCols }">
         <div class="py-1.5 pr-2 text-[10px] font-medium text-slate-400 text-right">ganztägig</div>
         <div v-for="c in weekAllDay" :key="c.key" class="border-l border-slate-200 p-1 space-y-0.5 min-h-[28px]">
           <button
@@ -218,15 +233,16 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-[60px_repeat(7,1fr)] max-h-[600px] overflow-y-auto">
+      <div class="grid max-h-[600px] overflow-y-auto" :style="{ gridTemplateColumns: weekGridCols }">
         <!-- Stunden-Spalte -->
         <div>
           <div
             v-for="h in hours"
             :key="h"
-            class="h-14 border-b border-slate-100 text-[10px] font-medium text-slate-400 text-right pr-2 pt-0.5"
+            class="h-14 border-b border-slate-100 text-[10px] font-medium text-right pr-2 pt-0.5"
+            :class="isWorkHour(h) ? 'text-slate-500' : 'text-slate-300'"
           >
-            {{ String(h).padStart(2, '0') }}:00
+            {{ timeOf(`2000-01-01 ${String(h).padStart(2, '0')}:00:00`) }}
           </div>
         </div>
 
@@ -241,7 +257,10 @@
             v-for="h in hours"
             :key="h"
             class="h-14 border-b border-slate-100 hover:bg-cyan-50/40 transition-colors cursor-pointer"
-            :class="dragOverKey === d.key + '-' + h ? 'bg-cyan-50' : ''"
+            :class="[
+              dragOverKey === d.key + '-' + h ? 'bg-cyan-50' : '',
+              isWorkHour(h) ? 'bg-white' : 'bg-slate-50/70'
+            ]"
             @click="openCreate(d.key, h)"
             @dragover.prevent="dragOverKey = d.key + '-' + h"
             @drop.prevent="onDropAt(d.key, h)"
@@ -384,6 +403,7 @@
       :categories="categories"
       :projects="projects"
       :members="members"
+      :defaults="calSettings"
       @close="showEventModal = false"
       @saved="onEventSaved"
       @deleted="onEventDeleted"
@@ -475,8 +495,85 @@ const colorChoices = ['#0891B2', '#7C3AED', '#D97706', '#059669', '#DC2626', '#2
 const draggingId = ref<string | null>(null)
 const dragOverKey = ref<string | null>(null)
 
-const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+// ---------------------------------------------------------------------------
+// Persönliche Einstellungen (users.settings)
+// ---------------------------------------------------------------------------
+const DEFAULT_CAL = {
+  default_view: 'month',
+  week_start: 1,
+  show_week_numbers: false,
+  show_weekends: true,
+  workday_start: '07:00',
+  workday_end: '17:00',
+  slot_minutes: 30,
+  default_duration_minutes: 60,
+  default_reminder_minutes: 15,
+  default_category_id: null,
+  default_visibility: 'private',
+  show_tasks: true,
+  show_declined: false,
+  time_format: '24h'
+}
+
+const calSettings = computed(() => ({
+  ...DEFAULT_CAL,
+  ...((user.value?.settings?.calendar as any) || {})
+}))
+
+/** 0 = Sonntag, 1 = Montag */
+const weekStart = computed(() => Number(calSettings.value.week_start) === 0 ? 0 : 1)
+
+const weekdays = computed(() => {
+  const base = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+  return Array.from({ length: 7 }, (_, i) => base[(weekStart.value + i) % 7])
+})
+
 const hours = Array.from({ length: 24 }, (_, i) => i)
+
+/** Arbeitszeit-Grenzen in Minuten seit Mitternacht. */
+const workStartMin = computed(() => {
+  const [h, m] = String(calSettings.value.workday_start).split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+})
+const workEndMin = computed(() => {
+  const [h, m] = String(calSettings.value.workday_end).split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+})
+
+/** Ist diese Stunde Teil der Arbeitszeit? */
+function isWorkHour(h: number) {
+  const start = h * 60
+  return start >= workStartMin.value && start < workEndMin.value
+}
+
+/** Sichtbare Wochentage (Wochenende optional ausgeblendet). */
+const visibleWeekdayIndexes = computed(() => {
+  const all = Array.from({ length: 7 }, (_, i) => i)
+  if (calSettings.value.show_weekends) return all
+  // Wochenende = die beiden Tage, die auf Fr folgen (Sa/So)
+  return all.filter((i) => {
+    const dow = (weekStart.value + i) % 7
+    return dow !== 0 && dow !== 6
+  })
+})
+
+/** Spaltenanzahl für das Wochenraster (Stundenspalte + sichtbare Tage). */
+const weekGridCols = computed(() => `60px repeat(${visibleWeekdayIndexes.value.length},1fr)`)
+
+/** Spaltenanzahl für das Monatsraster (optional KW-Spalte + sichtbare Tage). */
+const monthGridCols = computed(() => {
+  const days = `repeat(${visibleWeekdayIndexes.value.length},1fr)`
+  return calSettings.value.show_week_numbers ? `36px ${days}` : days
+})
+
+/** Kalenderwoche (ISO 8601) für ein Datum. */
+function isoWeek(d: Date): number {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = t.getUTCDay() || 7
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+  return Math.ceil((((t.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
 
 // ---------------------------------------------------------------------------
 // Datums-Helfer
@@ -492,7 +589,14 @@ const timeOf = (v: string) => {
   if (!v) return ''
   const d = new Date(String(v).replace(' ', 'T'))
   if (isNaN(d.getTime())) return ''
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const h = d.getHours()
+  const m = String(d.getMinutes()).padStart(2, '0')
+  if (calSettings.value.time_format === '12h') {
+    const suffix = h < 12 ? 'AM' : 'PM'
+    const h12 = h % 12 === 0 ? 12 : h % 12
+    return `${h12}:${m} ${suffix}`
+  }
+  return `${String(h).padStart(2, '0')}:${m}`
 }
 
 const formatDayLong = (key: string) => {
@@ -505,19 +609,20 @@ const formatDayLong = (key: string) => {
 // ---------------------------------------------------------------------------
 const range = computed(() => {
   const c = cursor.value
+  const ws = weekStart.value
   if (view.value === 'month') {
     const first = new Date(c.getFullYear(), c.getMonth(), 1)
     const last = new Date(c.getFullYear(), c.getMonth() + 1, 0)
-    // Raster beginnt am Montag der ersten Woche
+    // Raster beginnt am eingestellten ersten Wochentag
     const start = new Date(first)
-    start.setDate(first.getDate() - ((first.getDay() + 6) % 7))
+    start.setDate(first.getDate() - ((first.getDay() - ws + 7) % 7))
     const end = new Date(last)
-    end.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)))
+    end.setDate(last.getDate() + (6 - ((last.getDay() - ws + 7) % 7)))
     return { start, end }
   }
   if (view.value === 'week') {
     const start = new Date(c)
-    start.setDate(c.getDate() - ((c.getDay() + 6) % 7))
+    start.setDate(c.getDate() - ((c.getDay() - ws + 7) % 7))
     const end = new Date(start)
     end.setDate(start.getDate() + 6)
     return { start, end }
@@ -559,17 +664,32 @@ const monthCells = computed(() => {
 const weekDays = computed(() => {
   const { start } = range.value
   const out: any[] = []
-  for (let i = 0; i < 7; i++) {
+  for (const i of visibleWeekdayIndexes.value) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
     out.push({
       key: toKey(d),
       day: d.getDate(),
-      weekday: weekdays[i]
+      weekday: weekdays.value[i],
+      isWeekend: [0, 6].includes(d.getDay())
     })
   }
   return out
 })
+
+/** Kalenderwochen-Nummern je Rasterzeile (Monatsansicht). */
+const monthWeekNumbers = computed(() => {
+  const { start, end } = range.value
+  const out: number[] = []
+  const d = new Date(start)
+  while (d <= end) {
+    out.push(isoWeek(d))
+    d.setDate(d.getDate() + 7)
+  }
+  return out
+})
+
+const currentWeekNumber = computed(() => isoWeek(range.value.start))
 
 const dayEvents = computed(() => eventsForDay(selectedDate.value))
 
@@ -578,8 +698,16 @@ const dayDetailEvents = computed(() => dayDetailKey.value ? eventsForDay(dayDeta
 /** Alle Termine eines Tages (Events + Aufgaben), gefiltert nach Kategorie. */
 function eventsForDay(key: string) {
   const evs = events.value.filter((e) => String(e.start).slice(0, 10) === key)
-  const tks = tasks.value.filter((t) => String(t.start).slice(0, 10) === key)
-  const all = [...evs, ...tks]
+  const tks = calSettings.value.show_tasks
+    ? tasks.value.filter((t) => String(t.start).slice(0, 10) === key)
+    : []
+  let all = [...evs, ...tks]
+
+  // Abgesagte Termine optional ausblenden
+  if (!calSettings.value.show_declined) {
+    all = all.filter((e) => e.type === 'task' || e.my_status !== 'declined')
+  }
+
   if (!activeCategories.value.length) return all
   return all.filter((e) => e.type === 'task' || activeCategories.value.includes(e.category_id))
 }
@@ -865,6 +993,9 @@ onMounted(async () => {
     const { initAuth } = useAuth()
     await initAuth()
   }
+  // Standard-Ansicht aus den persönlichen Einstellungen übernehmen
+  const dv = calSettings.value.default_view
+  if (dv === 'week' || dv === 'day' || dv === 'month') view.value = dv
   await Promise.all([loadEvents(), loadCategories(), loadProjects(), loadMembers()])
 })
 

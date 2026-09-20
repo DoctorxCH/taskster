@@ -289,6 +289,7 @@ const props = defineProps<{
   categories: any[]
   projects: any[]
   members: any[]
+  defaults?: any
 }>()
 
 const emit = defineEmits<{
@@ -352,7 +353,9 @@ function initForm() {
         .map((a: any) => ({ email: a.email, name: a.name, role: a.role }))
     }
   } else {
-    // Neuer Termin: Standard = nächste volle Stunde, 1 Stunde Dauer
+    // Neuer Termin: Standard = nächste volle Stunde, Dauer aus den Einstellungen
+    const d = props.defaults || {}
+    const durationMin = Number(d.default_duration_minutes) > 0 ? Number(d.default_duration_minutes) : 60
     const base = props.defaultDate ? new Date(props.defaultDate + 'T00:00:00') : new Date()
     if (props.defaultHour != null) {
       base.setHours(props.defaultHour, 0, 0, 0)
@@ -360,9 +363,11 @@ function initForm() {
       base.setMinutes(0, 0, 0)
       base.setHours(base.getHours() + 1)
     } else {
-      base.setHours(9, 0, 0, 0)
+      // Innerhalb der Arbeitszeit starten, sonst um 09:00
+      const [wh] = String(d.workday_start || '09:00').split(':').map(Number)
+      base.setHours(Number.isFinite(wh) ? wh : 9, 0, 0, 0)
     }
-    const end = new Date(base.getTime() + 60 * 60 * 1000)
+    const end = new Date(base.getTime() + durationMin * 60 * 1000)
 
     form.value = {
       title: '',
@@ -372,10 +377,10 @@ function initForm() {
       end_at: toLocalInput(end),
       all_day: false,
       priority: 'normal',
-      visibility: 'private',
-      category_id: null,
+      visibility: d.default_visibility === 'company' ? 'company' : 'private',
+      category_id: d.default_category_id || null,
       project_id: null,
-      reminder_minutes: 15,
+      reminder_minutes: d.default_reminder_minutes === undefined ? 15 : d.default_reminder_minutes,
       attendees: []
     }
   }

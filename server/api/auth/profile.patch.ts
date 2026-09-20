@@ -1,5 +1,6 @@
 import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
+import { readUserSettings, normalizeSettings } from '~/server/utils/userSettings'
 import bcrypt from 'bcryptjs'
 
 export default defineEventHandler(async (event) => {
@@ -11,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const currency = body.currency !== undefined ? String(body.currency).toUpperCase().trim() : null
   const currentPassword = body.current_password
   const newPassword = body.new_password
+  const settings = body.settings
 
   const existingUser = db.prepare('SELECT * FROM users WHERE id = ?').get(authUser.id) as any
   if (!existingUser) {
@@ -41,9 +43,16 @@ export default defineEventHandler(async (event) => {
     db.prepare('UPDATE users SET currency = ? WHERE id = ?').run(currency, authUser.id)
   }
 
+  // Persönliche Einstellungen: immer vollständig normalisiert speichern,
+  // damit manipulierte oder unvollständige Werte nie in die DB gelangen.
+  if (settings !== undefined) {
+    const normalized = normalizeSettings(settings)
+    db.prepare('UPDATE users SET settings = ? WHERE id = ?').run(JSON.stringify(normalized), authUser.id)
+  }
+
   const updatedUser = db.prepare(`
     SELECT u.id, u.company_id, u.company_role, u.is_superadmin, u.is_pro, u.name, u.email,
-           u.hourly_rate, u.currency,
+           u.hourly_rate, u.currency, u.settings,
            c.name as company_name, c.subscription_plan as company_plan
     FROM users u
     LEFT JOIN companies c ON c.id = u.company_id
@@ -62,6 +71,7 @@ export default defineEventHandler(async (event) => {
       company_plan: updatedUser.company_plan,
       hourly_rate: Number(updatedUser.hourly_rate) || 0,
       currency: updatedUser.currency || 'CHF',
+      settings: readUserSettings(updatedUser.settings),
       is_superadmin: Boolean(updatedUser.is_superadmin),
       is_pro: Boolean(updatedUser.is_pro)
     }

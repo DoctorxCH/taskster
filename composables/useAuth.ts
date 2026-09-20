@@ -10,6 +10,9 @@ export interface User {
   is_superadmin: boolean
   is_pro: boolean
   admin_permissions?: string[] | string
+  hourly_rate?: number
+  currency?: string
+  settings?: any
 }
 
 export const useAuth = () => {

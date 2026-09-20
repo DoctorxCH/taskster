@@ -41,6 +41,7 @@ export function initDatabase() {
     "ALTER TABLE projects ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE projects ADD COLUMN custom_data TEXT NOT NULL DEFAULT '{}'",
+    "ALTER TABLE users ADD COLUMN settings TEXT NOT NULL DEFAULT '{}'",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
