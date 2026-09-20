@@ -78,6 +78,10 @@ function ensureTables($pdo) {
             "ALTER TABLE users ADD COLUMN settings JSON DEFAULT NULL",
             "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
             "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
+            "ALTER TABLE contacts ADD COLUMN latitude DECIMAL(10,7) NULL",
+            "ALTER TABLE contacts ADD COLUMN longitude DECIMAL(10,7) NULL",
+            "ALTER TABLE calendar_events ADD COLUMN latitude DECIMAL(10,7) NULL",
+            "ALTER TABLE calendar_events ADD COLUMN longitude DECIMAL(10,7) NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -2692,17 +2696,32 @@ try {
     if ($path === 'journals' && $method === 'GET') {
         $user = requireAuth();
         $projectId = $_GET['project_id'] ?? '';
-        evaluateProjectAccess($user, $projectId, 'read');
+        
+        if (!empty($projectId)) {
+            evaluateProjectAccess($user, $projectId, 'read');
+            $stmt = $db->prepare("
+                SELECT j.*, u.name as author_name, t.title as task_title
+                FROM project_journals j
+                JOIN users u ON u.id = j.author_id
+                LEFT JOIN tasks t ON t.id = j.task_id
+                WHERE j.project_id = ?
+                ORDER BY j.created_at DESC
+            ");
+            $stmt->execute([$projectId]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT j.*, u.name as author_name, t.title as task_title, p.title as project_title
+                FROM project_journals j
+                JOIN users u ON u.id = j.author_id
+                LEFT JOIN tasks t ON t.id = j.task_id
+                LEFT JOIN projects p ON p.id = j.project_id
+                WHERE j.author_id = ?
+                ORDER BY j.created_at DESC
+                LIMIT 100
+            ");
+            $stmt->execute([$user['id']]);
+        }
 
-        $stmt = $db->prepare("
-            SELECT j.*, u.name as author_name, t.title as task_title
-            FROM project_journals j
-            JOIN users u ON u.id = j.author_id
-            LEFT JOIN tasks t ON t.id = j.task_id
-            WHERE j.project_id = ?
-            ORDER BY j.created_at DESC
-        ");
-        $stmt->execute([$projectId]);
         $entries = array_map(function($e) {
             $e['metadata'] = !empty($e['metadata']) ? (is_string($e['metadata']) ? json_decode($e['metadata'], true) : $e['metadata']) : [];
             return $e;
@@ -2718,14 +2737,49 @@ try {
         $title = trim($body['title'] ?? '');
         $content = trim($body['content'] ?? '');
         $entryType = $body['entry_type'] ?? 'manual';
-        evaluateProjectAccess($user, $projectId, 'write');
+
+        if (empty($title) || empty($content)) {
+            errorResponse('Titel und Inhalt sind erforderlich', 400);
+        }
+
+        if (empty($projectId)) {
+            $fStmt = $db->prepare("
+                SELECT p.id FROM projects p
+                JOIN project_folders pf ON pf.id = p.folder_id
+                WHERE pf.company_id = ? OR pf.user_id = ?
+                ORDER BY p.is_default DESC, p.created_at ASC
+                LIMIT 1
+            ");
+            $fStmt->execute([$user['company_id'] ?? '', $user['id']]);
+            $projectId = $fStmt->fetchColumn();
+
+            if (empty($projectId)) {
+                $anyPrj = $db->query("SELECT id FROM projects LIMIT 1")->fetchColumn();
+                if ($anyPrj) {
+                    $projectId = $anyPrj;
+                } else {
+                    $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO project_folders (id, user_id, company_id, name, visibility) VALUES (?, ?, ?, ?, ?)")->execute([
+                        $fldId, $user['id'], $user['company_id'] ?? null, 'Persönliche Notizen', 'private'
+                    ]);
+                    $projectId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO projects (id, folder_id, title, description, is_default, visibility) VALUES (?, ?, ?, ?, 1, 'private')")->execute([
+                        $projectId, $fldId, 'Meine Notizen', 'Notizenablage'
+                    ]);
+                }
+            }
+        }
+
+        if (!empty($projectId)) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
 
         $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $db->prepare("INSERT INTO project_journals (id, project_id, author_id, entry_type, title, content) VALUES (?, ?, ?, ?, ?, ?)")->execute([
             $jrnId, $projectId, $user['id'], $entryType, $title, $content
         ]);
 
-        jsonResponse(['success' => true, 'entry' => ['id' => $jrnId, 'title' => $title, 'content' => $content]]);
+        jsonResponse(['success' => true, 'entry' => ['id' => $jrnId, 'project_id' => $projectId, 'title' => $title, 'content' => $content]]);
     }
 
     // --- COMPANY INVITATIONS & MEMBERS ENDPOINTS ---
@@ -3216,19 +3270,30 @@ try {
 
         $ch = curl_init('https://openrouter.ai/api/v1/audio/transcriptions');
         $cFile = new CURLFile($tmpFile, $mimeType, 'recording.webm');
+        $lang = $body['language'] ?? 'de';
+        $whisperLang = ($lang === 'auto') ? null : (strpos($lang, 'de') === 0 ? 'de' : $lang);
+        $prompt = 'Transkription. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.';
+        if ($lang === 'en') $prompt = 'Transcription in English. Construction, project, note, task, craftsman, site.';
+        elseif ($lang === 'fr') $prompt = 'Transcription en français. Chantier, projet, note, tâche, artisan, Suisse.';
+        elseif ($lang === 'it') $prompt = 'Trascrizione in italiano. Cantiere, progetto, nota, compito, artigiano, Svizzera.';
+
+        $postFields = [
+            'file' => $cFile,
+            'model' => $targetModel,
+            'prompt' => $prompt,
+            'temperature' => '0.0'
+        ];
+        if (!empty($whisperLang)) {
+            $postFields['language'] = $whisperLang;
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => [
-                'file' => $cFile,
-                'model' => $targetModel,
-                'language' => 'de',
-                'prompt' => 'Transkription auf Deutsch. Baustelle, Projekt, Notiz, Aufgabe, Handwerker, Schweiz.',
-                'temperature' => '0.0'
-            ],
+            CURLOPT_POSTFIELDS => $postFields,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $apiKey,
-                'HTTP-Referer: https://taskster.ch',
+                'HTTP-Referer' => 'https://taskster.ch',
                 'X-Title: Taskster Voice Transcription'
             ],
             CURLOPT_TIMEOUT => (int)($config['timeout_seconds'] ?? 60)
@@ -3246,7 +3311,8 @@ try {
                 jsonResponse([
                     'success' => true,
                     'text' => $text,
-                    'model' => $targetModel
+                    'model' => $targetModel,
+                    'language' => $lang
                 ]);
             }
         }
@@ -3254,7 +3320,7 @@ try {
         // Fallback: Chat completion with input audio
         try {
             $chatMessages = [
-                ['role' => 'system', 'content' => 'Du bist ein praeziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort fuer Wort auf Deutsch. Gib AUSSCHLIESSLICH den gesprochenen Text zurueck, ohne Kommentare, Hoeflichkeitsfloskeln oder Anfuehrungszeichen.'],
+                ['role' => 'system', 'content' => 'Du bist ein praeziser Transkriptions-Assistent. Transkribiere die gesprochene Audionachricht Wort fuer Wort. Gib AUSSCHLIESSLICH den gesprochenen Text zurueck, ohne Kommentare, Hoeflichkeitsfloskeln oder Anfuehrungszeichen.'],
                 [
                     'role' => 'user',
                     'content' => [
@@ -3273,11 +3339,172 @@ try {
             jsonResponse([
                 'success' => true,
                 'text' => trim($res['text']),
-                'model' => $targetModel
+                'model' => $targetModel,
+                'language' => $lang
             ]);
         } catch (Exception $e) {
             errorResponse('Sprachtranskription fehlgeschlagen: ' . $e->getMessage(), 502);
         }
+    }
+
+    // AI-4. POST ai/analyze-voice (Kontexterkennung und Handlungsvorschläge)
+    if ($path === 'ai/analyze-voice' && $method === 'POST') {
+        $user = requireAuth();
+        $text = trim($body['text'] ?? '');
+        $currentProjectId = $body['current_project_id'] ?? null;
+
+        if (empty($text)) {
+            errorResponse('Text erforderlich', 400);
+        }
+
+        // 1. Fetch user accessible projects
+        $pStmt = $db->prepare("
+            SELECT DISTINCT p.id, p.title, p.description
+            FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE pf.company_id = ? OR pf.user_id = ? OR p.visibility = 'public'
+            ORDER BY p.is_default DESC, p.created_at DESC
+            LIMIT 30
+        ");
+        $pStmt->execute([$user['company_id'] ?? '', $user['id']]);
+        $projects = $pStmt->fetchAll();
+
+        $projectIds = array_column($projects, 'id');
+        $tasks = [];
+        if (!empty($projectIds)) {
+            $placeholders = implode(',', array_fill(0, count($projectIds), '?'));
+            $tStmt = $db->prepare("
+                SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date,
+                       t.list_id, l.title as list_title, p.id as project_id, p.title as project_title
+                FROM tasks t
+                JOIN lists l ON l.id = t.list_id
+                JOIN projects p ON p.id = l.project_id
+                WHERE p.id IN ($placeholders) AND t.status != 'done'
+                ORDER BY t.created_at DESC
+                LIMIT 80
+            ");
+            $tStmt->execute($projectIds);
+            $tasks = $tStmt->fetchAll();
+        }
+
+        $projectContext = array_map(function($p) { return ['id' => $p['id'], 'title' => $p['title']]; }, array_slice($projects, 0, 20));
+        $taskContext = array_map(function($t) {
+            return [
+                'id' => $t['id'],
+                'title' => $t['title'],
+                'project_id' => $t['project_id'],
+                'project_title' => $t['project_title'],
+                'status' => $t['status'],
+                'desc_snippet' => substr($t['description'] ?? '', 0, 100)
+            ];
+        }, array_slice($tasks, 0, 50));
+
+        $sysPrompt = "Du bist der intelligente Sprachnotiz-Assistent von Taskster (Projekt- & Baustellenmanagement).\n"
+            . "Analysiere den Sprachnotiz-Text und erkenne Aufgabe/Projekt.\n"
+            . "Projekte: " . json_encode($projectContext) . "\n"
+            . "Offene Aufgaben: " . json_encode($taskContext) . "\n"
+            . "Gib AUSSCHLIESSLICH JSON zurück:\n"
+            . '{"summary":"...","intent":"complete_task|update_task|add_checklist|create_task|create_journal","matched_task":null,"matched_project":null,"extracted_task_title":"...","note_to_append":"...","checklist_items":[],"suggested_actions":[]}';
+
+        $analysis = null;
+        try {
+            $chatMessages = [
+                ['role' => 'system', 'content' => $sysPrompt],
+                ['role' => 'user', 'content' => "Sprachnotiz:\n\"" . $text . "\"\nGib ausschliesslich valides JSON zurück."]
+            ];
+            $res = callOpenRouter($chatMessages, ['temperature' => 0.1]);
+            $raw = trim($res['text']);
+            $raw = preg_replace('/^```json\s*/i', '', $raw);
+            $raw = preg_replace('/```$/i', '', $raw);
+            $analysis = json_decode($raw, true);
+        } catch (Exception $e) {
+            // Fallback will be used
+        }
+
+        if (!$analysis || !is_array($analysis)) {
+            $lower = mb_strtolower($text, 'UTF-8');
+            $matchedTask = null;
+            $matchedProject = null;
+
+            foreach ($tasks as $t) {
+                $tLower = mb_strtolower($t['title'], 'UTF-8');
+                if (strpos($lower, $tLower) !== false) {
+                    $matchedTask = ['id' => $t['id'], 'title' => $t['title'], 'project_id' => $t['project_id'], 'project_title' => $t['project_title']];
+                    $matchedProject = ['id' => $t['project_id'], 'title' => $t['project_title']];
+                    break;
+                }
+            }
+
+            if (!$matchedProject && $currentProjectId) {
+                foreach ($projects as $p) {
+                    if ($p['id'] === $currentProjectId) {
+                        $matchedProject = ['id' => $p['id'], 'title' => $p['title']];
+                        break;
+                    }
+                }
+            }
+
+            $isDone = strpos($lower, 'erledigt') !== false || strpos($lower, 'fertig') !== false || strpos($lower, 'abgeschlossen') !== false;
+            $suggested = [];
+
+            if ($matchedTask) {
+                if ($isDone) {
+                    $suggested[] = [
+                        'id' => 'complete_task',
+                        'type' => 'complete_task',
+                        'label' => "'" . $matchedTask['title'] . "' als erledigt markieren",
+                        'description' => 'Setzt den Status der Aufgabe auf Erledigt',
+                        'task_id' => $matchedTask['id'],
+                        'project_id' => $matchedTask['project_id']
+                    ];
+                }
+                $suggested[] = [
+                    'id' => 'update_task',
+                    'type' => 'update_task',
+                    'label' => "Notiz an '" . $matchedTask['title'] . "' anhängen",
+                    'description' => 'Ergänzt die Aufgabenbeschreibung',
+                    'task_id' => $matchedTask['id'],
+                    'project_id' => $matchedTask['project_id']
+                ];
+            }
+
+            if ($matchedProject) {
+                $suggested[] = [
+                    'id' => 'create_task',
+                    'type' => 'create_task',
+                    'label' => "Neue Aufgabe in '" . $matchedProject['title'] . "' erstellen",
+                    'description' => 'Legt eine neue Aufgabe im Projekt an',
+                    'project_id' => $matchedProject['id']
+                ];
+                $suggested[] = [
+                    'id' => 'create_journal',
+                    'type' => 'create_journal',
+                    'label' => "Als Journal in '" . $matchedProject['title'] . "' speichern",
+                    'description' => 'Speichert im Projekt-Journal',
+                    'project_id' => $matchedProject['id']
+                ];
+            } else {
+                $suggested[] = [
+                    'id' => 'create_journal',
+                    'type' => 'create_journal',
+                    'label' => 'Als persönliche Notiz speichern',
+                    'description' => 'Speichert die Aufnahme in deiner Notizablage'
+                ];
+            }
+
+            $analysis = [
+                'summary' => $matchedTask ? "Aufgabe '" . $matchedTask['title'] . "' erkannt." : "Sprachnotiz analysiert.",
+                'intent' => $matchedTask ? ($isDone ? 'complete_task' : 'update_task') : 'create_journal',
+                'matched_task' => $matchedTask,
+                'matched_project' => $matchedProject,
+                'extracted_task_title' => mb_substr($text, 0, 48),
+                'note_to_append' => $text,
+                'checklist_items' => [],
+                'suggested_actions' => $suggested
+            ];
+        }
+
+        jsonResponse(['success' => true, 'analysis' => $analysis]);
     }
 
     // ==========================================
@@ -3687,6 +3914,8 @@ try {
             $events[] = [
                 'id' => $e['id'], 'type' => 'event', 'title' => $e['title'],
                 'description' => $e['description'], 'location' => $e['location'],
+                'latitude' => $e['latitude'] !== null ? floatval($e['latitude']) : null,
+                'longitude' => $e['longitude'] !== null ? floatval($e['longitude']) : null,
                 'start' => $e['start_at'], 'end' => $e['end_at'],
                 'allDay' => (bool)$e['all_day'], 'priority' => $e['priority'],
                 'status' => $e['status'], 'visibility' => $e['visibility'],
@@ -3751,15 +3980,19 @@ try {
         $priority = in_array($body['priority'] ?? '', ['niedrig', 'normal', 'hoch', 'dringend'], true) ? $body['priority'] : 'normal';
         $visibility = in_array($body['visibility'] ?? '', ['private', 'company'], true) ? $body['visibility'] : 'private';
 
+        $latitude = (isset($body['latitude']) && $body['latitude'] !== '' && is_numeric($body['latitude'])) ? floatval($body['latitude']) : null;
+        $longitude = (isset($body['longitude']) && $body['longitude'] !== '' && is_numeric($body['longitude'])) ? floatval($body['longitude']) : null;
+
         $db->prepare("
             INSERT INTO calendar_events
               (id, owner_id, company_id, project_id, category_id, title, description, location,
-               start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
+               latitude, longitude, start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
         ")->execute([
             $id, $user['id'], $user['company_id'] ?? null,
             $body['project_id'] ?? null, $body['category_id'] ?? null,
             $title, $body['description'] ?? null, $body['location'] ?? null,
+            $latitude, $longitude,
             $startAt, $endAt, $allDay, $priority, $visibility,
             $body['color'] ?? null,
             isset($body['reminder_minutes']) ? (int)$body['reminder_minutes'] : null
@@ -3844,9 +4077,17 @@ try {
 
         $timeChanged = ($startAt !== $existing['start_at'] || $endAt !== $existing['end_at']);
 
+        $latitude = array_key_exists('latitude', $body)
+            ? (($body['latitude'] === null || $body['latitude'] === '') ? null : floatval($body['latitude']))
+            : $existing['latitude'];
+        $longitude = array_key_exists('longitude', $body)
+            ? (($body['longitude'] === null || $body['longitude'] === '') ? null : floatval($body['longitude']))
+            : $existing['longitude'];
+
         $db->prepare("
             UPDATE calendar_events SET
-              title = ?, description = ?, location = ?, start_at = ?, end_at = ?,
+              title = ?, description = ?, location = ?, latitude = ?, longitude = ?,
+              start_at = ?, end_at = ?,
               all_day = ?, priority = ?, visibility = ?, category_id = ?, project_id = ?,
               color = ?, reminder_minutes = ?, updated_at = NOW()
             WHERE id = ?
@@ -3854,6 +4095,7 @@ try {
             $title,
             $body['description'] ?? $existing['description'],
             $body['location'] ?? $existing['location'],
+            $latitude, $longitude,
             $startAt, $endAt,
             isset($body['all_day']) ? (!empty($body['all_day']) ? 1 : 0) : $existing['all_day'],
             $body['priority'] ?? $existing['priority'],
@@ -5179,6 +5421,8 @@ try {
         $categoryGroup = trim($body['category_group'] ?? '');
         $address = trim($body['address'] ?? '');
         $website = trim($body['website'] ?? '');
+        $latitude = (isset($body['latitude']) && $body['latitude'] !== '' && is_numeric($body['latitude'])) ? floatval($body['latitude']) : null;
+        $longitude = (isset($body['longitude']) && $body['longitude'] !== '' && is_numeric($body['longitude'])) ? floatval($body['longitude']) : null;
         $tags = isset($body['tags']) && is_array($body['tags']) ? json_encode(array_values($body['tags'])) : '[]';
         $notes = trim($body['notes'] ?? '');
         $shareScope = in_array($body['share_scope'] ?? '', ['company', 'private']) ? $body['share_scope'] : 'private';
@@ -5243,11 +5487,11 @@ try {
             INSERT INTO contacts (
                 id, user_id, company_id, project_id, first_name, last_name,
                 company_name, role_function, phone, mobile, email,
-                category_group, address, website, tags, notes, share_scope, created_at
+                category_group, address, website, latitude, longitude, tags, notes, share_scope, created_at
             ) VALUES (
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, NOW()
+                ?, ?, ?, ?, ?, ?, ?, ?, NOW()
             )
         ");
         $stmt->execute([
@@ -5265,6 +5509,8 @@ try {
             $categoryGroup ?: null,
             $address ?: null,
             $website ?: null,
+            $latitude,
+            $longitude,
             $tags,
             $notes ?: null,
             $shareScope
@@ -5365,6 +5611,12 @@ try {
         $categoryGroup = array_key_exists('category_group', $body) ? trim($body['category_group']) : $contact['category_group'];
         $address = array_key_exists('address', $body) ? trim($body['address']) : ($contact['address'] ?? null);
         $website = array_key_exists('website', $body) ? trim($body['website']) : ($contact['website'] ?? null);
+        $latitude = array_key_exists('latitude', $body)
+            ? (($body['latitude'] === null || $body['latitude'] === '') ? null : floatval($body['latitude']))
+            : ($contact['latitude'] ?? null);
+        $longitude = array_key_exists('longitude', $body)
+            ? (($body['longitude'] === null || $body['longitude'] === '') ? null : floatval($body['longitude']))
+            : ($contact['longitude'] ?? null);
         $notes = array_key_exists('notes', $body) ? trim($body['notes']) : $contact['notes'];
         $shareScope = array_key_exists('share_scope', $body) && in_array($body['share_scope'], ['company', 'private']) ? $body['share_scope'] : $contact['share_scope'];
         
@@ -5381,7 +5633,7 @@ try {
             UPDATE contacts
             SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
                 phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
-                address = ?, website = ?, tags = ?, notes = ?, share_scope = ?
+                address = ?, website = ?, latitude = ?, longitude = ?, tags = ?, notes = ?, share_scope = ?
             WHERE id = ?
         ");
         $upStmt->execute([
@@ -5396,6 +5648,8 @@ try {
             $categoryGroup ?: null,
             $address ?: null,
             $website ?: null,
+            $latitude,
+            $longitude,
             $tags,
             $notes ?: null,
             $shareScope,

@@ -3,17 +3,23 @@
     v-if="modelValue"
     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
   >
-    <div class="bg-white border border-slate-200 rounded-lg max-w-lg w-full shadow-2xl overflow-hidden flex flex-col">
+    <div class="bg-white border border-slate-200 rounded-xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Modal Header -->
-      <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-9 h-9 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0">
+      <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 text-[#00A3C4] flex items-center justify-center shrink-0">
             <Mic class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900 tracking-tight">Neue Sprachnotiz</h3>
-            <p class="text-[11px] text-slate-500 font-medium">
-              Spracheingabe via AI <span class="font-mono text-[#0891B2] font-semibold">openai/whisper-large-v3-turbo</span>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900 tracking-tight">Sprachassistent & Notiz</h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                Whisper + DeepSeek
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
+              <span>Sprache:</span>
+              <span class="font-semibold text-slate-700">{{ activeLanguageLabel }}</span>
             </p>
           </div>
         </div>
@@ -21,37 +27,59 @@
         <button
           type="button"
           @click="closeModal"
-          class="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+          class="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition cursor-pointer"
         >
           <X class="w-5 h-5" />
         </button>
       </div>
 
       <!-- Modal Content Body -->
-      <div class="p-6 space-y-5">
+      <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
         <!-- Error Alert -->
-        <div v-if="errorMessage" class="p-3.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+        <div v-if="errorMessage" class="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
           <span>{{ errorMessage }}</span>
           <button type="button" @click="errorMessage = ''" class="text-rose-500 hover:text-rose-700 font-bold ml-2">✕</button>
         </div>
 
-        <!-- STATE 1: IDLE / READY TO RECORD -->
+        <!-- Success Feedback Banner -->
+        <div v-if="successMessage" class="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{{ successMessage }}</span>
+        </div>
+
+        <!-- ================= STATE 1: IDLE / READY TO RECORD ================= -->
         <div v-if="state === 'idle'" class="text-center py-6 space-y-4">
-          <div class="w-20 h-20 mx-auto rounded-full bg-cyan-50 border-2 border-cyan-200 flex items-center justify-center text-[#0891B2] shadow-sm">
+          <div class="w-20 h-20 mx-auto rounded-full bg-cyan-50 border-2 border-cyan-200 flex items-center justify-center text-[#00A3C4] shadow-sm">
             <Mic class="w-10 h-10" />
           </div>
           <div>
             <h4 class="text-sm font-bold text-slate-900">Sprachaufnahme starten</h4>
-            <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-              Drücke auf den Button und sprich deine Projekt-Notiz, Aufgabenbeschreibung oder Beobachtung ein.
+            <p class="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
+              Sprich deine Aufgabe, Notiz oder Statusmeldung ein. Die KI erkennt Aufgabenname, Nummer oder Adresse und schlägt passende Aktionen vor.
             </p>
+          </div>
+
+          <!-- Language selector toggle -->
+          <div class="flex items-center justify-center gap-2 pt-1">
+            <span class="text-[11px] font-semibold text-slate-500">Spracheingabe:</span>
+            <select
+              v-model="currentLanguage"
+              class="px-2.5 py-1 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-md text-slate-700 focus:outline-none focus:border-[#00A3C4]"
+            >
+              <option value="de">Deutsch</option>
+              <option value="de-CH">Schweizerdeutsch</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="it">Italiano</option>
+              <option value="auto">Automatisch</option>
+            </select>
           </div>
 
           <div class="pt-2">
             <button
               type="button"
               @click="startRecording"
-              class="taskster_button px-6 text-xs h-11 rounded-md inline-flex items-center space-x-2 cursor-pointer shadow-md"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2 cursor-pointer shadow-md"
             >
               <Mic class="w-4 h-4" />
               <span>Aufnahme starten</span>
@@ -59,10 +87,9 @@
           </div>
         </div>
 
-        <!-- STATE 2: RECORDING IN PROGRESS -->
+        <!-- ================= STATE 2: RECORDING IN PROGRESS ================= -->
         <div v-else-if="state === 'recording'" class="text-center py-6 space-y-4 select-none">
           <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
-            <!-- Pulsating animation ring -->
             <div class="absolute inset-0 rounded-full bg-rose-500/20 animate-ping"></div>
             <div class="w-20 h-20 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg relative z-10">
               <Mic class="w-10 h-10 animate-pulse" />
@@ -74,12 +101,12 @@
               {{ formattedRecordingTime }}
             </div>
             <p class="text-xs text-rose-600 font-bold mt-1 tracking-wide uppercase">
-              Aufnahme läuft... (Sprechen Sie auf Deutsch)
+              Aufnahme läuft... ({{ activeLanguageLabel }})
             </p>
           </div>
 
-          <!-- Live German Speech Preview -->
-          <div v-if="liveTranscript" class="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium italic max-h-24 overflow-y-auto">
+          <!-- Live Speech Preview -->
+          <div v-if="liveTranscript" class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium italic max-h-24 overflow-y-auto text-left">
             "{{ liveTranscript }}"
           </div>
 
@@ -87,32 +114,119 @@
             <button
               type="button"
               @click="cancelRecording"
-              class="taskster_button_light px-4 text-xs h-9 rounded-md"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
             </button>
             <button
               type="button"
               @click="stopRecording"
-              class="taskster_button_accent px-6 text-xs h-9 rounded-md inline-flex items-center space-x-1.5 cursor-pointer shadow-md"
+              class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2 cursor-pointer shadow-md"
             >
-              <Square class="w-3.5 h-3.5 fill-current" />
-              <span>Aufnahme stoppen & verarbeiten</span>
+              <Square class="w-4 h-4 fill-current" />
+              <span>Stoppen & Analysieren</span>
             </button>
           </div>
         </div>
 
-        <!-- STATE 3: TRANSCRIBING VIA AI -->
-        <div v-else-if="state === 'transcribing'" class="text-center py-10 space-y-3">
-          <Loader2 class="w-10 h-10 text-[#0891B2] animate-spin mx-auto" />
-          <h4 class="text-sm font-bold text-slate-900">Transkribiere Audionachricht...</h4>
-          <p class="text-xs text-slate-500">
-            OpenRouter AI (<span class="font-mono text-[#0891B2]">openai/whisper-large-v3-turbo</span>) wandelt Sprache in Text um.
+        <!-- ================= STATE 3: TRANSCRIBING & ANALYZING ================= -->
+        <div v-else-if="state === 'transcribing' || state === 'analyzing'" class="text-center py-10 space-y-3">
+          <div class="relative w-12 h-12 mx-auto">
+            <Loader2 class="w-12 h-12 text-[#00A3C4] animate-spin" />
+            <Sparkles class="w-5 h-5 text-amber-500 absolute inset-0 m-auto animate-pulse" />
+          </div>
+          <h4 class="text-sm font-bold text-slate-900">
+            {{ state === 'transcribing' ? 'Transkribiere Sprache...' : 'KI analysiert Aufgaben & Kontext...' }}
+          </h4>
+          <p class="text-xs text-slate-500 max-w-xs mx-auto">
+            {{ state === 'transcribing' 
+                ? 'OpenRouter Whisper Turbo wandelt die Aufnahme in Text um.' 
+                : 'DeepSeek erkennt Erwähnungen von Aufgaben, Adressen und Handlungsschritte.' }}
           </p>
         </div>
 
-        <!-- STATE 4: RESULT / EDIT & SAVE -->
+        <!-- ================= STATE 4: RESULT & SMART ACTIONS ================= -->
         <div v-else-if="state === 'result'" class="space-y-4">
+          <!-- AI Context Smart Box -->
+          <div v-if="aiAnalysis" class="p-4 rounded-xl bg-cyan-50/70 border border-cyan-200 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2 text-xs font-bold text-cyan-900">
+                <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                <span>KI-Erkennung:</span>
+              </div>
+              <span v-if="aiAnalysis.intent" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-cyan-800 border border-cyan-200">
+                {{ intentLabel(aiAnalysis.intent) }}
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-800 font-medium leading-relaxed">
+              {{ aiAnalysis.summary }}
+            </p>
+
+            <!-- Detected Task/Project Pill -->
+            <div v-if="aiAnalysis.matched_task" class="p-2.5 rounded-lg bg-white border border-cyan-100 flex items-center justify-between gap-2 text-xs">
+              <div class="min-w-0">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Zugeordnete Aufgabe</span>
+                <span class="font-bold text-slate-900 truncate block">{{ aiAnalysis.matched_task.title }}</span>
+                <span v-if="aiAnalysis.matched_task.project_title" class="text-[11px] text-slate-500 truncate block">
+                  Projekt: {{ aiAnalysis.matched_task.project_title }}
+                </span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                {{ aiAnalysis.matched_task.current_status === 'done' ? 'Erledigt' : 'Offen' }}
+              </span>
+            </div>
+
+            <!-- Detected Checklist Items -->
+            <div v-if="aiAnalysis.checklist_items && aiAnalysis.checklist_items.length > 0" class="p-2.5 rounded-lg bg-white border border-cyan-100 text-xs">
+              <span class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Erkannte Checklisten-Punkte:</span>
+              <ul class="space-y-1 text-slate-800">
+                <li v-for="(item, idx) in aiAnalysis.checklist_items" :key="idx" class="flex items-center gap-1.5">
+                  <CheckSquare class="w-3.5 h-3.5 text-[#00A3C4] shrink-0" />
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Suggested Smart Action Buttons -->
+            <div v-if="aiAnalysis.suggested_actions && aiAnalysis.suggested_actions.length > 0" class="space-y-2 pt-1">
+              <span class="text-[10px] font-bold uppercase text-cyan-900 tracking-wider block">
+                Empfohlene Aktionen (1-Klick):
+              </span>
+              <div class="grid grid-cols-1 gap-2">
+                <button
+                  v-for="act in aiAnalysis.suggested_actions"
+                  :key="act.id"
+                  type="button"
+                  :disabled="actionExecuting"
+                  @click="executeSmartAction(act)"
+                  class="p-2.5 rounded-lg text-left transition border flex items-center justify-between gap-3 cursor-pointer group"
+                  :class="act.type === 'complete_task'
+                    ? 'bg-rose-50 border-rose-200 hover:bg-rose-100 text-rose-900'
+                    : (act.type === 'update_task' || act.type === 'add_checklist'
+                      ? 'bg-white border-cyan-300 hover:bg-cyan-50 text-cyan-950 shadow-sm'
+                      : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-800')"
+                >
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold flex items-center gap-1.5">
+                      <component
+                        :is="getActionIcon(act.type)"
+                        class="w-4 h-4 shrink-0"
+                        :class="act.type === 'complete_task' ? 'text-rose-600' : 'text-[#00A3C4]'"
+                      />
+                      <span>{{ act.label }}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                      {{ act.description }}
+                    </p>
+                  </div>
+                  <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transcribed Text (Editable) -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
               <span>Transkribierter Text (bearbeitbar):</span>
@@ -120,8 +234,8 @@
             </label>
             <textarea
               v-model="transcribedText"
-              rows="4"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2] leading-relaxed"
+              rows="3"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] leading-relaxed"
               placeholder="Erkannter Text..."
             ></textarea>
           </div>
@@ -129,52 +243,64 @@
           <!-- Target Project Selection -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">
-              Projekt zuordnen
+              Projekt zuordnen (optional)
             </label>
             <select
               v-model="selectedProjectId"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="">Kein Projekt (Nur Zwischenablage / Notiz)</option>
+              <option value="">Kein Projekt (Allgemeine Notiz / Journal)</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">
                 {{ p.title }}
               </option>
             </select>
           </div>
 
-          <!-- Save Action Buttons -->
+          <!-- Standard Save Actions -->
           <div class="space-y-2 pt-2 border-t border-slate-200">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
                 @click="saveAsJournal"
-                :disabled="saving || !transcribedText.trim()"
-                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center justify-center space-x-1.5"
+                :disabled="saving || actionExecuting || !transcribedText.trim()"
+                class="taskster_button px-4 text-xs h-[42px] rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer"
               >
-                <FileText class="w-3.5 h-3.5" />
-                <span>Als Notiz/Journal speichern</span>
+                <FileText class="w-4 h-4" />
+                <span>{{ saving ? 'Speichern…' : 'Als Notiz/Journal speichern' }}</span>
               </button>
 
               <button
                 type="button"
                 @click="saveAsTask"
-                :disabled="saving || !transcribedText.trim() || !selectedProjectId"
-                class="taskster_button_light px-4 text-xs h-9 rounded-md flex items-center justify-center space-x-1.5"
-                :title="!selectedProjectId ? 'Bitte wähle zuerst ein Projekt aus' : 'Als neue Aufgabe im Projekt anlegen'"
+                :disabled="saving || actionExecuting || !transcribedText.trim()"
+                class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer"
               >
-                <Plus class="w-3.5 h-3.5" />
-                <span>Als Aufgabe anlegen</span>
+                <Plus class="w-4 h-4" />
+                <span>Als neue Aufgabe anlegen</span>
               </button>
             </div>
 
-            <button
-              type="button"
-              @click="copyToClipboard"
-              class="w-full py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md transition flex items-center justify-center space-x-1"
-            >
-              <Copy class="w-3.5 h-3.5" />
-              <span>{{ copied ? 'In Zwischenablage kopiert!' : 'In Zwischenablage kopieren' }}</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="copyToClipboard"
+                class="flex-1 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition flex items-center justify-center space-x-1.5 cursor-pointer"
+              >
+                <Copy class="w-3.5 h-3.5" />
+                <span>{{ copied ? 'In Zwischenablage kopiert!' : 'In Zwischenablage kopieren' }}</span>
+              </button>
+
+              <button
+                type="button"
+                @click="reanalyzeWithAi"
+                :disabled="actionExecuting || !transcribedText.trim()"
+                title="Erneut von KI analysieren lassen"
+                class="px-3 py-2 text-xs font-semibold text-[#00A3C4] hover:bg-cyan-50 border border-cyan-200 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Sparkles class="w-3.5 h-3.5" />
+                <span>Neu analysieren</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -184,7 +310,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { Mic, Square, Loader2, X, FileText, Plus, Copy } from 'lucide-vue-next'
+import {
+  Mic, Square, Loader2, X, FileText, Plus, Copy, Sparkles,
+  CheckCircle2, CheckSquare, Edit3, Check, ListPlus, ChevronRight
+} from 'lucide-vue-next'
 
 const props = defineProps<{
   modelValue: boolean
@@ -197,18 +326,22 @@ const emit = defineEmits<{
   (e: 'saved', payload: any): void
 }>()
 
-const { token } = useAuth()
+const { token, user } = useAuth()
 const authHeaders = () => ({
   'Authorization': `Bearer ${token.value || ''}`
 })
 
-type StateMode = 'idle' | 'recording' | 'transcribing' | 'result'
+type StateMode = 'idle' | 'recording' | 'transcribing' | 'analyzing' | 'result'
 const state = ref<StateMode>('idle')
 const errorMessage = ref('')
+const successMessage = ref('')
 const transcribedText = ref('')
 const selectedProjectId = ref('')
+const currentLanguage = ref('de')
 const saving = ref(false)
+const actionExecuting = ref(false)
 const copied = ref(false)
+const aiAnalysis = ref<any>(null)
 
 // MediaRecorder & SpeechRecognition setup
 let mediaRecorder: MediaRecorder | null = null
@@ -217,6 +350,19 @@ let audioChunks: Blob[] = []
 let recordingTimer: any = null
 const recordingSeconds = ref(0)
 const liveTranscript = ref('')
+
+const languageLabels: Record<string, string> = {
+  'de': 'Deutsch',
+  'de-CH': 'Schweizerdeutsch',
+  'en': 'English',
+  'fr': 'Français',
+  'it': 'Italiano',
+  'auto': 'Automatisch erkennen'
+}
+
+const activeLanguageLabel = computed(() => {
+  return languageLabels[currentLanguage.value] || 'Deutsch'
+})
 
 const formattedRecordingTime = computed(() => {
   const mins = Math.floor(recordingSeconds.value / 60)
@@ -228,9 +374,12 @@ watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     state.value = 'idle'
     errorMessage.value = ''
+    successMessage.value = ''
     transcribedText.value = ''
     liveTranscript.value = ''
+    aiAnalysis.value = null
     selectedProjectId.value = props.defaultProjectId || ''
+    currentLanguage.value = user.value?.settings?.whisper_language || user.value?.settings?.language || 'de'
     copied.value = false
   } else {
     stopMediaStream()
@@ -266,6 +415,7 @@ const stopMediaStream = () => {
 
 const startRecording = async () => {
   errorMessage.value = ''
+  successMessage.value = ''
   liveTranscript.value = ''
   audioChunks = []
   recordingSeconds.value = 0
@@ -303,14 +453,24 @@ const startRecording = async () => {
       }
     }
 
-    // Start native Web Speech Recognition in German (de-DE/de-CH) for live preview & backup
+    // Start native Web Speech Recognition according to language
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       try {
         const SpeechRecognitionApi = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
         speechRecognition = new SpeechRecognitionApi()
         speechRecognition.continuous = true
         speechRecognition.interimResults = true
-        speechRecognition.lang = 'de-DE'
+
+        const langMap: Record<string, string> = {
+          'de': 'de-DE',
+          'de-CH': 'de-CH',
+          'en': 'en-US',
+          'fr': 'fr-FR',
+          'it': 'it-IT',
+          'auto': 'de-DE'
+        }
+        speechRecognition.lang = langMap[currentLanguage.value] || 'de-DE'
+
         speechRecognition.onresult = (event: any) => {
           let text = ''
           for (let i = 0; i < event.results.length; i++) {
@@ -386,7 +546,8 @@ const processAudioForTranscription = async () => {
         body: {
           audio: base64Data,
           mimeType,
-          model: 'openai/whisper-large-v3-turbo'
+          model: 'openai/whisper-large-v3-turbo',
+          language: currentLanguage.value
         }
       })
       if (response.success && response.text) {
@@ -396,25 +557,247 @@ const processAudioForTranscription = async () => {
       console.warn('[Whisper API] Upstream error, checking live transcript fallback:', e)
     }
 
-    // Use Whisper result if available; otherwise use live German speech transcript fallback
     const finalText = (resultText || liveTranscript.value || '').trim()
     if (finalText) {
       transcribedText.value = finalText
-      state.value = 'result'
+      state.value = 'analyzing'
+      await analyzeVoiceIntent(finalText)
     } else {
-      errorMessage.value = 'Keine Sprache auf Deutsch erkannt. Bitte lauter und deutlicher ins Mikrofon sprechen.'
+      errorMessage.value = 'Keine Sprache erkannt. Bitte lauter und deutlicher ins Mikrofon sprechen.'
       state.value = 'idle'
     }
   } catch (err: any) {
     const fallback = liveTranscript.value.trim()
     if (fallback) {
       transcribedText.value = fallback
-      state.value = 'result'
+      state.value = 'analyzing'
+      await analyzeVoiceIntent(fallback)
     } else {
       errorMessage.value = err.data?.statusMessage || err.message || 'Fehler bei der Transkription'
       state.value = 'idle'
     }
   }
+}
+
+const analyzeVoiceIntent = async (text: string) => {
+  try {
+    const res = await $fetch<any>('/api/ai/analyze-voice', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        text,
+        current_project_id: selectedProjectId.value || null
+      }
+    })
+
+    if (res.success && res.analysis) {
+      aiAnalysis.value = res.analysis
+      if (res.analysis.matched_project?.id && !selectedProjectId.value) {
+        selectedProjectId.value = res.analysis.matched_project.id
+      }
+    }
+  } catch (err) {
+    console.warn('[AI Intent Analysis] Skipped or failed:', err)
+  } finally {
+    state.value = 'result'
+  }
+}
+
+const reanalyzeWithAi = async () => {
+  if (!transcribedText.value.trim()) return
+  state.value = 'analyzing'
+  await analyzeVoiceIntent(transcribedText.value)
+}
+
+const intentLabel = (intent: string) => {
+  switch (intent) {
+    case 'complete_task': return 'Aufgabe abschliessen'
+    case 'update_task': return 'Aufgabe ergänzen'
+    case 'add_checklist': return 'Checkliste'
+    case 'create_task': return 'Neue Aufgabe'
+    default: return 'Notiz / Journal'
+  }
+}
+
+const getActionIcon = (type: string) => {
+  switch (type) {
+    case 'complete_task': return Check
+    case 'update_task': return Edit3
+    case 'add_checklist': return ListPlus
+    case 'create_task': return Plus
+    default: return FileText
+  }
+}
+
+// Execute 1-Click AI Smart Action
+const executeSmartAction = async (action: any) => {
+  actionExecuting.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const text = transcribedText.value.trim()
+
+    if (action.type === 'complete_task') {
+      const taskId = action.task_id || aiAnalysis.value?.matched_task?.id
+      if (!taskId) throw new Error('Aufgaben-ID nicht gefunden')
+
+      // Fetch current task description
+      const taskRes = await $fetch<any>(`/api/tasks/${taskId}`, { headers: authHeaders() })
+      const currentDesc = taskRes.task?.description || ''
+      const appendNote = `\n\n[Erledigt via Sprachassistent ${new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}]: ${text}`
+
+      await $fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: {
+          status: 'done',
+          description: currentDesc ? currentDesc + appendNote : text
+        }
+      })
+
+      successMessage.value = `Aufgabe '${aiAnalysis.value?.matched_task?.title || 'Aufgabe'}' als erledigt markiert!`
+      emit('saved', { type: 'complete_task', task_id: taskId, text })
+    }
+    else if (action.type === 'update_task') {
+      const taskId = action.task_id || aiAnalysis.value?.matched_task?.id
+      if (!taskId) throw new Error('Aufgaben-ID nicht gefunden')
+
+      const taskRes = await $fetch<any>(`/api/tasks/${taskId}`, { headers: authHeaders() })
+      const currentDesc = taskRes.task?.description || ''
+      const appendNote = `\n\n[Sprachnotiz ${new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}]:\n${text}`
+
+      await $fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: {
+          description: (currentDesc + appendNote).trim()
+        }
+      })
+
+      successMessage.value = `Notiz an Aufgabe '${aiAnalysis.value?.matched_task?.title || 'Aufgabe'}' angehängt!`
+      emit('saved', { type: 'update_task', task_id: taskId, text })
+    }
+    else if (action.type === 'add_checklist') {
+      const taskId = action.task_id || aiAnalysis.value?.matched_task?.id
+      if (!taskId) throw new Error('Aufgaben-ID nicht gefunden')
+
+      const taskRes = await $fetch<any>(`/api/tasks/${taskId}`, { headers: authHeaders() })
+      let checklist = taskRes.task?.checklist || []
+      if (typeof checklist === 'string') {
+        try { checklist = JSON.parse(checklist) } catch (_) { checklist = [] }
+      }
+
+      const newItems = (aiAnalysis.value?.checklist_items || []).map((t: string) => ({
+        id: 'chk_' + Math.random().toString(36).substring(2, 9),
+        title: t,
+        completed: false
+      }))
+
+      const updatedChecklist = [...checklist, ...newItems]
+
+      await $fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: {
+          checklist: updatedChecklist
+        }
+      })
+
+      successMessage.value = `${newItems.length} Checklisten-Punkte hinzugefügt!`
+      emit('saved', { type: 'add_checklist', task_id: taskId, items: newItems })
+    }
+    else if (action.type === 'create_task') {
+      const targetProj = action.project_id || selectedProjectId.value || aiAnalysis.value?.matched_project?.id
+      await createTaskInternal(targetProj)
+      successMessage.value = 'Neue Aufgabe erfolgreich erstellt!'
+    }
+    else {
+      // create_journal
+      const targetProj = action.project_id || selectedProjectId.value || aiAnalysis.value?.matched_project?.id || null
+      await saveJournalInternal(targetProj)
+      successMessage.value = 'Sprachnotiz im Journal gespeichert!'
+    }
+
+    setTimeout(() => {
+      closeModal()
+    }, 1200)
+  } catch (err: any) {
+    errorMessage.value = err.data?.statusMessage || err.message || 'Fehler beim Ausführen der Aktion'
+  } finally {
+    actionExecuting.value = false
+  }
+}
+
+const saveJournalInternal = async (projectId: string | null) => {
+  const title = 'Sprachnotiz (' + new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) + ')'
+  await $fetch('/api/journals', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: {
+      project_id: projectId || null,
+      task_id: aiAnalysis.value?.matched_task?.id || null,
+      entry_type: 'voice',
+      title,
+      content: transcribedText.value
+    }
+  })
+  emit('saved', { type: 'journal', text: transcribedText.value, project_id: projectId })
+}
+
+const createTaskInternal = async (projectId?: string) => {
+  let projId = projectId || selectedProjectId.value
+
+  // If no project selected, fallback to user's first available project
+  if (!projId && props.projects && props.projects.length > 0) {
+    projId = props.projects[0].id
+  }
+
+  if (!projId) {
+    const defaultProjRes = await $fetch<any>('/api/folders', { headers: authHeaders() })
+    const allProjs = (defaultProjRes.folders || []).flatMap((f: any) => f.projects || [])
+    if (allProjs.length > 0) projId = allProjs[0].id
+  }
+
+  if (!projId) {
+    throw new Error('Bitte erstelle zuerst ein Projekt, um Aufgaben anzulegen.')
+  }
+
+  const projData = await $fetch<any>(`/api/projects/${projId}`, {
+    headers: authHeaders()
+  })
+
+  const listId = projData.lists?.[0]?.id
+  if (!listId) {
+    throw new Error('Das gewählte Projekt hat noch keine Abschnitte/Listen')
+  }
+
+  const taskTitle = aiAnalysis.value?.extracted_task_title || (
+    transcribedText.value.length > 50 
+      ? transcribedText.value.slice(0, 47) + '...' 
+      : transcribedText.value
+  )
+
+  const checklistObj = (aiAnalysis.value?.checklist_items || []).map((t: string) => ({
+    id: 'chk_' + Math.random().toString(36).substring(2, 9),
+    title: t,
+    completed: false
+  }))
+
+  await $fetch('/api/tasks', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: {
+      project_id: projId,
+      list_id: listId,
+      title: taskTitle,
+      description: 'Aus Sprachassistent (openai/whisper-large-v3-turbo):\n\n' + transcribedText.value,
+      checklist: checklistObj,
+      status: 'todo'
+    }
+  })
+
+  emit('saved', { type: 'task', text: transcribedText.value, project_id: projId })
 }
 
 const saveAsJournal = async () => {
@@ -423,62 +806,25 @@ const saveAsJournal = async () => {
   errorMessage.value = ''
 
   try {
-    const title = 'Sprachnotiz (' + new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) + ')'
-    await $fetch('/api/journals', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        project_id: selectedProjectId.value || null,
-        entry_type: 'voice',
-        title,
-        content: transcribedText.value
-      }
-    })
-
-    emit('saved', { type: 'journal', text: transcribedText.value, project_id: selectedProjectId.value })
-    closeModal()
+    await saveJournalInternal(selectedProjectId.value || null)
+    successMessage.value = 'Notiz erfolgreich gespeichert!'
+    setTimeout(() => { closeModal() }, 800)
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || 'Fehler beim Speichern der Sprachnotiz'
+    errorMessage.value = err.data?.statusMessage || err.message || 'Fehler beim Speichern der Sprachnotiz'
   } finally {
     saving.value = false
   }
 }
 
 const saveAsTask = async () => {
-  if (!transcribedText.value.trim() || !selectedProjectId.value) return
+  if (!transcribedText.value.trim()) return
   saving.value = true
   errorMessage.value = ''
 
   try {
-    // 1. Fetch first section / list of project
-    const projData = await $fetch<any>(`/api/projects/${selectedProjectId.value}`, {
-      headers: authHeaders()
-    })
-
-    const listId = projData.lists?.[0]?.id
-    if (!listId) {
-      throw new Error('Das gewählte Projekt hat noch keine Abschnitte/Listen')
-    }
-
-    // 2. Create task
-    const taskTitle = transcribedText.value.length > 50 
-      ? transcribedText.value.slice(0, 47) + '...' 
-      : transcribedText.value
-
-    await $fetch('/api/tasks', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        project_id: selectedProjectId.value,
-        list_id: listId,
-        title: taskTitle,
-        description: 'Aus Sprachnotiz (openai/whisper-large-v3-turbo):\n\n' + transcribedText.value,
-        status: 'todo'
-      }
-    })
-
-    emit('saved', { type: 'task', text: transcribedText.value, project_id: selectedProjectId.value })
-    closeModal()
+    await createTaskInternal(selectedProjectId.value)
+    successMessage.value = 'Aufgabe erfolgreich angelegt!'
+    setTimeout(() => { closeModal() }, 800)
   } catch (err: any) {
     errorMessage.value = err.data?.statusMessage || err.message || 'Fehler beim Erstellen der Aufgabe'
   } finally {

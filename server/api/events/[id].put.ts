@@ -28,9 +28,17 @@ export default defineEventHandler(async (event) => {
 
   const timeChanged = startAt !== existing.start_at || endAt !== existing.end_at
 
+  const latitude = body?.latitude !== undefined
+    ? (body.latitude === null || body.latitude === '' ? null : Number(body.latitude))
+    : existing.latitude
+  const longitude = body?.longitude !== undefined
+    ? (body.longitude === null || body.longitude === '' ? null : Number(body.longitude))
+    : existing.longitude
+
   db.prepare(`
     UPDATE calendar_events SET
-      title = ?, description = ?, location = ?, start_at = ?, end_at = ?,
+      title = ?, description = ?, location = ?, latitude = ?, longitude = ?,
+      start_at = ?, end_at = ?,
       all_day = ?, priority = ?, visibility = ?, category_id = ?, project_id = ?,
       color = ?, reminder_minutes = ?, updated_at = datetime('now')
     WHERE id = ?
@@ -38,6 +46,8 @@ export default defineEventHandler(async (event) => {
     title,
     body?.description !== undefined ? body.description : existing.description,
     body?.location !== undefined ? body.location : existing.location,
+    latitude,
+    longitude,
     startAt,
     endAt,
     body?.all_day !== undefined ? (body.all_day ? 1 : 0) : existing.all_day,

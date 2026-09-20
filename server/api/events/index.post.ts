@@ -29,11 +29,14 @@ export default defineEventHandler(async (event) => {
   const priority = ['niedrig', 'normal', 'hoch', 'dringend'].includes(body?.priority) ? body.priority : 'normal'
   const visibility = ['private', 'company'].includes(body?.visibility) ? body.visibility : 'private'
 
+  const latitude = Number.isFinite(Number(body?.latitude)) && body?.latitude !== null && body?.latitude !== '' ? Number(body.latitude) : null
+  const longitude = Number.isFinite(Number(body?.longitude)) && body?.longitude !== null && body?.longitude !== '' ? Number(body.longitude) : null
+
   db.prepare(`
     INSERT INTO calendar_events
       (id, owner_id, company_id, project_id, category_id, title, description, location,
-       start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
+       latitude, longitude, start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
   `).run(
     id,
     user.id,
@@ -43,6 +46,8 @@ export default defineEventHandler(async (event) => {
     title,
     body?.description || null,
     body?.location || null,
+    latitude,
+    longitude,
     startAt,
     endAt,
     allDay,

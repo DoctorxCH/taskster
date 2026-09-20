@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
   const categoryGroup = (body.category_group || '').trim()
   const address = (body.address || '').trim()
   const website = (body.website || '').trim()
+  const latitude = Number.isFinite(Number(body.latitude)) && body.latitude !== null && body.latitude !== '' ? Number(body.latitude) : null
+  const longitude = Number.isFinite(Number(body.longitude)) && body.longitude !== null && body.longitude !== '' ? Number(body.longitude) : null
   const tags = Array.isArray(body.tags) ? JSON.stringify(body.tags) : '[]'
   const notes = (body.notes || '').trim()
   const shareScope = ['company', 'private'].includes(body.share_scope) ? body.share_scope : 'private'
@@ -86,11 +88,11 @@ export default defineEventHandler(async (event) => {
     INSERT INTO contacts (
       id, user_id, company_id, project_id, first_name, last_name,
       company_name, role_function, phone, mobile, email,
-      category_group, address, website, tags, notes, share_scope, created_at
+      category_group, address, website, latitude, longitude, tags, notes, share_scope, created_at
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, datetime('now')
+      ?, ?, ?, ?, ?, ?, ?, ?, datetime('now')
     )
   `)
 
@@ -109,6 +111,8 @@ export default defineEventHandler(async (event) => {
     categoryGroup || null,
     address || null,
     website || null,
+    latitude,
+    longitude,
     tags,
     notes || null,
     shareScope

@@ -120,14 +120,30 @@
             </div>
 
             <div class="pt-4 border-t border-slate-100">
-              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Darstellung</h3>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <h3 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Darstellung & Sprache</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Sprache</label>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">App-Sprache</label>
                   <select v-model="settings.language" class="ts-input">
                     <option value="de">Deutsch</option>
                     <option value="en">English</option>
+                    <option value="fr">Français</option>
+                    <option value="it">Italiano</option>
                   </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Whisper-Sprache <span class="text-[#0891B2] font-mono text-[10px]">AI</span>
+                  </label>
+                  <select v-model="settings.whisper_language" class="ts-input">
+                    <option value="de">Deutsch (de)</option>
+                    <option value="de-CH">Schweizerdeutsch (de-CH)</option>
+                    <option value="en">English (en)</option>
+                    <option value="fr">Français (fr)</option>
+                    <option value="it">Italiano (it)</option>
+                    <option value="auto">Automatisch erkennen</option>
+                  </select>
+                  <p class="text-[10px] text-slate-500 mt-1">Spracheingabe für OpenRouter Whisper</p>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-700 mb-1.5">Design</label>
@@ -145,7 +161,7 @@
                   </select>
                 </div>
               </div>
-              <div class="mt-5 max-w-xs">
+              <div class="mt-4 max-w-xs">
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5">Startseite nach dem Login</label>
                 <select v-model="settings.start_page" class="ts-input">
                   <option value="dashboard">Dashboard</option>
@@ -609,6 +625,7 @@ const categories = ref<any[]>([])
 /** Lokale Kopie der Einstellungen – wird erst beim Speichern übertragen. */
 const settings = ref<any>({
   language: 'de',
+  whisper_language: 'de',
   theme: 'light',
   density: 'comfortable',
   start_page: 'dashboard',

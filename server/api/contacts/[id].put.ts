@@ -40,6 +40,12 @@ export default defineEventHandler(async (event) => {
   const categoryGroup = 'category_group' in body ? (body.category_group || '').trim() : existing.category_group
   const address = 'address' in body ? (body.address || '').trim() : existing.address
   const website = 'website' in body ? (body.website || '').trim() : existing.website
+  const latitude = 'latitude' in body
+    ? (body.latitude === null || body.latitude === '' ? null : Number(body.latitude))
+    : existing.latitude
+  const longitude = 'longitude' in body
+    ? (body.longitude === null || body.longitude === '' ? null : Number(body.longitude))
+    : existing.longitude
   const notes = 'notes' in body ? (body.notes || '').trim() : existing.notes
   const shareScope = 'share_scope' in body && ['company', 'private'].includes(body.share_scope) ? body.share_scope : existing.share_scope
 
@@ -56,7 +62,7 @@ export default defineEventHandler(async (event) => {
     UPDATE contacts
     SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
         phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
-        address = ?, website = ?, tags = ?, notes = ?, share_scope = ?, updated_at = datetime('now')
+        address = ?, website = ?, latitude = ?, longitude = ?, tags = ?, notes = ?, share_scope = ?, updated_at = datetime('now')
     WHERE id = ?
   `).run(
     firstName || null,
@@ -70,6 +76,8 @@ export default defineEventHandler(async (event) => {
     categoryGroup || null,
     address || null,
     website || null,
+    latitude,
+    longitude,
     tags,
     notes || null,
     shareScope,
