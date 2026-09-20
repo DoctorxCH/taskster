@@ -88,29 +88,9 @@
             </div>
           </div>
 
-          <!-- Right: Actions & View Mode Toggle (Cleaned up, no duplicate gear icon!) -->
+          <!-- Right: Actions (View, Stopwatch, Import, Voice, Section collapsed into More menu) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <!-- View Mode Switcher -->
-            <div class="bg-slate-100 border border-slate-200 rounded-md p-1 flex items-center space-x-1">
-              <button
-                @click="taskViewMode = 'board'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
-                :class="taskViewMode === 'board' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-              >
-                <LayoutGrid class="w-3.5 h-3.5" />
-                <span>Kacheln</span>
-              </button>
-              <button
-                @click="taskViewMode = 'table'"
-                class="px-3 py-1 rounded text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
-                :class="taskViewMode === 'table' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-              >
-                <List class="w-3.5 h-3.5" />
-                <span>Liste</span>
-              </button>
-            </div>
-
-            <!-- Project Stopwatch Control -->
+            <!-- Running Project Stopwatch (always visible so it can be stopped) -->
             <div
               v-if="userRole !== 'viewer' && stopwatchState.isRunning && stopwatchState.projectId === project?.id"
               class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-md border border-cyan-400/60 shadow-xs h-9 select-none"
@@ -134,47 +114,74 @@
               </button>
             </div>
 
-            <button
-              v-else-if="userRole !== 'viewer'"
-              @click="startProjectTimer"
-              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
-              :title="stopwatchState.isRunning ? 'Stoppuhr für dieses Projekt starten' : 'Stoppuhr auf Projekt starten'"
-            >
-              <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
-              <span class="hidden sm:inline">Projekt-Stoppuhr</span>
-            </button>
+            <!-- More Actions Dropdown -->
+            <div v-if="userRole !== 'viewer'" class="relative">
+              <button
+                @click="showActionsMenu = !showActionsMenu"
+                class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
+                :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
+                title="Weitere Aktionen"
+              >
+                <MoreVertical class="w-4 h-4 text-slate-600" />
+                <span class="hidden sm:inline">Mehr</span>
+              </button>
+              <div v-if="showActionsMenu" class="fixed inset-0 z-40" @click="showActionsMenu = false"></div>
+              <div v-if="showActionsMenu" class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
+                <!-- Ansicht -->
+                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ansicht</div>
+                <button
+                  @click="taskViewMode = 'board'; showActionsMenu = false"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
+                  :class="taskViewMode === 'board' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                >
+                  <LayoutGrid class="w-4 h-4" />
+                  <span>Kacheln</span>
+                  <Check v-if="taskViewMode === 'board'" class="w-3.5 h-3.5 ml-auto" />
+                </button>
+                <button
+                  @click="taskViewMode = 'table'; showActionsMenu = false"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
+                  :class="taskViewMode === 'table' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                >
+                  <List class="w-4 h-4" />
+                  <span>Liste</span>
+                  <Check v-if="taskViewMode === 'table'" class="w-3.5 h-3.5 ml-auto" />
+                </button>
 
-            <!-- Excel/CSV Import -->
-            <button
-              v-if="userRole !== 'viewer'"
-              @click="openImportModal"
-              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5"
-              title="Aufgaben aus Excel oder CSV importieren"
-            >
-              <Upload class="w-3.5 h-3.5 text-slate-600" />
-              <span class="hidden sm:inline">Import</span>
-            </button>
+                <div class="my-1 border-t border-slate-100"></div>
 
-            <!-- Voice Note (openai/whisper-large-v3-turbo) -->
-            <button
-              v-if="userRole !== 'viewer'"
-              @click="showVoiceModal = true"
-              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
-              title="Sprachnotiz aufnehmen (openai/whisper-large-v3-turbo)"
-            >
-              <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
-              <span class="hidden sm:inline">Sprachnotiz</span>
-            </button>
-
-            <!-- New Section -->
-            <button
-              v-if="userRole !== 'viewer'"
-              @click="showNewListModal = true"
-              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1"
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Abschnitt</span>
-            </button>
+                <!-- Aktionen -->
+                <button
+                  v-if="!(stopwatchState.isRunning && stopwatchState.projectId === project?.id)"
+                  @click="showActionsMenu = false; startProjectTimer()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Clock class="w-4 h-4 text-slate-500" />
+                  <span>Projekt-Stoppuhr starten</span>
+                </button>
+                <button
+                  @click="showActionsMenu = false; openImportModal()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Upload class="w-4 h-4 text-slate-500" />
+                  <span>Aufgaben importieren</span>
+                </button>
+                <button
+                  @click="showActionsMenu = false; showVoiceModal = true"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Mic class="w-4 h-4 text-slate-500" />
+                  <span>Sprachnotiz</span>
+                </button>
+                <button
+                  @click="showActionsMenu = false; showNewListModal = true"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Plus class="w-4 h-4 text-slate-500" />
+                  <span>Neuer Abschnitt</span>
+                </button>
+              </div>
+            </div>
 
             <!-- New Task -->
             <button
@@ -3693,7 +3700,8 @@ import {
   Globe,
   MapPin,
   Mic,
-  ExternalLink
+  ExternalLink,
+  MoreVertical
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -3719,6 +3727,7 @@ const loading = ref(true)
 
 const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time' | 'contacts'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
+const showActionsMenu = ref(false)
 
 // Projekt-Kontakte State
 const projectContacts = ref<any[]>([])
