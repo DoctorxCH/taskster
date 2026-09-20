@@ -35,11 +35,14 @@
   - `setTab(tab)` aktualisiert `activeTab` und die URL per `router.replace({ query: { ...route.query, tab } })`.
   - Bei Wechsel auf `finance` werden Finanzdaten (`loadOrdersData`) automatisch nachgeladen.
 - **Fokussierte Metriken pro Bereich (Keine Doppel-Stapelung):**
+  - **Direkt im Header-Menü integriert:** Die Metriken/Pills wurden direkt in die Kopf-Box integriert (`mt-5 pt-4 border-t border-slate-100`), sodass Titel, Aktionen und Status-Pills eine saubere, zusammenhängende Einheit bilden.
   - **Benutzerverwaltung:** Globale Systemübersicht (Kunden, Unternehmen, Projekte, Aufgaben, Journale).
   - **Unternehmen:** Unternehmensmetriken (Organisationen, zugeordnete Mitarbeiter, Upload-Policies).
-  - **Finanzen & Lizenzen:** Die 3 Finanzkarten (MRR, Aktive Abos, Kostenpflichtige Sitze) erscheinen als primäre Metriken direkt oben. Die redundante zweite Kartenreihe im Tab wurde entfernt.
+  - **Finanzen & Lizenzen:** Die 3 Finanz-Pills (MRR, Aktive Abos, Kostenpflichtige Sitze) erscheinen direkt im Header. Die redundante zweite Kartenreihe im Tab wurde entfernt.
   - **Projekt-Vorlagen:** Vorlagen-Metriken (Gesamt, Job/Gewerblich, Privat).
   - **E-Mail & Versand:** E-Mail-Metriken (Provider-Status, aktive Vorlagen, protokollierte Mails).
+- **Horizontale Tabs entfernt:**
+  - Die redundante horizontale Tab-Leiste wurde vollständig entfernt, da die Navigation nun direkt über das neue Sub-Menü der linken Sidebar erfolgt.
 - **Kontextueller Header:**
   - Titel, Beschreibung, Badge und Haupt-Aktionsbutton (`+ Neuer Benutzer`, `+ Neues Unternehmen`, `🔄 Aktualisieren`, `+ Neue Vorlage`, `✉️ Test-Mail`) passen sich dynamisch an den aktiven Bereich an.
 - **Design-System:**

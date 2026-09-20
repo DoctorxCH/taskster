@@ -1,8 +1,8 @@
 <template>
   <div class="w-full">
     <div v-if="isAnyAdmin" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-    <!-- Header -->
-    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
+    <!-- Header with Integrated Stat Pills -->
+    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-xs">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold mb-2">
@@ -22,7 +22,7 @@
           </p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 shrink-0">
           <button
             v-if="activeTab === 'users' && hasPermission('manage_users')"
             @click="openCreateUserModal"
@@ -69,187 +69,134 @@
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Admin Metrics (Focused per active tab, no double stacking) -->
-    <!-- TAB: USERS -->
-    <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
-        <div class="text-xl font-bold text-slate-900 mt-1 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
-        <div class="text-xs text-slate-500">Registriert</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
-        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ overview?.metrics?.companies || 0 }}</div>
-        <div class="text-xs text-slate-500">Organisationen</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Projekte</div>
-        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ overview?.metrics?.projects || 0 }}</div>
-        <div class="text-xs text-slate-500">Aktiv</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
-        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
-        <div class="text-xs text-slate-500">In Listen gepflegt</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
-        <div class="text-xl font-bold text-amber-900 mt-1 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
-        <div class="text-xs text-slate-500">Aktivitätsnotizen</div>
-      </div>
-    </div>
-
-    <!-- TAB: COMPANIES -->
-    <div v-else-if="activeTab === 'companies'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
-        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ companies.length }}</div>
-        <div class="text-xs text-slate-500">Organisationen & Mandanten</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
-        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ totalCompanyUsers }}</div>
-        <div class="text-xs text-slate-500">Mitarbeiter-Accounts</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
-        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
-        <div class="text-xs text-slate-500">Uploads freigegeben</div>
-      </div>
-    </div>
-
-    <!-- TAB: FINANCE -->
-    <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
-        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">
-          {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+      <!-- Integrated Stat Pills -->
+      <!-- USERS PILLS -->
+      <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-center">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
+          <div class="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
+          <div class="text-[10px] text-slate-400">Registriert</div>
         </div>
-        <div class="text-xs text-slate-500">Wiederkehrender monatlicher Umsatz</div>
-      </div>
 
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
-        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">
-          {{ ordersSummary?.active_subscriptions || 0 }}
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ overview?.metrics?.companies || 0 }}</div>
+          <div class="text-[10px] text-slate-400">Organisationen</div>
         </div>
-        <div class="text-xs text-slate-500">Unternehmen & PRO-Nutzer</div>
-      </div>
 
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
-        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">
-          {{ ordersSummary?.total_seats || 0 }}
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Projekte</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ overview?.metrics?.projects || 0 }}</div>
+          <div class="text-[10px] text-slate-400">Aktiv</div>
         </div>
-        <div class="text-xs text-slate-500">Zugewiesene Mitarbeiter-Lizenzen</div>
-      </div>
-    </div>
 
-    <!-- TAB: TEMPLATES -->
-    <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
-        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ templates.length }}</div>
-        <div class="text-xs text-slate-500">Systemweite Vorlagen</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
-        <div class="text-xl font-bold text-[#0891B2] mt-1 tabular-nums">{{ jobTemplatesCount }}</div>
-        <div class="text-xs text-slate-500">Baufirmen & Business</div>
-      </div>
-
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
-        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ privateTemplatesCount }}</div>
-        <div class="text-xs text-slate-500">Bauherren & Privatnutzer</div>
-      </div>
-    </div>
-
-    <!-- TAB: EMAIL -->
-    <div v-else-if="activeTab === 'email'" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Versand-Methode</div>
-        <div class="text-xl font-bold text-[#0891B2] mt-1">
-          {{ smtpConfig.mail_provider === 'resend' ? 'Resend API' : 'SMTP' }}
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
+          <div class="text-[10px] text-slate-400">In Listen gepflegt</div>
         </div>
-        <div class="text-xs text-slate-500">{{ smtpConfig.mail_provider === 'resend' ? 'noreply@kurka.ch' : (smtpConfig.smtp_host || 'Server') }}</div>
-      </div>
 
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
-        <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">
-          {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
+        <div class="p-3 rounded-lg bg-amber-50/50 border border-amber-200/60 text-center">
+          <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
+          <div class="text-xl font-bold text-amber-900 mt-0.5 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
+          <div class="text-[10px] text-slate-400">Aktivitätsnotizen</div>
         </div>
-        <div class="text-xs text-slate-500">System-Trigger bereit</div>
       </div>
 
-      <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
-        <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
-        <div class="text-xl font-bold text-purple-900 mt-1 tabular-nums">{{ emailOutbox.length }}</div>
-        <div class="text-xs text-slate-500">Protokollierte Einträge</div>
+      <!-- COMPANIES PILLS -->
+      <div v-else-if="activeTab === 'companies'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ companies.length }}</div>
+          <div class="text-[10px] text-slate-400">Organisationen & Mandanten</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ totalCompanyUsers }}</div>
+          <div class="text-[10px] text-slate-400">Mitarbeiter-Accounts</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
+          <div class="text-[10px] text-slate-400">Uploads freigegeben</div>
+        </div>
       </div>
-    </div>
 
-    <!-- Admin Tabs (Synchronized with Route & Sidebar) -->
-    <div class="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-      <button
-        v-if="hasPermission('manage_users')"
-        @click="setTab('users')"
-        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-        :class="activeTab === 'users' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
-      >
-        <Users class="w-4 h-4" />
-        <span>Benutzerverwaltung</span>
-      </button>
+      <!-- FINANCE PILLS -->
+      <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
+            {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+          </div>
+          <div class="text-[10px] text-slate-400">Wiederkehrender monatlicher Umsatz</div>
+        </div>
 
-      <button
-        v-if="hasPermission('company_settings')"
-        @click="setTab('companies')"
-        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-        :class="activeTab === 'companies' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
-      >
-        <Building2 class="w-4 h-4" />
-        <span>Unternehmen</span>
-      </button>
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">
+            {{ ordersSummary?.active_subscriptions || 0 }}
+          </div>
+          <div class="text-[10px] text-slate-400">Unternehmen & PRO-Nutzer</div>
+        </div>
 
-      <button
-        v-if="hasPermission('finance')"
-        @click="setTab('finance')"
-        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-        :class="activeTab === 'finance' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
-      >
-        <CreditCard class="w-4 h-4" />
-        <span>Finanzen & Lizenzen</span>
-      </button>
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">
+            {{ ordersSummary?.total_seats || 0 }}
+          </div>
+          <div class="text-[10px] text-slate-400">Zugewiesene Mitarbeiter-Lizenzen</div>
+        </div>
+      </div>
 
-      <button
-        v-if="hasPermission('manage_templates')"
-        @click="setTab('templates')"
-        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-        :class="activeTab === 'templates' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
-      >
-        <ClipboardList class="w-4 h-4" />
-        <span>Projekt-Vorlagen</span>
-      </button>
+      <!-- TEMPLATES PILLS -->
+      <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ templates.length }}</div>
+          <div class="text-[10px] text-slate-400">Systemweite Vorlagen</div>
+        </div>
 
-      <button
-        v-if="hasPermission('company_settings')"
-        @click="setTab('email')"
-        class="px-3 h-9 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-        :class="activeTab === 'email' ? 'border-[#0891B2] text-[#0891B2] font-semibold' : 'border-transparent text-slate-600 hover:text-slate-900'"
-      >
-        <Mail class="w-4 h-4" />
-        <span>E-Mail & Versand</span>
-      </button>
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ jobTemplatesCount }}</div>
+          <div class="text-[10px] text-slate-400">Baufirmen & Business</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ privateTemplatesCount }}</div>
+          <div class="text-[10px] text-slate-400">Bauherren & Privatnutzer</div>
+        </div>
+      </div>
+
+      <!-- EMAIL PILLS -->
+      <div v-else-if="activeTab === 'email'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Versand-Methode</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5">
+            {{ smtpConfig.mail_provider === 'resend' ? 'Resend API' : 'SMTP' }}
+          </div>
+          <div class="text-[10px] text-slate-400">{{ smtpConfig.mail_provider === 'resend' ? 'noreply@kurka.ch' : (smtpConfig.smtp_host || 'Server') }}</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
+            {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
+          </div>
+          <div class="text-[10px] text-slate-400">System-Trigger bereit</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ emailOutbox.length }}</div>
+          <div class="text-[10px] text-slate-400">Protokollierte Einträge</div>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 1: USERS & CUSTOMERS (Liquid Glass Table Card) -->
