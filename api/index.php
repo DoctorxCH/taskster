@@ -4964,7 +4964,7 @@ try {
         $att = $aStmt->fetch();
         if (!$att) errorResponse('Du bist nicht zu diesem Termin eingeladen', 404);
 
-        $db->prepare("UPDATE event_attendees SET status = ?, responded_at = NOW() WHERE id = ?")->execute([$status, $att['id']]);
+        $db->prepare("UPDATE event_attendees SET status = ?, user_id = COALESCE(user_id, ?), responded_at = NOW() WHERE id = ?")->execute([$status, $user['id'], $att['id']]);
 
         $label = $status === 'accepted' ? 'zugesagt' : ($status === 'declined' ? 'abgesagt' : 'mit Vorbehalt zugesagt');
         createNotification($evt['owner_id'], 'calendar_response', 'Antwort: ' . $evt['title'], $user['name'] . ' hat ' . $label . '.', 'event', $id);
