@@ -70,7 +70,7 @@
             <span
               v-if="s.key === 'notifications' && settings.notifications.browser"
               class="w-1.5 h-1.5 rounded-full bg-emerald-500"
-              title="Browser-Benachrichtigungen aktiv"
+              :title="$t('settings.browserbenachrichtigungen_aktiv')"
             />          </button>
         </div>
 
@@ -118,7 +118,7 @@
                   type="button"
                   @click="triggerAvatarUpload"
                   class="absolute inset-0 bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold cursor-pointer"
-                  title="Bild ändern"
+                  :title="$t('settings.bild_aendern')"
                 >
                   <Camera class="w-5 h-5 mb-0.5" />
                   <span>{{ $t('settings.aendern') }}</span>
