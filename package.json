@@ -14,7 +14,8 @@
     "ai:check": "node scripts/ai.cjs --check",
     "index": "python generate_index.py",
     "index:stats": "python generate_index.py --stats",
-    "php:check": "python scripts/check-php-syntax.py"
+    "php:check": "python scripts/check-php-syntax.py",
+    "i18n:extract": "python scripts/extract_i18n.py"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
