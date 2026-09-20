@@ -332,7 +332,7 @@ function seedTemplates($pdo) {
     $defaults = [
         [
             'id' => 'tmpl_lwl_tiefbau',
-            'name' => 'Bau- & Tiefbauleitung (LWL / Glasfaser)',
+            'name' => 'Neues Projekt',
             'category' => 'job',
             'subcategory' => 'Tiefbau & Glasfaser',
             'description' => 'Vorkonfigurierte Bauleitung für Telekommunikation, Grabenbau, Rohrverlegung, Spleissen und OTDR-Dämpfungsmessung.',
@@ -2761,8 +2761,8 @@ try {
         $customLists = $body['custom_lists'] ?? null;
         $importTasks = $body['import_tasks'] ?? null;
         $currency = !empty($body['currency']) ? trim($body['currency']) : 'CHF';
-        $budgetHours = array_key_exists('budget_hours', $body) && $body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : null;
-        $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : null;
+        $budgetHours = array_key_exists('budget_hours', $body) && $body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : 0.0;
+        $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0;
         $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
         if (!$folderId || !$title) errorResponse('Ordner und Titel erforderlich', 400);
@@ -3045,8 +3045,8 @@ try {
         $title = isset($body['title']) ? trim($body['title']) : $project['title'];
         $status = isset($body['status']) ? trim($body['status']) : $project['status'];
         $currency = isset($body['currency']) ? trim($body['currency']) : ($project['currency'] ?? 'CHF');
-        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null ? floatval($body['budget_hours']) : null) : ($project['budget_hours'] ?? null);
-        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null ? floatval($body['budget_amount']) : null) : ($project['budget_amount'] ?? null);
+        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : 0.0) : ($project['budget_hours'] !== null ? floatval($project['budget_hours']) : 0.0);
+        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0) : ($project['budget_amount'] !== null ? floatval($project['budget_amount']) : 0.0);
         $visibility = isset($body['visibility']) ? ((!empty($user['company_id']) && $body['visibility'] === 'company') ? 'company' : 'private') : ($project['visibility'] ?? 'private');
         $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $project['custom_data'];
 
@@ -3277,8 +3277,8 @@ try {
         $color = array_key_exists('color', $body) ? ($body['color'] ?: null) : ($task['color'] ?? null);
         $tags = isset($body['tags']) ? json_encode($body['tags']) : ($task['tags'] ?? '[]');
         $checklist = isset($body['checklist']) ? json_encode($body['checklist']) : ($task['checklist'] ?? '[]');
-        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null ? floatval($body['budget_hours']) : null) : ($task['budget_hours'] ?? null);
-        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null ? floatval($body['budget_amount']) : null) : ($task['budget_amount'] ?? null);
+        $budgetHours = array_key_exists('budget_hours', $body) ? ($body['budget_hours'] !== null && $body['budget_hours'] !== '' ? floatval($body['budget_hours']) : 0.0) : ($task['budget_hours'] !== null ? floatval($task['budget_hours']) : 0.0);
+        $budgetAmount = array_key_exists('budget_amount', $body) ? ($body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0) : ($task['budget_amount'] !== null ? floatval($task['budget_amount']) : 0.0);
 
         $db->prepare("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_data = ?, list_id = ?, sort_order = ?, assigned_to = ?, priority = ?, color = ?, tags = ?, checklist = ?, budget_hours = ?, budget_amount = ? WHERE id = ?")->execute([
             $title, $desc, $status, $dueDate, $customData, $listId, $sortOrder,
