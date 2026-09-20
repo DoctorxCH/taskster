@@ -1654,6 +1654,7 @@ onMounted(async () => {
   applyUser()
   readBrowserPermission()
   loadCategories()
+  loadTeamData()
 })
 
 // ---------------------------------------------------------------------------
@@ -1921,6 +1922,19 @@ const assignForm = ref({
 
 const showMemberAccessModal = ref(false)
 const selectedMember = ref<any>(null)
+
+function getRoleBadgeClass(role: string) {
+  if (role === 'owner') return 'bg-purple-100 text-purple-900 border-purple-300'
+  if (role === 'admin') return 'bg-emerald-100 text-emerald-900 border-emerald-300'
+  if (role === 'editor') return 'bg-cyan-100 text-cyan-900 border-cyan-300'
+  return 'bg-slate-100 text-slate-700 border-slate-300'
+}
+
+function hasNoAccess(m: any) {
+  const hasFolder = m.folder_access && Object.values(m.folder_access).some((a: any) => a.role !== 'none')
+  const hasProject = m.project_access && Object.values(m.project_access).some((a: any) => a.role !== 'none')
+  return !hasFolder && !hasProject
+}
 
 async function loadTeamData() {
   loadingMatrix.value = true
