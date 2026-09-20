@@ -270,6 +270,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Globale Command-Palette (Strg+K) -->
+    <CommandPalette v-if="user && !isLoginPage" />
   </div>
 </template>
 
