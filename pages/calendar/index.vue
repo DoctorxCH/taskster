@@ -1,0 +1,872 @@
+<template>
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <!-- Kopfzeile -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
+          <CalendarDays class="w-5 h-5 text-[#0891B2]" />
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Kalender</h1>
+          <p class="text-xs text-slate-500">Termine planen, einladen und mit Projekten verknüpfen</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Ansicht -->
+        <div class="flex items-center bg-white border border-slate-300 rounded-md p-0.5">
+          <button
+            v-for="v in views"
+            :key="v.key"
+            type="button"
+            class="h-8 px-3 text-xs font-semibold rounded transition-colors"
+            :class="view === v.key ? 'bg-[#0891B2] text-white' : 'text-slate-600 hover:bg-slate-100'"
+            @click="view = v.key"
+          >
+            {{ v.label }}
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex items-center bg-white border border-slate-300 rounded-md">
+          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-l-md" title="Zurück" @click="shift(-1)">
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          <button type="button" class="h-9 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 border-x border-slate-200" @click="goToday">
+            Heute
+          </button>
+          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-r-md" title="Weiter" @click="shift(1)">
+            <ChevronRight class="w-4 h-4" />
+          </button>
+        </div>
+
+        <button type="button" class="taskster_button" @click="openCreate()">
+          <Plus class="w-4 h-4" />
+          <span>Termin</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Titelzeile + Filter -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold text-slate-900">{{ rangeLabel }}</h2>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Kategorie-Filter -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            class="h-7 px-2.5 rounded text-xs font-medium border transition-colors"
+            :class="!activeCategories.length ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'"
+            @click="activeCategories = []"
+          >
+            Alle
+          </button>
+          <button
+            v-for="c in categories"
+            :key="c.id"
+            type="button"
+            class="h-7 px-2.5 rounded text-xs font-medium border transition-colors flex items-center gap-1.5"
+            :class="activeCategories.includes(c.id) ? 'text-white border-transparent' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'"
+            :style="activeCategories.includes(c.id) ? { backgroundColor: c.color } : {}"
+            @click="toggleCategory(c.id)"
+          >
+            <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: activeCategories.includes(c.id) ? '#fff' : c.color }" />
+            {{ c.name }}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="h-7 px-2.5 rounded text-xs font-medium border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 flex items-center gap-1.5"
+          @click="showCategoryModal = true"
+        >
+          <Plus class="w-3 h-3" />
+          Kategorie
+        </button>
+      </div>
+    </div>
+
+    <!-- Ladezustand -->
+    <div v-if="loading" class="bg-white border border-slate-200 rounded-lg p-16 text-center">
+      <Loader2 class="w-6 h-6 text-slate-400 animate-spin mx-auto mb-3" />
+      <p class="text-sm text-slate-500">Termine werden geladen…</p>
+    </div>
+
+    <!-- MONATSANSICHT -->
+    <div v-else-if="view === 'month'" class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <!-- Wochentage -->
+      <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+        <div
+          v-for="d in weekdays"
+          :key="d"
+          class="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide"
+        >
+          {{ d }}
+        </div>
+      </div>
+
+      <!-- Raster -->
+      <div class="grid grid-cols-7">
+        <div
+          v-for="(cell, i) in monthCells"
+          :key="i"
+          class="min-h-[110px] border-b border-r border-slate-100 p-1.5 transition-colors relative group/cell"
+          :class="[
+            !cell.inMonth ? 'bg-slate-50/60' : 'bg-white',
+            dragOverKey === cell.key ? 'bg-cyan-50 ring-2 ring-inset ring-[#0891B2]' : ''
+          ]"
+          @dragover.prevent="onDragOver(cell)"
+          @dragleave="onDragLeave(cell)"
+          @drop.prevent="onDrop(cell)"
+          @dblclick="openCreate(cell.key)"
+        >
+          <!-- Tagesnummer -->
+          <div class="flex items-center justify-between mb-1">
+            <button
+              type="button"
+              class="w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors"
+              :class="cell.key === todayKey
+                ? 'bg-[#0891B2] text-white'
+                : cell.inMonth ? 'text-slate-700 hover:bg-slate-100' : 'text-slate-400'"
+              @click="openCreate(cell.key)"
+            >
+              {{ cell.day }}
+            </button>
+            <button
+              type="button"
+              class="opacity-0 group-hover/cell:opacity-100 w-5 h-5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-opacity"
+              title="Termin an diesem Tag"
+              @click="openCreate(cell.key)"
+            >
+              <Plus class="w-3 h-3 mx-auto" />
+            </button>
+          </div>
+
+          <!-- Termine -->
+          <div class="space-y-0.5">
+            <button
+              v-for="ev in cell.events.slice(0, 3)"
+              :key="ev.id"
+              type="button"
+              draggable="true"
+              class="w-full text-left px-1.5 py-0.5 rounded text-[11px] font-medium truncate transition-opacity hover:opacity-80 cursor-grab active:cursor-grabbing"
+              :class="draggingId === ev.id ? 'opacity-40' : ''"
+              :style="{ backgroundColor: ev.color + '22', color: ev.color, borderLeft: '3px solid ' + ev.color }"
+              :title="eventTooltip(ev)"
+              @dragstart="onDragStart(ev, $event)"
+              @dragend="onDragEnd"
+              @click.stop="openEdit(ev)"
+            >
+              <span v-if="!ev.allDay" class="font-mono text-[10px] opacity-70">{{ timeOf(ev.start) }}</span>
+              {{ ev.title }}
+            </button>
+
+            <button
+              v-if="cell.events.length > 3"
+              type="button"
+              class="w-full text-left px-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-800"
+              @click="openDayDetail(cell.key)"
+            >
+              +{{ cell.events.length - 3 }} weitere
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WOCHENANSICHT -->
+    <div v-else-if="view === 'week'" class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50">
+        <div class="py-2" />
+        <div
+          v-for="d in weekDays"
+          :key="d.key"
+          class="py-2 text-center border-l border-slate-200"
+        >
+          <div class="text-[11px] font-semibold text-slate-500 uppercase">{{ d.weekday }}</div>
+          <button
+            type="button"
+            class="mt-0.5 w-7 h-7 rounded text-sm font-semibold mx-auto flex items-center justify-center transition-colors"
+            :class="d.key === todayKey ? 'bg-[#0891B2] text-white' : 'text-slate-700 hover:bg-slate-200'"
+            @click="openCreate(d.key)"
+          >
+            {{ d.day }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Ganztägige Termine (eigene Zeile wie in Outlook) -->
+      <div v-if="weekAllDay.some((c: any) => c.items.length)" class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-200 bg-slate-50/50">
+        <div class="py-1.5 pr-2 text-[10px] font-medium text-slate-400 text-right">ganztägig</div>
+        <div v-for="c in weekAllDay" :key="c.key" class="border-l border-slate-200 p-1 space-y-0.5 min-h-[28px]">
+          <button
+            v-for="ev in c.items"
+            :key="ev.id"
+            type="button"
+            draggable="true"
+            class="w-full rounded px-1.5 py-0.5 text-[11px] font-semibold text-left truncate transition-opacity hover:opacity-90 cursor-grab active:cursor-grabbing"
+            :class="draggingId === ev.id ? 'opacity-40' : ''"
+            :style="{ backgroundColor: ev.color + '22', color: ev.color, borderLeft: '3px solid ' + ev.color }"
+            :title="eventTooltip(ev)"
+            @dragstart="onDragStart(ev, $event)"
+            @dragend="onDragEnd"
+            @click.stop="openEdit(ev)"
+          >
+            {{ ev.title }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-[60px_repeat(7,1fr)] max-h-[600px] overflow-y-auto">
+        <!-- Stunden-Spalte -->
+        <div>
+          <div
+            v-for="h in hours"
+            :key="h"
+            class="h-14 border-b border-slate-100 text-[10px] font-medium text-slate-400 text-right pr-2 pt-0.5"
+          >
+            {{ String(h).padStart(2, '0') }}:00
+          </div>
+        </div>
+
+        <!-- Tagesspalten -->
+        <div
+          v-for="d in weekDays"
+          :key="d.key"
+          class="relative border-l border-slate-200"
+        >
+          <!-- Stundenraster (Klick = neuer Termin) -->
+          <div
+            v-for="h in hours"
+            :key="h"
+            class="h-14 border-b border-slate-100 hover:bg-cyan-50/40 transition-colors cursor-pointer"
+            :class="dragOverKey === d.key + '-' + h ? 'bg-cyan-50' : ''"
+            @click="openCreate(d.key, h)"
+            @dragover.prevent="dragOverKey = d.key + '-' + h"
+            @drop.prevent="onDropAt(d.key, h)"
+          />
+
+          <!-- Termine (absolut positioniert) -->
+          <button
+            v-for="ev in timedEventsForDay(d.key)"
+            :key="ev.id"
+            type="button"
+            draggable="true"
+            class="absolute left-0.5 right-0.5 rounded px-1.5 py-0.5 text-[11px] font-medium text-left overflow-hidden transition-opacity hover:opacity-90 cursor-grab active:cursor-grabbing z-10"
+            :class="draggingId === ev.id ? 'opacity-40' : ''"
+            :style="weekEventStyle(ev)"
+            :title="eventTooltip(ev)"
+            @dragstart="onDragStart(ev, $event)"
+            @dragend="onDragEnd"
+            @click.stop="openEdit(ev)"
+          >
+            <div class="truncate font-semibold">{{ ev.title }}</div>
+            <div class="truncate text-[10px] opacity-80">{{ timeOf(ev.start) }}–{{ timeOf(ev.end) }}</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAGESANSICHT -->
+    <div v-else class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div class="px-5 h-14 flex items-center justify-between border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold text-slate-900">{{ dayLabel }}</span>
+          <span v-if="isToday" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-50 text-cyan-800 border border-cyan-200">
+            Heute
+          </span>
+        </div>
+        <span class="text-xs text-slate-500">{{ dayEvents.length }} Termin(e)</span>
+      </div>
+
+      <div class="divide-y divide-slate-100">
+        <div
+          v-for="ev in dayEvents"
+          :key="ev.id"
+          class="px-5 py-3 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
+          @click="openEdit(ev)"
+        >
+          <span class="w-1 self-stretch rounded-full shrink-0" :style="{ backgroundColor: ev.color }" />
+          <div class="w-20 shrink-0 text-xs font-mono text-slate-500 pt-0.5">
+            <div v-if="ev.allDay" class="font-semibold">ganztägig</div>
+            <template v-else>
+              <div>{{ timeOf(ev.start) }}</div>
+              <div class="text-slate-400">{{ timeOf(ev.end) }}</div>
+            </template>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold text-slate-900 truncate">{{ ev.title }}</span>
+              <span
+                v-if="ev.category_name"
+                class="px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0"
+                :style="{ backgroundColor: ev.color + '22', color: ev.color }"
+              >
+                {{ ev.category_name }}
+              </span>
+              <span
+                v-if="ev.my_status"
+                class="px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0"
+                :class="statusClass(ev.my_status)"
+              >
+                {{ statusLabel(ev.my_status) }}
+              </span>
+            </div>
+            <div v-if="ev.location" class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+              <MapPin class="w-3 h-3" />
+              {{ ev.location }}
+            </div>
+            <div v-if="ev.description" class="text-xs text-slate-500 mt-0.5 line-clamp-2">{{ ev.description }}</div>
+            <div v-if="ev.attendee_count > 1" class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <Users class="w-3 h-3" />
+              {{ ev.attendee_count }} Teilnehmer
+            </div>
+          </div>
+        </div>
+
+        <div v-if="dayEvents.length === 0" class="py-16 text-center">
+          <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-3">
+            <CalendarDays class="w-6 h-6 text-slate-400" />
+          </div>
+          <p class="text-sm font-semibold text-slate-800">Keine Termine</p>
+          <p class="text-xs text-slate-500 mt-1">Für diesen Tag ist nichts geplant.</p>
+          <button type="button" class="taskster_button mt-4" @click="openCreate(selectedDate)">
+            <Plus class="w-4 h-4" />
+            Termin erstellen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tages-Detail (Monatsansicht: "+N weitere") -->
+    <div v-if="dayDetailKey" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" @mousedown.self="dayDetailKey = null">
+      <div class="bg-white rounded-lg shadow-md w-full max-w-md max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200">
+          <h2 class="text-base font-semibold text-slate-900">{{ formatDayLong(dayDetailKey) }}</h2>
+          <button type="button" class="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100" @click="dayDetailKey = null">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+        <div class="p-3 overflow-y-auto flex-1 space-y-1">
+          <button
+            v-for="ev in dayDetailEvents"
+            :key="ev.id"
+            type="button"
+            class="w-full text-left px-3 py-2 rounded-md hover:bg-slate-50 transition-colors flex items-start gap-2"
+            @click="dayDetailKey = null; openEdit(ev)"
+          >
+            <span class="w-1 self-stretch rounded-full shrink-0" :style="{ backgroundColor: ev.color }" />
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-medium text-slate-800 truncate">{{ ev.title }}</span>
+              <span class="block text-[11px] text-slate-500">
+                {{ ev.allDay ? 'ganztägig' : timeOf(ev.start) + '–' + timeOf(ev.end) }}
+                <template v-if="ev.location"> · {{ ev.location }}</template>
+              </span>
+            </span>
+          </button>
+        </div>
+        <div class="flex justify-end px-5 h-16 items-center border-t border-slate-200">
+          <button type="button" class="taskster_button" @click="dayDetailKey = null; openCreate(dayDetailKey)">
+            <Plus class="w-4 h-4" />
+            Termin
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Termin-Modal -->
+    <CalendarEventModal
+      v-if="showEventModal"
+      :event="editingEvent"
+      :default-date="defaultDate"
+      :default-hour="defaultHour"
+      :categories="categories"
+      :projects="projects"
+      :members="members"
+      @close="showEventModal = false"
+      @saved="onEventSaved"
+      @deleted="onEventDeleted"
+    />
+
+    <!-- Kategorie-Modal -->
+    <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" @mousedown.self="showCategoryModal = false">
+      <div class="bg-white rounded-lg shadow-md w-full max-w-sm">
+        <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200">
+          <h2 class="text-base font-semibold text-slate-900">Neue Kategorie</h2>
+          <button type="button" class="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100" @click="showCategoryModal = false">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+        <form class="p-5 space-y-4" @submit.prevent="createCategory">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Name</label>
+            <input v-model="newCategory.name" type="text" required placeholder="z.B. Werkstatt" class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Farbe</label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="c in colorChoices"
+                :key="c"
+                type="button"
+                class="w-7 h-7 rounded-md border-2 transition-transform hover:scale-110"
+                :class="newCategory.color === c ? 'border-slate-900 ring-2 ring-slate-300' : 'border-white shadow-sm'"
+                :style="{ backgroundColor: c }"
+                @click="newCategory.color = c"
+              />
+            </div>
+          </div>
+          <label v-if="user?.company_id" class="flex items-center gap-2 text-xs text-slate-700">
+            <input v-model="newCategory.company_wide" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0" />
+            Für die ganze Firma sichtbar
+          </label>
+          <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+            <button type="button" class="h-9 px-4 text-sm font-semibold rounded-md bg-white text-slate-700 border border-slate-300 hover:bg-slate-50" @click="showCategoryModal = false">
+              Abbrechen
+            </button>
+            <button type="submit" class="taskster_button">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Plus, X, Loader2,
+  MapPin, Users
+} from 'lucide-vue-next'
+
+const { user, authHeaders } = useAuth()
+
+// ---------------------------------------------------------------------------
+// Zustand
+// ---------------------------------------------------------------------------
+type ViewKey = 'month' | 'week' | 'day'
+const views: { key: ViewKey; label: string }[] = [
+  { key: 'month', label: 'Monat' },
+  { key: 'week', label: 'Woche' },
+  { key: 'day', label: 'Tag' }
+]
+
+const view = ref<ViewKey>('month')
+const cursor = ref(new Date())
+const selectedDate = ref(toKey(new Date()))
+const loading = ref(false)
+const events = ref<any[]>([])
+const tasks = ref<any[]>([])
+const categories = ref<any[]>([])
+const projects = ref<any[]>([])
+const members = ref<any[]>([])
+const activeCategories = ref<string[]>([])
+
+const showEventModal = ref(false)
+const editingEvent = ref<any>(null)
+const defaultDate = ref<string | null>(null)
+const defaultHour = ref<number | null>(null)
+const dayDetailKey = ref<string | null>(null)
+
+const showCategoryModal = ref(false)
+const newCategory = ref({ name: '', color: '#0891B2', company_wide: false })
+const colorChoices = ['#0891B2', '#7C3AED', '#D97706', '#059669', '#DC2626', '#2563EB', '#DB2777', '#64748B']
+
+const draggingId = ref<string | null>(null)
+const dragOverKey = ref<string | null>(null)
+
+const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+const hours = Array.from({ length: 24 }, (_, i) => i)
+
+// ---------------------------------------------------------------------------
+// Datums-Helfer
+// ---------------------------------------------------------------------------
+function toKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+const todayKey = toKey(new Date())
+
+const timeOf = (v: string) => {
+  if (!v) return ''
+  const d = new Date(String(v).replace(' ', 'T'))
+  if (isNaN(d.getTime())) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+const formatDayLong = (key: string) => {
+  const d = new Date(key + 'T00:00:00')
+  return d.toLocaleDateString('de-CH', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+}
+
+// ---------------------------------------------------------------------------
+// Zeitraum
+// ---------------------------------------------------------------------------
+const range = computed(() => {
+  const c = cursor.value
+  if (view.value === 'month') {
+    const first = new Date(c.getFullYear(), c.getMonth(), 1)
+    const last = new Date(c.getFullYear(), c.getMonth() + 1, 0)
+    // Raster beginnt am Montag der ersten Woche
+    const start = new Date(first)
+    start.setDate(first.getDate() - ((first.getDay() + 6) % 7))
+    const end = new Date(last)
+    end.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)))
+    return { start, end }
+  }
+  if (view.value === 'week') {
+    const start = new Date(c)
+    start.setDate(c.getDate() - ((c.getDay() + 6) % 7))
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    return { start, end }
+  }
+  return { start: new Date(c), end: new Date(c) }
+})
+
+const rangeLabel = computed(() => {
+  const { start, end } = range.value
+  const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'long', year: 'numeric' }
+  if (view.value === 'day') return start.toLocaleDateString('de-CH', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  if (view.value === 'month') return start.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' })
+  return `${start.toLocaleDateString('de-CH', opts)} – ${end.toLocaleDateString('de-CH', opts)}`
+})
+
+const dayLabel = computed(() => cursor.value.toLocaleDateString('de-CH', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }))
+const isToday = computed(() => toKey(cursor.value) === todayKey)
+
+// ---------------------------------------------------------------------------
+// Raster
+// ---------------------------------------------------------------------------
+const monthCells = computed(() => {
+  const { start, end } = range.value
+  const cells: any[] = []
+  const d = new Date(start)
+  while (d <= end) {
+    const key = toKey(d)
+    cells.push({
+      key,
+      day: d.getDate(),
+      inMonth: d.getMonth() === cursor.value.getMonth(),
+      events: eventsForDay(key)
+    })
+    d.setDate(d.getDate() + 1)
+  }
+  return cells
+})
+
+const weekDays = computed(() => {
+  const { start } = range.value
+  const out: any[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    out.push({
+      key: toKey(d),
+      day: d.getDate(),
+      weekday: weekdays[i]
+    })
+  }
+  return out
+})
+
+const dayEvents = computed(() => eventsForDay(selectedDate.value))
+
+const dayDetailEvents = computed(() => dayDetailKey.value ? eventsForDay(dayDetailKey.value) : [])
+
+/** Alle Termine eines Tages (Events + Aufgaben), gefiltert nach Kategorie. */
+function eventsForDay(key: string) {
+  const evs = events.value.filter((e) => String(e.start).slice(0, 10) === key)
+  const tks = tasks.value.filter((t) => String(t.start).slice(0, 10) === key)
+  const all = [...evs, ...tks]
+  if (!activeCategories.value.length) return all
+  return all.filter((e) => e.type === 'task' || activeCategories.value.includes(e.category_id))
+}
+
+// ---------------------------------------------------------------------------
+// Wochen-Positionierung
+// ---------------------------------------------------------------------------
+/** Nur Termine mit Uhrzeit kommen ins Stundenraster. */
+function timedEventsForDay(key: string) {
+  return eventsForDay(key).filter((e) => !e.allDay)
+}
+
+/** Ganztägige Termine je Wochentag (eigene Zeile). */
+const weekAllDay = computed(() =>
+  weekDays.value.map((d) => ({
+    key: d.key,
+    items: eventsForDay(d.key).filter((e) => e.allDay)
+  }))
+)
+
+function weekEventStyle(ev: any) {
+  const start = new Date(String(ev.start).replace(' ', 'T'))
+  const end = new Date(String(ev.end).replace(' ', 'T'))
+  const startMin = start.getHours() * 60 + start.getMinutes()
+  const endMin = end.getHours() * 60 + end.getMinutes()
+  const top = (startMin / 60) * 56 // h-14 = 56px
+  const height = Math.max(((endMin - startMin) / 60) * 56, 22)
+  return {
+    top: top + 'px',
+    height: height + 'px',
+    backgroundColor: ev.color + '22',
+    color: ev.color,
+    borderLeft: '3px solid ' + ev.color
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Drag & Drop
+// ---------------------------------------------------------------------------
+function onDragStart(ev: any, e: DragEvent) {
+  if (!ev.editable) {
+    e.preventDefault()
+    return
+  }
+  draggingId.value = ev.id
+  e.dataTransfer?.setData('text/plain', ev.id)
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragEnd() {
+  draggingId.value = null
+  dragOverKey.value = null
+}
+
+function onDragOver(cell: any) {
+  if (draggingId.value) dragOverKey.value = cell.key
+}
+
+function onDragLeave(cell: any) {
+  if (dragOverKey.value === cell.key) dragOverKey.value = null
+}
+
+/** Verschiebt einen Termin auf einen anderen Tag (Zeit bleibt erhalten). */
+async function onDrop(cell: any) {
+  const id = draggingId.value
+  dragOverKey.value = null
+  draggingId.value = null
+  if (!id) return
+
+  const ev = events.value.find((e) => e.id === id)
+  if (!ev || !ev.editable) return
+
+  const oldKey = String(ev.start).slice(0, 10)
+  if (oldKey === cell.key) return
+
+  const start = new Date(String(ev.start).replace(' ', 'T'))
+  const end = new Date(String(ev.end).replace(' ', 'T'))
+  const dayDiff = Math.round(
+    (new Date(cell.key + 'T00:00:00').getTime() - new Date(oldKey + 'T00:00:00').getTime()) / 86400000
+  )
+  start.setDate(start.getDate() + dayDiff)
+  end.setDate(end.getDate() + dayDiff)
+
+  await moveEvent(ev, fmt(start), fmt(end))
+}
+
+/** Verschiebt einen Termin auf Tag + Stunde (Wochenansicht). */
+async function onDropAt(dayKey: string, hour: number) {
+  const id = draggingId.value
+  dragOverKey.value = null
+  draggingId.value = null
+  if (!id) return
+
+  const ev = events.value.find((e) => e.id === id)
+  if (!ev || !ev.editable) return
+
+  const oldStart = new Date(String(ev.start).replace(' ', 'T'))
+  const oldEnd = new Date(String(ev.end).replace(' ', 'T'))
+  const durationMs = oldEnd.getTime() - oldStart.getTime()
+
+  const newStart = new Date(dayKey + 'T00:00:00')
+  newStart.setHours(hour, 0, 0, 0)
+  const newEnd = new Date(newStart.getTime() + durationMs)
+
+  await moveEvent(ev, fmt(newStart), fmt(newEnd))
+}
+
+function fmt(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:00`
+}
+
+/** Optimistisches Update + API-Aufruf. */
+async function moveEvent(ev: any, startAt: string, endAt: string) {
+  const prevStart = ev.start
+  const prevEnd = ev.end
+  ev.start = startAt
+  ev.end = endAt
+
+  try {
+    await $fetch(`/api/events/${ev.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { start_at: startAt, end_at: endAt }
+    })
+  } catch (err: any) {
+    ev.start = prevStart
+    ev.end = prevEnd
+    alert(err?.data?.statusMessage || 'Termin konnte nicht verschoben werden')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Modal-Steuerung
+// ---------------------------------------------------------------------------
+function openCreate(dayKey?: string, hour?: number) {
+  editingEvent.value = null
+  defaultDate.value = dayKey || selectedDate.value
+  defaultHour.value = hour ?? null
+  showEventModal.value = true
+}
+
+function openEdit(ev: any) {
+  if (ev.type === 'task') {
+    navigateTo(`/projects/${ev.project_id}?task=${ev.task_id}`)
+    return
+  }
+  editingEvent.value = ev
+  defaultDate.value = null
+  defaultHour.value = null
+  showEventModal.value = true
+}
+
+function openDayDetail(key: string) {
+  dayDetailKey.value = key
+}
+
+async function onEventSaved() {
+  showEventModal.value = false
+  await loadEvents()
+}
+
+async function onEventDeleted() {
+  showEventModal.value = false
+  await loadEvents()
+}
+
+// ---------------------------------------------------------------------------
+// Kategorien
+// ---------------------------------------------------------------------------
+function toggleCategory(id: string) {
+  const i = activeCategories.value.indexOf(id)
+  if (i === -1) activeCategories.value.push(id)
+  else activeCategories.value.splice(i, 1)
+}
+
+async function createCategory() {
+  try {
+    await $fetch('/api/event-categories', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: newCategory.value
+    })
+    showCategoryModal.value = false
+    newCategory.value = { name: '', color: '#0891B2', company_wide: false }
+    await loadCategories()
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || 'Kategorie konnte nicht erstellt werden')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Badges
+// ---------------------------------------------------------------------------
+const statusClass = (s: string) => ({
+  'bg-emerald-50 text-emerald-700 border border-emerald-200': s === 'accepted',
+  'bg-rose-50 text-rose-700 border border-rose-200': s === 'declined',
+  'bg-amber-50 text-amber-700 border border-amber-200': s === 'tentative',
+  'bg-slate-100 text-slate-600 border border-slate-200': s === 'pending'
+})
+
+const statusLabel = (s: string) =>
+  ({ accepted: 'Zugesagt', declined: 'Abgesagt', tentative: 'Vorbehalt', pending: 'Offen' } as any)[s] || s
+
+function eventTooltip(ev: any) {
+  const parts = [ev.title]
+  if (!ev.allDay) parts.push(`${timeOf(ev.start)}–${timeOf(ev.end)}`)
+  if (ev.location) parts.push(ev.location)
+  if (ev.category_name) parts.push(ev.category_name)
+  if (ev.attendee_count > 1) parts.push(`${ev.attendee_count} Teilnehmer`)
+  return parts.join(' · ')
+}
+
+// ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+function shift(delta: number) {
+  const c = new Date(cursor.value)
+  if (view.value === 'month') c.setMonth(c.getMonth() + delta)
+  else if (view.value === 'week') c.setDate(c.getDate() + delta * 7)
+  else c.setDate(c.getDate() + delta)
+  cursor.value = c
+  selectedDate.value = toKey(c)
+  loadEvents()
+}
+
+function goToday() {
+  cursor.value = new Date()
+  selectedDate.value = todayKey
+  loadEvents()
+}
+
+// ---------------------------------------------------------------------------
+// Daten laden
+// ---------------------------------------------------------------------------
+async function loadEvents() {
+  loading.value = true
+  try {
+    const { start, end } = range.value
+    const res = await $fetch<any>('/api/events', {
+      headers: authHeaders(),
+      params: { from: toKey(start), to: toKey(end) }
+    })
+    events.value = res.events || []
+    tasks.value = res.tasks || []
+  } catch {
+    events.value = []
+    tasks.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadCategories() {
+  try {
+    const res = await $fetch<any>('/api/event-categories', { headers: authHeaders() })
+    categories.value = res.categories || []
+  } catch {
+    categories.value = []
+  }
+}
+
+async function loadProjects() {
+  try {
+    const res = await $fetch<any>('/api/projects', { headers: authHeaders() })
+    projects.value = res.projects || []
+  } catch {
+    projects.value = []
+  }
+}
+
+async function loadMembers() {
+  try {
+    const res = await $fetch<any>('/api/companies/members', { headers: authHeaders() })
+    members.value = res.members || []
+  } catch {
+    members.value = []
+  }
+}
+
+onMounted(async () => {
+  if (!user.value) {
+    const { initAuth } = useAuth()
+    await initAuth()
+  }
+  await Promise.all([loadEvents(), loadCategories(), loadProjects(), loadMembers()])
+})
+
+watch(view, () => loadEvents())
+</script>

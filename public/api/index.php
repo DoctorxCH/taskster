@@ -158,6 +158,118 @@ function ensureTables($pdo) {
               INDEX idx_contacts_group (category_group)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+
+        // --- Kalender / Termine ---
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS event_categories (
+              id VARCHAR(64) PRIMARY KEY,
+              company_id VARCHAR(64) NULL,
+              owner_id VARCHAR(64) NULL,
+              name VARCHAR(255) NOT NULL,
+              color VARCHAR(16) NOT NULL DEFAULT '#0891B2',
+              icon VARCHAR(64) DEFAULT 'Calendar',
+              is_system TINYINT(1) NOT NULL DEFAULT 0,
+              sort_order INT NOT NULL DEFAULT 0,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_evtcat_company (company_id),
+              INDEX idx_evtcat_owner (owner_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS calendar_events (
+              id VARCHAR(64) PRIMARY KEY,
+              owner_id VARCHAR(64) NOT NULL,
+              company_id VARCHAR(64) NULL,
+              project_id VARCHAR(64) NULL,
+              task_id VARCHAR(64) NULL,
+              category_id VARCHAR(64) NULL,
+              title VARCHAR(512) NOT NULL,
+              description TEXT NULL,
+              location VARCHAR(512) NULL,
+              start_at DATETIME NOT NULL,
+              end_at DATETIME NOT NULL,
+              all_day TINYINT(1) NOT NULL DEFAULT 0,
+              priority VARCHAR(32) NOT NULL DEFAULT 'normal',
+              status VARCHAR(32) NOT NULL DEFAULT 'confirmed',
+              visibility VARCHAR(32) NOT NULL DEFAULT 'private',
+              color VARCHAR(16) NULL,
+              recurrence TEXT NULL,
+              reminder_minutes INT NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              INDEX idx_evt_owner (owner_id),
+              INDEX idx_evt_company (company_id),
+              INDEX idx_evt_project (project_id),
+              INDEX idx_evt_start (start_at),
+              INDEX idx_evt_category (category_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS event_attendees (
+              id VARCHAR(64) PRIMARY KEY,
+              event_id VARCHAR(64) NOT NULL,
+              user_id VARCHAR(64) NULL,
+              email VARCHAR(255) NOT NULL,
+              name VARCHAR(255) NULL,
+              role VARCHAR(32) NOT NULL DEFAULT 'required',
+              status VARCHAR(32) NOT NULL DEFAULT 'pending',
+              is_organizer TINYINT(1) NOT NULL DEFAULT 0,
+              responded_at DATETIME NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE KEY uniq_event_email (event_id, email),
+              INDEX idx_att_event (event_id),
+              INDEX idx_att_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS event_reminders (
+              id VARCHAR(64) PRIMARY KEY,
+              event_id VARCHAR(64) NOT NULL,
+              user_id VARCHAR(64) NOT NULL,
+              minutes_before INT NOT NULL DEFAULT 15,
+              sent_at DATETIME NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_rem_event (event_id),
+              INDEX idx_rem_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS email_outbox (
+              id VARCHAR(64) PRIMARY KEY,
+              to_email VARCHAR(255) NOT NULL,
+              to_name VARCHAR(255) NULL,
+              subject VARCHAR(512) NOT NULL,
+              body TEXT NOT NULL,
+              ics_content MEDIUMTEXT NULL,
+              status VARCHAR(32) NOT NULL DEFAULT 'pending',
+              error TEXT NULL,
+              attempts INT NOT NULL DEFAULT 0,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              sent_at DATETIME NULL,
+              INDEX idx_outbox_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Standard-Kategorien einmalig anlegen
+        $catCount = (int)$pdo->query("SELECT COUNT(*) FROM event_categories WHERE is_system = 1")->fetchColumn();
+        if ($catCount === 0) {
+            $defaults = [
+                ['cat_meeting', 'Besprechung', '#0891B2', 'Users', 1],
+                ['cat_site', 'Baustelle', '#D97706', 'HardHat', 2],
+                ['cat_deadline', 'Frist / Termin', '#DC2626', 'AlertTriangle', 3],
+                ['cat_travel', 'Reise / Fahrt', '#7C3AED', 'Car', 4],
+                ['cat_vacation', 'Ferien / Abwesenheit', '#059669', 'Palmtree', 5],
+                ['cat_training', 'Schulung', '#2563EB', 'GraduationCap', 6],
+                ['cat_private', 'Privat', '#64748B', 'Home', 7],
+            ];
+            $ins = $pdo->prepare("
+                INSERT INTO event_categories (id, company_id, owner_id, name, color, icon, is_system, sort_order)
+                VALUES (?, NULL, NULL, ?, ?, ?, 1, ?)
+            ");
+            foreach ($defaults as $d) {
+                try { $ins->execute($d); } catch (Exception $e) {}
+            }
+        }
     } catch (Exception $e) {
         // Continue if table exists or migration done
     }
@@ -643,8 +755,155 @@ function callOpenRouter($messages, $overrides = []) {
     ];
 }
 
-function getAuthUser() {
-    global $jwtSecret;
+// ---------------------------------------------------------------------------
+// KALENDER / TERMINE (ICS-Export, E-Mail-Outbox)
+// ---------------------------------------------------------------------------
+
+/** Formatiert ein Datum als ICS-Zeitstempel (UTC). */
+function toIcsDate($value) {
+    $ts = strtotime(str_replace('T', ' ', (string)$value));
+    if ($ts === false) return '';
+    return gmdate('Ymd\THis\Z', $ts);
+}
+
+/** Formatiert ein Datum als ICS-Ganztag (YYYYMMDD). */
+function toIcsDateOnly($value) {
+    $ts = strtotime(str_replace('T', ' ', (string)$value));
+    if ($ts === false) return '';
+    return gmdate('Ymd', $ts);
+}
+
+/** Escaped Sonderzeichen fuer ICS-Texte. */
+function icsEscape($text) {
+    $text = str_replace('\\', '\\\\', (string)$text);
+    $text = str_replace(';', '\\;', $text);
+    $text = str_replace(',', '\\,', $text);
+    return str_replace(["\r\n", "\n"], '\\n', $text);
+}
+
+/** Faltet lange Zeilen nach RFC 5545. */
+function icsFold($line) {
+    if (strlen($line) <= 75) return $line;
+    $out = substr($line, 0, 75);
+    $rest = substr($line, 75);
+    while (strlen($rest) > 0) {
+        $out .= "\r\n " . substr($rest, 0, 74);
+        $rest = substr($rest, 74);
+    }
+    return $out;
+}
+
+/**
+ * Erzeugt eine ICS-Datei.
+ * $method: REQUEST (Einladung), CANCEL (Absage), PUBLISH (Export)
+ */
+function buildIcs($evt, $attendees = [], $method = 'REQUEST', $sequence = 0) {
+    $allDay = !empty($evt['all_day']);
+    $lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Taskster//Kalender//DE',
+        'CALSCALE:GREGORIAN',
+        'METHOD:' . $method,
+        'BEGIN:VEVENT',
+        'UID:' . $evt['id'] . '@taskster',
+        'DTSTAMP:' . toIcsDate(date('Y-m-d H:i:s'))
+    ];
+
+    if ($allDay) {
+        $lines[] = 'DTSTART;VALUE=DATE:' . toIcsDateOnly($evt['start_at']);
+        $endTs = strtotime(str_replace('T', ' ', $evt['end_at']));
+        $lines[] = 'DTEND;VALUE=DATE:' . gmdate('Ymd', $endTs + 86400);
+    } else {
+        $lines[] = 'DTSTART:' . toIcsDate($evt['start_at']);
+        $lines[] = 'DTEND:' . toIcsDate($evt['end_at']);
+    }
+
+    $lines[] = icsFold('SUMMARY:' . icsEscape($evt['title']));
+    if (!empty($evt['description'])) $lines[] = icsFold('DESCRIPTION:' . icsEscape($evt['description']));
+    if (!empty($evt['location'])) $lines[] = icsFold('LOCATION:' . icsEscape($evt['location']));
+
+    $lines[] = 'STATUS:' . (($evt['status'] ?? '') === 'cancelled' ? 'CANCELLED' : 'CONFIRMED');
+    $lines[] = 'SEQUENCE:' . (int)$sequence;
+
+    if (!empty($evt['owner_email'])) {
+        $cn = !empty($evt['owner_name']) ? ';CN=' . icsEscape($evt['owner_name']) : '';
+        $lines[] = icsFold('ORGANIZER' . $cn . ':mailto:' . $evt['owner_email']);
+    }
+
+    foreach ($attendees as $a) {
+        $cn = !empty($a['name']) ? ';CN=' . icsEscape($a['name']) : '';
+        $st = $a['status'] ?? 'pending';
+        $partstat = $st === 'accepted' ? 'ACCEPTED' : ($st === 'declined' ? 'DECLINED' : ($st === 'tentative' ? 'TENTATIVE' : 'NEEDS-ACTION'));
+        $lines[] = icsFold('ATTENDEE' . $cn . ';PARTSTAT=' . $partstat . ';ROLE=REQ-PARTICIPANT:mailto:' . $a['email']);
+    }
+
+    $lines[] = 'END:VEVENT';
+    $lines[] = 'END:VCALENDAR';
+    return implode("\r\n", $lines);
+}
+
+/** Erzeugt den Text einer Einladungs-Mail. */
+function buildInviteBody($organizerName, $title, $startAt, $endAt, $location = null, $description = null, $allDay = false) {
+    $fmt = function ($v) {
+        $ts = strtotime(str_replace('T', ' ', (string)$v));
+        return $ts === false ? $v : date('d.m.Y H:i', $ts);
+    };
+    $lines = [
+        $organizerName . ' lädt dich zu einem Termin ein:',
+        '',
+        'Betreff:  ' . $title,
+        'Beginn:   ' . $fmt($startAt) . ($allDay ? ' (ganztägig)' : ''),
+        'Ende:     ' . $fmt($endAt) . ($allDay ? ' (ganztägig)' : '')
+    ];
+    if ($location) $lines[] = 'Ort:      ' . $location;
+    if ($description) { $lines[] = ''; $lines[] = 'Beschreibung:'; $lines[] = $description; }
+    $lines[] = '';
+    $lines[] = 'Die angehängte Datei (termin.ics) kannst du direkt in Outlook, Google Kalender';
+    $lines[] = 'oder Apple Kalender öffnen, um den Termin zu übernehmen.';
+    $lines[] = '';
+    $lines[] = '— Taskster';
+    return implode("\n", $lines);
+}
+
+/** Legt eine E-Mail in die Outbox (Versand spaeter per Cron/Worker). */
+function queueEmail($to, $toName, $subject, $body, $ics = null) {
+    try {
+        $db = getDb();
+        $id = 'mail_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("
+            INSERT INTO email_outbox (id, to_email, to_name, subject, body, ics_content, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        ")->execute([$id, $to, $toName, $subject, $body, $ics]);
+        return $id;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/** Prueft, ob der Nutzer einen Termin sehen darf. */
+function canAccessEvent($user, $evt) {
+    if (!$evt) return false;
+    if ($evt['owner_id'] === $user['id']) return true;
+    if (!empty($user['is_superadmin'])) return true;
+    $db = getDb();
+    $s = $db->prepare("SELECT 1 FROM event_attendees WHERE event_id = ? AND (user_id = ? OR LOWER(email) = LOWER(?))");
+    $s->execute([$evt['id'], $user['id'], $user['email']]);
+    if ($s->fetchColumn()) return true;
+    if (($evt['visibility'] ?? '') === 'company' && !empty($evt['company_id']) && $evt['company_id'] === ($user['company_id'] ?? null)) {
+        return true;
+    }
+    return false;
+}
+
+/** Prueft, ob der Nutzer einen Termin bearbeiten darf. */
+function canEditEvent($user, $evt) {
+    if (!$evt) return false;
+    if ($evt['owner_id'] === $user['id']) return true;
+    return !empty($user['is_superadmin']);
+}
+
+function getAuthUser() {    global $jwtSecret;
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     if (!preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
@@ -3224,6 +3483,453 @@ try {
             'year' => $year, 'month' => $month, 'today' => $today,
             'total' => count($rows), 'days' => $days
         ]);
+    }
+
+    // ==========================================
+    // KALENDER-TERMINE (Events CRUD + Einladungen)
+    // ==========================================
+
+    // EVT-1. GET events?from=&to=&project_id=&category_id=
+    if ($path === 'events' && $method === 'GET') {
+        $user = requireAuth();
+        $from = substr($_GET['from'] ?? '', 0, 10);
+        $to = substr($_GET['to'] ?? '', 0, 10);
+        if (!$from || !$to) errorResponse('from und to sind erforderlich', 400);
+
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+        $uid = $user['id'];
+
+        $sql = "
+            SELECT e.*,
+                   c.name AS category_name, c.color AS category_color, c.icon AS category_icon,
+                   u.name AS owner_name, u.email AS owner_email,
+                   p.title AS project_title,
+                   (SELECT COUNT(*) FROM event_attendees a WHERE a.event_id = e.id) AS attendee_count
+            FROM calendar_events e
+            LEFT JOIN event_categories c ON c.id = e.category_id
+            LEFT JOIN users u ON u.id = e.owner_id
+            LEFT JOIN projects p ON p.id = e.project_id
+            WHERE e.start_at <= ? AND e.end_at >= ?
+              AND (
+                e.owner_id = ?
+                OR (e.visibility = 'company' AND e.company_id = ?)
+                OR EXISTS (SELECT 1 FROM event_attendees a WHERE a.event_id = e.id AND (a.user_id = ? OR LOWER(a.email) = LOWER(?)))
+              )
+        ";
+        $params = [$to . ' 23:59:59', $from . ' 00:00:00', $uid, $companyId, $uid, $user['email']];
+
+        if (!empty($_GET['project_id'])) { $sql .= " AND e.project_id = ?"; $params[] = $_GET['project_id']; }
+        if (!empty($_GET['category_id'])) { $sql .= " AND e.category_id = ?"; $params[] = $_GET['category_id']; }
+        $sql .= " ORDER BY e.start_at ASC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $events = [];
+        foreach ($rows as $e) {
+            $aStmt = $db->prepare("SELECT id, user_id, email, name, role, status, is_organizer FROM event_attendees WHERE event_id = ? ORDER BY is_organizer DESC, name ASC");
+            $aStmt->execute([$e['id']]);
+            $attendees = $aStmt->fetchAll();
+
+            $myStatus = null;
+            foreach ($attendees as $a) {
+                if ($a['user_id'] === $uid || strtolower($a['email']) === strtolower($user['email'])) {
+                    $myStatus = $a['status'];
+                    break;
+                }
+            }
+
+            $events[] = [
+                'id' => $e['id'], 'type' => 'event', 'title' => $e['title'],
+                'description' => $e['description'], 'location' => $e['location'],
+                'start' => $e['start_at'], 'end' => $e['end_at'],
+                'allDay' => (bool)$e['all_day'], 'priority' => $e['priority'],
+                'status' => $e['status'], 'visibility' => $e['visibility'],
+                'color' => $e['color'] ?: ($e['category_color'] ?: '#0891B2'),
+                'category_id' => $e['category_id'], 'category_name' => $e['category_name'],
+                'category_icon' => $e['category_icon'],
+                'project_id' => $e['project_id'], 'project_title' => $e['project_title'],
+                'owner_id' => $e['owner_id'], 'owner_name' => $e['owner_name'],
+                'is_organizer' => $e['owner_id'] === $uid,
+                'my_status' => $myStatus,
+                'attendee_count' => (int)$e['attendee_count'],
+                'attendees' => $attendees,
+                'editable' => $e['owner_id'] === $uid || !empty($user['is_superadmin'])
+            ];
+        }
+
+        // Aufgaben mit Faelligkeit (schreibgeschuetzt)
+        $tStmt = $db->prepare("
+            SELECT t.id, t.title, t.due_date, t.status, t.priority,
+                   p.id AS project_id, p.title AS project_title
+            FROM tasks t
+            JOIN lists l ON l.id = t.list_id
+            JOIN projects p ON p.id = l.project_id
+            JOIN project_folders pf ON pf.id = p.folder_id
+            WHERE t.due_date IS NOT NULL AND t.due_date >= ? AND t.due_date <= ?
+              AND (
+                pf.owner_id = ?
+                OR p.id IN (SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?)
+                OR (pf.company_id IS NOT NULL AND pf.company_id = ? AND pf.visibility = 'company')
+              )
+            ORDER BY t.due_date ASC
+        ");
+        $tStmt->execute([$from, $to, $uid, $uid, $companyId]);
+        $tasks = [];
+        foreach ($tStmt->fetchAll() as $t) {
+            $tasks[] = [
+                'id' => 'task_' . $t['id'], 'task_id' => $t['id'], 'type' => 'task',
+                'title' => $t['title'], 'start' => $t['due_date'], 'end' => $t['due_date'],
+                'allDay' => true, 'status' => $t['status'], 'priority' => $t['priority'],
+                'color' => $t['status'] === 'done' ? '#059669' : '#64748B',
+                'project_id' => $t['project_id'], 'project_title' => $t['project_title'],
+                'editable' => false
+            ];
+        }
+
+        jsonResponse(['events' => $events, 'tasks' => $tasks, 'from' => $from, 'to' => $to]);
+    }
+
+    // EVT-2. POST events (Termin erstellen + Einladungen)
+    if ($path === 'events' && $method === 'POST') {
+        $user = requireAuth();
+        $title = trim($body['title'] ?? '');
+        $startAt = trim($body['start_at'] ?? '');
+        $endAt = trim($body['end_at'] ?? '');
+
+        if (!$title) errorResponse('Betreff erforderlich', 400);
+        if (!$startAt || !$endAt) errorResponse('Start und Ende erforderlich', 400);
+        if ($endAt < $startAt) errorResponse('Ende darf nicht vor dem Start liegen', 400);
+
+        $id = 'evt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $allDay = !empty($body['all_day']) ? 1 : 0;
+        $priority = in_array($body['priority'] ?? '', ['niedrig', 'normal', 'hoch', 'dringend'], true) ? $body['priority'] : 'normal';
+        $visibility = in_array($body['visibility'] ?? '', ['private', 'company'], true) ? $body['visibility'] : 'private';
+
+        $db->prepare("
+            INSERT INTO calendar_events
+              (id, owner_id, company_id, project_id, category_id, title, description, location,
+               start_at, end_at, all_day, priority, status, visibility, color, reminder_minutes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)
+        ")->execute([
+            $id, $user['id'], $user['company_id'] ?? null,
+            $body['project_id'] ?? null, $body['category_id'] ?? null,
+            $title, $body['description'] ?? null, $body['location'] ?? null,
+            $startAt, $endAt, $allDay, $priority, $visibility,
+            $body['color'] ?? null,
+            isset($body['reminder_minutes']) ? (int)$body['reminder_minutes'] : null
+        ]);
+
+        // Organisator
+        $db->prepare("
+            INSERT INTO event_attendees (id, event_id, user_id, email, name, role, status, is_organizer)
+            VALUES (?, ?, ?, ?, ?, 'required', 'accepted', 1)
+        ")->execute(['att_' . substr(bin2hex(random_bytes(6)), 0, 8), $id, $user['id'], $user['email'], $user['name']]);
+
+        // Teilnehmer einladen
+        $invited = [];
+        $attendees = is_array($body['attendees'] ?? null) ? $body['attendees'] : [];
+        foreach ($attendees as $a) {
+            $email = strtolower(trim($a['email'] ?? ''));
+            if (!$email || $email === strtolower($user['email'])) continue;
+
+            $uStmt = $db->prepare("SELECT id, name FROM users WHERE LOWER(email) = ?");
+            $uStmt->execute([$email]);
+            $existing = $uStmt->fetch();
+            $name = $a['name'] ?? ($existing['name'] ?? null);
+            $role = in_array($a['role'] ?? '', ['required', 'optional'], true) ? $a['role'] : 'required';
+
+            try {
+                $db->prepare("
+                    INSERT INTO event_attendees (id, event_id, user_id, email, name, role, status, is_organizer)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending', 0)
+                ")->execute(['att_' . substr(bin2hex(random_bytes(6)), 0, 8), $id, $existing['id'] ?? null, $email, $name, $role]);
+            } catch (Exception $e) {
+                continue;
+            }
+
+            $invited[] = ['email' => $email, 'name' => $name, 'user_id' => $existing['id'] ?? null];
+
+            if (!empty($existing['id'])) {
+                createNotification($existing['id'], 'calendar_invite', 'Einladung: ' . $title, $user['name'] . ' lädt dich ein – ' . $startAt, 'event', $id);
+            }
+        }
+
+        // E-Mail-Einladungen
+        if (!empty($invited)) {
+            $evtForIcs = [
+                'id' => $id, 'title' => $title, 'description' => $body['description'] ?? null,
+                'location' => $body['location'] ?? null, 'start_at' => $startAt, 'end_at' => $endAt,
+                'all_day' => $allDay, 'owner_name' => $user['name'], 'owner_email' => $user['email'],
+                'status' => 'confirmed'
+            ];
+            $ics = buildIcs($evtForIcs, $invited, 'REQUEST');
+            $mailBody = buildInviteBody($user['name'], $title, $startAt, $endAt, $body['location'] ?? null, $body['description'] ?? null, (bool)$allDay);
+
+            foreach ($invited as $i) {
+                queueEmail($i['email'], $i['name'], 'Einladung: ' . $title, $mailBody, $ics);
+            }
+        }
+
+        jsonResponse([
+            'success' => true, 'id' => $id, 'invited' => count($invited),
+            'message' => count($invited) > 0
+                ? 'Termin erstellt, ' . count($invited) . ' Einladung(en) versandt.'
+                : 'Termin erstellt.'
+        ]);
+    }
+
+    // EVT-3. PUT events/:id (auch Drag & Drop)
+    if (preg_match('#^events/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $id = $m[1];
+
+        $eStmt = $db->prepare("SELECT * FROM calendar_events WHERE id = ?");
+        $eStmt->execute([$id]);
+        $existing = $eStmt->fetch();
+        if (!$existing) errorResponse('Termin nicht gefunden', 404);
+        // Zero-Trust: fehlende Berechtigung = "nicht gefunden" (kein Info-Leak)
+        if (!canEditEvent($user, $existing)) errorResponse('Termin nicht gefunden', 404);
+
+        $title = isset($body['title']) ? trim($body['title']) : $existing['title'];
+        $startAt = isset($body['start_at']) ? $body['start_at'] : $existing['start_at'];
+        $endAt = isset($body['end_at']) ? $body['end_at'] : $existing['end_at'];
+        if (!$title) errorResponse('Betreff erforderlich', 400);
+        if ($endAt < $startAt) errorResponse('Ende darf nicht vor dem Start liegen', 400);
+
+        $timeChanged = ($startAt !== $existing['start_at'] || $endAt !== $existing['end_at']);
+
+        $db->prepare("
+            UPDATE calendar_events SET
+              title = ?, description = ?, location = ?, start_at = ?, end_at = ?,
+              all_day = ?, priority = ?, visibility = ?, category_id = ?, project_id = ?,
+              color = ?, reminder_minutes = ?, updated_at = NOW()
+            WHERE id = ?
+        ")->execute([
+            $title,
+            $body['description'] ?? $existing['description'],
+            $body['location'] ?? $existing['location'],
+            $startAt, $endAt,
+            isset($body['all_day']) ? (!empty($body['all_day']) ? 1 : 0) : $existing['all_day'],
+            $body['priority'] ?? $existing['priority'],
+            $body['visibility'] ?? $existing['visibility'],
+            $body['category_id'] ?? $existing['category_id'],
+            $body['project_id'] ?? $existing['project_id'],
+            $body['color'] ?? $existing['color'],
+            $body['reminder_minutes'] ?? $existing['reminder_minutes'],
+            $id
+        ]);
+
+        // Teilnehmer aktualisieren
+        if (is_array($body['attendees'] ?? null)) {
+            $keep = [strtolower($user['email'])];
+            $newInvites = [];
+            foreach ($body['attendees'] as $a) {
+                $email = strtolower(trim($a['email'] ?? ''));
+                if (!$email) continue;
+                $keep[] = $email;
+
+                $chk = $db->prepare("SELECT id FROM event_attendees WHERE event_id = ? AND LOWER(email) = ?");
+                $chk->execute([$id, $email]);
+                $att = $chk->fetch();
+
+                if ($att) {
+                    $db->prepare("UPDATE event_attendees SET role = ?, name = COALESCE(?, name) WHERE id = ?")
+                        ->execute([($a['role'] ?? '') === 'optional' ? 'optional' : 'required', $a['name'] ?? null, $att['id']]);
+                } else {
+                    $uStmt = $db->prepare("SELECT id, name FROM users WHERE LOWER(email) = ?");
+                    $uStmt->execute([$email]);
+                    $u = $uStmt->fetch();
+                    $db->prepare("
+                        INSERT INTO event_attendees (id, event_id, user_id, email, name, role, status, is_organizer)
+                        VALUES (?, ?, ?, ?, ?, ?, 'pending', 0)
+                    ")->execute(['att_' . substr(bin2hex(random_bytes(6)), 0, 8), $id, $u['id'] ?? null, $email, $a['name'] ?? ($u['name'] ?? null), ($a['role'] ?? '') === 'optional' ? 'optional' : 'required']);
+                    $newInvites[] = ['email' => $email, 'name' => $a['name'] ?? ($u['name'] ?? null), 'user_id' => $u['id'] ?? null];
+                }
+            }
+
+            // Entfernte loeschen
+            $allStmt = $db->prepare("SELECT id, email, is_organizer FROM event_attendees WHERE event_id = ?");
+            $allStmt->execute([$id]);
+            foreach ($allStmt->fetchAll() as $a) {
+                if (!empty($a['is_organizer'])) continue;
+                if (!in_array(strtolower($a['email']), $keep, true)) {
+                    $db->prepare("DELETE FROM event_attendees WHERE id = ?")->execute([$a['id']]);
+                }
+            }
+
+            // Neue benachrichtigen
+            foreach ($newInvites as $i) {
+                if (!empty($i['user_id'])) {
+                    createNotification($i['user_id'], 'calendar_invite', 'Einladung: ' . $title, $user['name'] . ' lädt dich ein – ' . $startAt, 'event', $id);
+                }
+                $evtForIcs = [
+                    'id' => $id, 'title' => $title, 'description' => $body['description'] ?? $existing['description'],
+                    'location' => $body['location'] ?? $existing['location'], 'start_at' => $startAt, 'end_at' => $endAt,
+                    'all_day' => $body['all_day'] ?? $existing['all_day'], 'owner_name' => $user['name'],
+                    'owner_email' => $user['email'], 'status' => 'confirmed'
+                ];
+                queueEmail($i['email'], $i['name'], 'Einladung: ' . $title,
+                    buildInviteBody($user['name'], $title, $startAt, $endAt, $body['location'] ?? $existing['location'], $body['description'] ?? $existing['description'], (bool)($body['all_day'] ?? $existing['all_day'])),
+                    buildIcs($evtForIcs, [$i], 'REQUEST'));
+            }
+        }
+
+        // Bei Zeitänderung alle benachrichtigen
+        if ($timeChanged) {
+            $aStmt = $db->prepare("SELECT email, name, user_id FROM event_attendees WHERE event_id = ? AND is_organizer = 0");
+            $aStmt->execute([$id]);
+            $attendees = $aStmt->fetchAll();
+
+            $evtForIcs = [
+                'id' => $id, 'title' => $title, 'description' => $body['description'] ?? $existing['description'],
+                'location' => $body['location'] ?? $existing['location'], 'start_at' => $startAt, 'end_at' => $endAt,
+                'all_day' => $body['all_day'] ?? $existing['all_day'], 'owner_name' => $user['name'],
+                'owner_email' => $user['email'], 'status' => 'confirmed'
+            ];
+            $ics = buildIcs($evtForIcs, $attendees, 'REQUEST', 1);
+
+            foreach ($attendees as $a) {
+                if (!empty($a['user_id'])) {
+                    createNotification($a['user_id'], 'calendar_update', 'Termin verschoben: ' . $title, 'Neuer Zeitpunkt: ' . $startAt, 'event', $id);
+                }
+                queueEmail($a['email'], $a['name'], 'Termin verschoben: ' . $title,
+                    buildInviteBody($user['name'], $title, $startAt, $endAt, $body['location'] ?? $existing['location'], $body['description'] ?? $existing['description'], (bool)($body['all_day'] ?? $existing['all_day'])),
+                    $ics);
+            }
+        }
+
+        jsonResponse(['success' => true, 'timeChanged' => $timeChanged]);
+    }
+
+    // EVT-4. DELETE events/:id
+    if (preg_match('#^events/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $id = $m[1];
+
+        $eStmt = $db->prepare("SELECT * FROM calendar_events WHERE id = ?");
+        $eStmt->execute([$id]);
+        $existing = $eStmt->fetch();
+        if (!$existing) errorResponse('Termin nicht gefunden', 404);
+        // Zero-Trust: fehlende Berechtigung = "nicht gefunden" (kein Info-Leak)
+        if (!canEditEvent($user, $existing)) errorResponse('Termin nicht gefunden', 404);
+
+        $aStmt = $db->prepare("SELECT email, name, user_id FROM event_attendees WHERE event_id = ? AND is_organizer = 0");
+        $aStmt->execute([$id]);
+        $attendees = $aStmt->fetchAll();
+
+        if (!empty($attendees)) {
+            $evtForIcs = [
+                'id' => $id, 'title' => $existing['title'], 'description' => $existing['description'],
+                'location' => $existing['location'], 'start_at' => $existing['start_at'],
+                'end_at' => $existing['end_at'], 'all_day' => $existing['all_day'],
+                'owner_name' => $user['name'], 'owner_email' => $user['email'], 'status' => 'cancelled'
+            ];
+            $ics = buildIcs($evtForIcs, $attendees, 'CANCEL', 2);
+
+            foreach ($attendees as $a) {
+                if (!empty($a['user_id'])) {
+                    createNotification($a['user_id'], 'calendar_cancel', 'Termin abgesagt: ' . $existing['title'], $user['name'] . ' hat den Termin abgesagt.', 'event', $id);
+                }
+                queueEmail($a['email'], $a['name'], 'Termin abgesagt: ' . $existing['title'],
+                    $user['name'] . ' hat den Termin "' . $existing['title'] . '" abgesagt.' . "\n\nBeginn war: " . $existing['start_at'] . "\n\n— Taskster",
+                    $ics);
+            }
+        }
+
+        $db->prepare("DELETE FROM calendar_events WHERE id = ?")->execute([$id]);
+        jsonResponse(['success' => true, 'notified' => count($attendees)]);
+    }
+
+    // EVT-5. POST events/:id/respond (Zusage/Absage)
+    if (preg_match('#^events/([^/]+)/respond$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $id = $m[1];
+        $status = in_array($body['status'] ?? '', ['accepted', 'declined', 'tentative'], true) ? $body['status'] : null;
+        if (!$status) errorResponse('Ungültiger Status', 400);
+
+        $eStmt = $db->prepare("SELECT * FROM calendar_events WHERE id = ?");
+        $eStmt->execute([$id]);
+        $evt = $eStmt->fetch();
+        if (!$evt) errorResponse('Termin nicht gefunden', 404);
+
+        $aStmt = $db->prepare("SELECT id FROM event_attendees WHERE event_id = ? AND (user_id = ? OR LOWER(email) = LOWER(?))");
+        $aStmt->execute([$id, $user['id'], $user['email']]);
+        $att = $aStmt->fetch();
+        if (!$att) errorResponse('Du bist nicht zu diesem Termin eingeladen', 404);
+
+        $db->prepare("UPDATE event_attendees SET status = ?, responded_at = NOW() WHERE id = ?")->execute([$status, $att['id']]);
+
+        $label = $status === 'accepted' ? 'zugesagt' : ($status === 'declined' ? 'abgesagt' : 'mit Vorbehalt zugesagt');
+        createNotification($evt['owner_id'], 'calendar_response', 'Antwort: ' . $evt['title'], $user['name'] . ' hat ' . $label . '.', 'event', $id);
+
+        jsonResponse(['success' => true, 'status' => $status]);
+    }
+
+    // EVT-6. GET events/:id/ics (Download)
+    if (preg_match('#^events/([^/]+)/ics$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $id = $m[1];
+
+        $eStmt = $db->prepare("
+            SELECT e.*, u.name AS owner_name, u.email AS owner_email
+            FROM calendar_events e LEFT JOIN users u ON u.id = e.owner_id
+            WHERE e.id = ?
+        ");
+        $eStmt->execute([$id]);
+        $evt = $eStmt->fetch();
+        if (!$evt || !canAccessEvent($user, $evt)) errorResponse('Termin nicht gefunden', 404);
+
+        $aStmt = $db->prepare("SELECT email, name, status FROM event_attendees WHERE event_id = ?");
+        $aStmt->execute([$id]);
+        $attendees = $aStmt->fetchAll();
+
+        $ics = buildIcs($evt, $attendees, 'PUBLISH');
+
+        header('Content-Type: text/calendar; charset=utf-8');
+        header('Content-Disposition: attachment; filename="termin-' . $evt['id'] . '.ics"');
+        echo $ics;
+        exit;
+    }
+
+    // EVT-7. GET event-categories
+    if ($path === 'event-categories' && $method === 'GET') {
+        $user = requireAuth();
+        $companyId = !empty($user['company_id']) ? $user['company_id'] : '__none__';
+        $stmt = $db->prepare("
+            SELECT * FROM event_categories
+            WHERE is_system = 1 OR (company_id IS NOT NULL AND company_id = ?) OR owner_id = ?
+            ORDER BY is_system DESC, sort_order ASC, name ASC
+        ");
+        $stmt->execute([$companyId, $user['id']]);
+        jsonResponse(['categories' => $stmt->fetchAll()]);
+    }
+
+    // EVT-8. POST event-categories
+    if ($path === 'event-categories' && $method === 'POST') {
+        $user = requireAuth();
+        $name = trim($body['name'] ?? '');
+        if (!$name) errorResponse('Kategoriename erforderlich', 400);
+
+        $color = preg_match('/^#[0-9A-Fa-f]{6}$/', $body['color'] ?? '') ? $body['color'] : '#0891B2';
+        $icon = substr($body['icon'] ?? 'Calendar', 0, 40);
+        $companyWide = !empty($body['company_wide']) && !empty($user['company_id']);
+
+        $id = 'cat_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $maxSort = (int)$db->query("SELECT COALESCE(MAX(sort_order), 0) FROM event_categories")->fetchColumn();
+
+        $db->prepare("
+            INSERT INTO event_categories (id, company_id, owner_id, name, color, icon, is_system, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+        ")->execute([
+            $id,
+            $companyWide ? $user['company_id'] : null,
+            $companyWide ? null : $user['id'],
+            $name, $color, $icon, $maxSort + 1
+        ]);
+
+        jsonResponse(['success' => true, 'id' => $id]);
     }
 
     // 17. GET admin/overview

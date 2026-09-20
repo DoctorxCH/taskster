@@ -11,14 +11,13 @@
         <ChevronLeft class="w-3.5 h-3.5" />
       </button>
 
-      <button
-        type="button"
+      <NuxtLink
+        to="/calendar"
         class="text-xs font-semibold text-slate-700 hover:text-[#0891B2] transition-colors px-1"
-        title="Zum heutigen Monat"
-        @click="goToday"
+        title="Kalender öffnen"
       >
         {{ monthLabel }}
-      </button>
+      </NuxtLink>
 
       <button
         type="button"
