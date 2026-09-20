@@ -676,7 +676,7 @@
             :class="emailSubTab === 'settings' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'"
           >
             <Server class="w-4 h-4" />
-            <span>SMTP-Server Konfiguration</span>
+            <span>E-Mail & Versand (Resend / SMTP)</span>
           </button>
           <button
             @click="emailSubTab = 'templates'"
@@ -708,18 +708,18 @@
         </div>
       </div>
 
-      <!-- Sub-Tab 1: SMTP Settings -->
+      <!-- Sub-Tab 1: Email Settings -->
       <div v-if="emailSubTab === 'settings'" class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 mb-6">
           <div>
-            <h3 class="text-base font-bold text-slate-900">Zentrale SMTP-Server Einstellungen</h3>
+            <h3 class="text-base font-bold text-slate-900">Zentrale E-Mail-Einstellungen</h3>
             <p class="text-xs text-slate-600 mt-0.5">
-              Alle automatischen E-Mails und Benachrichtigungen werden über diese Verbindung versendet.
+              Alle automatischen E-Mails, Kalendereinladungen und Benachrichtigungen werden über diesen Dienst versendet.
             </p>
           </div>
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[#00A3C4] text-xs font-bold">
             <span class="w-2 h-2 rounded-full bg-[#00A3C4] animate-pulse"></span>
-            <span>Aktiv: {{ smtpConfig.smtp_user || 'noreply@kurka.ch' }}</span>
+            <span>Aktiv: {{ smtpConfig.mail_provider === 'resend' ? 'Resend API (noreply@kurka.ch)' : (smtpConfig.smtp_user || 'noreply@kurka.ch') }}</span>
           </div>
         </div>
 
@@ -728,93 +728,204 @@
           <span>{{ smtpSavedMessage }}</span>
         </div>
 
-        <form @submit.prevent="saveEmailSettings" class="space-y-5">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Host / Server *</label>
-              <input
-                v-model="smtpConfig.smtp_host"
-                type="text"
-                required
-                placeholder="mail.kurka.ch"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
-              />
-              <p class="text-[11px] text-slate-500 mt-1">z.B. mail.kurka.ch oder smtp.ihredomain.ch</p>
+        <form @submit.prevent="saveEmailSettings" class="space-y-6">
+          <!-- Provider Selection Cards -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-2.5">E-Mail Versand-Methode</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <!-- Resend Option -->
+              <div
+                @click="smtpConfig.mail_provider = 'resend'"
+                class="p-4 rounded-2xl border-2 cursor-pointer transition flex items-start space-x-3.5"
+                :class="smtpConfig.mail_provider === 'resend' ? 'border-[#00A3C4] bg-cyan-50/50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'"
+              >
+                <div class="w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0" :class="smtpConfig.mail_provider === 'resend' ? 'border-[#00A3C4]' : 'border-slate-300'">
+                  <div v-if="smtpConfig.mail_provider === 'resend'" class="w-2 h-2 rounded-full bg-[#00A3C4]"></div>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-black text-slate-900">Resend API</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Empfohlen & Aktiv</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    100% Zustellrate zu Outlook, Gmail und Apple Mail mit kryptografischer DKIM/SPF-Signatur. Keine IP-Sperren.
+                  </p>
+                </div>
+              </div>
+
+              <!-- SMTP Option -->
+              <div
+                @click="smtpConfig.mail_provider = 'smtp'"
+                class="p-4 rounded-2xl border-2 cursor-pointer transition flex items-start space-x-3.5"
+                :class="smtpConfig.mail_provider === 'smtp' ? 'border-[#00A3C4] bg-cyan-50/50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'"
+              >
+                <div class="w-4 h-4 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0" :class="smtpConfig.mail_provider === 'smtp' ? 'border-[#00A3C4]' : 'border-slate-300'">
+                  <div v-if="smtpConfig.mail_provider === 'smtp'" class="w-2 h-2 rounded-full bg-[#00A3C4]"></div>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-black text-slate-900">Eigener SMTP-Server</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    Manuelle SMTP-Verbindung über Postfix/Exim (z.B. mail.kurka.ch oder Firmen-Mailserver).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resend Settings Section -->
+          <div v-if="smtpConfig.mail_provider === 'resend'" class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span class="text-xs font-black text-slate-900 flex items-center space-x-1.5">
+                <span>Resend Konfiguration</span>
+              </span>
+              <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                <CheckCircle2 class="w-3 h-3 text-emerald-600" />
+                <span>Domain kurka.ch verifiziert</span>
+              </span>
             </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1.5">Port & Verschlüsselung *</label>
-              <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold text-slate-800">Resend API-Key *</label>
+                  <button
+                    type="button"
+                    @click="showResendKey = !showResendKey"
+                    class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span v-if="showResendKey">Verbergen</span>
+                    <span v-else>Anzeigen</span>
+                  </button>
+                </div>
                 <input
-                  v-model.number="smtpConfig.smtp_port"
-                  type="number"
+                  v-model="smtpConfig.resend_api_key"
+                  :type="showResendKey ? 'text' : 'password'"
+                  placeholder="re_xxxxxxxxxxxx"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:bg-white focus:outline-none shadow-xs"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">Key von <a href="https://resend.com/api-keys" target="_blank" class="text-[#00A3C4] underline">resend.com/api-keys</a></p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
+                <input
+                  v-model="smtpConfig.smtp_from_email"
+                  type="email"
                   required
-                  placeholder="465"
+                  placeholder="noreply@kurka.ch"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:bg-white focus:outline-none shadow-xs"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">Muss eine Adresse der verifizierten Domain kurka.ch sein.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
+                <input
+                  v-model="smtpConfig.smtp_from_name"
+                  type="text"
+                  required
+                  placeholder="Taskster"
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:bg-white focus:outline-none shadow-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- SMTP Settings Section -->
+          <div v-else class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
+            <div class="pb-3 border-b border-slate-100">
+              <span class="text-xs font-black text-slate-900">Manuelle SMTP-Server Konfiguration</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Host / Server *</label>
+                <input
+                  v-model="smtpConfig.smtp_host"
+                  type="text"
+                  required
+                  placeholder="mail.kurka.ch"
                   class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
                 />
-                <select
-                  v-model="smtpConfig.smtp_secure"
-                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
-                >
-                  <option value="ssl">SSL / TLS (Port 465)</option>
-                  <option value="tls">STARTTLS (Port 587)</option>
-                  <option value="none">Keine Verschlüsselung (Port 25)</option>
-                </select>
+                <p class="text-[11px] text-slate-500 mt-1">z.B. mail.kurka.ch oder smtp.ihredomain.ch</p>
               </div>
-              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: SSL (465) oder STARTTLS (587)</p>
-            </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Benutzername *</label>
-              <input
-                v-model="smtpConfig.smtp_user"
-                type="text"
-                required
-                placeholder="noreply@kurka.ch"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
-              />
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="text-xs font-bold text-slate-800">SMTP Passwort *</label>
-                <button
-                  type="button"
-                  @click="showSmtpPassword = !showSmtpPassword"
-                  class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
-                >
-                  <span v-if="showSmtpPassword">Passwort verbergen</span>
-                  <span v-else>Passwort anzeigen</span>
-                </button>
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">Port & Verschlüsselung *</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <input
+                    v-model.number="smtpConfig.smtp_port"
+                    type="number"
+                    required
+                    placeholder="465"
+                    class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                  />
+                  <select
+                    v-model="smtpConfig.smtp_secure"
+                    class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                  >
+                    <option value="ssl">SSL / TLS (Port 465)</option>
+                    <option value="tls">STARTTLS (Port 587)</option>
+                    <option value="none">Keine Verschlüsselung (Port 25)</option>
+                  </select>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Empfohlen: SSL (465) oder STARTTLS (587)</p>
               </div>
-              <input
-                v-model="smtpConfig.smtp_password"
-                :type="showSmtpPassword ? 'text' : 'password'"
-                placeholder="SMTP Kennwort"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
-              />
-            </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
-              <input
-                v-model="smtpConfig.smtp_from_email"
-                type="email"
-                required
-                placeholder="noreply@kurka.ch"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
-              />
-            </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Benutzername *</label>
+                <input
+                  v-model="smtpConfig.smtp_user"
+                  type="text"
+                  required
+                  placeholder="noreply@kurka.ch"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                />
+              </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
-              <input
-                v-model="smtpConfig.smtp_from_name"
-                type="text"
-                required
-                placeholder="Taskster Benachrichtigungen"
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
-              />
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold text-slate-800">SMTP Passwort *</label>
+                  <button
+                    type="button"
+                    @click="showSmtpPassword = !showSmtpPassword"
+                    class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span v-if="showSmtpPassword">Passwort verbergen</span>
+                    <span v-else>Passwort anzeigen</span>
+                  </button>
+                </div>
+                <input
+                  v-model="smtpConfig.smtp_password"
+                  :type="showSmtpPassword ? 'text' : 'password'"
+                  placeholder="SMTP Kennwort"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
+                <input
+                  v-model="smtpConfig.smtp_from_email"
+                  type="email"
+                  required
+                  placeholder="noreply@kurka.ch"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
+                <input
+                  v-model="smtpConfig.smtp_from_name"
+                  type="text"
+                  required
+                  placeholder="Taskster"
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs"
+                />
+              </div>
             </div>
           </div>
 
@@ -824,7 +935,7 @@
               @click="openTestEmailModal"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
-              Testverbindung prüfen
+              Test-E-Mail senden
             </button>
 
             <button
@@ -833,7 +944,7 @@
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               <span v-if="savingSmtp">Wird gespeichert...</span>
-              <span v-else>SMTP-Einstellungen speichern</span>
+              <span v-else>Einstellungen speichern</span>
             </button>
           </div>
         </form>
@@ -1754,8 +1865,10 @@
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80">
         <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
           <div>
-            <h3 class="text-base font-black text-slate-900">SMTP Test-E-Mail senden</h3>
-            <p class="text-xs text-slate-600">Überprüfe die Verbindung zu {{ smtpConfig.smtp_host }}:{{ smtpConfig.smtp_port }}</p>
+            <h3 class="text-base font-black text-slate-900">E-Mail Verbindung testen</h3>
+            <p class="text-xs text-slate-600">
+              Versand über <strong class="text-slate-900">{{ smtpConfig.mail_provider === 'resend' ? 'Resend API (noreply@kurka.ch)' : (smtpConfig.smtp_host + ':' + smtpConfig.smtp_port) }}</strong>
+            </p>
           </div>
           <button @click="showTestEmailModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
@@ -1778,7 +1891,7 @@
               <span v-else>❌ Fehler: {{ testEmailResult.error }}</span>
             </div>
             <details v-if="testEmailResult.log && testEmailResult.log.length > 0" class="mt-2">
-              <summary class="cursor-pointer text-[11px] font-bold text-slate-600 hover:text-slate-900">SMTP Protokoll anzeigen ({{ testEmailResult.log.length }} Zeilen)</summary>
+              <summary class="cursor-pointer text-[11px] font-bold text-slate-600 hover:text-slate-900">Versand-Protokoll anzeigen ({{ testEmailResult.log.length }} Zeilen)</summary>
               <pre class="mt-2 p-2 bg-slate-900 text-emerald-400 rounded text-[10px] font-mono max-h-40 overflow-y-auto whitespace-pre-wrap">{{ testEmailResult.log.join('\n') }}</pre>
             </details>
           </div>
@@ -2018,6 +2131,8 @@ const loading = ref(true)
 // Email Settings & Trigger Templates state
 const emailSubTab = ref<'settings' | 'templates' | 'outbox'>('settings')
 const smtpConfig = ref({
+  mail_provider: 'resend',
+  resend_api_key: '',
   smtp_host: 'mail.kurka.ch',
   smtp_port: 465,
   smtp_secure: 'ssl',
@@ -2027,6 +2142,7 @@ const smtpConfig = ref({
   smtp_from_name: 'Taskster'
 })
 const showSmtpPassword = ref(false)
+const showResendKey = ref(false)
 const savingSmtp = ref(false)
 const smtpSavedMessage = ref('')
 const emailTemplates = ref<any[]>([])
@@ -2617,7 +2733,7 @@ const saveEmailSettings = async () => {
     if (res?.settings) {
       smtpConfig.value = { ...smtpConfig.value, ...res.settings }
     }
-    smtpSavedMessage.value = 'SMTP-Einstellungen erfolgreich gespeichert!'
+    smtpSavedMessage.value = 'E-Mail-Einstellungen erfolgreich gespeichert!'
     setTimeout(() => { smtpSavedMessage.value = '' }, 4000)
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Speichern der SMTP-Einstellungen')
