@@ -170,7 +170,8 @@ export function queueEmail(mail: OutboxMail): string {
         toName: mail.toName,
         subject: mail.subject,
         bodyHtml: mail.body,
-        icsContent: mail.ics
+        icsContent: mail.ics,
+        triggerEvent: 'calendar_invite'
       }).then(() => {
         try {
           db.prepare("UPDATE email_outbox SET status = 'sent', sent_at = datetime('now') WHERE id = ?").run(id)

@@ -31,8 +31,13 @@ export default defineEventHandler(async (event) => {
 
   const activeConfig = testConfig || current
   const isResend = activeConfig.mail_provider === 'resend'
-  const subject = `[Taskster] Test-E-Mail von ${activeConfig.smtp_from_email} (${new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })})`
-  const bodyText = `Hallo,\n\nDies ist eine erfolgreiche Test-E-Mail vom Taskster E-Mail-Dienst via ${isResend ? 'Resend API' : ('SMTP: ' + activeConfig.smtp_host)}.\n\nZeitstempel: ${new Date().toISOString()}\n\nBeste Grüsse,\nDein Taskster System`
+  const senderEmail = body.sender_email ? String(body.sender_email).trim() : activeConfig.smtp_from_email
+  const purpose = body.purpose as any
+  const replyTo = senderEmail === 'hey@kurka.ch' ? 'support@kurka.ch' : undefined
+  const fromHeader = `Taskster <${senderEmail}>`
+
+  const subject = `[Taskster] Test-E-Mail von ${senderEmail} (${new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })})`
+  const bodyText = `Hallo,\n\nDies ist eine erfolgreiche Test-E-Mail vom Taskster E-Mail-Dienst via ${isResend ? 'Resend API' : ('SMTP: ' + activeConfig.smtp_host)} von ${senderEmail}.\n\nZeitstempel: ${new Date().toISOString()}\n\nBeste Grüsse,\nDein Taskster System`
   const bodyHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #00A3C4; border-radius: 8px; background: #ffffff;">
       <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -44,7 +49,7 @@ export default defineEventHandler(async (event) => {
           ✓ Versandmethode: <strong>${isResend ? 'Resend API (DKIM / SPF verifiziert)' : ('SMTP Server (' + activeConfig.smtp_host + ')')}</strong>
         </p>
         <p style="color: #115e59; font-size: 12px; margin: 0;">
-          Absender: <strong>${activeConfig.smtp_from_name} &lt;${activeConfig.smtp_from_email}&gt;</strong><br>
+          Absender: <strong>${fromHeader}${replyTo ? ` (Reply-To: ${replyTo})` : ''}</strong><br>
           Empfänger: <strong>${toEmail}</strong><br>
           Zeitstempel: <strong>${new Date().toLocaleString('de-CH')}</strong>
         </p>
@@ -59,12 +64,15 @@ export default defineEventHandler(async (event) => {
       toName: user.name || 'Taskster Admin',
       subject,
       bodyHtml,
-      bodyText
+      bodyText,
+      from: fromHeader,
+      replyTo,
+      purpose
     }, testConfig)
 
     return {
       success: true,
-      message: `Test-E-Mail erfolgreich via ${isResend ? 'Resend API' : 'SMTP'} an ${toEmail} versendet!`,
+      message: `Test-E-Mail erfolgreich via ${isResend ? 'Resend API' : 'SMTP'} von ${senderEmail} an ${toEmail} versendet!`,
       log: result.log
     }
   } catch (err: any) {
