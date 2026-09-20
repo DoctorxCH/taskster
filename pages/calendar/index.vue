@@ -1047,8 +1047,18 @@ function fmt(d: Date): string {
 
 /** Optimistisches Update + API-Aufruf. */
 async function moveEvent(ev: any, startAt: string, endAt: string) {
-  const prevStart = ev.start
-  const prevEnd = ev.end
+  const prevStart = String(ev.start || '').replace('T', ' ').slice(0, 16)
+  const prevEnd = String(ev.end || '').replace('T', ' ').slice(0, 16)
+  const nextStart = String(startAt || '').replace('T', ' ').slice(0, 16)
+  const nextEnd = String(endAt || '').replace('T', ' ').slice(0, 16)
+
+  // Bei unverändertem Zeitpunkt keinen API-Aufruf ausführen
+  if (prevStart === nextStart && prevEnd === nextEnd) {
+    return
+  }
+
+  const oldStart = ev.start
+  const oldEnd = ev.end
   ev.start = startAt
   ev.end = endAt
 
@@ -1059,8 +1069,8 @@ async function moveEvent(ev: any, startAt: string, endAt: string) {
       body: { start_at: startAt, end_at: endAt }
     })
   } catch (err: any) {
-    ev.start = prevStart
-    ev.end = prevEnd
+    ev.start = oldStart
+    ev.end = oldEnd
     alert(err?.data?.statusMessage || 'Termin konnte nicht verschoben werden')
   }
 }
