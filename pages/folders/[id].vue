@@ -621,6 +621,8 @@
               </h4>
               <div v-for="f in projectFields" :key="f.id">
                 <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
+
+                <!-- Select -->
                 <select
                   v-if="f.field_type === 'select'"
                   v-model="newProjectCustomData[f.field_key]"
@@ -629,10 +631,80 @@
                   <option value="">-- Nicht ausgewählt --</option>
                   <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
+
+                <!-- Textarea (Längerer Text) -->
+                <textarea
+                  v-else-if="f.field_type === 'textarea'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  rows="3"
+                  placeholder="Details, Notizen oder Beschreibung..."
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 resize-y"
+                ></textarea>
+
+                <!-- Checkbox -->
+                <div v-else-if="f.field_type === 'checkbox'" class="pt-1">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      v-model="newProjectCustomData[f.field_key]"
+                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                    />
+                    <span class="text-xs font-medium text-slate-700">
+                      {{ newProjectCustomData[f.field_key] ? '✓ Ja / Aktiv' : 'Nein / Inaktiv' }}
+                    </span>
+                  </label>
+                </div>
+
+                <!-- Date -->
+                <input
+                  v-else-if="f.field_type === 'date'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  type="date"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Number -->
+                <input
+                  v-else-if="f.field_type === 'number'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  type="number"
+                  step="any"
+                  placeholder="0.00"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- URL -->
+                <input
+                  v-else-if="f.field_type === 'url'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  type="url"
+                  placeholder="https://..."
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Email -->
+                <input
+                  v-else-if="f.field_type === 'email'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  type="email"
+                  placeholder="kontakt@firma.ch"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Phone -->
+                <input
+                  v-else-if="f.field_type === 'phone'"
+                  v-model="newProjectCustomData[f.field_key]"
+                  type="tel"
+                  placeholder="+41 79 123 45 67"
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+                />
+
+                <!-- Default Text -->
                 <input
                   v-else
                   v-model="newProjectCustomData[f.field_key]"
-                  :type="f.field_type === 'number' ? 'number' : 'text'"
+                  type="text"
                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
               </div>

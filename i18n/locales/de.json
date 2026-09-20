@@ -1,4 +1,4 @@
-{
+﻿{
   "common.dashboard": "Dashboard",
   "common.zeitrapporte": "Zeitrapporte",
   "common.kontakte": "Kontakte",
@@ -1040,11 +1040,6 @@
   "projects.die_csvdatei_muss_mindestens_eine_k": "Die CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.",
   "projects.fällig": "fällig",
   "projects.fehler_beim_parsen_der_csvdatei": "Fehler beim Parsen der CSV-Datei:",
-  "projects.g_resultpushrow_return_result_const": "']$/g, ''))\n    result.push(row)\n  }\n  return result\n}\n\nconst executeImport = async () => {\n  // Validate that title is mapped\n  const hasTitle = Object.values(importColumnMapping.value).includes('title')\n  if (!hasTitle) {\n    importError.value = 'Bitte weise mindestens einer Spalte das Pflichtfeld",
-  "projects.status_1": ",\n        status:",
-  "projects.taskpayloadstatus": ")) taskPayload.status =",
-  "projects.else_taskpayloadstatus": "else taskPayload.status =",
-  "projects.onglobaltimeentrysaved_öffnet_eine_": ", onGlobalTimeEntrySaved)\n  }\n})\n\n/**\n * Öffnet eine Aufgabe direkt, wenn die URL einen ?task=<id> Parameter enthält.\n * Wird von Kalender, Benachrichtigungen und der Suche verlinkt.\n */\nasync function openTaskFromQuery() {\n  const taskId = route.query.task\n  if (!taskId || typeof taskId !==",
   "AddressAutocomplete.adresse_leeren": "Adresse leeren",
   "AddressAutocomplete.keine_adresse_gefunden": "Keine Adresse gefunden.",
   "AddressAutocomplete.standort_erkannt": "Standort erkannt",
@@ -1126,7 +1121,6 @@
   "VoiceRecorderModal.newitemslength_checklistenpunkte_hi": "${newItems.length} Checklisten-Punkte hinzugefügt!",
   "VoiceRecorderModal.neue_aufgabe_erfolgreich_erstellt": "Neue Aufgabe erfolgreich erstellt!",
   "VoiceRecorderModal.fehler_beim_ausführen_der_aktion": "Fehler beim Ausführen der Aktion",
-  "VoiceRecorderModal.transcribedtextvalue_checklist_chec": "+ transcribedText.value,\n      checklist: checklistObj,\n      status:",
   "composables.nominatim_resstatus": "Nominatim ${res.status}",
   "composables.fehler_beim_speichern_der_zeiterfas": "Fehler beim Speichern der Zeiterfassung",
   "composables.nordische_dünen": "Nordische Dünen",
