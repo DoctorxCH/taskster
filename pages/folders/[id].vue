@@ -112,6 +112,15 @@
                   <FileUp class="w-4 h-4 text-slate-500" />
                   <span>Projekt importieren</span>
                 </button>
+                <div v-if="user?.id === folder.owner_id || user?.is_superadmin" class="my-1 border-t border-slate-100"></div>
+                <button
+                  v-if="user?.id === folder.owner_id || user?.is_superadmin"
+                  @click="showActionsMenu = false; openDeleteFolderModal()"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  <Trash2 class="w-4 h-4 text-rose-500" />
+                  <span>{{ $t('dashboard.ordner_loeschen') }}</span>
+                </button>
               </div>
             </div>
             <button
@@ -299,14 +308,23 @@
               </div>
             </div>
 
-            <div class="pt-2">
+            <div class="pt-2 flex items-center gap-2">
               <NuxtLink
                 :to="`/projects/${project.id}`"
-                class="taskster_button w-full px-4 text-xs h-8 rounded-md flex items-center justify-center space-x-1"
+                class="taskster_button flex-1 px-4 text-xs h-8 rounded-md flex items-center justify-center space-x-1"
               >
                 <span>Projekt öffnen</span>
                 <ArrowRight class="w-3.5 h-3.5" />
               </NuxtLink>
+              <button
+                v-if="canManageProject(project)"
+                type="button"
+                @click.stop="openDeleteProjectModal(project)"
+                class="p-2 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
+                :title="$t('dashboard.projekt_loeschen')"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -374,13 +392,24 @@
                     <span v-else class="text-slate-400">-</span>
                   </td>
                   <td class="py-3 px-4 text-right">
-                    <NuxtLink
-                      :to="`/projects/${project.id}`"
-                      class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center space-x-1"
-                    >
-                      <span>Öffnen</span>
-                      <ArrowRight class="w-3.5 h-3.5" />
-                    </NuxtLink>
+                    <div class="flex items-center justify-end space-x-2">
+                      <NuxtLink
+                        :to="`/projects/${project.id}`"
+                        class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center space-x-1"
+                      >
+                        <span>Öffnen</span>
+                        <ArrowRight class="w-3.5 h-3.5" />
+                      </NuxtLink>
+                      <button
+                        v-if="canManageProject(project)"
+                        type="button"
+                        @click.stop="openDeleteProjectModal(project)"
+                        class="p-1.5 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
+                        :title="$t('dashboard.projekt_loeschen')"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -1070,21 +1099,32 @@
             </button>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
+              v-if="user?.id === folder?.owner_id || user?.is_superadmin"
               type="button"
-              @click="showEditFolderModal = false; editFolderError = ''"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+              @click="showEditFolderModal = false; openDeleteFolderModal()"
+              class="taskster_button_accent px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
             >
-              Abbrechen
+              <Trash2 class="w-3.5 h-3.5" />
+              <span>{{ $t('dashboard.ordner_loeschen') }}</span>
             </button>
-            <button
-              type="submit"
-              :disabled="savingFolder || !editFolderName.trim()"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
-            >
-              <span>{{ savingFolder ? 'Wird gespeichert...' : 'Änderungen speichern' }}</span>
-            </button>
+            <div class="flex items-center space-x-3 ml-auto">
+              <button
+                type="button"
+                @click="showEditFolderModal = false; editFolderError = ''"
+                class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="submit"
+                :disabled="savingFolder || !editFolderName.trim()"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+              >
+                <span>{{ savingFolder ? 'Wird gespeichert...' : 'Änderungen speichern' }}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -1317,6 +1357,92 @@
         </div>
       </div>
     </div>
+
+    <!-- DELETE FOLDER CONFIRMATION MODAL -->
+    <div v-if="showDeleteFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+            <AlertTriangle class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">{{ $t('dashboard.ordner_loeschen_titel') }}</h3>
+            <p class="text-xs text-slate-500 font-medium">{{ folder?.name }}</p>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 leading-relaxed mb-5">
+          {{ $t('dashboard.ordner_loeschen_confirm', { name: folder?.name, count: projects.length }) }}
+        </div>
+
+        <div v-if="deleteFolderError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+          {{ deleteFolderError }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3">
+          <button
+            type="button"
+            @click="showDeleteFolderModal = false; deleteFolderError = ''"
+            :disabled="deletingFolder"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            {{ $t('common.abbrechen') }}
+          </button>
+          <button
+            type="button"
+            @click="confirmDeleteFolder"
+            :disabled="deletingFolder"
+            class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+          >
+            <Trash2 v-if="!deletingFolder" class="w-3.5 h-3.5" />
+            <span>{{ deletingFolder ? 'Wird gelöscht...' : $t('dashboard.ordner_loeschen_button') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE PROJECT CONFIRMATION MODAL -->
+    <div v-if="showDeleteProjectModal && projectToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+            <AlertTriangle class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">{{ $t('dashboard.projekt_loeschen_titel') }}</h3>
+            <p class="text-xs text-slate-500 font-medium">{{ projectToDelete.title }}</p>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 leading-relaxed mb-5">
+          {{ $t('dashboard.projekt_loeschen_confirm', { title: projectToDelete.title }) }}
+        </div>
+
+        <div v-if="deleteProjectError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+          {{ deleteProjectError }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3">
+          <button
+            type="button"
+            @click="showDeleteProjectModal = false; projectToDelete = null; deleteProjectError = ''"
+            :disabled="deletingProject"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            {{ $t('common.abbrechen') }}
+          </button>
+          <button
+            type="button"
+            @click="confirmDeleteProject"
+            :disabled="deletingProject"
+            class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+          >
+            <Trash2 v-if="!deletingProject" class="w-3.5 h-3.5" />
+            <span>{{ deletingProject ? 'Wird gelöscht...' : $t('dashboard.projekt_loeschen_button') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1345,7 +1471,8 @@ import {
   LayoutGrid,
   List,
   FileUp,
-  MoreVertical
+  MoreVertical,
+  AlertTriangle
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 
@@ -1432,6 +1559,72 @@ const updateFolder = async () => {
     editFolderError.value = err.data?.statusMessage || 'Ordner konnte nicht aktualisiert werden'
   } finally {
     savingFolder.value = false
+  }
+}
+
+// Delete Folder State & Handlers
+const showDeleteFolderModal = ref(false)
+const deletingFolder = ref(false)
+const deleteFolderError = ref('')
+
+const openDeleteFolderModal = () => {
+  deleteFolderError.value = ''
+  showDeleteFolderModal.value = true
+}
+
+const confirmDeleteFolder = async () => {
+  if (!folder.value?.id) return
+  deletingFolder.value = true
+  deleteFolderError.value = ''
+  try {
+    await $fetch(`/api/folders/${folder.value.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    showDeleteFolderModal.value = false
+    navigateTo('/dashboard')
+  } catch (err: any) {
+    deleteFolderError.value = err.data?.statusMessage || err.message || 'Fehler beim Löschen des Ordners'
+  } finally {
+    deletingFolder.value = false
+  }
+}
+
+// Delete Project State & Handlers
+const showDeleteProjectModal = ref(false)
+const projectToDelete = ref<any>(null)
+const deletingProject = ref(false)
+const deleteProjectError = ref('')
+
+const canManageProject = (p: any) => {
+  if (!user.value) return false
+  if (user.value.is_superadmin) return true
+  if (folder.value?.owner_id === user.value.id) return true
+  return false
+}
+
+const openDeleteProjectModal = (p: any) => {
+  projectToDelete.value = p
+  deleteProjectError.value = ''
+  showDeleteProjectModal.value = true
+}
+
+const confirmDeleteProject = async () => {
+  if (!projectToDelete.value?.id) return
+  deletingProject.value = true
+  deleteProjectError.value = ''
+  try {
+    await $fetch(`/api/projects/${projectToDelete.value.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    showDeleteProjectModal.value = false
+    projectToDelete.value = null
+    await loadFolderData()
+  } catch (err: any) {
+    deleteProjectError.value = err.data?.statusMessage || err.message || 'Fehler beim Löschen des Projekts'
+  } finally {
+    deletingProject.value = false
   }
 }
 
