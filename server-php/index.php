@@ -2242,6 +2242,40 @@ function evaluateListAccess($user, $listId, $action = 'read') {
     return ['list' => $list, 'projectContext' => $projectContext];
 }
 
+function deleteProjectCascade($db, $projectId) {
+    // 1. All lists in this project
+    $lStmt = $db->prepare("SELECT id FROM lists WHERE project_id = ?");
+    $lStmt->execute([$projectId]);
+    $listIds = $lStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (!empty($listIds)) {
+        $inLists = implode(',', array_fill(0, count($listIds), '?'));
+        // Find tasks in these lists
+        $tStmt = $db->prepare("SELECT id FROM tasks WHERE list_id IN ($inLists)");
+        $tStmt->execute($listIds);
+        $taskIds = $tStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!empty($taskIds)) {
+            $inTasks = implode(',', array_fill(0, count($taskIds), '?'));
+            try { $db->prepare("DELETE FROM task_comments WHERE task_id IN ($inTasks)")->execute($taskIds); } catch (Exception $e) {}
+            try { $db->prepare("DELETE FROM task_subtasks WHERE task_id IN ($inTasks)")->execute($taskIds); } catch (Exception $e) {}
+            try { $db->prepare("DELETE FROM daily_todos WHERE task_id IN ($inTasks)")->execute($taskIds); } catch (Exception $e) {}
+        }
+
+        try { $db->prepare("DELETE FROM tasks WHERE list_id IN ($inLists)")->execute($listIds); } catch (Exception $e) {}
+        try { $db->prepare("DELETE FROM list_access WHERE list_id IN ($inLists)")->execute($listIds); } catch (Exception $e) {}
+        try { $db->prepare("DELETE FROM lists WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    }
+
+    try { $db->prepare("DELETE FROM time_entries WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM project_journals WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM project_documents WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM project_group_access WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    try { $db->prepare("DELETE FROM project_members WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    try { $db->prepare("UPDATE calendar_events SET project_id = NULL WHERE project_id = ?")->execute([$projectId]); } catch (Exception $e) {}
+    $db->prepare("DELETE FROM projects WHERE id = ?")->execute([$projectId]);
+}
+
 // ROUTER
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
@@ -2761,6 +2795,44 @@ try {
         $uStmt = $db->prepare("SELECT pf.*, u.name as owner_name, c.name as company_name FROM project_folders pf JOIN users u ON u.id = pf.owner_id LEFT JOIN companies c ON c.id = pf.company_id WHERE pf.id = ?");
         $uStmt->execute([$fldId]);
         jsonResponse(['success' => true, 'folder' => $uStmt->fetch()]);
+    }
+
+    // 5c. DELETE folders/:id
+    if (preg_match('#^folders/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $stmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+        $stmt->execute([$fldId]);
+        $folder = $stmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        if ($folder['owner_id'] !== $user['id'] && empty($user['is_superadmin'])) {
+            errorResponse('Nur der Eigentümer kann diesen Projektordner löschen', 403);
+        }
+
+        $db->beginTransaction();
+        try {
+            $pStmt = $db->prepare("SELECT id FROM projects WHERE folder_id = ?");
+            $pStmt->execute([$fldId]);
+            $projectIds = $pStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach ($projectIds as $pId) {
+                deleteProjectCascade($db, $pId);
+            }
+
+            try { $db->prepare("DELETE FROM folder_members WHERE folder_id = ?")->execute([$fldId]); } catch (Exception $e) {}
+            try { $db->prepare("DELETE FROM folder_field_definitions WHERE folder_id = ?")->execute([$fldId]); } catch (Exception $e) {}
+            try { $db->prepare("DELETE FROM folder_group_access WHERE folder_id = ?")->execute([$fldId]); } catch (Exception $e) {}
+            $db->prepare("DELETE FROM project_folders WHERE id = ?")->execute([$fldId]);
+
+            $db->commit();
+            jsonResponse(['success' => true]);
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            errorResponse('Fehler beim Löschen des Projektordners: ' . $e->getMessage(), 500);
+        }
     }
 
     // 6. GET folders/:id
@@ -3441,6 +3513,30 @@ try {
         ]);
 
         jsonResponse(['success' => true]);
+    }
+
+    // 9c. DELETE projects/:id
+    if (preg_match('#^projects/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $projectId = $m[1];
+        $context = evaluateProjectAccess($user, $projectId, 'write');
+
+        $canDelete = ($context['userRole'] === 'owner' || $context['userRole'] === 'admin' || $context['ownerId'] === $user['id'] || !empty($user['is_superadmin']));
+        if (!$canDelete) {
+            errorResponse('Keine Berechtigung zum Löschen dieses Projekts', 403);
+        }
+
+        $db->beginTransaction();
+        try {
+            deleteProjectCascade($db, $projectId);
+            $db->commit();
+            jsonResponse(['success' => true]);
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            errorResponse('Fehler beim Löschen des Projekts: ' . $e->getMessage(), 500);
+        }
     }
 
     // 10. POST projects/:id/members
