@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event).catch(() => ({}))
 
   const targetUserId = body?.user_id as string
-  const type = body?.type as 'folder' | 'project'
+  const type = (body?.target_type || body?.type) as 'folder' | 'project'
   const targetId = body?.target_id as string
   const role = body?.role as 'admin' | 'editor' | 'viewer' | 'none'
 
