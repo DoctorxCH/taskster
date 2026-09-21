@@ -148,7 +148,55 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Benutzerdefinierte Felder aus Import / Parametern registrieren
+  const customFieldDefs = Array.isArray(body.custom_field_definitions) ? body.custom_field_definitions : []
+  const existingFolderKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
+  const countFolderFields = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
+  let curSortOrder = countFolderFields + 1
+
+  for (const cfd of customFieldDefs) {
+    const rawKey = String(cfd.field_key || cfd.label || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '')
+    if (!rawKey || existingFolderKeys.includes(rawKey)) continue
+
+    const fId = 'fld_def_' + randomUUID().substring(0, 8)
+    const fLabel = String(cfd.label || rawKey).trim()
+    db.prepare(`
+      INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      fId,
+      folder_id,
+      rawKey,
+      fLabel,
+      cfd.field_type || 'text',
+      cfd.entity_type || 'task',
+      JSON.stringify(cfd.options || []),
+      cfd.logic_rules ? JSON.stringify(cfd.logic_rules) : '{}',
+      0,
+      curSortOrder++
+    )
+    existingFolderKeys.push(rawKey)
+  }
+
   if (Array.isArray(import_tasks) && import_tasks.length > 0) {
+    // Falls noch nicht registrierte custom_data Keys in import_tasks enthalten sind, automatisch als Felddefinitionen anlegen
+    for (const taskItem of import_tasks) {
+      if (taskItem.custom_data && typeof taskItem.custom_data === 'object') {
+        for (const [k] of Object.entries(taskItem.custom_data)) {
+          const rawKey = String(k).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '')
+          if (!rawKey || existingFolderKeys.includes(rawKey)) continue
+
+          const fId = 'fld_def_' + randomUUID().substring(0, 8)
+          const fLabel = rawKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+          db.prepare(`
+            INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
+            VALUES (?, ?, ?, ?, 'text', 'task', '[]', '{}', 0, ?)
+          `).run(fId, folder_id, rawKey, fLabel, curSortOrder++)
+          existingFolderKeys.push(rawKey)
+        }
+      }
+    }
+
     const insTask = db.prepare(`
       INSERT INTO tasks (id, list_id, title, description, status, priority, due_date, tags, custom_data)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

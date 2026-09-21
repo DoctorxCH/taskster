@@ -737,8 +737,8 @@
                         <td class="py-2.5 px-4">
                           <select
                             v-model="importColumnMapping[hIdx]"
-                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#00A3C4]"
-                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#00A3C4] bg-cyan-50/50 text-cyan-950 font-bold' : ''"
+                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#0891B2]"
+                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#0891B2] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : '')"
                           >
                             <option value="">-- Nicht importieren --</option>
                             <optgroup label="Standard-Felder">
@@ -750,13 +750,33 @@
                               <option value="status">🔄 Status (todo/in_progress/done)</option>
                               <option value="tags">🏷️ Tags / Schlagwörter</option>
                             </optgroup>
-                            <optgroup v-if="taskCustomFields.length > 0" label="Benutzerdefinierte Felder">
+
+                            <!-- Bestehende benutzerdefinierte Felder -->
+                            <optgroup v-if="fields.length > 0" label="Bestehende Zusatzfelder dieses Ordners">
                               <option
-                                v-for="f in taskCustomFields"
+                                v-for="f in fields"
                                 :key="f.id"
                                 :value="'custom:' + f.field_key"
                               >
-                                ⚙️ {{ f.label }} ({{ f.field_key }})
+                                ⚙️ {{ f.label }} ({{ f.field_key }}) {{ f.entity_type === 'project' ? '[Projekt]' : '' }}
+                              </option>
+                            </optgroup>
+
+                            <!-- Als neues Zusatzfeld aus Spalte anlegen -->
+                            <optgroup label="✨ Als neues Zusatzfeld anlegen">
+                              <option :value="'custom:' + getHeaderKey(header)">
+                                ✨ Neues Feld: "{{ header }}" ({{ getHeaderKey(header) }})
+                              </option>
+                            </optgroup>
+
+                            <!-- Häufige Vorlagen-Felder -->
+                            <optgroup label="📋 Vorlagen-Zusatzfelder" v-if="getAvailableTemplateFields(header).length > 0">
+                              <option
+                                v-for="tf in getAvailableTemplateFields(header)"
+                                :key="tf.key"
+                                :value="'custom:' + tf.key"
+                              >
+                                {{ tf.icon }} {{ tf.label }} ({{ tf.key }})
                               </option>
                             </optgroup>
                           </select>
@@ -1680,6 +1700,33 @@ const taskCustomFields = computed(() => {
   return fields.value.filter((f: any) => f.entity_type !== 'project')
 })
 
+// Häufige Vorlagen-Zusatzfelder für den schnellen Import
+const commonCustomFieldTemplates = [
+  { key: 'bauleiter', label: 'Verantw. Bauleiter', icon: '🏗️', type: 'text' },
+  { key: 'gewerk', label: 'Gewerk / Bereich', icon: '🔧', type: 'select' },
+  { key: 'kosten_chf', label: 'Kosten / Budget (CHF)', icon: '💰', type: 'number' },
+  { key: 'kunde', label: 'Kunde / Auftraggeber', icon: '🏢', type: 'text' },
+  { key: 'adresse', label: 'Adresse / Standort', icon: '📍', type: 'text' },
+  { key: 'abnahme_status', label: 'Abnahmestatus', icon: '📊', type: 'select' },
+  { key: 'komponente', label: 'Komponente / Modul', icon: '💻', type: 'text' },
+  { key: 'story_points', label: 'Story Points / Aufwand', icon: '🎯', type: 'number' },
+  { key: 'seriennummer', label: 'Seriennummer / ID', icon: '🔢', type: 'text' },
+  { key: 'lieferant', label: 'Lieferant / Partner', icon: '📦', type: 'text' },
+  { key: 'messprotokoll_nr', label: 'Messprotokoll-Nr.', icon: '📑', type: 'text' },
+  { key: 'anlage_typ', label: 'Anlage-Typ', icon: '⚡', type: 'text' }
+]
+
+const getHeaderKey = (header: string) => {
+  return String(header || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+}
+
+const getAvailableTemplateFields = (header: string) => {
+  const existingKeys = new Set(fields.value.map((f: any) => f.field_key))
+  const colKey = getHeaderKey(header)
+  existingKeys.add(colKey)
+  return commonCustomFieldTemplates.filter(t => !existingKeys.has(t.key))
+}
+
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
   return f ? f.label : key
@@ -1806,12 +1853,23 @@ const processImportFile = async (file: File) => {
       } else if (!Object.values(mapping).includes('tags') && (lower.includes('tag') || lower.includes('label') || lower.includes('kategorie') || lower.includes('schlagwort'))) {
         mapping[idx] = 'tags'
       } else {
-        // Benutzerdefinierte Felder anhand Label oder Feld-Key erkennen
-        const matchField = taskCustomFields.value.find((f: any) =>
+        // 1. Benutzerdefinierte Felder dieses Ordners erkennen
+        const matchField = fields.value.find((f: any) =>
           f.label?.toLowerCase() === lower || f.field_key?.toLowerCase() === lower
         )
         if (matchField) {
           mapping[idx] = 'custom:' + matchField.field_key
+        } else {
+          // 2. Häufige Vorlagen-Felder erkennen
+          const matchTpl = commonCustomFieldTemplates.find(t =>
+            t.key.toLowerCase() === lower || t.label.toLowerCase() === lower || lower.includes(t.key)
+          )
+          if (matchTpl) {
+            mapping[idx] = 'custom:' + matchTpl.key
+          } else {
+            // 3. Automatisch als neues Zusatzfeld mit Spaltennamen anbieten
+            mapping[idx] = 'custom:' + getHeaderKey(h)
+          }
         }
       }
     })
@@ -1982,7 +2040,27 @@ const createProject = async () => {
         throw new Error('Keine gültigen Aufgaben in der Datei gefunden.')
       }
 
+      // Felddefinitionen für neu gemappte Zusatzfelder an Server übermitteln
+      const customFieldDefsToCreate: any[] = []
+      for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+        if (!targetField || !targetField.startsWith('custom:')) continue
+        const colIdx = parseInt(colIdxStr)
+        const key = targetField.replace('custom:', '')
+        const headerName = importHeaders.value[colIdx] || key
+        const alreadyExists = fields.value.some((f: any) => f.field_key === key)
+        if (!alreadyExists && !customFieldDefsToCreate.some(f => f.field_key === key)) {
+          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
+          customFieldDefsToCreate.push({
+            field_key: key,
+            label: matchedTpl?.label || headerName,
+            field_type: matchedTpl?.type || 'text',
+            entity_type: 'task'
+          })
+        }
+      }
+
       payload.import_tasks = tasksToImport
+      payload.custom_field_definitions = customFieldDefsToCreate
     }
 
     const res = await $fetch<any>('/api/projects', {
