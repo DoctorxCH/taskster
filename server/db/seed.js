@@ -190,8 +190,8 @@ insertTask.run(
 
 // 9. Project Journal Entries (Bautagebuch & Voice Notes)
 const insertJournal = db.prepare(`
-  INSERT OR REPLACE INTO project_journals (id, project_id, task_id, author_id, entry_type, title, content, metadata)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT OR REPLACE INTO project_journals (id, project_id, task_id, author_id, entry_type, title, content)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
 `)
 
 insertJournal.run(
@@ -201,8 +201,7 @@ insertJournal.run(
   companyAdminId,
   'voice',
   'Vor-Ort Sprachnotiz Schacht 14 Begehung',
-  'Transkription: Bei Schacht 14 liegt die Gasleitung tiefer als im Plan eingezeichnet (ca. 1.20m). Haben den Baggerführer instruiert, im Handschacht-Verfahren weiterzugraben. Foto der Lage im Journal dokumentiert.',
-  JSON.stringify({ duration_seconds: 38, audio_format: 'opus', confidence: 0.98 })
+  'Transkription: Bei Schacht 14 liegt die Gasleitung tiefer als im Plan eingezeichnet (ca. 1.20m). Haben den Baggerführer instruiert, im Handschacht-Verfahren weiterzugraben. Foto der Lage im Journal dokumentiert.'
 )
 
 insertJournal.run(
@@ -212,8 +211,7 @@ insertJournal.run(
   companyAdminId,
   'system',
   'Bautagesbericht Wetter & Mannschaftsstärke',
-  'Wetter: Sonnig, 19°C. Mannschaft: 1 Polier, 3 Tiefbau-Fachkräfte, 1 Spleisser. Keine Vorkommnisse gemäss SUVA-Sicherheitsleitfaden.',
-  JSON.stringify({ source: 'daily_log_auto' })
+  'Wetter: Sonnig, 19°C. Mannschaft: 1 Polier, 3 Tiefbau-Fachkräfte, 1 Spleisser. Keine Vorkommnisse gemäss SUVA-Sicherheitsleitfaden.'
 )
 
 console.log('Taskster database seeded successfully!')

@@ -442,14 +442,15 @@
                     </span>
                     <!-- Assignee Avatar Stack (Mehrfachzuweisung) -->
                     <div v-if="getTaskAssignees(task).length > 0" class="flex -space-x-1.5 overflow-hidden">
-                      <span
+                      <div
                         v-for="u in getTaskAssignees(task).slice(0, 3)"
                         :key="u.user_id"
-                        class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[9px] font-black flex items-center justify-center shrink-0"
+                        class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[9px] font-black flex items-center justify-center shrink-0 overflow-hidden"
                         :title="u.name || u.email"
                       >
-                        {{ (u.name || u.email || '?').charAt(0).toUpperCase() }}
-                      </span>
+                        <img v-if="u.avatar" :src="u.avatar" class="w-full h-full object-cover" />
+                        <span v-else>{{ (u.name || u.email || '?').charAt(0).toUpperCase() }}</span>
+                      </div>
                       <span
                         v-if="getTaskAssignees(task).length > 3"
                         class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-slate-200 text-slate-700 text-[8px] font-black flex items-center justify-center shrink-0"
@@ -1002,7 +1003,7 @@
               </p>
             </div>
             <button
-              @click="showNewFieldModal = true"
+              @click="openNewFieldModal"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
               + Neues Feld anlegen
@@ -1048,7 +1049,13 @@
                     </span>
                     <span v-else class="text-slate-400">-</span>
                   </td>
-                  <td class="py-3 px-4 text-right">
+                  <td class="py-3 px-4 text-right whitespace-nowrap">
+                    <button
+                      @click="editField(f)"
+                      class="text-cyan-600 hover:text-cyan-700 text-xs font-bold mr-3"
+                    >
+                      Bearbeiten
+                    </button>
                     <button
                       @click="deleteField(f.id)"
                       class="text-rose-600 hover:text-rose-700 text-xs font-bold"
@@ -2508,8 +2515,9 @@
                   Noch keine Kommentare oder Notizen vorhanden.
                 </div>
                 <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
-                    {{ (c.author_name || '?').charAt(0).toUpperCase() }}
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                    <img v-if="c.author_avatar" :src="c.author_avatar" class="w-full h-full object-cover" />
+                    <span v-else>{{ (c.author_name || '?').charAt(0).toUpperCase() }}</span>
                   </div>
                   <div class="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm p-3.5 border border-slate-200 shadow-xs">
                     <div class="flex items-baseline justify-between gap-2 mb-1.5">
@@ -2525,8 +2533,9 @@
 
               <!-- New comment textarea -->
               <div class="flex items-start gap-3">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
-                  {{ (user?.name || '?').charAt(0).toUpperCase() }}
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                  <img v-if="user?.avatar" :src="user.avatar" class="w-full h-full object-cover" />
+                  <span v-else>{{ (user?.name || '?').charAt(0).toUpperCase() }}</span>
                 </div>
                 <div class="flex-1">
                   <textarea
@@ -2939,7 +2948,7 @@
                 <span class="text-[11px] text-slate-500 font-medium">Titel-Spalte ist Pflichtfeld</span>
                 <button
                   type="button"
-                  @click="showNewFieldModal = true"
+                  @click="openNewFieldModal"
                   class="text-[11px] font-bold text-[#0891B2] hover:underline"
                 >
                   + Eigenes Feld anlegen
@@ -3070,27 +3079,29 @@
 
     <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-black text-slate-900 mb-1">Neues benutzerdefiniertes Feld</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">{{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}</h3>
         <p class="text-xs text-slate-500 mb-4">
           Definiere ein Attribut für Aufgaben oder das Projekt.
         </p>
 
-        <form @submit.prevent="createField" class="space-y-4">
+        <form @submit.prevent="saveField" class="space-y-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Gültigkeitsbereich</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
+                :disabled="!!editingFieldId"
                 @click="newFieldEntityType = 'task'"
-                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center disabled:opacity-60"
                 :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
               >
                 Aufgaben-Feld
               </button>
               <button
                 type="button"
+                :disabled="!!editingFieldId"
                 @click="newFieldEntityType = 'project'"
-                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center disabled:opacity-60"
                 :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
               >
                 Projekt-Feld
@@ -3113,7 +3124,8 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer"
+              :disabled="!!editingFieldId"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer disabled:opacity-60"
             >
               <option value="text">Textzeile (kurz)</option>
               <option value="textarea">Längerer Text / Notizfeld (mehrzeilig)</option>
@@ -4063,6 +4075,7 @@ const taskForm = ref<any>({
 
 // Custom Field Creation Modal
 const showNewFieldModal = ref(false)
+const editingFieldId = ref('')
 const newFieldLabel = ref('')
 const newFieldType = ref('text')
 const newFieldEntityType = ref<'task' | 'project'>('task')
@@ -4070,6 +4083,36 @@ const newFieldOptionsRaw = ref('')
 const enableFieldLogic = ref(false)
 const logicDependsOnField = ref('')
 const logicDependsOnValue = ref('')
+
+const openNewFieldModal = () => {
+  editingFieldId.value = ''
+  newFieldLabel.value = ''
+  newFieldType.value = 'text'
+  newFieldEntityType.value = 'task'
+  newFieldOptionsRaw.value = ''
+  enableFieldLogic.value = false
+  logicDependsOnField.value = ''
+  logicDependsOnValue.value = ''
+  showNewFieldModal.value = true
+}
+
+const editField = (f: any) => {
+  editingFieldId.value = f.id
+  newFieldLabel.value = f.label
+  newFieldType.value = f.field_type
+  newFieldEntityType.value = f.entity_type || 'task'
+  newFieldOptionsRaw.value = f.options ? f.options.join(', ') : ''
+  if (f.logic_rules && f.logic_rules.depends_on_field) {
+    enableFieldLogic.value = true
+    logicDependsOnField.value = f.logic_rules.depends_on_field
+    logicDependsOnValue.value = f.logic_rules.depends_on_value
+  } else {
+    enableFieldLogic.value = false
+    logicDependsOnField.value = ''
+    logicDependsOnValue.value = ''
+  }
+  showNewFieldModal.value = true
+}
 
 // Project Settings form
 const settingsForm = ref<any>({
@@ -4766,7 +4809,7 @@ const confirmDeleteProject = async () => {
   }
 }
 
-const createField = async () => {
+const saveField = async () => {
   try {
     const options = newFieldType.value === 'select'
       ? newFieldOptionsRaw.value.split(',').map((s) => s.trim()).filter(Boolean)
@@ -4776,26 +4819,41 @@ const createField = async () => {
       ? { depends_on_field: logicDependsOnField.value, depends_on_value: logicDependsOnValue.value }
       : null
 
-    await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        label: newFieldLabel.value,
-        field_type: newFieldType.value,
-        entity_type: newFieldEntityType.value,
-        options,
-        logic_rules: logicRules
-      }
-    })
+    if (editingFieldId.value) {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields/${editingFieldId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: {
+          label: newFieldLabel.value,
+          options,
+          logic_rules: logicRules
+        }
+      })
+    } else {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          label: newFieldLabel.value,
+          field_type: newFieldType.value,
+          entity_type: newFieldEntityType.value,
+          options,
+          logic_rules: logicRules
+        }
+      })
+    }
     showNewFieldModal.value = false
     newFieldLabel.value = ''
     newFieldOptionsRaw.value = ''
+    newFieldType.value = 'text'
+    newFieldEntityType.value = 'task'
     enableFieldLogic.value = false
     logicDependsOnField.value = ''
     logicDependsOnValue.value = ''
+    editingFieldId.value = ''
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Feld konnte nicht hinzugefügt werden')
+    alert(err.data?.statusMessage || 'Fehler beim Speichern des Feldes')
   }
 }
 
