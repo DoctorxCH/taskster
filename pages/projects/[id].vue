@@ -2859,13 +2859,13 @@
             <input
               ref="csvFileInput"
               type="file"
-              accept=".csv,.txt,.tsv"
+              accept=".xlsx,.xls,.csv,.txt,.tsv"
               class="hidden"
               @change="onCsvFileSelected"
             />
             <span class="text-4xl mb-3">📁</span>
-            <p class="text-sm font-bold text-slate-800">CSV- oder Textdatei auswählen oder hierher ziehen</p>
-            <p class="text-xs text-slate-500 mt-1">Unterstützt Trennzeichen: Komma (,), Semikolon (;), Tab</p>
+            <p class="text-sm font-bold text-slate-800">Excel- (.xlsx, .xls) oder CSV-Datei auswählen oder hierher ziehen</p>
+            <p class="text-xs text-slate-500 mt-1">Unterstützt Formate: Excel (.xlsx, .xls) sowie CSV, TSV (Trennzeichen: Komma, Semikolon, Tab)</p>
           </div>
 
           <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
@@ -2903,14 +2903,23 @@
               <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
                 Spaltenzuweisung (Mapping):
               </label>
-              <span class="text-[11px] text-slate-500 font-medium">Titel-Spalte ist Pflichtfeld</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-[11px] text-slate-500 font-medium">Titel-Spalte ist Pflichtfeld</span>
+                <button
+                  type="button"
+                  @click="showNewFieldModal = true"
+                  class="text-[11px] font-bold text-[#0891B2] hover:underline"
+                >
+                  + Eigenes Feld anlegen
+                </button>
+              </div>
             </div>
 
             <div class="border border-slate-200 rounded-2xl overflow-hidden">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
-                    <th class="py-2.5 px-4">Spalte in CSV</th>
+                    <th class="py-2.5 px-4">Spalte in Datei</th>
                     <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
                     <th class="py-2.5 px-4">Wird zugewiesen an Feld</th>
                   </tr>
@@ -2925,7 +2934,7 @@
                       <select
                         v-model="importColumnMapping[hIdx]"
                         class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-cyan-600"
-                        :class="importColumnMapping[hIdx] === 'title' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : ''"
+                        :class="importColumnMapping[hIdx] === 'title' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : '')"
                       >
                         <option value="">-- Ignorieren --</option>
                         <optgroup label="Standard-Felder">
@@ -2936,13 +2945,33 @@
                           <option value="priority">Priorität (niedrig/normal/hoch/dringend)</option>
                           <option value="tags">🏷️ Tags</option>
                         </optgroup>
-                        <optgroup v-if="taskCustomFields.length > 0" label="Zusatzfelder">
+
+                        <!-- Bestehende Zusatzfelder -->
+                        <optgroup v-if="fields.length > 0" label="Bestehende Zusatzfelder">
                           <option
-                            v-for="f in taskCustomFields"
+                            v-for="f in fields"
                             :key="f.id"
                             :value="'custom:' + f.field_key"
                           >
                             ⚙️ {{ f.label }} ({{ f.field_key }})
+                          </option>
+                        </optgroup>
+
+                        <!-- Als neues Feld aus dieser Spalte anlegen -->
+                        <optgroup label="✨ Als neues Zusatzfeld anlegen">
+                          <option :value="'custom:' + getHeaderKey(header)">
+                            ✨ Neues Feld: "{{ header }}" ({{ getHeaderKey(header) }})
+                          </option>
+                        </optgroup>
+
+                        <!-- Häufige Vorlagen-Felder -->
+                        <optgroup label="📋 Vorlagen-Zusatzfelder" v-if="getAvailableTemplateFields(header).length > 0">
+                          <option
+                            v-for="tf in getAvailableTemplateFields(header)"
+                            :key="tf.key"
+                            :value="'custom:' + tf.key"
+                          >
+                            {{ tf.icon }} {{ tf.label }} ({{ tf.key }})
                           </option>
                         </optgroup>
                       </select>
@@ -3707,6 +3736,7 @@ import {
   ExternalLink,
   MoreVertical
 } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 
 const route = useRoute()
 const { user, authHeaders } = useAuth()
@@ -4060,6 +4090,33 @@ const taskCustomFields = computed(() => {
 const projectCustomFields = computed(() => {
   return fields.value.filter((f: any) => f.entity_type === 'project')
 })
+
+// Häufige Vorlagen-Zusatzfelder für den schnellen Import
+const commonCustomFieldTemplates = [
+  { key: 'bauleiter', label: 'Verantw. Bauleiter', icon: '🏗️', type: 'text' },
+  { key: 'gewerk', label: 'Gewerk / Bereich', icon: '🔧', type: 'select' },
+  { key: 'kosten_chf', label: 'Kosten / Budget (CHF)', icon: '💰', type: 'number' },
+  { key: 'kunde', label: 'Kunde / Auftraggeber', icon: '🏢', type: 'text' },
+  { key: 'adresse', label: 'Adresse / Standort', icon: '📍', type: 'text' },
+  { key: 'abnahme_status', label: 'Abnahmestatus', icon: '📊', type: 'select' },
+  { key: 'komponente', label: 'Komponente / Modul', icon: '💻', type: 'text' },
+  { key: 'story_points', label: 'Story Points / Aufwand', icon: '🎯', type: 'number' },
+  { key: 'seriennummer', label: 'Seriennummer / ID', icon: '🔢', type: 'text' },
+  { key: 'lieferant', label: 'Lieferant / Partner', icon: '📦', type: 'text' },
+  { key: 'messprotokoll_nr', label: 'Messprotokoll-Nr.', icon: '📑', type: 'text' },
+  { key: 'anlage_typ', label: 'Anlage-Typ', icon: '⚡', type: 'text' }
+]
+
+const getHeaderKey = (header: string) => {
+  return String(header || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+}
+
+const getAvailableTemplateFields = (header: string) => {
+  const existingKeys = new Set(fields.value.map((f: any) => f.field_key))
+  const colKey = getHeaderKey(header)
+  existingKeys.add(colKey)
+  return commonCustomFieldTemplates.filter(t => !existingKeys.has(t.key))
+}
 
 const allProjectTasks = computed(() => {
   const arr: any[] = []
@@ -5355,14 +5412,27 @@ const onCsvFileSelected = (e: Event) => {
   }
 }
 
-const parseCsvFile = (file: File) => {
+const parseCsvFile = async (file: File) => {
   importFileName.value = file.name
   importError.value = ''
 
-  const reader = new FileReader()
-  reader.onload = (evt) => {
-    try {
-      const text = evt.target?.result as string
+  try {
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+    let headers: string[] = []
+    let rows: string[][] = []
+
+    if (isExcel) {
+      const data = await file.arrayBuffer()
+      const wb = XLSX.read(data, { type: 'array' })
+      const sheetName = wb.SheetNames[0]
+      if (!sheetName) throw new Error('Kein Tabellenblatt in der Datei gefunden.')
+      const sheet = wb.Sheets[sheetName]
+      const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+      if (rawRows.length < 2) throw new Error('Die Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.')
+      headers = rawRows[0].map((h: any) => String(h || '').trim())
+      rows = rawRows.slice(1).map(r => r.map((c: any) => String(c || '').trim())).filter(r => r.some(c => c.length > 0))
+    } else {
+      const text = await file.text()
       if (!text || !text.trim()) {
         importError.value = 'Die ausgewählte Datei ist leer.'
         return
@@ -5377,51 +5447,62 @@ const parseCsvFile = (file: File) => {
         delimiter = '\t'
       }
 
-      const rows = parseCSVString(text, delimiter)
-      if (rows.length < 2) {
+      const parsed = parseCSVString(text, delimiter)
+      if (parsed.length < 2) {
         importError.value = 'Die CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.'
         return
       }
 
-      importHeaders.value = rows[0].map(h => h.trim())
-      importParsedRows.value = rows.slice(1).filter(r => r.some(cell => cell.trim().length > 0))
+      headers = parsed[0].map(h => h.trim())
+      rows = parsed.slice(1).filter(r => r.some(cell => cell.trim().length > 0))
+    }
 
-      // Auto-guess mapping
-      const mapping: Record<number, string> = {}
-      importHeaders.value.forEach((header, idx) => {
-        const hLow = header.toLowerCase()
-        if (hLow.includes('titel') || hLow.includes('title') || hLow.includes('aufgabe') || hLow.includes('task') || hLow.includes('name')) {
-          if (!Object.values(mapping).includes('title')) mapping[idx] = 'title'
-        } else if (hLow.includes('beschreib') || hLow.includes('desc') || hLow.includes('notiz')) {
-          mapping[idx] = 'description'
-        } else if (hLow.includes('status')) {
-          mapping[idx] = 'status'
-        } else if (hLow.includes('fällig') || hLow.includes('due') || hLow.includes('datum') || hLow.includes('date')) {
-          mapping[idx] = 'due_date'
-        } else if (hLow.includes('prio') || hLow.includes('dring')) {
-          mapping[idx] = 'priority'
-        } else if (hLow.includes('tag')) {
-          mapping[idx] = 'tags'
+    importHeaders.value = headers
+    importParsedRows.value = rows
+
+    // Auto-guess mapping
+    const mapping: Record<number, string> = {}
+    importHeaders.value.forEach((header, idx) => {
+      const hLow = header.toLowerCase().trim()
+      if (!Object.values(mapping).includes('title') && (hLow.includes('titel') || hLow.includes('title') || hLow.includes('aufgabe') || hLow.includes('task') || hLow.includes('name'))) {
+        mapping[idx] = 'title'
+      } else if (!Object.values(mapping).includes('description') && (hLow.includes('beschreib') || hLow.includes('desc') || hLow.includes('notiz') || hLow.includes('detail') || hLow.includes('kommentar'))) {
+        mapping[idx] = 'description'
+      } else if (!Object.values(mapping).includes('status') && (hLow.includes('status') || hLow.includes('zustand') || hLow.includes('state'))) {
+        mapping[idx] = 'status'
+      } else if (!Object.values(mapping).includes('due_date') && (hLow.includes('fällig') || hLow.includes('due') || hLow.includes('datum') || hLow.includes('date') || hLow.includes('termin') || hLow.includes('frist'))) {
+        mapping[idx] = 'due_date'
+      } else if (!Object.values(mapping).includes('priority') && (hLow.includes('prio') || hLow.includes('dring') || hLow.includes('wichtig'))) {
+        mapping[idx] = 'priority'
+      } else if (!Object.values(mapping).includes('tags') && (hLow.includes('tag') || hLow.includes('label') || hLow.includes('kategorie') || hLow.includes('schlagwort'))) {
+        mapping[idx] = 'tags'
+      } else {
+        // 1. Check existing custom fields
+        const matchField = fields.value.find((f: any) =>
+          f.label?.toLowerCase() === hLow || f.field_key?.toLowerCase() === hLow
+        )
+        if (matchField) {
+          mapping[idx] = 'custom:' + matchField.field_key
         } else {
-          // Check custom fields
-          const matchField = taskCustomFields.value.find(f =>
-            f.label.toLowerCase() === hLow || f.field_key.toLowerCase() === hLow
+          // 2. Check common template fields
+          const matchTpl = commonCustomFieldTemplates.find(t =>
+            t.key.toLowerCase() === hLow || t.label.toLowerCase() === hLow || hLow.includes(t.key)
           )
-          if (matchField) {
-            mapping[idx] = 'custom:' + matchField.field_key
+          if (matchTpl) {
+            mapping[idx] = 'custom:' + matchTpl.key
           } else {
-            mapping[idx] = ''
+            // 3. Auto-suggest as new custom field
+            mapping[idx] = 'custom:' + getHeaderKey(header)
           }
         }
-      })
+      }
+    })
 
-      importColumnMapping.value = mapping
-      importStep.value = 2
-    } catch (err: any) {
-      importError.value = 'Fehler beim Parsen der CSV-Datei: ' + (err.message || err)
-    }
+    importColumnMapping.value = mapping
+    importStep.value = 2
+  } catch (err: any) {
+    importError.value = 'Fehler beim Parsen der Datei: ' + (err.message || err)
   }
-  reader.readAsText(file)
 }
 
 const parseCSVString = (text: string, delimiter: string): string[][] => {
@@ -5469,6 +5550,34 @@ const executeImport = async () => {
   let successCount = 0
 
   try {
+    // 1. Alle neu gemappten Zusatzfelder automatisch in den Felddefinitionen des Ordners anlegen
+    const existingFieldKeys = new Set(fields.value.map((f: any) => f.field_key))
+    for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+      if (targetField && targetField.startsWith('custom:')) {
+        const key = targetField.replace('custom:', '')
+        if (!existingFieldKeys.has(key)) {
+          const colIdx = parseInt(colIdxStr)
+          const headerName = importHeaders.value[colIdx] || key
+          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
+          try {
+            await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+              method: 'POST',
+              headers: authHeaders(),
+              body: {
+                field_key: key,
+                label: matchedTpl?.label || headerName,
+                field_type: matchedTpl?.type || 'text',
+                entity_type: 'task'
+              }
+            })
+            existingFieldKeys.add(key)
+          } catch (e) {
+            console.warn('Could not auto-create custom field:', key, e)
+          }
+        }
+      }
+    }
+
     for (const row of importParsedRows.value) {
       const taskPayload: any = {
         list_id: importTargetListId.value,

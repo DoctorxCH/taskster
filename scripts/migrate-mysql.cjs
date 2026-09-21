@@ -354,6 +354,8 @@ async function migrate() {
     "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
     "ALTER TABLE contacts ADD COLUMN website VARCHAR(500) NULL",
     "ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL",
+    "ALTER TABLE folder_field_definitions ADD COLUMN entity_type VARCHAR(32) NOT NULL DEFAULT 'task'",
+    "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules JSON NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }

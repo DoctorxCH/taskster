@@ -48,6 +48,8 @@ export function initDatabase() {
     "ALTER TABLE calendar_events ADD COLUMN latitude REAL",
     "ALTER TABLE calendar_events ADD COLUMN longitude REAL",
     "ALTER TABLE users ADD COLUMN avatar TEXT NULL",
+    "ALTER TABLE folder_field_definitions ADD COLUMN entity_type TEXT NOT NULL DEFAULT 'task'",
+    "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules TEXT NOT NULL DEFAULT '{}'",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }

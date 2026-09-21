@@ -82,6 +82,8 @@ function ensureTables($pdo) {
             "ALTER TABLE contacts ADD COLUMN longitude DECIMAL(10,7) NULL",
             "ALTER TABLE calendar_events ADD COLUMN latitude DECIMAL(10,7) NULL",
             "ALTER TABLE calendar_events ADD COLUMN longitude DECIMAL(10,7) NULL",
+            "ALTER TABLE folder_field_definitions ADD COLUMN entity_type VARCHAR(32) NOT NULL DEFAULT 'task'",
+            "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules JSON NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -3021,7 +3023,21 @@ try {
         $user = requireAuth();
         $fldId = $m[1];
         $label = trim($body['label'] ?? '');
-        $key = strtolower(preg_replace('/[^a-z0-9_]/', '_', $label));
+        if ($label === '') errorResponse('Feld-Bezeichnung erforderlich', 400);
+
+        $rawKey = trim($body['field_key'] ?? $label);
+        $key = strtolower(preg_replace('/[^a-z0-9_]/', '_', $rawKey));
+        $key = trim($key, '_');
+        if ($key === '') $key = 'custom_field';
+
+        // Check if field_key already exists
+        $chkStmt = $db->prepare("SELECT id, field_key FROM folder_field_definitions WHERE folder_id = ? AND field_key = ?");
+        $chkStmt->execute([$fldId, $key]);
+        $existing = $chkStmt->fetch();
+        if ($existing) {
+            jsonResponse(['success' => true, 'fieldId' => $existing['id'], 'fieldKey' => $existing['field_key']]);
+        }
+
         $type = $body['field_type'] ?? 'text';
         $entityType = in_array($body['entity_type'] ?? '', ['project', 'task']) ? $body['entity_type'] : 'task';
         $options = $body['options'] ?? [];
@@ -3032,7 +3048,7 @@ try {
             $fieldId, $fldId, $key, $label, $type, $entityType, json_encode($options), $logicRules ? json_encode($logicRules) : null
         ]);
 
-        jsonResponse(['success' => true, 'fieldId' => $fieldId]);
+        jsonResponse(['success' => true, 'fieldId' => $fieldId, 'fieldKey' => $key]);
     }
 
     // 7b. DELETE folders/:id/fields/:fieldId
@@ -3174,17 +3190,17 @@ try {
         }
 
         // Falls Vorlage gewaehlt wurde: Benutzerdefinierte Felder in den Ordner replizieren
+        $existingFieldsStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
+        $existingFieldsStmt->execute([$folderId]);
+        $existingKeys = $existingFieldsStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM folder_field_definitions WHERE folder_id = ?");
+        $countStmt->execute([$folderId]);
+        $sortOrder = (int)$countStmt->fetchColumn() + 1;
+
         if ($tmpl) {
             $fields = !empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : [];
             if (!empty($fields) && is_array($fields)) {
-                $existingFieldsStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
-                $existingFieldsStmt->execute([$folderId]);
-                $existingKeys = $existingFieldsStmt->fetchAll(PDO::FETCH_COLUMN);
-
-                $countStmt = $db->prepare("SELECT COUNT(*) FROM folder_field_definitions WHERE folder_id = ?");
-                $countStmt->execute([$folderId]);
-                $sortOrder = (int)$countStmt->fetchColumn() + 1;
-
                 foreach ($fields as $f) {
                     $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
                     if (in_array($fKey, $existingKeys)) continue;
@@ -3204,8 +3220,45 @@ try {
             }
         }
 
+        // Benutzerdefinierte Felder aus Import / Parametern registrieren
+        if (!empty($body['custom_field_definitions']) && is_array($body['custom_field_definitions'])) {
+            foreach ($body['custom_field_definitions'] as $cfd) {
+                $rawKey = trim((string)($cfd['field_key'] ?? $cfd['label'] ?? ''));
+                $fKey = trim(strtolower(preg_replace('/[^a-z0-9_]/', '_', $rawKey)), '_');
+                if (!$fKey || in_array($fKey, $existingKeys)) continue;
+
+                $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $fLabel = trim((string)($cfd['label'] ?? $fKey));
+                $fType = $cfd['field_type'] ?? 'text';
+                $fEntity = $cfd['entity_type'] ?? 'task';
+                $fOpts = $cfd['options'] ?? [];
+                $fRules = $cfd['logic_rules'] ?? null;
+
+                $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)")
+                   ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $sortOrder++]);
+                $existingKeys[] = $fKey;
+            }
+        }
+
         // Falls import_tasks uebergeben wurden: saemtliche Aufgaben anlegen
         if (!empty($importTasks) && is_array($importTasks)) {
+            // Fehlende Felddefinitionen aus custom_data automatisch registrieren
+            foreach ($importTasks as $taskItem) {
+                if (!empty($taskItem['custom_data']) && is_array($taskItem['custom_data'])) {
+                    foreach ($taskItem['custom_data'] as $k => $v) {
+                        $rawKey = trim((string)$k);
+                        $fKey = trim(strtolower(preg_replace('/[^a-z0-9_]/', '_', $rawKey)), '_');
+                        if (!$fKey || in_array($fKey, $existingKeys)) continue;
+
+                        $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                        $fLabel = ucwords(str_replace('_', ' ', $fKey));
+                        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, 'text', 'task', '[]', null, 0, ?)")
+                           ->execute([$fId, $folderId, $fKey, $fLabel, $sortOrder++]);
+                        $existingKeys[] = $fKey;
+                    }
+                }
+            }
+
             $insTask = $db->prepare("
                 INSERT INTO tasks (id, list_id, title, description, status, priority, due_date, tags, custom_data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
