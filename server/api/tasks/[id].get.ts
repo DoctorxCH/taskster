@@ -32,7 +32,7 @@ export default defineEventHandler((event) => {
 
   // Comments with author info
   const comments = db.prepare(`
-    SELECT tc.*, u.name as author_name
+    SELECT tc.*, u.name as author_name, u.avatar as author_avatar
     FROM task_comments tc
     JOIN users u ON u.id = tc.author_id
     WHERE tc.task_id = ?
