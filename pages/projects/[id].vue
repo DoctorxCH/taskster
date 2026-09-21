@@ -2039,158 +2039,6 @@
             </div>
           </div>
 
-          <!-- Zusatzfelder direkt unter dem Titel -->
-          <div v-if="drawerTask && visibleDrawerFields.length > 0" class="pt-3 border-t border-slate-100">
-            <div class="text-[10px] font-black text-cyan-800 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <span>⚙️</span>
-              <span>Zusatzfelder</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-              <div
-                v-for="f in visibleDrawerFields"
-                :key="f.id"
-                class="bg-slate-50 p-2.5 rounded-xl border border-slate-200"
-                :class="f.field_type === 'textarea' ? 'sm:col-span-2 md:col-span-3 lg:col-span-4' : ''"
-              >
-                <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label">
-                  {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
-                </label>
-
-                <!-- Select dropdown -->
-                <select
-                  v-if="f.field_type === 'select'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                >
-                  <option value="">-- Keine Auswahl --</option>
-                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
-                </select>
-
-                <!-- Textarea (Längerer Text) -->
-                <textarea
-                  v-else-if="f.field_type === 'textarea'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @blur="autoSaveDrawer"
-                  rows="3"
-                  :disabled="userRole === 'viewer'"
-                  placeholder="Details, Notizen oder Beschreibung..."
-                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs resize-y"
-                ></textarea>
-
-                <!-- Checkbox (Ja / Nein) -->
-                <div v-else-if="f.field_type === 'checkbox'" class="pt-0.5">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      v-model="drawerTask.custom_data[f.field_key]"
-                      @change="autoSaveDrawer"
-                      :disabled="userRole === 'viewer'"
-                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
-                    />
-                    <span class="text-xs font-semibold" :class="drawerTask.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
-                      {{ drawerTask.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
-                    </span>
-                  </label>
-                </div>
-
-                <!-- Date -->
-                <input
-                  v-else-if="f.field_type === 'date'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @change="autoSaveDrawer"
-                  type="date"
-                  :disabled="userRole === 'viewer'"
-                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                />
-
-                <!-- Number -->
-                <input
-                  v-else-if="f.field_type === 'number'"
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @blur="autoSaveDrawer"
-                  type="number"
-                  step="any"
-                  :disabled="userRole === 'viewer'"
-                  placeholder="0.00"
-                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                />
-
-                <!-- URL -->
-                <div v-else-if="f.field_type === 'url'" class="flex items-center gap-1.5">
-                  <input
-                    v-model="drawerTask.custom_data[f.field_key]"
-                    @blur="autoSaveDrawer"
-                    type="url"
-                    placeholder="https://..."
-                    :disabled="userRole === 'viewer'"
-                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                  />
-                  <a
-                    v-if="drawerTask.custom_data[f.field_key]"
-                    :href="drawerTask.custom_data[f.field_key]"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
-                    title="Link öffnen"
-                  >
-                    <ExternalLink class="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                <!-- Email -->
-                <div v-else-if="f.field_type === 'email'" class="flex items-center gap-1.5">
-                  <input
-                    v-model="drawerTask.custom_data[f.field_key]"
-                    @blur="autoSaveDrawer"
-                    type="email"
-                    placeholder="kontakt@beispiel.ch"
-                    :disabled="userRole === 'viewer'"
-                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                  />
-                  <a
-                    v-if="drawerTask.custom_data[f.field_key]"
-                    :href="'mailto:' + drawerTask.custom_data[f.field_key]"
-                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
-                    title="E-Mail senden"
-                  >
-                    <Mail class="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                <!-- Phone -->
-                <div v-else-if="f.field_type === 'phone'" class="flex items-center gap-1.5">
-                  <input
-                    v-model="drawerTask.custom_data[f.field_key]"
-                    @blur="autoSaveDrawer"
-                    type="tel"
-                    placeholder="+41 79 123 45 67"
-                    :disabled="userRole === 'viewer'"
-                    class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                  />
-                  <a
-                    v-if="drawerTask.custom_data[f.field_key]"
-                    :href="'tel:' + drawerTask.custom_data[f.field_key]"
-                    class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
-                    title="Anrufen"
-                  >
-                    <Phone class="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                <!-- Default Text -->
-                <input
-                  v-else
-                  v-model="drawerTask.custom_data[f.field_key]"
-                  @blur="autoSaveDrawer"
-                  :disabled="userRole === 'viewer'"
-                  type="text"
-                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Body: 2 Columns Grid -->
@@ -2199,6 +2047,159 @@
           <!-- LEFT COLUMN: Main Content (Description, Checklist, Subtasks, Comments) -->
           <div class="flex-1 p-6 sm:p-7 space-y-6 min-w-0">
             
+            <!-- Zusatzfelder im mitscrollenden Bereich -->
+            <div v-if="drawerTask && visibleDrawerFields.length > 0" class="p-4 rounded-2xl bg-cyan-50/40 border border-cyan-100">
+              <div class="text-[10px] font-black text-cyan-800 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <span>⚙️</span>
+                <span>Zusatzfelder</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                <div
+                  v-for="f in visibleDrawerFields"
+                  :key="f.id"
+                  class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs"
+                  :class="f.field_type === 'textarea' ? 'sm:col-span-2 md:col-span-3' : ''"
+                >
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label">
+                    {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
+                  </label>
+
+                  <!-- Select dropdown -->
+                  <select
+                    v-if="f.field_type === 'select'"
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @change="autoSaveDrawer"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  >
+                    <option value="">-- Keine Auswahl --</option>
+                    <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+
+                  <!-- Textarea (Längerer Text) -->
+                  <textarea
+                    v-else-if="f.field_type === 'textarea'"
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    rows="3"
+                    :disabled="userRole === 'viewer'"
+                    placeholder="Details, Notizen oder Beschreibung..."
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs resize-y"
+                  ></textarea>
+
+                  <!-- Checkbox (Ja / Nein) -->
+                  <div v-else-if="f.field_type === 'checkbox'" class="pt-0.5">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        v-model="drawerTask.custom_data[f.field_key]"
+                        @change="autoSaveDrawer"
+                        :disabled="userRole === 'viewer'"
+                        class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                      />
+                      <span class="text-xs font-semibold" :class="drawerTask.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
+                        {{ drawerTask.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
+                      </span>
+                    </label>
+                  </div>
+
+                  <!-- Date -->
+                  <input
+                    v-else-if="f.field_type === 'date'"
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @change="autoSaveDrawer"
+                    type="date"
+                    :disabled="userRole === 'viewer'"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+
+                  <!-- Number -->
+                  <input
+                    v-else-if="f.field_type === 'number'"
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    type="number"
+                    step="any"
+                    :disabled="userRole === 'viewer'"
+                    placeholder="0.00"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+
+                  <!-- URL -->
+                  <div v-else-if="f.field_type === 'url'" class="flex items-center gap-1.5">
+                    <input
+                      v-model="drawerTask.custom_data[f.field_key]"
+                      @blur="autoSaveDrawer"
+                      type="url"
+                      placeholder="https://..."
+                      :disabled="userRole === 'viewer'"
+                      class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                    />
+                    <a
+                      v-if="drawerTask.custom_data[f.field_key]"
+                      :href="drawerTask.custom_data[f.field_key]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      title="Link öffnen"
+                    >
+                      <ExternalLink class="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <!-- Email -->
+                  <div v-else-if="f.field_type === 'email'" class="flex items-center gap-1.5">
+                    <input
+                      v-model="drawerTask.custom_data[f.field_key]"
+                      @blur="autoSaveDrawer"
+                      type="email"
+                      placeholder="kontakt@beispiel.ch"
+                      :disabled="userRole === 'viewer'"
+                      class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                    />
+                    <a
+                      v-if="drawerTask.custom_data[f.field_key]"
+                      :href="'mailto:' + drawerTask.custom_data[f.field_key]"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      title="E-Mail senden"
+                    >
+                      <Mail class="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <!-- Phone -->
+                  <div v-else-if="f.field_type === 'phone'" class="flex items-center gap-1.5">
+                    <input
+                      v-model="drawerTask.custom_data[f.field_key]"
+                      @blur="autoSaveDrawer"
+                      type="tel"
+                      placeholder="+41 79 123 45 67"
+                      :disabled="userRole === 'viewer'"
+                      class="w-full min-w-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                    />
+                    <a
+                      v-if="drawerTask.custom_data[f.field_key]"
+                      :href="'tel:' + drawerTask.custom_data[f.field_key]"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      title="Anrufen"
+                    >
+                      <Phone class="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <!-- Default Text -->
+                  <input
+                    v-else
+                    v-model="drawerTask.custom_data[f.field_key]"
+                    @blur="autoSaveDrawer"
+                    :disabled="userRole === 'viewer'"
+                    type="text"
+                    class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
             <!-- Description -->
             <div>
               <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center space-x-1.5">

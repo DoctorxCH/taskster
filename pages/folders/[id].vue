@@ -1084,6 +1084,43 @@
             </p>
           </div>
 
+          <!-- Zusatzfelder verwalten -->
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span>⚙️</span>
+                <span>Zusatzfelder in diesem Ordner ({{ fields.length }})</span>
+              </span>
+              <button
+                type="button"
+                @click="showEditFolderModal = false; navigateTo(`/projects/${projects[0]?.id}`)"
+                v-if="projects.length > 0"
+                class="text-[#00A3C4] hover:underline text-[11px] font-bold"
+              >
+                + Im Projekt verwalten
+              </button>
+            </div>
+            <div v-if="fields.length > 0" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+              <div
+                v-for="f in fields"
+                :key="f.id"
+                class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs shadow-2xs"
+              >
+                <div>
+                  <span class="font-bold text-slate-900">{{ f.label }}</span>
+                  <span class="text-[10px] text-slate-500 ml-1.5 font-mono">({{ f.field_type }})</span>
+                  <span v-if="f.options && f.options.length" class="text-[10px] text-cyan-700 block italic">Optionen: {{ f.options.join(', ') }}</span>
+                </div>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
+                </span>
+              </div>
+            </div>
+            <div v-else class="text-[11px] text-slate-400 italic">
+              Noch keine Zusatzfelder für diesen Ordner definiert.
+            </div>
+          </div>
+
           <!-- Teammitglieder einladen -->
           <div class="p-3.5 bg-cyan-50/70 border border-cyan-200 rounded-xl flex items-center justify-between">
             <div>
@@ -1371,8 +1408,20 @@
           </div>
         </div>
 
-        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 leading-relaxed mb-5">
+        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 leading-relaxed mb-4">
           {{ $t('dashboard.ordner_loeschen_confirm', { name: folder?.name, count: projects.length }) }}
+        </div>
+
+        <div class="space-y-1.5 mb-5">
+          <label class="block text-xs font-bold text-slate-700">
+            Gib den Ordnernamen <strong class="text-rose-700 font-mono">{{ folder?.name }}</strong> zur Bestätigung ein:
+          </label>
+          <input
+            v-model="deleteFolderConfirmName"
+            type="text"
+            :placeholder="folder?.name"
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-rose-500 focus:bg-white"
+          />
         </div>
 
         <div v-if="deleteFolderError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
@@ -1382,7 +1431,7 @@
         <div class="flex items-center justify-end space-x-3">
           <button
             type="button"
-            @click="showDeleteFolderModal = false; deleteFolderError = ''"
+            @click="showDeleteFolderModal = false; deleteFolderConfirmName = ''; deleteFolderError = ''"
             :disabled="deletingFolder"
             class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
           >
@@ -1391,8 +1440,8 @@
           <button
             type="button"
             @click="confirmDeleteFolder"
-            :disabled="deletingFolder"
-            class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+            :disabled="deletingFolder || deleteFolderConfirmName.trim() !== folder?.name?.trim()"
+            class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Trash2 v-if="!deletingFolder" class="w-3.5 h-3.5" />
             <span>{{ deletingFolder ? 'Wird gelöscht...' : $t('dashboard.ordner_loeschen_button') }}</span>
@@ -1566,14 +1615,20 @@ const updateFolder = async () => {
 const showDeleteFolderModal = ref(false)
 const deletingFolder = ref(false)
 const deleteFolderError = ref('')
+const deleteFolderConfirmName = ref('')
 
 const openDeleteFolderModal = () => {
   deleteFolderError.value = ''
+  deleteFolderConfirmName.value = ''
   showDeleteFolderModal.value = true
 }
 
 const confirmDeleteFolder = async () => {
   if (!folder.value?.id) return
+  if (deleteFolderConfirmName.value.trim() !== folder.value.name.trim()) {
+    deleteFolderError.value = 'Der eingegebene Ordnername stimmt nicht überein.'
+    return
+  }
   deletingFolder.value = true
   deleteFolderError.value = ''
   try {
