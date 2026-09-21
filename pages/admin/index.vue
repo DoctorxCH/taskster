@@ -438,7 +438,7 @@
                 </td>
                 <td class="py-3.5 px-4 text-right">
                   <button
-                    @click="alert(`Rechnung für ${order.customer_name} wird generiert...`)"
+                    @click="generateInvoice(order.customer_name)"
                     class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-300 bg-white/70 hover:bg-white text-slate-700 transition cursor-pointer"
                   >
                     Rechnung
@@ -576,7 +576,7 @@
             :class="templateCategoryFilter === 'job' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-white/60 hover:bg-white text-slate-700 border border-white/70 shadow-xs'"
           >
             <span>💼</span>
-            <span>Job & Gewerbe ({{ templates.filter(t => t.category === 'job').length }})</span>
+            <span>Job & Gewerbe ({{ jobTemplatesCount }})</span>
           </button>
           <button
             @click="templateCategoryFilter = 'private'"
@@ -584,7 +584,7 @@
             :class="templateCategoryFilter === 'private' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-white/60 hover:bg-white text-slate-700 border border-white/70 shadow-xs'"
           >
             <span>🏡</span>
-            <span>Privat ({{ templates.filter(t => t.category === 'private').length }})</span>
+            <span>Privat ({{ privateTemplatesCount }})</span>
           </button>
         </div>
 
@@ -742,7 +742,7 @@
 
         <div class="flex items-center space-x-2 shrink-0">
           <button
-            @click="openTestEmailModal"
+            @click="openTestEmailModal()"
             class="taskster_button_light px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-1.5 shadow-sm"
           >
             <Send class="w-3.5 h-3.5" />
@@ -1078,7 +1078,7 @@
           <div class="flex items-center justify-between pt-6 border-t border-slate-200/80">
             <button
               type="button"
-              @click="openTestEmailModal"
+              @click="openTestEmailModal()"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Test-E-Mail senden
@@ -2236,6 +2236,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
 import {
   ShieldCheck,
   Users,
@@ -2335,23 +2336,23 @@ const activeSectionDescription = computed(() => {
 })
 
 const totalCompanyUsers = computed(() => {
-  return companies.value.reduce((sum, c) => sum + (Number(c.user_count) || 0), 0)
+  return companies.value.reduce((sum: number, c: any) => sum + (Number(c.user_count) || 0), 0)
 })
 
 const companiesWithUploadAllowed = computed(() => {
-  return companies.value.filter(c => c.settings?.allow_document_upload).length
+  return companies.value.filter((c: any) => c.settings?.allow_document_upload).length
 })
 
 const jobTemplatesCount = computed(() => {
-  return templates.value.filter(t => t.category === 'job').length
+  return templates.value.filter((t: any) => t.category === 'job').length
 })
 
 const privateTemplatesCount = computed(() => {
-  return templates.value.filter(t => t.category === 'private').length
+  return templates.value.filter((t: any) => t.category === 'private').length
 })
 
 const activeEmailTemplatesCount = computed(() => {
-  return emailTemplates.value.filter(t => t.is_active).length
+  return emailTemplates.value.filter((t: any) => t.is_active).length
 })
 
 const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email') => {
@@ -2628,6 +2629,12 @@ const loadOrdersData = async () => {
   }
 }
 
+const generateInvoice = (customerName: string) => {
+  if (import.meta.client) {
+    window.alert(`Rechnung für ${customerName} wird generiert...`)
+  }
+}
+
 const templates = ref<any[]>([])
 const templateCategoryFilter = ref('all')
 const templateSearch = ref('')
@@ -2734,7 +2741,7 @@ const addFieldToTemplate = () => {
 
   let options: string[] = []
   if (newField.value.field_type === 'select') {
-    options = newFieldOptionsInput.value.split(',').map(s => s.trim()).filter(Boolean)
+    options = newFieldOptionsInput.value.split(',').map((s: string) => s.trim()).filter(Boolean)
   }
 
   let logicRules: any = null
@@ -3209,7 +3216,7 @@ const sendTestEmail = async () => {
   }
 }
 
-watch(activeTab, (tab) => {
+watch(activeTab, (tab: string) => {
   if (tab === 'email') {
     loadEmailSettings()
     loadEmailTemplates()
