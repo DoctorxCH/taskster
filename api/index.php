@@ -3128,7 +3128,76 @@ try {
         $user = requireAuth();
         $fldId = $m[1];
         $fieldId = $m[2];
+
+        $fStmt = $db->prepare("SELECT owner_id, company_id FROM project_folders WHERE id = ?");
+        $fStmt->execute([$fldId]);
+        $folder = $fStmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        $canEdit = ($folder['owner_id'] === $user['id']) || (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && ($user['company_role'] ?? '') === 'admin');
+        if (!$canEdit) errorResponse('Keine Berechtigung zum Löschen der Felddefinition', 403);
+
+        $fldStmt = $db->prepare("SELECT field_key, entity_type FROM folder_field_definitions WHERE id = ? AND folder_id = ?");
+        $fldStmt->execute([$fieldId, $fldId]);
+        $existingField = $fldStmt->fetch();
+        if (!$existingField) errorResponse('Feld nicht gefunden', 404);
+
+        if ($existingField['entity_type'] === 'project') {
+            $checkProjects = $db->prepare("
+                SELECT COUNT(*) FROM projects p
+                JOIN project_folders pf ON pf.id = p.folder_id
+                WHERE pf.id = ? AND JSON_UNQUOTE(JSON_EXTRACT(p.custom_data, ?)) IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(p.custom_data, ?)) != ''
+            ");
+            $checkProjects->execute([$fldId, '$.' . $existingField['field_key'], '$.' . $existingField['field_key']]);
+            if ((int)$checkProjects->fetchColumn() > 0) {
+                errorResponse('Feld kann nicht gelöscht werden, da es in aktiven Projekten verwendet wird.', 400);
+            }
+        } else {
+            $checkTasks = $db->prepare("
+                SELECT COUNT(*) FROM tasks t
+                JOIN lists l ON l.id = t.list_id
+                JOIN projects p ON p.id = l.project_id
+                WHERE p.folder_id = ? AND JSON_UNQUOTE(JSON_EXTRACT(t.custom_data, ?)) IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(t.custom_data, ?)) != ''
+            ");
+            $checkTasks->execute([$fldId, '$.' . $existingField['field_key'], '$.' . $existingField['field_key']]);
+            if ((int)$checkTasks->fetchColumn() > 0) {
+                errorResponse('Feld kann nicht gelöscht werden, da es in aktiven Aufgaben verwendet wird.', 400);
+            }
+        }
+
         $db->prepare("DELETE FROM folder_field_definitions WHERE id = ? AND folder_id = ?")->execute([$fieldId, $fldId]);
+        jsonResponse(['success' => true]);
+    }
+
+    // 7c. PUT folders/:id/fields/:fieldId
+    if (preg_match('#^folders/([^/]+)/fields/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $fldId = $m[1];
+        $fieldId = $m[2];
+
+        $fStmt = $db->prepare("SELECT owner_id, company_id FROM project_folders WHERE id = ?");
+        $fStmt->execute([$fldId]);
+        $folder = $fStmt->fetch();
+        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+
+        $canEdit = ($folder['owner_id'] === $user['id']) || (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && ($user['company_role'] ?? '') === 'admin');
+        if (!$canEdit) errorResponse('Keine Berechtigung zum Bearbeiten der Felddefinitionen', 403);
+
+        $fldStmt = $db->prepare("SELECT * FROM folder_field_definitions WHERE id = ? AND folder_id = ?");
+        $fldStmt->execute([$fieldId, $fldId]);
+        $existingField = $fldStmt->fetch();
+        if (!$existingField) errorResponse('Feld nicht gefunden', 404);
+
+        $label = isset($body['label']) ? trim($body['label']) : $existingField['label'];
+        if ($label === '') errorResponse('Feld-Beschriftung darf nicht leer sein', 400);
+
+        $options = isset($body['options']) ? json_encode($body['options']) : $existingField['options'];
+        $logicRules = array_key_exists('logic_rules', $body) ? ($body['logic_rules'] ? json_encode($body['logic_rules']) : null) : $existingField['logic_rules'];
+
+        $db->prepare("UPDATE folder_field_definitions SET label = ?, options = ?, logic_rules = ? WHERE id = ? AND folder_id = ?")->execute([
+            $label, $options, $logicRules, $fieldId, $fldId
+        ]);
+
         jsonResponse(['success' => true]);
     }
 
@@ -6168,6 +6237,78 @@ try {
         ]);
 
         jsonResponse(['success' => true, 'id' => $id]);
+    }
+
+    // EVT-9. PUT event-categories/:id
+    if (preg_match('#^event-categories/([^/]+)$#', $path, $m) && ($method === 'PUT' || $method === 'PATCH')) {
+        $user = requireAuth();
+        $catId = $m[1];
+        $stmt = $db->prepare("SELECT owner_id, company_id, is_system FROM event_categories WHERE id = ?");
+        $stmt->execute([$catId]);
+        $existing = $stmt->fetch();
+        if (!$existing) errorResponse('Kategorie nicht gefunden', 404);
+
+        if (!empty($existing['is_system'])) {
+            errorResponse('Systemkategorien können nicht bearbeitet werden', 403);
+        }
+
+        if (!empty($existing['company_id'])) {
+            if ($existing['company_id'] !== $user['company_id'] || ($user['company_role'] ?? '') !== 'admin') {
+                errorResponse('Keine Berechtigung zum Bearbeiten von Firmenkategorien', 403);
+            }
+        } elseif ($existing['owner_id'] !== $user['id']) {
+            errorResponse('Keine Berechtigung', 403);
+        }
+
+        $name = trim($body['name'] ?? '');
+        if (!$name) errorResponse('Kategoriename erforderlich', 400);
+
+        $color = preg_match('/^#[0-9A-Fa-f]{6}$/', $body['color'] ?? '') ? $body['color'] : '#0891B2';
+        $companyWide = !empty($body['company_wide']) && !empty($user['company_id']);
+
+        $db->prepare("
+            UPDATE event_categories
+            SET name = ?, color = ?, company_id = ?, owner_id = ?
+            WHERE id = ?
+        ")->execute([
+            $name, $color,
+            $companyWide ? $user['company_id'] : null,
+            $companyWide ? null : $user['id'],
+            $catId
+        ]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // EVT-10. DELETE event-categories/:id
+    if (preg_match('#^event-categories/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $catId = $m[1];
+        $stmt = $db->prepare("SELECT owner_id, company_id, is_system FROM event_categories WHERE id = ?");
+        $stmt->execute([$catId]);
+        $existing = $stmt->fetch();
+        if (!$existing) errorResponse('Kategorie nicht gefunden', 404);
+
+        if (!empty($existing['is_system'])) {
+            errorResponse('Systemkategorien können nicht gelöscht werden', 403);
+        }
+
+        if (!empty($existing['company_id'])) {
+            if ($existing['company_id'] !== $user['company_id'] || ($user['company_role'] ?? '') !== 'admin') {
+                errorResponse('Keine Berechtigung zum Löschen von Firmenkategorien', 403);
+            }
+        } elseif ($existing['owner_id'] !== $user['id']) {
+            errorResponse('Keine Berechtigung', 403);
+        }
+
+        $cStmt = $db->prepare("SELECT COUNT(*) FROM calendar_events WHERE category_id = ?");
+        $cStmt->execute([$catId]);
+        if ((int)$cStmt->fetchColumn() > 0) {
+            errorResponse('Kategorie wird noch verwendet und kann nicht gelöscht werden', 400);
+        }
+
+        $db->prepare("DELETE FROM event_categories WHERE id = ?")->execute([$catId]);
+        jsonResponse(['success' => true]);
     }
 
     // 17. GET admin/overview
