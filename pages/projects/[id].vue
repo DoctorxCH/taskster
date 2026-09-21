@@ -2521,7 +2521,7 @@
                 </div>
                 <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-                    <img v-if="c.author_avatar" :src="c.author_avatar" class="w-full h-full object-cover" />
+                    <img v-if="user?.avatar || c.author_avatar" :src="user?.avatar || c.author_avatar" class="w-full h-full object-cover" />
                     <span v-else>{{ (c.author_name || '?').charAt(0).toUpperCase() }}</span>
                   </div>
                   <div class="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm p-3.5 border border-slate-200 shadow-xs">
