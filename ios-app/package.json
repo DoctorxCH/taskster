@@ -4,10 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No tests specified\"",
-    "cap": "cap",
-    "cap:sync": "cap sync ios",
-    "cap:open": "cap open ios"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -16,9 +13,5 @@
   "dependencies": {
     "@capacitor/core": "^8.5.2",
     "@capacitor/ios": "^8.5.2"
-  },
-  "private": true,
-  "devDependencies": {
-    "@capacitor/cli": "^8.5.2"
   }
 }
