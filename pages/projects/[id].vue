@@ -2702,10 +2702,11 @@
                 <span
                   v-for="uId in drawerTaskAssignedUsers"
                   :key="uId"
-                  class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-900 text-xs font-bold"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-900 text-xs font-bold"
                 >
-                  <span class="w-4 h-4 rounded-full bg-cyan-700 text-white text-[9px] flex items-center justify-center font-black">
-                    {{ (getMemberName(uId) || 'U').charAt(0).toUpperCase() }}
+                  <span class="w-4 h-4 rounded-full bg-cyan-700 text-white text-[9px] flex items-center justify-center font-black overflow-hidden shrink-0">
+                    <img v-if="getMember(uId)?.avatar" :src="getMember(uId)?.avatar" class="w-full h-full object-cover" />
+                    <span v-else>{{ (getMemberName(uId) || 'U').charAt(0).toUpperCase() }}</span>
                   </span>
                   <span>{{ getMemberName(uId) }}</span>
                   <button
@@ -2741,8 +2742,9 @@
                     class="flex items-center justify-between p-2 rounded-xl hover:bg-cyan-50 transition cursor-pointer text-xs"
                   >
                     <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">
-                        {{ (m.name || m.email || '?').charAt(0).toUpperCase() }}
+                      <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center text-[10px] font-black shrink-0 overflow-hidden">
+                        <img v-if="m.avatar" :src="m.avatar" class="w-full h-full object-cover" />
+                        <span v-else>{{ (m.name || m.email || '?').charAt(0).toUpperCase() }}</span>
                       </div>
                       <div class="min-w-0">
                         <div class="font-bold text-slate-900 truncate">
@@ -5181,8 +5183,12 @@ const removeAssignee = (userId: string) => {
   }
 }
 
+const getMember = (userId: string): any => {
+  return members.value.find((mem: any) => mem.user_id === userId) || null
+}
+
 const getMemberName = (userId: string): string => {
-  const m = members.value.find((mem: any) => mem.user_id === userId)
+  const m = getMember(userId)
   return m ? (m.name || m.email) : 'Benutzer'
 }
 
