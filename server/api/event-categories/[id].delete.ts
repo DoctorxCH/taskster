@@ -14,8 +14,10 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 403, statusMessage: 'Systemkategorien können nicht gelöscht werden' })
   }
 
-  if (existing.company_id && existing.company_id !== user.company_id) {
-     throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung' })
+  if (existing.company_id) {
+    if (existing.company_id !== user.company_id || user.company_role !== 'admin') {
+      throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung' })
+    }
   }
 
   if (!existing.company_id && existing.owner_id !== user.id) {
