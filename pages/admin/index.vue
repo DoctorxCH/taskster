@@ -1,6 +1,6 @@
 <template>
   <div class="w-full">
-    <div v-if="isAnyAdmin" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div v-if="isAnyAdmin" class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     <!-- Header with Integrated Stat Pills -->
     <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-xs">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">

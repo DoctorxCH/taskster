@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-5">
       <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
     <!-- Kopfzeile -->
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div class="flex items-center gap-3">

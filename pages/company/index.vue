@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     <!-- Zugriff verweigert -->
     <div v-if="!isCompanyAdmin" class="max-w-md mx-auto py-20 text-center">
       <div class="bg-white border border-slate-200 rounded-lg p-8">

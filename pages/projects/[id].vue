@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
       <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
@@ -292,7 +292,7 @@
         </div>
 
         <!-- MODE A: BOARD (KANBAN MEISTERTASK-STYLE COLUMNS) -->
-        <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+        <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2200px]:grid-cols-6 gap-6 items-start">
           <div
             v-for="(list, listIdx) in lists"
             :key="list.id"
@@ -1915,11 +1915,11 @@
          ============================================================ -->
     <div
       v-if="showTaskDrawer"
-      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md overflow-y-auto"
+      class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-md overflow-hidden"
       @click.self="closeTaskDrawer"
     >
       <div
-        class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative my-auto animate-in fade-in zoom-in-95 duration-150"
+        class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-[94vw] max-w-[94vw] h-[94vh] max-h-[94vh] flex flex-col overflow-hidden relative my-auto animate-in fade-in zoom-in-95 duration-150"
       >
         <!-- Top color accent bar -->
         <div
@@ -2042,10 +2042,10 @@
         </div>
 
         <!-- Body: 2 Columns Grid -->
-        <div v-if="drawerTask" class="flex-1 overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200">
+        <div v-if="drawerTask" class="flex-1 overflow-y-auto flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
           
           <!-- LEFT COLUMN: Main Content (Description, Checklist, Subtasks, Comments) -->
-          <div class="flex-1 p-6 sm:p-7 space-y-6 min-w-0">
+          <div class="flex-1 p-6 sm:p-8 space-y-6 min-w-0">
             
             <!-- Zusatzfelder im mitscrollenden Bereich -->
             <div v-if="drawerTask && visibleDrawerFields.length > 0" class="p-4 rounded-2xl bg-cyan-50/40 border border-cyan-100">
@@ -2053,7 +2053,7 @@
                 <span>⚙️</span>
                 <span>Zusatzfelder</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div
                   v-for="f in visibleDrawerFields"
                   :key="f.id"
@@ -2628,7 +2628,7 @@
           </div>
 
           <!-- RIGHT COLUMN: Sidebar (Status, Prio, Assignee, Date, Color, Tags, Fields, Delete) -->
-          <div class="w-full md:w-80 bg-slate-50/90 p-6 space-y-5 shrink-0">
+          <div class="w-full lg:w-96 xl:w-[420px] bg-slate-50/90 p-6 sm:p-7 space-y-5 shrink-0">
             
             <!-- Section / List mover -->
             <div>

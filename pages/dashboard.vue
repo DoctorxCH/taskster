@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
     <!-- MeisterTask-Style Hero Section (Centered Date, Greeting, and Floating Search) -->
     <div class="flex flex-col items-center justify-center text-center select-none py-2">
       <!-- Formatted German Date Pill -->
