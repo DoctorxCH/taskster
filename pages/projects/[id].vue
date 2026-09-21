@@ -448,8 +448,8 @@
                         class="inline-block w-5 h-5 rounded-full ring-1 ring-white bg-gradient-to-tr from-cyan-600 to-teal-500 text-white text-[9px] font-black flex items-center justify-center shrink-0 overflow-hidden"
                         :title="u.name || u.email"
                       >
-                        <img v-if="u.avatar" :src="u.avatar" class="w-full h-full object-cover" />
-                        <span v-else>{{ (u.name || u.email || '?').charAt(0).toUpperCase() }}</span>
+                        <img v-if="user?.avatar || u.avatar" :src="user?.avatar || u.avatar" class="w-full h-full object-cover" />
+                        <span v-else>{{ (user?.name || user?.email || '?').charAt(0).toUpperCase() }}</span>
                       </div>
                       <span
                         v-if="getTaskAssignees(task).length > 3"
