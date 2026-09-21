@@ -62,27 +62,39 @@
           >
             Alle
           </button>
-          <button
+          <div
             v-for="c in categories"
             :key="c.id"
-            type="button"
-            class="h-7 px-2.5 rounded text-xs font-medium border transition-colors flex items-center gap-1.5"
-            :class="activeCategories.includes(c.id) ? 'text-white border-transparent' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'"
-            :style="activeCategories.includes(c.id) ? { backgroundColor: c.color } : {}"
-            @click="toggleCategory(c.id)"
+            class="group relative flex items-center"
           >
-            <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: activeCategories.includes(c.id) ? '#fff' : c.color }" />
-            {{ c.name }}
-          </button>
+            <button
+              type="button"
+              class="h-7 px-2.5 rounded text-xs font-medium border transition-colors flex items-center gap-1.5"
+              :class="activeCategories.includes(c.id) ? 'text-white border-transparent' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'"
+              :style="activeCategories.includes(c.id) ? { backgroundColor: c.color } : {}"
+              @click="toggleCategory(c.id)"
+            >
+              <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: activeCategories.includes(c.id) ? '#fff' : c.color }" />
+              {{ c.name }}
+            </button>
+            <div v-if="!c.is_system && (c.owner_id === user?.id || (c.company_id === user?.company_id && user?.company_role === 'admin'))" class="absolute -top-2 -right-2 hidden group-hover:flex space-x-0.5 bg-white border border-slate-200 rounded shadow-sm z-10 p-0.5">
+              <button @click="editCategory(c)" class="p-1 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 rounded" title="Bearbeiten">
+                ✏️
+              </button>
+              <button @click="deleteCategory(c.id)" class="p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded" title="Löschen">
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
 
         <button
           type="button"
           class="h-7 px-2.5 rounded text-xs font-medium border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 flex items-center gap-1.5"
-          @click="showCategoryModal = true"
+          @click="openNewCategoryModal"
         >
           <Plus class="w-3 h-3" />
-          Kategorie
+          {{ $t('calendar.neue_kategorie') }}
         </button>
       </div>
     </div>
@@ -514,12 +526,12 @@
     <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" @mousedown.self="showCategoryModal = false">
       <div class="bg-white rounded-lg shadow-md w-full max-w-sm">
         <div class="flex items-center justify-between px-5 h-14 border-b border-slate-200">
-          <h2 class="text-base font-semibold text-slate-900">Neue Kategorie</h2>
+          <h2 class="text-base font-semibold text-slate-900">{{ editingCategoryId ? 'Kategorie bearbeiten' : $t('calendar.neue_kategorie') }}</h2>
           <button type="button" class="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100" @click="showCategoryModal = false">
             <X class="w-4 h-4" />
           </button>
         </div>
-        <form class="p-5 space-y-4" @submit.prevent="createCategory">
+        <form class="p-5 space-y-4" @submit.prevent="saveCategory">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Name</label>
             <input v-model="newCategory.name" type="text" required placeholder="z.B. Werkstatt" class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15" />
@@ -590,8 +602,21 @@ const defaultHour = ref<number | null>(null)
 const dayDetailKey = ref<string | null>(null)
 
 const showCategoryModal = ref(false)
+const editingCategoryId = ref('')
 const newCategory = ref({ name: '', color: '#0891B2', company_wide: false })
 const colorChoices = ['#0891B2', '#7C3AED', '#D97706', '#059669', '#DC2626', '#2563EB', '#DB2777', '#64748B']
+
+const openNewCategoryModal = () => {
+  editingCategoryId.value = ''
+  newCategory.value = { name: '', color: '#0891B2', company_wide: false }
+  showCategoryModal.value = true
+}
+
+const editCategory = (c: any) => {
+  editingCategoryId.value = c.id
+  newCategory.value = { name: c.name, color: c.color, company_wide: !!c.company_id }
+  showCategoryModal.value = true
+}
 
 const draggingId = ref<string | null>(null)
 const dragOverKey = ref<string | null>(null)
@@ -1165,18 +1190,40 @@ function toggleCategory(id: string) {
   else activeCategories.value.splice(i, 1)
 }
 
-async function createCategory() {
+async function saveCategory() {
   try {
-    await $fetch('/api/event-categories', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: newCategory.value
-    })
+    if (editingCategoryId.value) {
+      await $fetch(`/api/event-categories/${editingCategoryId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: newCategory.value
+      })
+    } else {
+      await $fetch('/api/event-categories', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: newCategory.value
+      })
+    }
     showCategoryModal.value = false
     newCategory.value = { name: '', color: '#0891B2', company_wide: false }
+    editingCategoryId.value = ''
     await loadCategories()
   } catch (err: any) {
-    alert(err?.data?.statusMessage || 'Kategorie konnte nicht erstellt werden')
+    alert(err?.data?.statusMessage || $t('calendar.kategorie_konnte_nicht_erstellt_wer'))
+  }
+}
+
+async function deleteCategory(id: string) {
+  if (!confirm('Kategorie wirklich löschen?')) return
+  try {
+    await $fetch(`/api/event-categories/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadCategories()
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || 'Kategorie konnte nicht gelöscht werden')
   }
 }
 
