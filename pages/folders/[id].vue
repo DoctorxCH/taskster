@@ -750,13 +750,22 @@
                               <option value="status">🔄 Status (todo/in_progress/done)</option>
                               <option value="tags">🏷️ Tags / Schlagwörter</option>
                             </optgroup>
-                            <optgroup v-if="taskCustomFields.length > 0" label="Benutzerdefinierte Felder">
+                            <optgroup v-if="taskCustomFields.length > 0" label="Aufgaben-Felder">
                               <option
                                 v-for="f in taskCustomFields"
                                 :key="f.id"
                                 :value="'custom:' + f.field_key"
                               >
                                 ⚙️ {{ f.label }} ({{ f.field_key }})
+                              </option>
+                            </optgroup>
+                            <optgroup v-if="projectFields.length > 0" label="Projekt-Felder">
+                              <option
+                                v-for="f in projectFields"
+                                :key="f.id"
+                                :value="'custom_project:' + f.field_key"
+                              >
+                                🏢 {{ f.label }} ({{ f.field_key }})
                               </option>
                             </optgroup>
                           </select>
@@ -1807,11 +1816,11 @@ const processImportFile = async (file: File) => {
         mapping[idx] = 'tags'
       } else {
         // Benutzerdefinierte Felder anhand Label oder Feld-Key erkennen
-        const matchField = taskCustomFields.value.find((f: any) =>
+        const matchField = fields.value.find((f: any) =>
           f.label?.toLowerCase() === lower || f.field_key?.toLowerCase() === lower
         )
         if (matchField) {
-          mapping[idx] = 'custom:' + matchField.field_key
+          mapping[idx] = (matchField.entity_type === 'project' ? 'custom_project:' : 'custom:') + matchField.field_key
         }
       }
     })
@@ -1964,6 +1973,16 @@ const createProject = async () => {
           const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
           if (!cellVal) continue
           customData[targetField.replace('custom:', '')] = cellVal
+        }
+
+        // Apply Project Custom Fields to newProjectCustomData if missing (first row wins)
+        for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+          if (!targetField || !targetField.startsWith('custom_project:')) continue
+          const key = targetField.replace('custom_project:', '')
+          const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
+          if (cellVal && !newProjectCustomData.value[key]) {
+            newProjectCustomData.value[key] = cellVal
+          }
         }
 
         tasksToImport.push({

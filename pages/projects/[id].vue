@@ -2936,13 +2936,22 @@
                           <option value="priority">Priorität (niedrig/normal/hoch/dringend)</option>
                           <option value="tags">🏷️ Tags</option>
                         </optgroup>
-                        <optgroup v-if="taskCustomFields.length > 0" label="Zusatzfelder">
+                        <optgroup v-if="taskCustomFields.length > 0" label="Aufgaben-Felder">
                           <option
                             v-for="f in taskCustomFields"
                             :key="f.id"
                             :value="'custom:' + f.field_key"
                           >
                             ⚙️ {{ f.label }} ({{ f.field_key }})
+                          </option>
+                        </optgroup>
+                        <optgroup v-if="projectCustomFields.length > 0" label="Projekt-Felder">
+                          <option
+                            v-for="f in projectCustomFields"
+                            :key="f.id"
+                            :value="'custom_project:' + f.field_key"
+                          >
+                            🏢 {{ f.label }} ({{ f.field_key }})
                           </option>
                         </optgroup>
                       </select>
@@ -5404,11 +5413,11 @@ const parseCsvFile = (file: File) => {
           mapping[idx] = 'tags'
         } else {
           // Check custom fields
-          const matchField = taskCustomFields.value.find(f =>
+          const matchField = fields.value.find(f =>
             f.label.toLowerCase() === hLow || f.field_key.toLowerCase() === hLow
           )
           if (matchField) {
-            mapping[idx] = 'custom:' + matchField.field_key
+            mapping[idx] = (matchField.entity_type === 'project' ? 'custom_project:' : 'custom:') + matchField.field_key
           } else {
             mapping[idx] = ''
           }
@@ -5481,6 +5490,8 @@ const executeImport = async () => {
         custom_data: {}
       }
 
+      const rowProjectCustomData: Record<string, string> = {}
+
       Object.entries(importColumnMapping.value).forEach(([colIdxStr, targetField]) => {
         const colIdx = parseInt(colIdxStr)
         const cellVal = row[colIdx]?.trim() || ''
@@ -5515,6 +5526,9 @@ const executeImport = async () => {
         } else if (targetField.startsWith('custom:')) {
           const key = targetField.replace('custom:', '')
           taskPayload.custom_data[key] = cellVal
+        } else if (targetField.startsWith('custom_project:')) {
+          const key = targetField.replace('custom_project:', '')
+          rowProjectCustomData[key] = cellVal
         }
       })
 
@@ -5525,6 +5539,16 @@ const executeImport = async () => {
           body: taskPayload
         })
         successCount++
+      }
+
+      if (Object.keys(rowProjectCustomData).length > 0) {
+        const newCustomData = { ...project.value.custom_data, ...rowProjectCustomData }
+        await $fetch(`/api/projects/${projectId}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: { custom_data: newCustomData }
+        })
+        project.value.custom_data = newCustomData
       }
     }
 
