@@ -3717,9 +3717,9 @@
                   @change="addContactToAttendees"
                   class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
                 >
-                  <option value="">{{ $t('journal.select_contact') }}</option>
-                  <option v-for="c in projectContacts" :key="c.id" :value="c.id">
-                    {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }} ({{ c.role_function || c.category_group || 'Kontakt' }})
+                  <option value="">{{ $t('journal.select_contact') }} ({{ attendeeContactOptions.length }})</option>
+                  <option v-for="c in attendeeContactOptions" :key="c.id" :value="c.id">
+                    {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }}{{ c.company_name ? ` (${c.company_name})` : (c.role_function ? ` (${c.role_function})` : '') }}
                   </option>
                 </select>
               </div>
@@ -5042,6 +5042,29 @@ const newEntryAttendeeName = ref('')
 const newEntryAttendeeEmail = ref('')
 const newEntryAttendeeRole = ref('')
 const selectedContactToAdd = ref('')
+const availableContacts = ref<any[]>([])
+
+const attendeeContactOptions = computed(() => {
+  const map = new Map<string, any>()
+  for (const c of projectContacts.value || []) {
+    map.set(c.id, { ...c, isProject: true })
+  }
+  for (const c of availableContacts.value || []) {
+    if (!map.has(c.id)) {
+      map.set(c.id, { ...c, isProject: false })
+    }
+  }
+  return Array.from(map.values())
+})
+
+const loadAvailableContacts = async () => {
+  try {
+    const res = await $fetch<any>('/api/contacts', { headers: authHeaders() })
+    availableContacts.value = res.contacts || []
+  } catch (err) {
+    availableContacts.value = []
+  }
+}
 
 // Form Models
 const newEntryForm = ref<any>({
@@ -5389,6 +5412,7 @@ const loadProjectData = async () => {
       await loadProjectTimeEntries()
     }
     loadProjectContacts()
+    loadAvailableContacts()
   } catch (err: any) {
     if (err.statusCode === 404) {
       alert('Zugriff verweigert oder Projekt nicht gefunden.')
@@ -6954,6 +6978,7 @@ const openNewEntryModal = async () => {
   if (projectContacts.value.length === 0) {
     loadProjectContacts()
   }
+  loadAvailableContacts()
 }
 
 const openNewNoteModal = async () => {
@@ -6978,7 +7003,9 @@ const openNewNoteModal = async () => {
 
 const addContactToAttendees = () => {
   if (!selectedContactToAdd.value) return
-  const contact = projectContacts.value.find((c: any) => c.id === selectedContactToAdd.value)
+  const contact = attendeeContactOptions.value.find((c: any) => c.id === selectedContactToAdd.value)
+    || projectContacts.value.find((c: any) => c.id === selectedContactToAdd.value)
+    || availableContacts.value.find((c: any) => c.id === selectedContactToAdd.value)
   if (!contact) return
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || 'Kontakt'
   if (!newEntryForm.value.attendees.some((a: any) => a.contact_id === contact.id)) {
