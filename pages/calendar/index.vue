@@ -250,7 +250,7 @@
         </div>
       </div>
 
-      <div class="grid max-h-[600px] overflow-y-auto" :style="{ gridTemplateColumns: weekGridCols }">
+      <div ref="weekGridRef" class="grid max-h-[600px] overflow-y-auto relative" :style="{ gridTemplateColumns: weekGridCols }" @scroll="onWeekGridScroll">
         <!-- Stunden-Spalte -->
         <div>
           <div
@@ -269,6 +269,30 @@
           :key="d.key"
           class="relative border-l border-slate-200"
         >
+          <!-- Sticky Indikatoren für unsichtbare Termine oben/unten -->
+          <div v-if="getEarlierEventsCount(d.key) > 0" class="sticky top-1 z-30 flex justify-center pointer-events-none h-0 overflow-visible">
+            <button
+              type="button"
+              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-transform hover:scale-105"
+              title="Nach oben zu früheren Terminen scrollen"
+              @click.stop="scrollToEarlierEvents(d.key)"
+            >
+              <ChevronUp class="w-3 h-3" />
+              <span>+{{ getEarlierEventsCount(d.key) }}</span>
+            </button>
+          </div>
+
+          <div v-if="getLaterEventsCount(d.key) > 0" class="sticky bottom-7 z-30 flex justify-center pointer-events-none h-0 overflow-visible">
+            <button
+              type="button"
+              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-transform hover:scale-105"
+              title="Nach unten zu späteren Terminen scrollen"
+              @click.stop="scrollToLaterEvents(d.key)"
+            >
+              <ChevronDown class="w-3 h-3" />
+              <span>+{{ getLaterEventsCount(d.key) }}</span>
+            </button>
+          </div>
           <!-- Stundenraster (Klick = neuer Termin) -->
           <div
             v-for="h in hours"
@@ -598,7 +622,7 @@
 <script setup lang="ts">
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, X, Loader2,
-  MapPin, Users
+  MapPin, Users, ChevronUp, ChevronDown
 } from 'lucide-vue-next'
 
 const { user, authHeaders } = useAuth()
@@ -969,6 +993,68 @@ const weekAllDay = computed(() =>
     items: eventsForDay(d.key).filter((e) => e.allDay)
   }))
 )
+
+// ---------------------------------------------------------------------------
+// Scroll & Unsichtbare Termine (07:00 Standard & +N Badges)
+// ---------------------------------------------------------------------------
+const weekGridRef = ref<HTMLElement | null>(null)
+const gridScrollTop = ref(0)
+const gridClientHeight = ref(600)
+
+function onWeekGridScroll(e: Event) {
+  const el = e.target as HTMLElement
+  if (!el) return
+  gridScrollTop.value = el.scrollTop
+  gridClientHeight.value = el.clientHeight || 600
+}
+
+const topVisibleMin = computed(() => (gridScrollTop.value / 56) * 60)
+const bottomVisibleMin = computed(() => ((gridScrollTop.value + gridClientHeight.value) / 56) * 60)
+
+function getEarlierEventsCount(dayKey: string): number {
+  const items = timedEventsWithLayoutForDay(dayKey)
+  return items.filter((item: any) => item.endMin <= topVisibleMin.value + 15).length
+}
+
+function getLaterEventsCount(dayKey: string): number {
+  const items = timedEventsWithLayoutForDay(dayKey)
+  return items.filter((item: any) => item.startMin >= bottomVisibleMin.value - 15).length
+}
+
+function scrollToStartHour() {
+  nextTick(() => {
+    if (weekGridRef.value) {
+      const targetTop = (workStartMin.value / 60) * 56
+      weekGridRef.value.scrollTop = targetTop
+      gridScrollTop.value = targetTop
+      gridClientHeight.value = weekGridRef.value.clientHeight || 600
+    }
+  })
+}
+
+function scrollToEarlierEvents(dayKey: string) {
+  const items = timedEventsWithLayoutForDay(dayKey).filter((item: any) => item.endMin <= topVisibleMin.value + 15)
+  if (!items.length) return
+  const minStart = Math.min(...items.map((i: any) => i.startMin))
+  if (weekGridRef.value) {
+    weekGridRef.value.scrollTo({
+      top: Math.max(0, (minStart / 60) * 56 - 10),
+      behavior: 'smooth'
+    })
+  }
+}
+
+function scrollToLaterEvents(dayKey: string) {
+  const items = timedEventsWithLayoutForDay(dayKey).filter((item: any) => item.startMin >= bottomVisibleMin.value - 15)
+  if (!items.length) return
+  const maxEnd = Math.max(...items.map((i: any) => i.endMin))
+  if (weekGridRef.value) {
+    weekGridRef.value.scrollTo({
+      top: (maxEnd / 60) * 56 - gridClientHeight.value + 20,
+      behavior: 'smooth'
+    })
+  }
+}
 
 function weekEventStyle(item: any) {
   const ev = item.event || item
@@ -1369,7 +1455,15 @@ onMounted(async () => {
   const dv = calSettings.value.default_view
   if (dv === 'week' || dv === 'day' || dv === 'month') view.value = dv
   await Promise.all([loadEvents(), loadCategories(), loadProjects(), loadMembers()])
+  if (view.value === 'week') {
+    scrollToStartHour()
+  }
 })
 
-watch(view, () => loadEvents())
+watch(view, (newVal) => {
+  loadEvents()
+  if (newVal === 'week') {
+    scrollToStartHour()
+  }
+})
 </script>
