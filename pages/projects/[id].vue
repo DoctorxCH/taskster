@@ -860,8 +860,23 @@
                 </div>
               </div>
 
-              <!-- Right: Visibility Badge & Delete -->
+              <!-- Right: Visibility Badge, AI Trigger & Delete -->
               <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
+                <button
+                  v-if="userRole !== 'viewer'"
+                  type="button"
+                  @click="triggerAiAnalysis(entry)"
+                  :disabled="analyzingEntryId === entry.id"
+                  class="text-[11px] font-bold px-2.5 py-1 rounded-lg border flex items-center space-x-1 transition cursor-pointer"
+                  :class="entry.metadata?.ai_summary
+                    ? 'bg-slate-50 hover:bg-cyan-50 border-slate-200 text-slate-700 hover:text-[#00A3C4]'
+                    : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white shadow-xs border-transparent'"
+                  :title="entry.metadata?.ai_summary ? 'KI-Analyse erneut ausführen' : 'Mit KI analysieren'"
+                >
+                  <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+                  <span>{{ analyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
+                </button>
+
                 <span
                   class="text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center space-x-1"
                   :class="getVisibilityBadge(entry.visibility, entry.allowed_group_id).bg"
@@ -906,23 +921,35 @@
               </div>
             </div>
 
-            <!-- TYPE B: EMAIL HEADERS & AI SUMMARY CALLOUT -->
-            <div v-if="entry.type === 'note' && entry.category === 'email'" class="mb-4 space-y-3">
-              <!-- Email Sender details -->
-              <div v-if="entry.metadata?.sender?.email" class="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-amber-950 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span class="font-bold flex items-center space-x-1">
-                  <Mail class="w-3.5 h-3.5 text-amber-700" />
-                  <span>Von: {{ entry.metadata.sender.name || entry.metadata.sender.email }} &lt;{{ entry.metadata.sender.email }}&gt;</span>
-                </span>
-                <span v-if="entry.metadata.sender.role" class="text-amber-800 font-normal">• {{ entry.metadata.sender.role }}</span>
-              </div>
+            <!-- EMAIL SENDER DETAILS (if sender info exists) -->
+            <div v-if="entry.metadata?.sender?.email" class="mb-3 p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-amber-950 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span class="font-bold flex items-center space-x-1">
+                <Mail class="w-3.5 h-3.5 text-amber-700" />
+                <span>Von: {{ entry.metadata.sender.name || entry.metadata.sender.email }} &lt;{{ entry.metadata.sender.email }}&gt;</span>
+              </span>
+              <span v-if="entry.metadata.sender.role" class="text-amber-800 font-normal">• {{ entry.metadata.sender.role }}</span>
+            </div>
 
+            <!-- AI SUMMARY & INTERACTIVE ACTION CARDS (available for ALL journal entries!) -->
+            <div v-if="entry.metadata?.ai_summary || (entry.metadata?.action_items && entry.metadata.action_items.length > 0)" class="mb-4 space-y-3">
               <!-- AI Summary Box -->
               <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
-                <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950 mb-1.5">
-                  <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
-                  <span>{{ $t('journal.ai_summary') }}</span>
-                  <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">DeepSeek Engine</span>
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                  <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
+                    <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                    <span>{{ $t('journal.ai_summary') }}</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
+                  </div>
+                  <button
+                    v-if="userRole !== 'viewer'"
+                    type="button"
+                    @click="triggerAiAnalysis(entry)"
+                    :disabled="analyzingEntryId === entry.id"
+                    class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
+                  >
+                    <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+                    <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+                  </button>
                 </div>
                 <p class="text-xs text-slate-800 leading-relaxed">
                   {{ entry.metadata.ai_summary }}
@@ -3836,6 +3863,26 @@
               </div>
             </div>
           </div>
+          <!-- AI Analysis Toggle Switch -->
+          <div class="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/70 to-blue-50/90 border border-cyan-200 shadow-2xs">
+            <label class="flex items-start space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="newEntryForm.analyzeWithAi"
+                class="mt-1 rounded text-[#00A3C4] focus:ring-[#00A3C4] w-4 h-4"
+              />
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <Sparkles class="w-4 h-4 text-[#00A3C4]" />
+                  <span class="text-xs font-black text-cyan-950">{{ $t('journal.analyze_with_ai') }}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">DeepSeek Engine</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                  Generiert eine prägnante Zusammenfassung des Protokolls und schlägt neue Aufgaben & Termine im Kanban-Board vor.
+                </p>
+              </div>
+            </label>
+          </div>
 
           <!-- Footer Actions -->
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100 shrink-0">
@@ -5066,6 +5113,8 @@ const loadAvailableContacts = async () => {
   }
 }
 
+const analyzingEntryId = ref<string | null>(null)
+
 // Form Models
 const newEntryForm = ref<any>({
   title: '',
@@ -5076,6 +5125,7 @@ const newEntryForm = ref<any>({
   task_id: null,
   entry_date: new Date().toISOString().slice(0, 10),
   content: '',
+  analyzeWithAi: true,
   attendees: [] as any[],
   attachments: [] as any[]
 })
@@ -6963,6 +7013,7 @@ const openNewEntryModal = async () => {
     task_id: null,
     entry_date: new Date().toISOString().slice(0, 10),
     content: '',
+    analyzeWithAi: true,
     attendees: [] as any[],
     attachments: [] as any[]
   }
@@ -7130,7 +7181,7 @@ const saveNewEntry = async () => {
   savingJournal.value = true
   journalError.value = ''
   try {
-    await $fetch(`/api/projects/${projectId}/journal`, {
+    const created = await $fetch<any>(`/api/projects/${projectId}/journal`, {
       method: 'POST',
       headers: authHeaders(),
       body: {
@@ -7149,6 +7200,24 @@ const saveNewEntry = async () => {
         }
       }
     })
+
+    if (newEntryForm.value.analyzeWithAi && created.entry?.id && newEntryForm.value.content?.trim()) {
+      try {
+        await $fetch(`/api/projects/${projectId}/journal/parse-email`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: {
+            journal_id: created.entry.id,
+            subject: newEntryForm.value.title.trim(),
+            content: newEntryForm.value.content.trim(),
+            category: newEntryForm.value.category || 'bausitzung',
+            visibility: newEntryForm.value.visibility || 'all',
+            allowed_group_id: newEntryForm.value.visibility === 'group' ? newEntryForm.value.allowed_group_id : null
+          }
+        })
+      } catch (_) {}
+    }
+
     showNewEntryModal.value = false
     await loadJournals()
   } catch (err: any) {
@@ -7224,6 +7293,36 @@ const deleteJournalEntry = async (entry: any) => {
     journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Löschen des Eintrags')
+  }
+}
+
+const triggerAiAnalysis = async (entry: any) => {
+  if (!entry.content?.trim() && !entry.title?.trim()) {
+    alert('Eintrag hat keinen Text zum Analysieren.')
+    return
+  }
+  analyzingEntryId.value = entry.id
+  try {
+    const res = await $fetch<any>(`/api/projects/${projectId}/journal/parse-email`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        journal_id: entry.id,
+        subject: entry.title,
+        content: entry.content,
+        category: entry.category,
+        visibility: entry.visibility
+      }
+    })
+    if (res.metadata) {
+      entry.metadata = res.metadata
+    } else if (res.entry?.metadata) {
+      entry.metadata = res.entry.metadata
+    }
+  } catch (err: any) {
+    alert(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse')
+  } finally {
+    analyzingEntryId.value = null
   }
 }
 

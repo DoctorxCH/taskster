@@ -202,8 +202,44 @@ Erzeuge das JSON im folgenden Format:
   const summary = aiResult.summary || ''
   const actionItems = Array.isArray(aiResult.action_items) ? aiResult.action_items : []
 
-  // 4. Persistierung als Notiz (type = note, category = email)
+  const targetJournalId = body.journal_id || body.entry_id
+  if (targetJournalId) {
+    const existing = db.prepare(`SELECT metadata FROM project_journals WHERE id = ? AND project_id = ?`).get(targetJournalId, projectId) as any
+    let existingMeta: any = {}
+    if (existing?.metadata) {
+      try {
+        existingMeta = typeof existing.metadata === 'string' ? JSON.parse(existing.metadata) : existing.metadata
+      } catch (_) {
+        existingMeta = {}
+      }
+    }
+    existingMeta.ai_summary = summary
+    existingMeta.action_items = actionItems
+    if (senderEmail) {
+      existingMeta.sender = {
+        name: senderName,
+        email: senderEmail,
+        role: senderRole
+      }
+    }
+
+    db.prepare(`UPDATE project_journals SET metadata = ?, updated_at = datetime('now') WHERE id = ? AND project_id = ?`)
+      .run(JSON.stringify(existingMeta), targetJournalId, projectId)
+
+    return {
+      success: true,
+      metadata: existingMeta,
+      summary,
+      action_items: actionItems
+    }
+  }
+
+  // 4. Persistierung als Notiz (type = note)
   const jrnId = 'jrn_' + randomUUID().substring(0, 8)
+  const targetCategory = body.category || 'email'
+  const targetVisibility = ['only_me', 'group', 'company', 'all'].includes(body.visibility) ? body.visibility : 'all'
+  const targetAllowedGroup = body.allowed_group_id || null
+
   const metadata = {
     sender: {
       name: senderName,
@@ -217,16 +253,20 @@ Erzeuge das JSON im folgenden Format:
   }
 
   db.prepare(`
-    INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, type, category, entry_type, title, content, visibility, metadata, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, 'note', 'email', 'email', ?, ?, 'all', ?, datetime('now'), datetime('now'))
+    INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, type, category, entry_type, title, content, visibility, allowed_group_id, metadata, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'note', ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
   `).run(
     jrnId,
     user.company_id || null,
     projectId,
     user.id,
     user.id,
+    targetCategory,
+    targetCategory === 'email' ? 'email' : 'note',
     finalTitle,
     emailText,
+    targetVisibility,
+    targetAllowedGroup,
     JSON.stringify(metadata)
   )
 

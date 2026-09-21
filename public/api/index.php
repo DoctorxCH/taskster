@@ -4317,13 +4317,14 @@ try {
                 ['role' => 'user', 'content' => $userPrompt]
             ], ['temperature' => 0.2]);
 
-            $cleanAi = trim($rawAi);
+            $aiText = is_array($rawAi) ? ($rawAi['text'] ?? '') : (string)$rawAi;
+            $cleanAi = trim($aiText);
             $cleanAi = preg_replace('/^```(?:json)?\s*/i', '', $cleanAi);
             $cleanAi = preg_replace('/```$/', '', $cleanAi);
             $cleanAi = trim($cleanAi);
 
             $aiResult = json_decode($cleanAi, true);
-        } catch (Exception $aiEx) {
+        } catch (Throwable $aiEx) {
             // Fallback falls KI nicht erreichbar
             $aiResult = [
                 'subject' => !empty($emailSubject) ? $emailSubject : 'E-Mail Import',
@@ -4336,8 +4337,41 @@ try {
         $summary = $aiResult['summary'] ?? '';
         $actionItems = is_array($aiResult['action_items'] ?? null) ? $aiResult['action_items'] : [];
 
-        // 4. Persistierung als Notiz (type = note, category = email)
+        $targetJournalId = !empty($body['journal_id']) ? $body['journal_id'] : (!empty($body['entry_id']) ? $body['entry_id'] : null);
+        if ($targetJournalId) {
+            $jCheck = $db->prepare("SELECT metadata FROM project_journals WHERE id = ? AND project_id = ?");
+            $jCheck->execute([$targetJournalId, $projectId]);
+            $existingMetaStr = $jCheck->fetchColumn();
+            $existingMeta = !empty($existingMetaStr) ? (is_string($existingMetaStr) ? json_decode($existingMetaStr, true) : $existingMetaStr) : [];
+            if (!is_array($existingMeta)) $existingMeta = [];
+
+            $existingMeta['ai_summary'] = $summary;
+            $existingMeta['action_items'] = $actionItems;
+            if (!empty($senderEmail)) {
+                $existingMeta['sender'] = [
+                    'name' => $senderName,
+                    'email' => $senderEmail,
+                    'role' => $senderRole
+                ];
+            }
+            $metaJson = json_encode($existingMeta, JSON_UNESCAPED_UNICODE);
+            $db->prepare("UPDATE project_journals SET metadata = ?, updated_at = NOW() WHERE id = ? AND project_id = ?")
+               ->execute([$metaJson, $targetJournalId, $projectId]);
+
+            jsonResponse([
+                'success' => true,
+                'metadata' => $existingMeta,
+                'summary' => $summary,
+                'action_items' => $actionItems
+            ]);
+        }
+
+        // 4. Persistierung als Notiz (type = note)
         $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $targetCategory = !empty($body['category']) ? $body['category'] : 'email';
+        $targetVisibility = in_array($body['visibility'] ?? '', ['only_me', 'group', 'company', 'all'], true) ? $body['visibility'] : 'all';
+        $targetAllowedGroup = !empty($body['allowed_group_id']) ? $body['allowed_group_id'] : null;
+
         $metadata = [
             'sender' => [
                 'name' => $senderName,
@@ -4353,16 +4387,20 @@ try {
         $metaJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
 
         $db->prepare("
-            INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, type, category, entry_type, title, content, visibility, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 'note', 'email', 'email', ?, ?, 'all', ?, NOW(), NOW())
+            INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, type, category, entry_type, title, content, visibility, allowed_group_id, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'note', ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ")->execute([
             $jrnId,
             $user['company_id'] ?? null,
             $projectId,
             $user['id'],
             $user['id'],
+            $targetCategory,
+            $targetCategory === 'email' ? 'email' : 'note',
             $finalTitle,
             $emailText,
+            $targetVisibility,
+            $targetAllowedGroup,
             $metaJson
         ]);
 

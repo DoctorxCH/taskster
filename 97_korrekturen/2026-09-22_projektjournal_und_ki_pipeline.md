@@ -62,4 +62,14 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
 2. **Teilnehmer-Auswahl Dropdown**:
    - Problem: Das Dropdown lud zuvor ausschliesslich `projectContacts` (mit Filter `project_id = thisProject`), wodurch globale Unternehmens- und Benutzerkontakte fehlten und das Dropdown leer blieb.
    - Lösung: Einführung von `availableContacts` und `attendeeContactOptions` (deduplizierte Zusammenführung von Projekt- und Unternehmenskontakten). Das Dropdown zeigt nun alle für den Benutzer berechtigten Kontakte mit Firmenname/Funktion an.
+3. **KI-Verfügbarkeit & On-Demand Analyse (Wo ist die KI?)**:
+   - Problem A (Backend): In `callOpenRouter()` lieferte die Funktion ein assoziatives Array `['text' => ..., 'model' => ...]`. Bei `trim($rawAi)` kam es unter PHP 8 zu einem `TypeError`, der in den leeren Fallback-Block lief und Aktionskarten/Zusammenfassungen verhinderte.
+     - Lösung: `$aiText = is_array($rawAi) ? ($rawAi['text'] ?? '') : (string)$rawAi;` und Umstellung von `catch (Exception)` auf `catch (Throwable)`.
+   - Problem B (Frontend-Sichtbarkeit): Die KI-Zusammenfassungs-Box und Aktionskarten waren im Template nur für `entry.type === 'note' && entry.category === 'email'` sichtbar.
+     - Lösung: Bedingung verallgemeinert (`entry.metadata?.ai_summary || entry.metadata?.action_items`). Nun können alle Journaleintragstypen (Bausitzung, Notiz, E-Mail) KI-Ergebnisse darstellen.
+   - Neu (On-Demand Analyse & Modal-Integration):
+     - Direkter Button `[⚡ KI-Analyse]` / `[KI aktualisieren]` im Header jeder Eintragskarte.
+     - KI-Analyse-Schalter ("Mit KI analysieren") im Bausitzung/Protokoll-Modal (`showNewEntryModal`).
+     - Backend-Unterstützung für `journal_id` / `entry_id` in `/api/projects/:id/journal/parse-email` zur In-Place-Aktualisierung existierender Einträge ohne Duplizierung.
+
 
