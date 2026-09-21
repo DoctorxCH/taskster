@@ -6248,15 +6248,11 @@ try {
         $existing = $stmt->fetch();
         if (!$existing) errorResponse('Kategorie nicht gefunden', 404);
 
-        if (!empty($existing['is_system'])) {
-            errorResponse('Systemkategorien können nicht bearbeitet werden', 403);
-        }
-
         if (!empty($existing['company_id'])) {
             if ($existing['company_id'] !== $user['company_id'] || ($user['company_role'] ?? '') !== 'admin') {
                 errorResponse('Keine Berechtigung zum Bearbeiten von Firmenkategorien', 403);
             }
-        } elseif ($existing['owner_id'] !== $user['id']) {
+        } elseif (!empty($existing['owner_id']) && $existing['owner_id'] !== $user['id']) {
             errorResponse('Keine Berechtigung', 403);
         }
 
@@ -6289,15 +6285,11 @@ try {
         $existing = $stmt->fetch();
         if (!$existing) errorResponse('Kategorie nicht gefunden', 404);
 
-        if (!empty($existing['is_system'])) {
-            errorResponse('Systemkategorien können nicht gelöscht werden', 403);
-        }
-
         if (!empty($existing['company_id'])) {
             if ($existing['company_id'] !== $user['company_id'] || ($user['company_role'] ?? '') !== 'admin') {
                 errorResponse('Keine Berechtigung zum Löschen von Firmenkategorien', 403);
             }
-        } elseif ($existing['owner_id'] !== $user['id']) {
+        } elseif (!empty($existing['owner_id']) && $existing['owner_id'] !== $user['id']) {
             errorResponse('Keine Berechtigung', 403);
         }
 

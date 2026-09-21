@@ -10,10 +10,6 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 404, statusMessage: 'Kategorie nicht gefunden' })
   }
 
-  if (existing.is_system) {
-    throw createError({ statusCode: 403, statusMessage: 'Systemkategorien können nicht gelöscht werden' })
-  }
-
   if (existing.company_id && existing.company_id !== user.company_id) {
      throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung' })
   }

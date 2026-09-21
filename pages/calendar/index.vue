@@ -77,7 +77,7 @@
               <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: activeCategories.includes(c.id) ? '#fff' : c.color }" />
               {{ c.name }}
             </button>
-            <div v-if="!c.is_system && (c.owner_id === user?.id || (c.company_id === user?.company_id && user?.company_role === 'admin'))" class="absolute -top-2 -right-2 hidden group-hover:flex space-x-0.5 bg-white border border-slate-200 rounded shadow-sm z-10 p-0.5">
+            <div v-if="c.owner_id === user?.id || !c.owner_id || (c.company_id === user?.company_id && user?.company_role === 'admin') || user?.is_superadmin" class="absolute -top-2 -right-2 hidden group-hover:flex space-x-0.5 bg-white border border-slate-200 rounded shadow-sm z-10 p-0.5">
               <button @click="editCategory(c)" class="p-1 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 rounded" title="Bearbeiten">
                 ✏️
               </button>

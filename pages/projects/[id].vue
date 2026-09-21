@@ -2194,10 +2194,10 @@
         </div>
 
         <!-- Body: 2 Columns Grid -->
-        <div v-if="drawerTask" class="flex-1 overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200">
+        <div v-if="drawerTask" class="flex-1 overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200 items-start">
           
           <!-- LEFT COLUMN: Main Content (Description, Checklist, Subtasks, Comments) -->
-          <div class="flex-1 p-6 sm:p-7 space-y-6 overflow-y-auto">
+          <div class="flex-1 p-6 sm:p-7 space-y-6 min-w-0">
             
             <!-- Description -->
             <div>
@@ -2623,7 +2623,7 @@
           </div>
 
           <!-- RIGHT COLUMN: Sidebar (Status, Prio, Assignee, Date, Color, Tags, Fields, Delete) -->
-          <div class="w-full md:w-80 bg-slate-50/90 p-6 space-y-5 shrink-0 overflow-y-auto">
+          <div class="w-full md:w-80 bg-slate-50/90 p-6 space-y-5 shrink-0">
             
             <!-- Section / List mover -->
             <div>
