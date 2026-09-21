@@ -29,7 +29,7 @@ export function getSmtpConfig(): SmtpConfig {
     smtp_port: parseInt(map.smtp_port || '465', 10),
     smtp_secure: (map.smtp_secure as any) || 'ssl',
     smtp_user: map.smtp_user || 'noreply@kurka.ch',
-    smtp_password: map.smtp_password || '[REDACTED_SECRET]',
+    smtp_password: map.smtp_password || process.env.SMTP_PASSWORD || '',
     smtp_from_email: map.smtp_from_email || 'noreply@kurka.ch',
     smtp_from_name: map.smtp_from_name || 'Taskster'
   }

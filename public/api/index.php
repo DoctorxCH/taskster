@@ -9,12 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$dbHost = 'sql21.hostcreators.sk';
-$dbPort = 3326;
-$dbName = 'd44809_taskster_26';
-$dbUser = 'u44809_martin_taskster';
-$dbPass = '[REDACTED_SECRET]';
-$jwtSecret = 'taskster-super-secret-key-2026-safe-production';
+$dbHost = getEnvValue('DB_HOST', 'sql21.hostcreators.sk');
+$dbPort = (int)getEnvValue('DB_PORT', 3326);
+$dbName = getEnvValue('DB_NAME', 'd44809_taskster_26');
+$dbUser = getEnvValue('DB_USER', 'u44809_martin_taskster');
+$dbPass = getEnvValue('DB_PASSWORD', '');
+$jwtSecret = getEnvValue('JWT_SECRET', 'taskster-super-secret-key-2026-safe-production');
 
 function getDb() {
     global $dbHost, $dbPort, $dbName, $dbUser, $dbPass;
@@ -355,13 +355,13 @@ function ensureTables($pdo) {
         $smtpCount = (int)$pdo->query("SELECT COUNT(*) FROM system_settings WHERE `key` LIKE 'smtp_%'")->fetchColumn();
         if ($smtpCount === 0) {
             $smtpDefaults = [
-                'smtp_host' => 'mail.kurka.ch',
-                'smtp_port' => '465',
-                'smtp_secure' => 'ssl',
-                'smtp_user' => 'noreply@kurka.ch',
-                'smtp_password' => '[REDACTED_SECRET]',
-                'smtp_from_email' => 'noreply@kurka.ch',
-                'smtp_from_name' => 'Taskster'
+                'smtp_host' => getEnvValue('SMTP_HOST', 'mail.kurka.ch'),
+                'smtp_port' => getEnvValue('SMTP_PORT', '465'),
+                'smtp_secure' => getEnvValue('SMTP_SECURE', 'ssl'),
+                'smtp_user' => getEnvValue('SMTP_USER', 'noreply@kurka.ch'),
+                'smtp_password' => getEnvValue('SMTP_PASSWORD', ''),
+                'smtp_from_email' => getEnvValue('SMTP_FROM_EMAIL', 'noreply@kurka.ch'),
+                'smtp_from_name' => getEnvValue('SMTP_FROM_NAME', 'Taskster')
             ];
             $insSmtp = $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)");
             foreach ($smtpDefaults as $k => $v) {
@@ -1122,7 +1122,7 @@ function getSmtpConfigDb($pdo) {
         'smtp_port' => !empty($map['smtp_port']) ? (int)$map['smtp_port'] : 465,
         'smtp_secure' => !empty($map['smtp_secure']) ? $map['smtp_secure'] : 'ssl',
         'smtp_user' => !empty($map['smtp_user']) ? $map['smtp_user'] : 'noreply@kurka.ch',
-        'smtp_password' => isset($map['smtp_password']) ? $map['smtp_password'] : '[REDACTED_SECRET]',
+        'smtp_password' => isset($map['smtp_password']) ? $map['smtp_password'] : getEnvValue('SMTP_PASSWORD', ''),
         'smtp_from_email' => !empty($map['smtp_from_email']) ? $map['smtp_from_email'] : 'noreply@kurka.ch',
         'smtp_from_name' => !empty($map['smtp_from_name']) ? $map['smtp_from_name'] : 'Taskster'
     ];

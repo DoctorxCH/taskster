@@ -1,14 +1,39 @@
+const fs = require('fs')
+const path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 
+function loadEnv() {
+  const envPath = path.resolve(__dirname, '../.env')
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/)
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue
+      const [k, ...rest] = trimmed.split('=')
+      const val = rest.join('=').trim().replace(/^["']|["']$/g, '')
+      if (!process.env[k.trim()]) {
+        process.env[k.trim()] = val
+      }
+    }
+  }
+}
+loadEnv()
+
 async function migrate() {
-  console.log('Connecting to MySQL 8.4 at sql21.hostcreators.sk:3326...')
+  const host = process.env.DB_HOST || 'sql21.hostcreators.sk'
+  const port = parseInt(process.env.DB_PORT || '3326', 10)
+  const user = process.env.DB_USER || 'u44809_martin_taskster'
+  const password = process.env.DB_PASSWORD || ''
+  const database = process.env.DB_NAME || 'd44809_taskster_26'
+
+  console.log(`Connecting to MySQL 8.4 at ${host}:${port}...`)
   const conn = await mysql.createConnection({
-    host: 'sql21.hostcreators.sk',
-    port: 3326,
-    user: 'u44809_martin_taskster',
-    password: '[REDACTED_SECRET]',
-    database: 'd44809_taskster_26'
+    host,
+    port,
+    user,
+    password,
+    database
   })
 
   console.log('Connected! Creating MySQL tables...')

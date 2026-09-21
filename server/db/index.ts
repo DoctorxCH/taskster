@@ -299,7 +299,7 @@ export function initDatabase() {
       smtp_port: '465',
       smtp_secure: 'ssl',
       smtp_user: 'noreply@kurka.ch',
-      smtp_password: '[REDACTED_SECRET]',
+      smtp_password: process.env.SMTP_PASSWORD || '',
       smtp_from_email: 'noreply@kurka.ch',
       smtp_from_name: 'Taskster'
     }
