@@ -52,8 +52,8 @@ function ensureTables($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        $count = $pdo->query("SELECT COUNT(*) FROM project_templates WHERE is_system = 1")->fetchColumn();
-        if ((int)$count < 12) {
+        $count = $pdo->query("SELECT COUNT(*) FROM project_templates WHERE is_system = 1 AND id IN ('template_building_construction', 'template_civil_engineering', 'template_network_infrastructure', 'template_property_maintenance')")->fetchColumn();
+        if ((int)$count < 4) {
             seedTemplates($pdo);
         }
 
@@ -84,6 +84,9 @@ function ensureTables($pdo) {
             "ALTER TABLE calendar_events ADD COLUMN longitude DECIMAL(10,7) NULL",
             "ALTER TABLE folder_field_definitions ADD COLUMN entity_type VARCHAR(32) NOT NULL DEFAULT 'task'",
             "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules JSON NULL",
+            "ALTER TABLE folder_field_definitions ADD COLUMN label_key VARCHAR(128) NULL",
+            "ALTER TABLE project_templates ADD COLUMN name_key VARCHAR(128) NULL",
+            "ALTER TABLE project_templates ADD COLUMN description_key VARCHAR(128) NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -380,28 +383,171 @@ function ensureTables($pdo) {
 }
 
 function seedTemplates($pdo) {
+    // Alte Vorlagen bereinigen
+    try {
+        $pdo->exec("DELETE FROM project_templates WHERE is_system = 1 AND id NOT IN ('template_building_construction', 'template_civil_engineering', 'template_network_infrastructure', 'template_property_maintenance')");
+    } catch (Exception $e) {}
+
     $defaults = [
         [
-            'id' => 'tmpl_lwl_tiefbau',
-            'name' => 'Neues Projekt',
+            'id' => 'template_building_construction',
+            'name' => 'Hochbau',
+            'name_key' => 'templates.building_construction.name',
             'category' => 'job',
-            'subcategory' => 'Tiefbau & Glasfaser',
-            'description' => 'Vorkonfigurierte Bauleitung für Telekommunikation, Grabenbau, Rohrverlegung, Spleissen und OTDR-Dämpfungsmessung.',
+            'subcategory' => 'Bauwesen & Hochbau',
+            'description' => 'Projektstruktur für Hochbau, Rohbau, Innenausbau und schlüsselfertige Übergabe.',
+            'description_key' => 'templates.building_construction.description',
+            'icon' => 'Building2',
+            'lists' => [
+                'sections.preparation',
+                'sections.shell_construction',
+                'sections.interior_fitting',
+                'sections.handover'
+            ],
+            'fields' => [
+                [
+                    'field_key' => 'objekt_typ',
+                    'label_key' => 'fields.objekt_typ.label',
+                    'label' => 'Objekttyp',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => [
+                        ['value' => 'wohnbau', 'label_key' => 'fields.options.wohnbau', 'label' => 'Wohnbau'],
+                        ['value' => 'gewerbe', 'label_key' => 'fields.options.gewerbe', 'label' => 'Gewerbe & Industrie'],
+                        ['value' => 'oeffentlich', 'label_key' => 'fields.options.oeffentlich', 'label' => 'Öffentliche Bauten'],
+                        ['value' => 'sanierung', 'label_key' => 'fields.options.sanierung', 'label' => 'Sanierung & Umbau']
+                    ],
+                    'is_required' => true,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'baugesuch_status',
+                    'label_key' => 'fields.baugesuch_status.label',
+                    'label' => 'Baugesuchs-Status',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => [
+                        ['value' => 'pendent', 'label_key' => 'fields.options.pendent', 'label' => 'Pendent / Eingereicht'],
+                        ['value' => 'bewilligt', 'label_key' => 'fields.options.bewilligt', 'label' => 'Bewilligt'],
+                        ['value' => 'auflagen_offen', 'label_key' => 'fields.options.auflagen_offen', 'label' => 'Auflagen offen']
+                    ],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'baubeginn_soll',
+                    'label_key' => 'fields.baubeginn_soll.label',
+                    'label' => 'Geplanter Baubeginn',
+                    'field_type' => 'date',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'bauabnahme_rohbau',
+                    'label_key' => 'fields.bauabnahme_rohbau.label',
+                    'label' => 'Bauabnahme Rohbau erfolgt',
+                    'field_type' => 'checkbox',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'bezugstermin',
+                    'label_key' => 'fields.bezugstermin.label',
+                    'label' => 'Bezugstermin',
+                    'field_type' => 'date',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'haupt_gu',
+                    'label_key' => 'fields.haupt_gu.label',
+                    'label' => 'Haupt-Generalunternehmer (GU)',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ]
+            ]
+        ],
+        [
+            'id' => 'template_civil_engineering',
+            'name' => 'Tiefbau & Strassenbau',
+            'name_key' => 'templates.civil_engineering.name',
+            'category' => 'job',
+            'subcategory' => 'Tiefbau & Infrastruktur',
+            'description' => 'Ablaufplanung für Aushub, Werkleitungstrassen, Fundationsschichten und Belagsarbeiten.',
+            'description_key' => 'templates.civil_engineering.description',
             'icon' => 'HardHat',
-            'lists' => ["Planung & Trasse", "Tiefbau & Graben", "Rohrverlegung & Kalibrierung", "Einblasen & Spleissen", "Messung & Abnahme"],
+            'lists' => [
+                'sections.planning_traffic',
+                'sections.excavation_utilities',
+                'sections.road_base',
+                'sections.surfacing'
+            ],
             'fields' => [
                 [
-                    'field_key' => 'gewerk',
-                    'label' => 'Gewerk / Bauabschnitt',
+                    'field_key' => 'strassenklasse',
+                    'label_key' => 'fields.strassenklasse.label',
+                    'label' => 'Strassenklasse',
                     'field_type' => 'select',
                     'entity_type' => 'project',
-                    'options' => ['Tiefbau & Graben', 'LWL / Spleissen', 'Kupfermontage', 'Oberflächenwiederherstellung'],
+                    'options' => [
+                        ['value' => 'gemeinde', 'label_key' => 'fields.options.gemeinde', 'label' => 'Gemeindestrasse'],
+                        ['value' => 'kanton', 'label_key' => 'fields.options.kanton', 'label' => 'Kantonsstrasse / Landstrasse'],
+                        ['value' => 'bund', 'label_key' => 'fields.options.bund', 'label' => 'Nationalstrasse / Autobahn']
+                    ],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'baufirma',
-                    'label' => 'Ausführendes Bauunternehmen',
+                    'field_key' => 'grabebewilligung_status',
+                    'label_key' => 'fields.grabebewilligung_status.label',
+                    'label' => 'Grabebewilligung',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => [
+                        ['value' => 'beantragt', 'label_key' => 'fields.options.beantragt', 'label' => 'Beantragt'],
+                        ['value' => 'erteilt', 'label_key' => 'fields.options.erteilt', 'label' => 'Erteilt'],
+                        ['value' => 'nicht_noetig', 'label_key' => 'fields.options.nicht_noetig', 'label' => 'Nicht erforderlich']
+                    ],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'verkehrsdienst_erforderlich',
+                    'label_key' => 'fields.verkehrsdienst_erforderlich.label',
+                    'label' => 'Verkehrsdienst erforderlich',
+                    'field_type' => 'checkbox',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'belagstyp',
+                    'label_key' => 'fields.belagstyp.label',
+                    'label' => 'Belagstyp',
+                    'field_type' => 'select',
+                    'entity_type' => 'project',
+                    'options' => [
+                        ['value' => 'deckbelag_asphalt', 'label_key' => 'fields.options.deckbelag_asphalt', 'label' => 'Deckbelag Asphalt'],
+                        ['value' => 'pflasterstein', 'label_key' => 'fields.options.pflasterstein', 'label' => 'Pflasterstein'],
+                        ['value' => 'kieskoffer', 'label_key' => 'fields.options.kieskoffer', 'label' => 'Kieskoffer / Schotter']
+                    ],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'bauherr_gemeinde',
+                    'label_key' => 'fields.bauherr_gemeinde.label',
+                    'label' => 'Bauherr / Gemeinde',
                     'field_type' => 'text',
                     'entity_type' => 'project',
                     'options' => [],
@@ -409,74 +555,93 @@ function seedTemplates($pdo) {
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'trassenlaenge_m',
-                    'label' => 'Trassenlänge (Meter)',
-                    'field_type' => 'number',
+                    'field_key' => 'termin_fertigstellung',
+                    'label_key' => 'fields.termin_fertigstellung.label',
+                    'label' => 'Fertigstellungstermin',
+                    'field_type' => 'date',
                     'entity_type' => 'project',
                     'options' => [],
                     'is_required' => false,
-                    'logic_rules' => ['depends_on_field' => 'gewerk', 'depends_on_value' => 'Tiefbau & Graben']
-                ],
-                [
-                    'field_key' => 'otdr_messung_ok',
-                    'label' => 'OTDR Dämpfungsmessung',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Ja (Messprotokoll abgelegt)', 'Nein (Mangel / Nachprüfung)', 'Nicht erforderlich'],
-                    'is_required' => false,
-                    'logic_rules' => ['depends_on_field' => 'gewerk', 'depends_on_value' => 'LWL / Spleissen']
-                ],
-                [
-                    'field_key' => 'abnahme_status',
-                    'label' => 'Bauabnahme Status',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Ausstehend', 'Mängelfrei abgenommen', 'Nachbesserung erforderlich'],
-                    'is_required' => false,
                     'logic_rules' => []
                 ]
             ]
         ],
         [
-            'id' => 'tmpl_it_software',
-            'name' => 'IT-Systemhaus & Software-Entwicklung',
+            'id' => 'template_network_infrastructure',
+            'name' => 'Netzbau & Telekommunikation',
+            'name_key' => 'templates.network_infrastructure.name',
             'category' => 'job',
-            'subcategory' => 'IT & Software',
-            'description' => 'Agiles Aufgaben- und Ticketmanagement für IT-Projekte, Bugtracking, Code-Reviews und Deployments.',
-            'icon' => 'Laptop',
-            'lists' => ["Backlog & Anfragen", "In Bearbeitung (Sprint)", "Code Review & QA", "Deployment / Live"],
+            'subcategory' => 'Netzbau & Telekommunikation',
+            'description' => 'Trassenbau, Rohranlagen, Glasfaser-Einblasen, Spleissarbeiten und OTDR-Endabnahme.',
+            'description_key' => 'templates.network_infrastructure.description',
+            'icon' => 'Network',
+            'lists' => [
+                'sections.prep_tracing',
+                'sections.pipe_ducts',
+                'sections.cable_pull_splice',
+                'sections.measurement_commissioning'
+            ],
             'fields' => [
                 [
-                    'field_key' => 'ticket_typ',
-                    'label' => 'Ticket-Typ',
+                    'field_key' => 'sparte',
+                    'label_key' => 'fields.sparte.label',
+                    'label' => 'Sparte / Medium',
                     'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Feature / Neuheit', 'Bug / Fehlfunktion', 'Support & Wartung', 'Dokumentation'],
+                    'entity_type' => 'project',
+                    'options' => [
+                        ['value' => 'ftth', 'label_key' => 'fields.options.ftth', 'label' => 'FTTH (Glasfaser)'],
+                        ['value' => 'strom_ns_ms', 'label_key' => 'fields.options.strom_ns_ms', 'label' => 'Strom (NS / MS)'],
+                        ['value' => 'kupfer', 'label_key' => 'fields.options.kupfer', 'label' => 'Kupfernetz'],
+                        ['value' => 'mobilfunk', 'label_key' => 'fields.options.mobilfunk', 'label' => 'Mobilfunk (5G)']
+                    ],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'prio',
-                    'label' => 'Dringlichkeit (Prio)',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Prio 1 (Kritisch)', 'Prio 2 (Hoch)', 'Prio 3 (Mittel)', 'Prio 4 (Niedrig)'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'bug_severity',
-                    'label' => 'Fehler-Schweregrad',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Blocker (Systemausfall)', 'Major (Kernfunktion gestört)', 'Minor (Kosmetisch / UI)'],
+                    'field_key' => 'kundenreferenz',
+                    'label_key' => 'fields.kundenreferenz.label',
+                    'label' => 'Kundenreferenz / Projekt-ID',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
                     'is_required' => false,
-                    'logic_rules' => ['depends_on_field' => 'ticket_typ', 'depends_on_value' => 'Bug / Fehlfunktion']
+                    'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'aufwand_stunden',
-                    'label' => 'Geschätzter Aufwand (h)',
-                    'field_type' => 'number',
+                    'field_key' => 'subunternehmer_montage',
+                    'label_key' => 'fields.subunternehmer_montage.label',
+                    'label' => 'Montage-Subunternehmer',
+                    'field_type' => 'text',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'bep_inbetriebnahme_soll',
+                    'label_key' => 'fields.bep_inbetriebnahme_soll.label',
+                    'label' => 'Soll-Inbetriebnahme (BEP)',
+                    'field_type' => 'date',
+                    'entity_type' => 'project',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'otdr_messung_erledigt',
+                    'label_key' => 'fields.otdr_messung_erledigt.label',
+                    'label' => 'OTDR-Messung erledigt',
+                    'field_type' => 'checkbox',
+                    'entity_type' => 'task',
+                    'options' => [],
+                    'is_required' => false,
+                    'logic_rules' => []
+                ],
+                [
+                    'field_key' => 'abnahmeprotokoll_vorhanden',
+                    'label_key' => 'fields.abnahmeprotokoll_vorhanden.label',
+                    'label' => 'Abnahmeprotokoll vorhanden',
+                    'field_type' => 'checkbox',
                     'entity_type' => 'task',
                     'options' => [],
                     'is_required' => false,
@@ -485,26 +650,25 @@ function seedTemplates($pdo) {
             ]
         ],
         [
-            'id' => 'tmpl_elektro_handwerk',
-            'name' => 'Handwerk & Elektroinstallation',
+            'id' => 'template_property_maintenance',
+            'name' => 'Liegenschaftsunterhalt & Sanierung',
+            'name_key' => 'templates.property_maintenance.name',
             'category' => 'job',
-            'subcategory' => 'Handwerk & Montage',
-            'description' => 'Strukturierte Projektabwicklung vom Auftragseingang über Materialbeschaffung bis zur Montage und SiNa-Prüfung.',
+            'subcategory' => 'Sanierung & Bewirtschaftung',
+            'description' => 'Gebäudeinstandhaltung, Schadstoffsanierung, Mieterabnahmen und Sanierungskoordination.',
+            'description_key' => 'templates.property_maintenance.description',
             'icon' => 'Wrench',
-            'lists' => ["Auftragseingang", "Materialbestellung", "Montage vor Ort", "Messung & SiNa-Prüfung", "Rechnung gestellt"],
+            'lists' => [
+                'sections.survey_offer',
+                'sections.contractor_scheduling',
+                'sections.execution',
+                'sections.final_inspection'
+            ],
             'fields' => [
                 [
-                    'field_key' => 'auftraggeber_typ',
-                    'label' => 'Auftraggeber-Kategorie',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['Privatkunde', 'Gewerbekunde', 'Öffentliche Hand'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'sicherheitsnachweis_nr',
-                    'label' => 'SiNa-Protokoll-Nummer',
+                    'field_key' => 'liegenschaft_id',
+                    'label_key' => 'fields.liegenschaft_id.label',
+                    'label' => 'Liegenschafts-Nr. / Gebäude-ID',
                     'field_type' => 'text',
                     'entity_type' => 'project',
                     'options' => [],
@@ -512,46 +676,9 @@ function seedTemplates($pdo) {
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'material_status',
-                    'label' => 'Material-Status',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Material bestellt', 'Im Lager vorrätig', 'Vor Ort montiert'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'stundenaufwand',
-                    'label' => 'Geleistete Stunden',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_shk_gebaeudetechnik',
-            'name' => 'Sanitär, Heizung & Haustechnik (SHK)',
-            'category' => 'job',
-            'subcategory' => 'Haustechnik',
-            'description' => 'Projektsteuerung für Heizungstausch, Badumbau, Wärmepumpen-Installation und Abnahmedokumentation.',
-            'icon' => 'Flame',
-            'lists' => ["Offerte & Vor-Ort-Check", "Bestellung & Disposition", "Demontage Altbestand", "Installation & Montage", "Inbetriebnahme & Übergabe"],
-            'fields' => [
-                [
-                    'field_key' => 'anlagenart',
-                    'label' => 'Art der Anlage',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['Wärmepumpe Luft/Wasser', 'Wärmepumpe Erdsonde', 'Sanitär & Badumbau', 'Pellet / Holzheizung', 'Lüftung & Klima'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'hersteller_geraet',
-                    'label' => 'Hersteller & Modell',
+                    'field_key' => 'mieter_kontakt',
+                    'label_key' => 'fields.mieter_kontakt.label',
+                    'label' => 'Mieterkontakt',
                     'field_type' => 'text',
                     'entity_type' => 'project',
                     'options' => [],
@@ -559,359 +686,40 @@ function seedTemplates($pdo) {
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'druckpruefung_ok',
-                    'label' => 'Druckprüfung erfolgt',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Ja (Protokoll vorhanden)', 'Ausstehend', 'Nicht erforderlich'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'foerdergelder_beantragt',
-                    'label' => 'Fördergelder beantragt',
+                    'field_key' => 'sanierungsbereich',
+                    'label_key' => 'fields.sanierungsbereich.label',
+                    'label' => 'Sanierungsbereich',
                     'field_type' => 'select',
                     'entity_type' => 'project',
-                    'options' => ['Eingereicht', 'Bewilligt', 'Nicht zutreffend'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_marketing_social',
-            'name' => 'Marketing, Kampagnen & Social Media',
-            'category' => 'job',
-            'subcategory' => 'Marketing & Medien',
-            'description' => 'Redaktions- und Kampagnenplanung von Content-Erstellung bis zu Werbeschaltung und ROI-Erfolgsmessung.',
-            'icon' => 'Megaphone',
-            'lists' => ["Briefing & Ideen", "Texterstellung & Konzept", "Grafik & Video-Assets", "Review & Kundenfreigabe", "Veröffentlicht & Tracking"],
-            'fields' => [
-                [
-                    'field_key' => 'plattform',
-                    'label' => 'Kanal / Plattform',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Instagram & TikTok', 'LinkedIn & Xing', 'Website & Blog', 'E-Mail & Newsletter', 'Google Ads / Performance'],
+                    'options' => [
+                        ['value' => 'kueche_bad', 'label_key' => 'fields.options.kueche_bad', 'label' => 'Küche & Bad'],
+                        ['value' => 'fassade_dach', 'label_key' => 'fields.options.fassade_dach', 'label' => 'Fassade & Dach'],
+                        ['value' => 'heizung_lueftung', 'label_key' => 'fields.options.heizung_lueftung', 'label' => 'Heizung & Lüftung'],
+                        ['value' => 'komplett', 'label_key' => 'fields.options.komplett', 'label' => 'Komplettsanierung']
+                    ],
                     'is_required' => true,
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'werbebudget_chf',
-                    'label' => 'Ad-Spend / Budget (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'veroeffentlichungsdatum',
-                    'label' => 'Geplantes Go-Live-Datum',
-                    'field_type' => 'date',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_immobilien_bewirtschaftung',
-            'name' => 'Immobilien-Verkauf & Vermietung',
-            'category' => 'job',
-            'subcategory' => 'Immobilien',
-            'description' => 'Vollständige Abwicklung von Objektakquise, Exposé-Erstellung, Besichtigungsterminen bis zum Notartermin.',
-            'icon' => 'Building',
-            'lists' => ["Objektaufnahme & Unterlagen", "Marketing & Exposé", "Besichtigungstermine", "Kaufvertrags-Vorbereitung", "Notartermin & Übergabe"],
-            'fields' => [
-                [
-                    'field_key' => 'objekttyp',
-                    'label' => 'Objekt-Art',
+                    'field_key' => 'asbest_schadstoff_pruefung',
+                    'label_key' => 'fields.asbest_schadstoff_pruefung.label',
+                    'label' => 'Asbest- & Schadstoffprüfung',
                     'field_type' => 'select',
                     'entity_type' => 'project',
-                    'options' => ['Einfamilienhaus', 'Eigentumswohnung', 'Mehrfamilienhaus / Anlage', 'Gewerbe & Büro', 'Baugrundstück'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'verkaufspreis_chf',
-                    'label' => 'Richtpreis / Kaufpreis (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'project',
-                    'options' => [],
+                    'options' => [
+                        ['value' => 'geprueft_negativ', 'label_key' => 'fields.options.geprueft_negativ', 'label' => 'Geprüft (schadstofffrei)'],
+                        ['value' => 'belastet_sanierung_laeuft', 'label_key' => 'fields.options.belastet_sanierung_laeuft', 'label' => 'Belastet (Sanierung läuft)'],
+                        ['value' => 'nicht_relevant', 'label_key' => 'fields.options.nicht_relevant', 'label' => 'Nicht relevant']
+                    ],
                     'is_required' => false,
                     'logic_rules' => []
                 ],
                 [
-                    'field_key' => 'grundbuch_auszug_vorhanden',
-                    'label' => 'Grundbuchauszug vorhanden',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['Aktuell vorliegend', 'Bestellt / Ausstehend', 'Noch nicht angefordert'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_gastronomie_catering',
-            'name' => 'Gastronomie & Event-Catering',
-            'category' => 'job',
-            'subcategory' => 'Gastronomie & Events',
-            'description' => 'Planung von Banketten, Firmenfeiern, Menüabläufen, Personaleinsatz und Allergenmanagement.',
-            'icon' => 'Utensils',
-            'lists' => ["Anfrage & Menüauswahl", "Einkauf & Vorbereitung", "Equipment & Logistik", "Durchführung vor Ort", "Abrechnung & Feedback"],
-            'fields' => [
-                [
-                    'field_key' => 'anzahl_gaeste',
-                    'label' => 'Gästeanzahl (Personen)',
-                    'field_type' => 'number',
-                    'entity_type' => 'project',
-                    'options' => [],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'menue_typ',
-                    'label' => 'Menü-Art',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['Mehrgang-Menü serviert', 'Buffet & Flying Dinner', 'Apéro Riche / Fingerfood', 'BBQ / Live-Cooking'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'allergene_hinweise',
-                    'label' => 'Diäten & Allergene',
-                    'field_type' => 'text',
-                    'entity_type' => 'project',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_iso_qm_audit',
-            'name' => 'Qualitätsmanagement & ISO-Audit',
-            'category' => 'job',
-            'subcategory' => 'Qualitätsmanagement',
-            'description' => 'Auditvorbereitung, Prüfpfade, Korrekturmassnahmen (CAPA) und Sicherheits-Dokumentation.',
-            'icon' => 'ShieldCheck',
-            'lists' => ["Norm-Anforderungen & Lücken", "Interne Prüfung", "Korrekturmassnahmen (CAPA)", "Zertifizierungsaudit", "Abgeschlossen"],
-            'fields' => [
-                [
-                    'field_key' => 'iso_norm',
-                    'label' => 'Standard / Zertifizierung',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['ISO 9001 (Qualität)', 'ISO 27001 (Informationssicherheit)', 'ISO 14001 (Umwelt)', 'SUVA / Arbeitssicherheit'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'audit_befund',
-                    'label' => 'Audit-Befund',
-                    'field_type' => 'select',
+                    'field_key' => 'abnahme_mieter_erfolgt',
+                    'label_key' => 'fields.abnahme_mieter_erfolgt.label',
+                    'label' => 'Mieterabnahme erfolgt',
+                    'field_type' => 'checkbox',
                     'entity_type' => 'task',
-                    'options' => ['Konform', 'Geringfügige Abweichung (Minor)', 'Schwere Abweichung (Major)', 'Empfehlung'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'wirksamkeit_frist',
-                    'label' => 'Frist für Wirksamkeitsprüfung',
-                    'field_type' => 'date',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_hausbau_privat',
-            'name' => 'Hausbau & Wohnungsrenovierung',
-            'category' => 'private',
-            'subcategory' => 'Renovierung & Bau',
-            'description' => 'Perfekt für private Renovierungen, Sanierungen und Umbauten inklusive Gewerke- und Kostenübersicht.',
-            'icon' => 'Home',
-            'lists' => ["Ideen & Recherche", "Offerten / Angebote einholen", "In Ausführung", "Fertiggestellt & Abgenommen"],
-            'fields' => [
-                [
-                    'field_key' => 'raum',
-                    'label' => 'Zimmer / Bereich',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Wohnzimmer', 'Küche', 'Badezimmer', 'Schlafzimmer', 'Garten & Terrasse', 'Keller & Technik'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'ausfuehrung_durch',
-                    'label' => 'Ausführung durch',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Eigenleistung', 'Handwerker / Extern', 'Familie & Freunde'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'handwerker_firma',
-                    'label' => 'Beauftragte Firma / Handwerker',
-                    'field_type' => 'text',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => ['depends_on_field' => 'ausfuehrung_durch', 'depends_on_value' => 'Handwerker / Extern']
-                ],
-                [
-                    'field_key' => 'budget_chf',
-                    'label' => 'Kostenbudget (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'ist_kosten_chf',
-                    'label' => 'Tatsächliche Kosten (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_event_privat',
-            'name' => 'Event- & Feierplanung (Hochzeit, Fest)',
-            'category' => 'private',
-            'subcategory' => 'Feier & Event',
-            'description' => 'Organisation privater Feiern von Dienstleisterverträgen bis zum detaillierten Ablaufplan am Eventtag.',
-            'icon' => 'Sparkles',
-            'lists' => ["Planung & Inspiration", "Buchungen & Dienstleister", "Woche vor dem Event", "Tag des Events", "Nachbereitung & Danksagung"],
-            'fields' => [
-                [
-                    'field_key' => 'kategorie',
-                    'label' => 'Event-Kategorie',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Location & Catering', 'Musik / DJ / Band', 'Fotograf & Video', 'Deko & Floristik', 'Gäste & Einladungen'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'anzahlung_erledigt',
-                    'label' => 'Anzahlung geleistet',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Ja (Quittung abgelegt)', 'Nein (Noch offen)', 'Nicht erforderlich'],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'preis_chf',
-                    'label' => 'Kosten / Honorar (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'faelligkeit',
-                    'label' => 'Fälligkeitsdatum',
-                    'field_type' => 'date',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_umzug_privat',
-            'name' => 'Privater Umzug & Wohnungswechsel',
-            'category' => 'private',
-            'subcategory' => 'Wohnen & Umzug',
-            'description' => 'Reibungsloser Wohnungswechsel: Kündigungsfristen, Packliste, Transporter-Buchung und Adressänderungen.',
-            'icon' => 'Truck',
-            'lists' => ["Kündigungen & Verträge", "Vorbereitung & Kisten packen", "Umzugstag", "Neue Wohnung einrichten", "Behörden & Ummeldungen"],
-            'fields' => [
-                [
-                    'field_key' => 'umzug_kategorie',
-                    'label' => 'Aufgaben-Bereich',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Mietvertrag & Kündigung', 'Packen & Entrümpeln', 'Umzugshelfer / Transporter', 'Endreinigung & Abnahme', 'Ummeldung & Behörden'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'kisten_nummer',
-                    'label' => 'Kisten-Nr. / Zielraum',
-                    'field_type' => 'text',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'abnahmetermin',
-                    'label' => 'Wohnungsübergabetermin',
-                    'field_type' => 'date',
-                    'entity_type' => 'project',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ]
-            ]
-        ],
-        [
-            'id' => 'tmpl_finanzen_steuer',
-            'name' => 'Finanzabschluss & Steuererklärung',
-            'category' => 'private',
-            'subcategory' => 'Finanzen & Vorsorge',
-            'description' => 'Sämtliche Steuerbelege, Lohnausweise, Vorsorgenachweise und Fristen übersichtlich gesammelt.',
-            'icon' => 'Calculator',
-            'lists' => ["Belege & Dokumente sammeln", "Abzüge & Vorsorge prüfen", "Erfassung in Steuer-Software", "Eingereicht & Prüfbescheid"],
-            'fields' => [
-                [
-                    'field_key' => 'steuerjahr',
-                    'label' => 'Steuerjahr',
-                    'field_type' => 'select',
-                    'entity_type' => 'project',
-                    'options' => ['2024', '2025', '2026', '2027'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'beleg_art',
-                    'label' => 'Art des Nachweises',
-                    'field_type' => 'select',
-                    'entity_type' => 'task',
-                    'options' => ['Lohnausweis & Einkünfte', 'Säule 3a / Pensionskasseneinkauf', 'Krankheits- & Zahnarztkosten', 'Spendenbescheinigungen', 'Berufsauslagen & Weiterbildung', 'Liegenschaftskosten / Unterhalt'],
-                    'is_required' => true,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'beleg_betrag_chf',
-                    'label' => 'Betrag (CHF)',
-                    'field_type' => 'number',
-                    'entity_type' => 'task',
-                    'options' => [],
-                    'is_required' => false,
-                    'logic_rules' => []
-                ],
-                [
-                    'field_key' => 'einreichfrist',
-                    'label' => 'Einreichungsfrist',
-                    'field_type' => 'date',
-                    'entity_type' => 'project',
                     'options' => [],
                     'is_required' => false,
                     'logic_rules' => []
@@ -921,19 +729,19 @@ function seedTemplates($pdo) {
     ];
 
     $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM project_templates WHERE id = ?");
-    $insertStmt = $pdo->prepare("INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)");
-    $updateStmt = $pdo->prepare("UPDATE project_templates SET name = ?, category = ?, subcategory = ?, description = ?, icon = ?, is_system = 1, lists = ?, fields = ? WHERE id = ?");
+    $insertStmt = $pdo->prepare("INSERT INTO project_templates (id, name, name_key, category, subcategory, description, description_key, icon, is_system, lists, fields) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)");
+    $updateStmt = $pdo->prepare("UPDATE project_templates SET name = ?, name_key = ?, category = ?, subcategory = ?, description = ?, description_key = ?, icon = ?, is_system = 1, lists = ?, fields = ? WHERE id = ?");
 
     foreach ($defaults as $d) {
         $checkStmt->execute([$d['id']]);
         if ((int)$checkStmt->fetchColumn() > 0) {
             $updateStmt->execute([
-                $d['name'], $d['category'], $d['subcategory'], $d['description'],
+                $d['name'], $d['name_key'] ?? null, $d['category'], $d['subcategory'], $d['description'], $d['description_key'] ?? null,
                 $d['icon'], json_encode($d['lists']), json_encode($d['fields']), $d['id']
             ]);
         } else {
             $insertStmt->execute([
-                $d['id'], $d['name'], $d['category'], $d['subcategory'], $d['description'],
+                $d['id'], $d['name'], $d['name_key'] ?? null, $d['category'], $d['subcategory'], $d['description'], $d['description_key'] ?? null,
                 $d['icon'], json_encode($d['lists']), json_encode($d['fields'])
             ]);
         }
@@ -3354,8 +3162,9 @@ try {
                     $fRules = $f['logic_rules'] ?? null;
                     $fReq = !empty($f['is_required']) ? 1 : 0;
 
-                    $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                       ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
+                    $fLabelKey = $f['label_key'] ?? null;
+                    $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                       ->execute([$fId, $folderId, $fKey, $fLabel, $fLabelKey, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
                     $existingKeys[] = $fKey;
                 }
             }

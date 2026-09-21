@@ -550,7 +550,7 @@
                     <div class="flex items-center space-x-2.5">
                       <span class="text-2xl">{{ getTemplateIcon(tmpl.icon, tmpl.category) }}</span>
                       <div>
-                        <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ tmpl.name }}</h4>
+                        <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ tmpl.name_key ? $t(tmpl.name_key) : tmpl.name }}</h4>
                         <span v-if="tmpl.subcategory" class="text-[10px] text-slate-500 font-medium">{{ tmpl.subcategory }}</span>
                       </div>
                     </div>
@@ -562,7 +562,7 @@
                     </span>
                   </div>
                   <p class="text-xs text-slate-600 line-clamp-2 mb-3 leading-relaxed">
-                    {{ tmpl.description }}
+                    {{ tmpl.description_key ? $t(tmpl.description_key) : tmpl.description }}
                   </p>
                 </div>
 
@@ -589,7 +589,7 @@
               <div class="flex items-center justify-between border-b border-cyan-200/60 pb-2.5">
                 <div class="flex items-center space-x-2">
                   <span class="text-cyan-700 font-bold text-sm">✓ Gewählte Vorlage:</span>
-                  <span class="text-slate-900 font-black text-sm">{{ selectedTemplate.name }}</span>
+                  <span class="text-slate-900 font-black text-sm">{{ selectedTemplate.name_key ? $t(selectedTemplate.name_key) : selectedTemplate.name }}</span>
                 </div>
                 <span class="text-[11px] font-medium text-slate-500">Konfiguration anpassen</span>
               </div>
@@ -610,7 +610,7 @@
                     class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs bg-cyan-50 border border-cyan-200 text-cyan-900 font-bold shadow-2xs"
                   >
                     <span class="text-cyan-600 text-[10px] font-mono">{{ idx + 1 }}.</span>
-                    <span>{{ listName }}</span>
+                    <span>{{ listName.startsWith("sections.") ? $t(listName) : listName }}</span>
                     <button
                       v-if="selectedTemplateLists.length > 1"
                       type="button"
@@ -653,7 +653,7 @@
                     class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs"
                   >
                     <div class="flex items-center justify-between">
-                      <span class="font-bold text-slate-800">{{ cf.label }}</span>
+                      <span class="font-bold text-slate-800">{{ cf.label_key ? $t(cf.label_key) : cf.label }}</span>
                       <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
                         {{ getFieldTypeLabel(cf.field_type) }}
                       </span>
@@ -805,7 +805,7 @@
                                 :key="tf.key"
                                 :value="'custom:' + tf.key"
                               >
-                                {{ tf.icon }} {{ tf.label }} ({{ tf.key }})
+                                {{ tf.icon }} {{ tf.label_key ? $t(tf.label_key) : tf.label }} ({{ tf.key }})
                               </option>
                             </optgroup>
                           </select>
@@ -883,7 +883,7 @@
                 Projekt-Felder dieses Ordners
               </h4>
               <div v-for="f in projectFields" :key="f.id">
-                <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label_key ? $t(f.label_key) : f.label }}</label>
 
                 <!-- Select -->
                 <select
@@ -892,7 +892,13 @@
                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 >
                   <option value="">-- Nicht ausgewählt --</option>
-                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                  <option
+                    v-for="opt in f.options"
+                    :key="typeof opt === 'object' ? opt.value : opt"
+                    :value="typeof opt === 'object' ? opt.value : opt"
+                  >
+                    {{ typeof opt === 'object' ? (opt.label_key ? $t(opt.label_key) : (opt.label || opt.value)) : ($te('fields.options.' + opt) ? $t('fields.options.' + opt) : opt) }}
+                  </option>
                 </select>
 
                 <!-- Textarea (Längerer Text) -->
@@ -1524,6 +1530,9 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
+import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
+
+const { t, te } = useI18n()
 
 const route = useRoute()
 const { user, authHeaders } = useAuth()
@@ -1949,20 +1958,7 @@ const taskCustomFields = computed(() => {
 })
 
 // Häufige Vorlagen-Zusatzfelder für den schnellen Import
-const commonCustomFieldTemplates = [
-  { key: 'bauleiter', label: 'Verantw. Bauleiter', icon: '🏗️', type: 'text' },
-  { key: 'gewerk', label: 'Gewerk / Bereich', icon: '🔧', type: 'select' },
-  { key: 'kosten_chf', label: 'Kosten / Budget (CHF)', icon: '💰', type: 'number' },
-  { key: 'kunde', label: 'Kunde / Auftraggeber', icon: '🏢', type: 'text' },
-  { key: 'adresse', label: 'Adresse / Standort', icon: '📍', type: 'text' },
-  { key: 'abnahme_status', label: 'Abnahmestatus', icon: '📊', type: 'select' },
-  { key: 'komponente', label: 'Komponente / Modul', icon: '💻', type: 'text' },
-  { key: 'story_points', label: 'Story Points / Aufwand', icon: '🎯', type: 'number' },
-  { key: 'seriennummer', label: 'Seriennummer / ID', icon: '🔢', type: 'text' },
-  { key: 'lieferant', label: 'Lieferant / Partner', icon: '📦', type: 'text' },
-  { key: 'messprotokoll_nr', label: 'Messprotokoll-Nr.', icon: '📑', type: 'text' },
-  { key: 'anlage_typ', label: 'Anlage-Typ', icon: '⚡', type: 'text' }
-]
+const commonCustomFieldTemplates = TEMPLATE_CUSTOM_FIELDS
 
 const getHeaderKey = (header: string) => {
   return String(header || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
@@ -1977,7 +1973,10 @@ const getAvailableTemplateFields = (header: string) => {
 
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
-  return f ? f.label : key
+  if (f) return f.label_key ? t(f.label_key) : f.label
+  const tpl = commonCustomFieldTemplates.find((item: any) => item.key === key)
+  if (tpl) return tpl.label_key ? t(tpl.label_key) : tpl.label
+  return key
 }
 
 const fetchTemplates = async () => {
@@ -2001,8 +2000,12 @@ const fetchTemplates = async () => {
 const selectTemplate = (tmpl: any) => {
   selectedTemplateId.value = tmpl.id
   selectedTemplateLists.value = [...(tmpl.lists || [])]
-  if (!newProjectTitle.value || templates.value.some((t: any) => t.name === newProjectTitle.value)) {
-    newProjectTitle.value = tmpl.name
+  const currentTitle = newProjectTitle.value
+  const isDefaultOrTemplateTitle = !currentTitle || templates.value.some((t: any) =>
+    t.name === currentTitle || (t.name_key && t(t.name_key) === currentTitle)
+  )
+  if (isDefaultOrTemplateTitle) {
+    newProjectTitle.value = tmpl.name_key ? t(tmpl.name_key) : tmpl.name
   }
 }
 
@@ -2102,16 +2105,18 @@ const processImportFile = async (file: File) => {
         mapping[idx] = 'tags'
       } else {
         // 1. Benutzerdefinierte Felder dieses Ordners erkennen
-        const matchField = fields.value.find((f: any) =>
-          f.label?.toLowerCase() === lower || f.field_key?.toLowerCase() === lower
-        )
+        const matchField = fields.value.find((f: any) => {
+          const fLbl = f.label_key ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
+          return fLbl === lower || (f.label || '').toLowerCase() === lower || f.field_key?.toLowerCase() === lower
+        })
         if (matchField) {
           mapping[idx] = 'custom:' + matchField.field_key
         } else {
           // 2. Häufige Vorlagen-Felder erkennen
-          const matchTpl = commonCustomFieldTemplates.find(t =>
-            t.key.toLowerCase() === lower || t.label.toLowerCase() === lower || lower.includes(t.key)
-          )
+          const matchTpl = commonCustomFieldTemplates.find(t => {
+            const tLbl = t.label_key ? t(t.label_key).toLowerCase() : t.label.toLowerCase()
+            return t.key.toLowerCase() === lower || tLbl === lower || t.label.toLowerCase() === lower || lower.includes(t.key)
+          })
           if (matchTpl) {
             mapping[idx] = 'custom:' + matchTpl.key
           } else {
@@ -2301,8 +2306,10 @@ const createProject = async () => {
           customFieldDefsToCreate.push({
             field_key: key,
             label: matchedTpl?.label || headerName,
+            label_key: matchedTpl?.label_key || null,
             field_type: matchedTpl?.type || 'text',
-            entity_type: 'task'
+            entity_type: (matchedTpl as any)?.entity_type || 'task',
+            options: (matchedTpl as any)?.options || []
           })
         }
       }

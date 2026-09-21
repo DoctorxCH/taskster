@@ -50,6 +50,9 @@ export function initDatabase() {
     "ALTER TABLE users ADD COLUMN avatar TEXT NULL",
     "ALTER TABLE folder_field_definitions ADD COLUMN entity_type TEXT NOT NULL DEFAULT 'task'",
     "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules TEXT NOT NULL DEFAULT '{}'",
+    "ALTER TABLE folder_field_definitions ADD COLUMN label_key TEXT NULL",
+    "ALTER TABLE project_templates ADD COLUMN name_key TEXT NULL",
+    "ALTER TABLE project_templates ADD COLUMN description_key TEXT NULL",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
@@ -459,15 +462,22 @@ export function initDatabase() {
       insTmpl.run(t.id, t.trigger_event, t.name, t.subject, t.variables, t.body_text, t.body_html)
     }
 
-    // Standard-Projektvorlagen anlegen / aktualisieren
+    // Alte Demo-Projektvorlagen bereinigen
+    try {
+      db.exec("DELETE FROM project_templates WHERE is_system = 1 AND id NOT IN ('template_building_construction', 'template_civil_engineering', 'template_network_infrastructure', 'template_property_maintenance')")
+    } catch (_) {}
+
+    // Standard-Projektvorlagen (Hauptsektoren Bauwesen) anlegen / aktualisieren
     const insProjTmpl = db.prepare(`
-      INSERT INTO project_templates (id, name, category, subcategory, description, icon, is_system, lists, fields)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+      INSERT INTO project_templates (id, name, name_key, category, subcategory, description, description_key, icon, is_system, lists, fields)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
+        name_key = excluded.name_key,
         category = excluded.category,
         subcategory = excluded.subcategory,
         description = excluded.description,
+        description_key = excluded.description_key,
         icon = excluded.icon,
         is_system = 1,
         lists = excluded.lists,
@@ -477,9 +487,11 @@ export function initDatabase() {
       insProjTmpl.run(
         pt.id,
         pt.name,
+        (pt as any).name_key || null,
         pt.category,
         pt.subcategory,
         pt.description,
+        (pt as any).description_key || null,
         pt.icon,
         JSON.stringify(pt.lists),
         JSON.stringify(pt.fields)

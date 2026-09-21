@@ -129,13 +129,14 @@ export default defineEventHandler(async (event) => {
 
         const fId = 'fld_def_' + randomUUID().substring(0, 8)
         db.prepare(`
-          INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           fId,
           folder_id,
           fKey,
           f.label || fKey,
+          f.label_key || null,
           f.field_type || 'text',
           f.entity_type || 'task',
           JSON.stringify(f.options || []),
@@ -160,14 +161,16 @@ export default defineEventHandler(async (event) => {
 
     const fId = 'fld_def_' + randomUUID().substring(0, 8)
     const fLabel = String(cfd.label || rawKey).trim()
+    const fLabelKey = cfd.label_key || null
     db.prepare(`
-      INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       fId,
       folder_id,
       rawKey,
       fLabel,
+      fLabelKey,
       cfd.field_type || 'text',
       cfd.entity_type || 'task',
       JSON.stringify(cfd.options || []),

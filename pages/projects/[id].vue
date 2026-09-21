@@ -328,7 +328,7 @@
                   listIdx % 4 === 1 ? 'bg-amber-400' :
                   listIdx % 4 === 2 ? 'bg-purple-500' : 'bg-emerald-500'
                 ]"></span>
-                <h3 class="text-sm font-black text-slate-900">{{ list.title }}</h3>
+                <h3 class="text-sm font-black text-slate-900">{{ getSectionTitle(list.title) }}</h3>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-xs border border-slate-200/60">
                   {{ list.tasks?.length || 0 }}
                 </span>
@@ -536,7 +536,7 @@
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-cyan-500"></span>
-                <h3 class="text-sm font-black text-slate-900">{{ list.title }}</h3>
+                <h3 class="text-sm font-black text-slate-900">{{ getSectionTitle(list.title) }}</h3>
                 <span class="text-xs px-2 py-0.5 rounded-full bg-white text-slate-600 font-bold border border-slate-200">
                   {{ list.tasks?.length || 0 }}
                 </span>
@@ -889,7 +889,7 @@
                 Projekt-Felder (Werte für dieses Projekt)
               </h4>
               <div v-for="f in projectCustomFields" :key="f.id">
-                <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label_key ? $t(f.label_key) : f.label }}</label>
 
                 <!-- Select -->
                 <select
@@ -898,7 +898,13 @@
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 >
                   <option value="">-- Nicht ausgewählt --</option>
-                  <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                  <option
+                    v-for="opt in f.options"
+                    :key="typeof opt === 'object' ? opt.value : opt"
+                    :value="typeof opt === 'object' ? opt.value : opt"
+                  >
+                    {{ typeof opt === 'object' ? (opt.label_key ? $t(opt.label_key) : (opt.label || opt.value)) : ($te('fields.options.' + opt) ? $t('fields.options.' + opt) : opt) }}
+                  </option>
                 </select>
 
                 <!-- Textarea (Längerer Text) -->
@@ -1030,7 +1036,7 @@
               <tbody class="divide-y divide-slate-100 text-slate-700">
                 <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50 transition">
                   <td class="py-3 px-4 font-bold text-slate-900">
-                    {{ f.label }}
+                    {{ f.label_key ? $t(f.label_key) : f.label }}
                   </td>
                   <td class="py-3 px-4 font-mono text-cyan-700 text-[11px]">
                     {{ f.field_key }}
@@ -1780,7 +1786,7 @@
               v-show="isFieldVisibleForTask(f)"
               class="transition-all"
             >
-              <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label }}</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ f.label_key ? $t(f.label_key) : f.label }}</label>
 
               <!-- Select dropdown -->
               <select
@@ -1790,7 +1796,13 @@
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               >
                 <option value="">-- Nicht ausgewählt --</option>
-                <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                <option
+                  v-for="opt in f.options"
+                  :key="typeof opt === 'object' ? opt.value : opt"
+                  :value="typeof opt === 'object' ? opt.value : opt"
+                >
+                  {{ typeof opt === 'object' ? (opt.label_key ? $t(opt.label_key) : (opt.label || opt.value)) : ($te('fields.options.' + opt) ? $t('fields.options.' + opt) : opt) }}
+                </option>
               </select>
 
               <!-- Textarea (Längerer Text) -->
@@ -2061,8 +2073,8 @@
                   class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs"
                   :class="f.field_type === 'textarea' ? 'sm:col-span-2 md:col-span-3' : ''"
                 >
-                  <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label">
-                    {{ f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1 truncate" :title="f.label_key ? $t(f.label_key) : f.label">
+                    {{ f.label_key ? $t(f.label_key) : f.label }}<span v-if="f.is_required" class="text-rose-500 ml-0.5">*</span>
                   </label>
 
                   <!-- Select dropdown -->
@@ -2074,7 +2086,13 @@
                     class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
                   >
                     <option value="">-- Keine Auswahl --</option>
-                    <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+                    <option
+                      v-for="opt in f.options"
+                      :key="typeof opt === 'object' ? opt.value : opt"
+                      :value="typeof opt === 'object' ? opt.value : opt"
+                    >
+                      {{ typeof opt === 'object' ? (opt.label_key ? $t(opt.label_key) : (opt.label || opt.value)) : ($te('fields.options.' + opt) ? $t('fields.options.' + opt) : opt) }}
+                    </option>
                   </select>
 
                   <!-- Textarea (Längerer Text) -->
@@ -2641,7 +2659,7 @@
                 class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-xs"
               >
                 <option v-for="l in lists" :key="l.id" :value="l.id">
-                  {{ l.title }}
+                  {{ getSectionTitle(l.title) }}
                 </option>
               </select>
             </div>
@@ -2942,7 +2960,7 @@
               v-model="importTargetListId"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
-              <option v-for="l in lists" :key="l.id" :value="l.id">{{ l.title }}</option>
+              <option v-for="l in lists" :key="l.id" :value="l.id">{{ getSectionTitle(l.title) }}</option>
             </select>
           </div>
 
@@ -3002,7 +3020,7 @@
                             :key="f.id"
                             :value="'custom:' + f.field_key"
                           >
-                            ⚙️ {{ f.label }} ({{ f.field_key }})
+                            ⚙️ {{ f.label_key ? $t(f.label_key) : f.label }} ({{ f.field_key }})
                           </option>
                         </optgroup>
 
@@ -3020,7 +3038,7 @@
                             :key="tf.key"
                             :value="'custom:' + tf.key"
                           >
-                            {{ tf.icon }} {{ tf.label }} ({{ tf.key }})
+                            {{ tf.icon }} {{ tf.label_key ? $t(tf.label_key) : tf.label }} ({{ tf.key }})
                           </option>
                         </optgroup>
                       </select>
@@ -3833,6 +3851,9 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
+import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
+
+const { t, te } = useI18n()
 
 const route = useRoute()
 const { user, authHeaders } = useAuth()
@@ -4290,20 +4311,7 @@ const projectCustomFields = computed(() => {
 })
 
 // Häufige Vorlagen-Zusatzfelder für den schnellen Import
-const commonCustomFieldTemplates = [
-  { key: 'bauleiter', label: 'Verantw. Bauleiter', icon: '🏗️', type: 'text' },
-  { key: 'gewerk', label: 'Gewerk / Bereich', icon: '🔧', type: 'select' },
-  { key: 'kosten_chf', label: 'Kosten / Budget (CHF)', icon: '💰', type: 'number' },
-  { key: 'kunde', label: 'Kunde / Auftraggeber', icon: '🏢', type: 'text' },
-  { key: 'adresse', label: 'Adresse / Standort', icon: '📍', type: 'text' },
-  { key: 'abnahme_status', label: 'Abnahmestatus', icon: '📊', type: 'select' },
-  { key: 'komponente', label: 'Komponente / Modul', icon: '💻', type: 'text' },
-  { key: 'story_points', label: 'Story Points / Aufwand', icon: '🎯', type: 'number' },
-  { key: 'seriennummer', label: 'Seriennummer / ID', icon: '🔢', type: 'text' },
-  { key: 'lieferant', label: 'Lieferant / Partner', icon: '📦', type: 'text' },
-  { key: 'messprotokoll_nr', label: 'Messprotokoll-Nr.', icon: '📑', type: 'text' },
-  { key: 'anlage_typ', label: 'Anlage-Typ', icon: '⚡', type: 'text' }
-]
+const commonCustomFieldTemplates = TEMPLATE_CUSTOM_FIELDS
 
 const getHeaderKey = (header: string) => {
   return String(header || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
@@ -4314,6 +4322,14 @@ const getAvailableTemplateFields = (header: string) => {
   const colKey = getHeaderKey(header)
   existingKeys.add(colKey)
   return commonCustomFieldTemplates.filter((t: any) => !existingKeys.has(t.key))
+}
+
+const getSectionTitle = (title: string) => {
+  if (!title) return ''
+  if (title.startsWith('sections.') || te(title)) {
+    return t(title)
+  }
+  return title
 }
 
 const allProjectTasks = computed(() => {
@@ -4339,13 +4355,28 @@ const filteredTimeEntries = computed(() => {
 
 const getFieldLabel = (key: string) => {
   const f = fields.value.find((item: any) => item.field_key === key)
-  return f ? f.label : key
+  if (f) return f.label_key ? t(f.label_key) : f.label
+  const tpl = commonCustomFieldTemplates.find((item: any) => item.key === key)
+  if (tpl) return tpl.label_key ? t(tpl.label_key) : tpl.label
+  return key
 }
 
-const formatCustomFieldValue = (val: any) => {
+const formatCustomFieldValue = (val: any, fieldKey?: string) => {
   if (val === true || val === 'true') return '✓ Ja'
   if (val === false || val === 'false') return 'Nein'
   if (val === null || val === undefined || val === '') return '-'
+  if (fieldKey) {
+    const f = fields.value.find((item: any) => item.field_key === fieldKey)
+    if (f && f.options && f.options.length) {
+      const opt = f.options.find((o: any) => (typeof o === 'object' ? o.value : o) === String(val))
+      if (opt) {
+        return typeof opt === 'object' ? (opt.label_key ? t(opt.label_key) : (opt.label || opt.value)) : (te('fields.options.' + opt) ? t('fields.options.' + opt) : opt)
+      }
+    }
+  }
+  if (typeof val === 'string' && te('fields.options.' + val)) {
+    return t('fields.options.' + val)
+  }
   return String(val)
 }
 
@@ -4442,6 +4473,7 @@ const onSectionDragOver = (section: any, e: DragEvent) => {
   if (userRole.value === 'viewer' || !draggedBoardSection.value) return
   if (draggedBoardSection.value.id !== section.id) {
     e.preventDefault()
+    dragOverListId.value = section.id
   }
 }
 
@@ -5785,16 +5817,18 @@ const parseCsvFile = async (file: File) => {
         mapping[idx] = 'tags'
       } else {
         // 1. Check existing custom fields
-        const matchField = fields.value.find((f: any) =>
-          f.label?.toLowerCase() === hLow || f.field_key?.toLowerCase() === hLow
-        )
+        const matchField = fields.value.find((f: any) => {
+          const fLbl = f.label_key ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
+          return fLbl === hLow || (f.label || '').toLowerCase() === hLow || f.field_key?.toLowerCase() === hLow
+        })
         if (matchField) {
           mapping[idx] = 'custom:' + matchField.field_key
         } else {
           // 2. Check common template fields
-          const matchTpl = commonCustomFieldTemplates.find((t: any) =>
-            t.key.toLowerCase() === hLow || t.label.toLowerCase() === hLow || hLow.includes(t.key)
-          )
+          const matchTpl = commonCustomFieldTemplates.find((t: any) => {
+            const tLbl = t.label_key ? t(t.label_key).toLowerCase() : t.label.toLowerCase()
+            return t.key.toLowerCase() === hLow || tLbl === hLow || t.label.toLowerCase() === hLow || hLow.includes(t.key)
+          })
           if (matchTpl) {
             mapping[idx] = 'custom:' + matchTpl.key
           } else {
