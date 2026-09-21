@@ -81,7 +81,7 @@
               <button @click="editCategory(c)" class="p-1 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 rounded" title="Bearbeiten">
                 ✏️
               </button>
-              <button @click="deleteCategory(c.id)" class="p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded" title="Löschen">
+              <button @click="deleteCategory(c)" class="p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded" title="Löschen">
                 ✕
               </button>
             </div>
@@ -555,12 +555,41 @@
             Für die ganze Firma sichtbar
           </label>
           <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
-            <button type="button" class="h-9 px-4 text-sm font-semibold rounded-md bg-white text-slate-700 border border-slate-300 hover:bg-slate-50" @click="showCategoryModal = false">
+            <button type="button" class="taskster_button_light px-6 text-xs h-[42px] rounded-lg" @click="showCategoryModal = false">
               Abbrechen
             </button>
-            <button type="submit" class="taskster_button">Speichern</button>
+            <button type="submit" class="taskster_button px-6 text-xs h-[42px] rounded-lg">Speichern</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Bestätigungs-Modal zum Löschen einer Kategorie (kein Browser-confirm) -->
+    <div v-if="categoryToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" @mousedown.self="categoryToDelete = null">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+            <X class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Kategorie löschen?</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Möchtest du die Kategorie "{{ categoryToDelete.name }}" wirklich löschen? Bestehende Termine bleiben erhalten (ohne Kategorie).</p>
+          </div>
+        </div>
+
+        <div v-if="categoryErrorMessage" class="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700">
+          {{ categoryErrorMessage }}
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="taskster_button_light px-6 text-xs h-[42px] rounded-lg" @click="categoryToDelete = null">
+            Abbrechen
+          </button>
+          <button type="button" class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg" :disabled="isDeletingCategory" @click="confirmDeleteCategory">
+            <Loader2 v-if="isDeletingCategory" class="w-4 h-4 animate-spin mr-1.5 inline" />
+            Löschen
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1214,16 +1243,31 @@ async function saveCategory() {
   }
 }
 
-async function deleteCategory(id: string) {
-  if (!confirm('Kategorie wirklich löschen?')) return
+const categoryToDelete = ref<any>(null)
+const isDeletingCategory = ref(false)
+const categoryErrorMessage = ref('')
+
+function deleteCategory(cat: any) {
+  categoryErrorMessage.value = ''
+  categoryToDelete.value = cat
+}
+
+async function confirmDeleteCategory() {
+  if (!categoryToDelete.value) return
+  isDeletingCategory.value = true
+  categoryErrorMessage.value = ''
   try {
-    await $fetch(`/api/event-categories/${id}`, {
+    await $fetch(`/api/event-categories/${categoryToDelete.value.id}`, {
       method: 'DELETE',
       headers: authHeaders()
     })
+    categoryToDelete.value = null
     await loadCategories()
+    await loadEvents()
   } catch (err: any) {
-    alert(err?.data?.statusMessage || 'Kategorie konnte nicht gelöscht werden')
+    categoryErrorMessage.value = err?.data?.statusMessage || err?.data?.message || 'Kategorie konnte nicht gelöscht werden'
+  } finally {
+    isDeletingCategory.value = false
   }
 }
 

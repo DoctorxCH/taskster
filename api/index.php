@@ -6293,12 +6293,8 @@ try {
             errorResponse('Keine Berechtigung', 403);
         }
 
-        $cStmt = $db->prepare("SELECT COUNT(*) FROM calendar_events WHERE category_id = ?");
-        $cStmt->execute([$catId]);
-        if ((int)$cStmt->fetchColumn() > 0) {
-            errorResponse('Kategorie wird noch verwendet und kann nicht gelöscht werden', 400);
-        }
-
+        // Unlink category from any existing calendar events
+        $db->prepare("UPDATE calendar_events SET category_id = NULL WHERE category_id = ?")->execute([$catId]);
         $db->prepare("DELETE FROM event_categories WHERE id = ?")->execute([$catId]);
         jsonResponse(['success' => true]);
     }
