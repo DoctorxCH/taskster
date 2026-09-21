@@ -29,6 +29,10 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@nuxtjs/i18n": "^10.6.0",
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@types/bcryptjs": "^2.4.6",
