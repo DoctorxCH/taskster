@@ -53,6 +53,14 @@ export function initDatabase() {
     "ALTER TABLE folder_field_definitions ADD COLUMN label_key TEXT NULL",
     "ALTER TABLE project_templates ADD COLUMN name_key TEXT NULL",
     "ALTER TABLE project_templates ADD COLUMN description_key TEXT NULL",
+    "ALTER TABLE project_journals ADD COLUMN company_id TEXT",
+    "ALTER TABLE project_journals ADD COLUMN user_id TEXT",
+    "ALTER TABLE project_journals ADD COLUMN type TEXT NOT NULL DEFAULT 'entry'",
+    "ALTER TABLE project_journals ADD COLUMN category TEXT NOT NULL DEFAULT 'allgemein'",
+    "ALTER TABLE project_journals ADD COLUMN visibility TEXT NOT NULL DEFAULT 'all'",
+    "ALTER TABLE project_journals ADD COLUMN allowed_group_id TEXT",
+    "ALTER TABLE project_journals ADD COLUMN updated_at TEXT",
+    "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }

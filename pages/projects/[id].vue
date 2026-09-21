@@ -33,6 +33,36 @@
           <div>
             <div class="flex flex-wrap items-center gap-2 mb-1.5">
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ project.title }}</h1>
+
+              <!-- Segmented Control: Kanban vs. Projektjournal -->
+              <div class="inline-flex items-center p-0.5 bg-slate-100 border border-slate-200 rounded-lg ml-2 shadow-2xs">
+                <button
+                  type="button"
+                  @click="currentView = 'tasks'"
+                  class="flex items-center space-x-1.5 px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer"
+                  :class="currentView === 'tasks' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  <LayoutGrid class="w-3.5 h-3.5" />
+                  <span>{{ $t('journal.tab_kanban') }}</span>
+                </button>
+                <button
+                  type="button"
+                  @click="currentView = 'journal'; loadJournals()"
+                  class="flex items-center space-x-1.5 px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer"
+                  :class="currentView === 'journal' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  <BookOpen class="w-3.5 h-3.5" />
+                  <span>{{ $t('journal.tab_journal') }}</span>
+                  <span
+                    v-if="journalEntries.length > 0"
+                    class="px-1.5 py-0.2 rounded-full text-[10px] font-black"
+                    :class="currentView === 'journal' ? 'bg-cyan-100 text-[#00A3C4]' : 'bg-slate-200 text-slate-700'"
+                  >
+                    {{ journalEntries.length }}
+                  </span>
+                </button>
+              </div>
+
               <span
                 class="px-2 py-0.5 rounded text-xs font-semibold border capitalize"
                 :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-[#0891B2] border-cyan-200'"
@@ -215,7 +245,16 @@
             :class="currentView === 'tasks' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <ClipboardList class="w-4 h-4" />
-            <span>Aufgaben & Abschnitte ({{ totalTasks }})</span>
+            <span>{{ $t('journal.tab_kanban') }} ({{ totalTasks }})</span>
+          </button>
+
+          <button
+            @click="currentView = 'journal'; loadJournals()"
+            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+            :class="currentView === 'journal' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+          >
+            <BookOpen class="w-4 h-4" />
+            <span>{{ $t('journal.tab_journal') }} ({{ journalEntries.length }})</span>
           </button>
 
           <button
@@ -225,15 +264,6 @@
           >
             <Clock class="w-4 h-4" />
             <span>Zeiterfassung ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
-          </button>
-
-          <button
-            @click="currentView = 'journal'; loadJournals()"
-            class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'journal' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
-          >
-            <Activity class="w-4 h-4" />
-            <span>Aktivitätsjournal ({{ journalEntries.length }})</span>
           </button>
 
           <button
@@ -676,54 +706,375 @@
 
       <!-- VIEW 2: JOURNAL & NOTIZEN -->
       <div v-else-if="currentView === 'journal'" class="space-y-6">
-        <div class="flex items-center justify-between bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
+        <!-- Top Action Card -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
           <div>
-            <h3 class="text-base font-black text-slate-900">Projektjournal & Notizen</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Chronologische Protokollierung, Besprechungsnotizen und wichtige Updates.</p>
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">📖</span>
+              <h3 class="text-base font-black text-slate-900">{{ $t('journal.title') }}</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">{{ $t('journal.subtitle') }}</p>
           </div>
-          <button
-            v-if="userRole !== 'viewer'"
-            @click="showNewJournalModal = true"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            + Neue Notiz erfassen
-          </button>
+          <div v-if="userRole !== 'viewer'" class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              @click="openNewEntryModal"
+              type="button"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>{{ $t('journal.new_entry') }}</span>
+            </button>
+            <button
+              @click="openNewNoteModal"
+              type="button"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
+            >
+              <FileText class="w-3.5 h-3.5 text-slate-600" />
+              <span>{{ $t('journal.new_note') }}</span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="journalEntries.length === 0" class="text-center py-12 text-slate-400 text-xs">
-          Noch keine Journaleinträge vorhanden.
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
+          <!-- Type Filter Tabs -->
+          <div class="flex items-center p-1 bg-slate-100 rounded-xl space-x-1 w-full md:w-auto">
+            <button
+              type="button"
+              @click="journalFilterType = 'all'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
+              :class="journalFilterType === 'all' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            >
+              {{ $t('journal.filter_all') }} ({{ journalEntries.length }})
+            </button>
+            <button
+              type="button"
+              @click="journalFilterType = 'entry'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
+              :class="journalFilterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            >
+              {{ $t('journal.filter_entries') }} ({{ entriesCount }})
+            </button>
+            <button
+              type="button"
+              @click="journalFilterType = 'note'"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
+              :class="journalFilterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            >
+              {{ $t('journal.filter_notes') }} ({{ notesCount }})
+            </button>
+          </div>
+
+          <!-- Category dropdown & Search -->
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <select
+              v-model="journalFilterCategory"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4]"
+            >
+              <option value="all">Alle Kategorien</option>
+              <option value="bausitzung">{{ $t('journal.category_bausitzung') }}</option>
+              <option value="bautagebuch">{{ $t('journal.category_bautagebuch') }}</option>
+              <option value="abnahmebegehung">{{ $t('journal.category_abnahmebegehung') }}</option>
+              <option value="wetter_behinderung">{{ $t('journal.category_wetter_behinderung') }}</option>
+              <option value="regie">{{ $t('journal.category_regie') }}</option>
+              <option value="email">{{ $t('journal.category_email') }}</option>
+              <option value="allgemein">{{ $t('journal.category_allgemein') }}</option>
+            </select>
+
+            <div class="relative flex-1 md:w-56">
+              <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                v-model="journalSearchQuery"
+                type="text"
+                :placeholder="$t('journal.search_placeholder')"
+                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
+              />
+              <button
+                v-if="journalSearchQuery"
+                @click="journalSearchQuery = ''"
+                class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
 
+        <!-- Empty State -->
+        <div v-if="filteredJournals.length === 0" class="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 shadow-xs max-w-lg mx-auto">
+          <span class="text-4xl">📖</span>
+          <h3 class="text-base font-bold text-slate-800 mt-2">{{ $t('journal.no_entries') }}</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.</p>
+          <div v-if="userRole !== 'viewer'" class="flex items-center justify-center gap-3">
+            <button
+              @click="openNewEntryModal"
+              type="button"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ $t('journal.new_entry') }}
+            </button>
+            <button
+              @click="openNewNoteModal"
+              type="button"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ $t('journal.new_note') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Feed Timeline Cards -->
         <div v-else class="space-y-4">
           <div
-            v-for="entry in journalEntries"
+            v-for="entry in filteredJournals"
             :key="entry.id"
-            class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm"
+            class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs hover:shadow-md transition-all relative overflow-hidden"
+            :class="[
+              entry.type === 'entry' ? 'border-l-4 border-l-[#00A3C4]' : (entry.category === 'email' ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-indigo-400')
+            ]"
           >
-            <div class="flex items-start justify-between gap-4 mb-2">
-              <div class="flex items-center space-x-2">
-                <span class="text-xl">
-                  {{ entry.entry_type === 'voice' ? '🎙️' : entry.entry_type === 'system' ? '⚙️' : entry.entry_type === 'email' ? '✉️' : '📝' }}
-                </span>
+            <!-- Card Header -->
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3 pb-3 border-b border-slate-100">
+              <div class="flex items-start space-x-3">
+                <div class="text-2xl shrink-0 mt-0.5">
+                  {{ getCategoryBadge(entry.category, entry.type).icon }}
+                </div>
                 <div>
-                  <h4 class="text-sm font-bold text-slate-900">{{ entry.title }}</h4>
-                  <div class="text-[11px] text-slate-400">
-                    Von <strong class="text-slate-700">{{ entry.author_name }}</strong> am {{ new Date(entry.created_at).toLocaleString('de-CH') }}
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <h4 class="text-base font-bold text-slate-900">{{ entry.title }}</h4>
+                    <span
+                      class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border"
+                      :class="getCategoryBadge(entry.category, entry.type).bg"
+                    >
+                      {{ getCategoryBadge(entry.category, entry.type).label }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name }}</strong></span>
+                    <span>•</span>
+                    <span>{{ new Date(entry.created_at).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
+                    <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
+                      <span>• Verknüpft: {{ entry.task_title }}</span>
+                    </span>
                   </div>
                 </div>
               </div>
-              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {{ entry.entry_type }}
-              </span>
+
+              <!-- Right: Visibility Badge & Delete -->
+              <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center space-x-1"
+                  :class="getVisibilityBadge(entry.visibility, entry.allowed_group_id).bg"
+                  :title="entry.visibility"
+                >
+                  <span>{{ getVisibilityBadge(entry.visibility, entry.allowed_group_id).icon }}</span>
+                  <span>{{ getVisibilityBadge(entry.visibility, entry.allowed_group_id).label }}</span>
+                </span>
+                <button
+                  v-if="userRole === 'owner' || userRole === 'admin' || entry.user_id === user?.id || entry.author_id === user?.id || user?.is_superadmin"
+                  @click="deleteJournalEntry(entry)"
+                  type="button"
+                  class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  title="Eintrag löschen"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <p class="text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/80 my-3 whitespace-pre-wrap">
-              {{ entry.content }}
-            </p>
+            <!-- TYPE A: ATTENDEES BADGES (for Official Meeting Protocols) -->
+            <div v-if="entry.type === 'entry' && entry.attendees && entry.attendees.length > 0" class="mb-4 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1.5">
+                <Users class="w-3.5 h-3.5 text-[#00A3C4]" />
+                <span>Teilnehmer ({{ entry.attendees.filter(a => a.present).length }} anwesend / {{ entry.attendees.length }} geladen):</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <div
+                  v-for="atd in entry.attendees"
+                  :key="atd.id || atd.name"
+                  class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border shadow-2xs"
+                  :class="atd.present ? 'bg-white border-emerald-300 text-slate-800' : 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'"
+                >
+                  <span
+                    class="w-2 h-2 rounded-full shrink-0"
+                    :class="atd.present ? 'bg-emerald-500' : 'bg-slate-300'"
+                  ></span>
+                  <span>{{ atd.name }}</span>
+                  <span v-if="atd.role" class="text-[10px] text-slate-500 font-normal no-underline">({{ atd.role }})</span>
+                  <span v-if="!atd.present" class="text-[9px] font-bold uppercase text-slate-400 no-underline ml-1">Abwesend</span>
+                </div>
+              </div>
+            </div>
 
-            <div v-if="entry.task_title" class="text-[11px] text-cyan-700 font-bold flex items-center space-x-1">
-              <span>Verknüpft mit Aufgabe:</span>
-              <strong class="text-slate-900">{{ entry.task_title }}</strong>
+            <!-- TYPE B: EMAIL HEADERS & AI SUMMARY CALLOUT -->
+            <div v-if="entry.type === 'note' && entry.category === 'email'" class="mb-4 space-y-3">
+              <!-- Email Sender details -->
+              <div v-if="entry.metadata?.sender?.email" class="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-amber-950 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span class="font-bold flex items-center space-x-1">
+                  <Mail class="w-3.5 h-3.5 text-amber-700" />
+                  <span>Von: {{ entry.metadata.sender.name || entry.metadata.sender.email }} &lt;{{ entry.metadata.sender.email }}&gt;</span>
+                </span>
+                <span v-if="entry.metadata.sender.role" class="text-amber-800 font-normal">• {{ entry.metadata.sender.role }}</span>
+              </div>
+
+              <!-- AI Summary Box -->
+              <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
+                <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950 mb-1.5">
+                  <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                  <span>{{ $t('journal.ai_summary') }}</span>
+                  <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">DeepSeek Engine</span>
+                </div>
+                <p class="text-xs text-slate-800 leading-relaxed">
+                  {{ entry.metadata.ai_summary }}
+                </p>
+              </div>
+
+              <!-- Interactive AI Action Cards -->
+              <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5 pt-1">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                  <span>⚡</span>
+                  <span>{{ $t('journal.ai_suggested_actions') }} ({{ entry.metadata.action_items.length }}):</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div
+                    v-for="(item, idx) in entry.metadata.action_items"
+                    :key="idx"
+                    class="p-3.5 rounded-2xl border transition shadow-xs flex flex-col justify-between"
+                    :class="[
+                      item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
+                        item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-400' :
+                        item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200 hover:border-amber-400' :
+                        'bg-purple-50/70 border-purple-200 hover:border-purple-400'
+                      )
+                    ]"
+                  >
+                    <div>
+                      <div class="flex items-center justify-between gap-1 mb-1.5">
+                        <span
+                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
+                          :class="[
+                            item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                            item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                            'bg-purple-100 text-purple-800 border-purple-300'
+                          ]"
+                        >
+                          {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
+                        </span>
+
+                        <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
+                          <CheckCircle2 class="w-3 h-3" />
+                          <span>{{ $t('journal.action_applied') }}</span>
+                        </span>
+                      </div>
+
+                      <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
+                        {{ item.title || getTaskTitle(item.task_id) }}
+                      </h5>
+
+                      <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
+                        {{ item.description || item.reason }}
+                      </p>
+
+                      <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-2">
+                        <span v-if="item.section_id" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                          📁 {{ getSectionTitle(item.section_id) }}
+                        </span>
+                        <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                          📅 {{ item.due_date || item.suggested_due_date }}
+                        </span>
+                        <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
+                          ⚡ {{ item.priority }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div v-if="!item.applied && userRole !== 'viewer'" class="pt-2 border-t border-slate-200/60 mt-auto">
+                      <button
+                        v-if="item.type === 'create_task'"
+                        type="button"
+                        :disabled="item.applying"
+                        @click="applyCreateTaskAction(entry, item, idx)"
+                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                      >
+                        <Plus class="w-3 h-3" />
+                        <span>{{ item.applying ? 'Wird angelegt...' : $t('journal.action_create_task') }}</span>
+                      </button>
+
+                      <button
+                        v-else-if="item.type === 'update_task'"
+                        type="button"
+                        :disabled="item.applying"
+                        @click="applyUpdateTaskAction(entry, item, idx)"
+                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                      >
+                        <Pencil class="w-3 h-3" />
+                        <span>{{ item.applying ? 'Wird aktualisiert...' : $t('journal.action_update_task') }}</span>
+                      </button>
+
+                      <button
+                        v-else-if="item.type === 'complete_task'"
+                        type="button"
+                        :disabled="item.applying"
+                        @click="applyCompleteTaskAction(entry, item, idx)"
+                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                      >
+                        <Check class="w-3 h-3" />
+                        <span>{{ item.applying ? 'Wird erledigt...' : $t('journal.action_complete_task') }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Area (Text) -->
+            <div class="mt-2">
+              <div v-if="entry.type === 'note' && entry.category === 'email'" class="mb-2">
+                <button
+                  type="button"
+                  @click="expandedMailIds[entry.id] = !expandedMailIds[entry.id]"
+                  class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>{{ expandedMailIds[entry.id] ? 'E-Mail Text verbergen ▲' : 'Vollständigen E-Mail Text anzeigen ▼' }}</span>
+                </button>
+              </div>
+
+              <div
+                v-if="entry.type !== 'note' || entry.category !== 'email' || expandedMailIds[entry.id]"
+                class="text-xs text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans"
+              >
+                {{ entry.content }}
+              </div>
+            </div>
+
+            <!-- Attachments Gallery -->
+            <div v-if="entry.attachments && entry.attachments.length > 0" class="mt-3.5 pt-3 border-t border-slate-100">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1">
+                <Paperclip class="w-3 h-3 text-slate-400" />
+                <span>Dateianhänge ({{ entry.attachments.length }}):</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <div
+                  v-for="att in entry.attachments"
+                  :key="att.id"
+                  class="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-cyan-50/60 border border-slate-200 hover:border-cyan-300 transition text-xs group"
+                >
+                  <span class="text-sm">{{ getFileIcon(att.file_type) }}</span>
+                  <div class="min-w-0 max-w-[160px]">
+                    <a
+                      :href="att.file_path"
+                      :download="att.file_name"
+                      target="_blank"
+                      class="font-semibold text-slate-800 hover:text-[#00A3C4] truncate block"
+                      :title="att.file_name"
+                    >
+                      {{ att.file_name }}
+                    </a>
+                    <span class="text-[10px] text-slate-400">{{ formatFileSize(att.file_size) }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3234,60 +3585,498 @@
       </div>
     </div>
 
-    <!-- Modal: New Journal Entry -->
-    <div v-if="showNewJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-black text-slate-900 mb-2">Neuer Journaleintrag / Notiz</h3>
-
-        <form @submit.prevent="createJournalEntry" class="space-y-4">
+    <!-- MODAL 1: NEUER JOURNALEINTRAG (Bausitzung / Protokoll / Bautagebuch) -->
+    <div
+      v-if="showNewEntryModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in"
+    >
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Eintrags-Typ</label>
-            <select
-              v-model="journalForm.entry_type"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
-            >
-              <option value="manual">📝 Besprechung / Notiz</option>
-              <option value="voice">🎙️ Sprachnotiz</option>
-              <option value="email">✉️ E-Mail Ablage</option>
-              <option value="system">⚙️ Systemnotiz</option>
-            </select>
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <span class="text-xl">📖</span>
+              <span>{{ $t('journal.modal_entry_title') }}</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              {{ $t('journal.modal_entry_desc') }}
+            </p>
+          </div>
+          <button
+            @click="showNewEntryModal = false"
+            type="button"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="saveNewEntry" class="space-y-4 overflow-y-auto pr-1 flex-1">
+          <div v-if="journalError" class="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
+            {{ journalError }}
           </div>
 
+          <!-- Title -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Titel / Betreff</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              {{ $t('journal.field_title') }} <span class="text-rose-500">*</span>
+            </label>
             <input
-              v-model="journalForm.title"
+              v-model="newEntryForm.title"
               type="text"
               required
-              placeholder="z.B. Zwischenstand Meeting mit Kunden"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+              :placeholder="$t('journal.field_title_placeholder')"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             />
           </div>
 
+          <!-- Category & Date -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.field_category') }}</label>
+              <select
+                v-model="newEntryForm.category"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              >
+                <option value="bausitzung">🏛️ {{ $t('journal.category_bausitzung') }}</option>
+                <option value="bautagebuch">📋 {{ $t('journal.category_bautagebuch') }}</option>
+                <option value="abnahmebegehung">🔍 {{ $t('journal.category_abnahmebegehung') }}</option>
+                <option value="wetter_behinderung">⛈️ {{ $t('journal.category_wetter_behinderung') }}</option>
+                <option value="regie">⏱️ {{ $t('journal.category_regie') }}</option>
+                <option value="allgemein">📖 {{ $t('journal.category_allgemein') }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.field_date') }}</label>
+              <input
+                v-model="newEntryForm.entry_date"
+                type="date"
+                required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <!-- Visibility & Allowed Group -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.visibility_label') }}</label>
+              <select
+                v-model="newEntryForm.visibility"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              >
+                <option value="all">🌐 {{ $t('journal.visibility_all') }}</option>
+                <option value="company">🏢 {{ $t('journal.visibility_company') }}</option>
+                <option value="group">👥 {{ $t('journal.visibility_group') }}</option>
+                <option value="only_me">🔒 {{ $t('journal.visibility_only_me') }}</option>
+              </select>
+            </div>
+            <div v-if="newEntryForm.visibility === 'group'">
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.group_label') }}</label>
+              <select
+                v-model="newEntryForm.allowed_group_id"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              >
+                <option :value="null">{{ $t('journal.select_group') }}</option>
+                <option v-for="g in userGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Linked Task (optional) -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Inhalt / Notiz</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Verknüpfte Aufgabe (optional)</label>
+            <select
+              v-model="newEntryForm.task_id"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            >
+              <option :value="null">-- Keine Verknüpfung --</option>
+              <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                {{ t.title }} ({{ getSectionTitle(t.list_id) }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Attendees Management -->
+          <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-xs font-black text-slate-900">{{ $t('journal.attendees') }}</label>
+                <p class="text-[11px] text-slate-500">{{ $t('journal.attendees_desc') }}</p>
+              </div>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">
+                {{ newEntryForm.attendees.length }} Teilnehmer
+              </span>
+            </div>
+
+            <!-- Quick Add Attendee from Contacts or Custom -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+              <div class="sm:col-span-4">
+                <select
+                  v-model="selectedContactToAdd"
+                  @change="addContactToAttendees"
+                  class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
+                >
+                  <option value="">{{ $t('journal.select_contact') }}</option>
+                  <option v-for="c in projectContacts" :key="c.id" :value="c.id">
+                    {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }} ({{ c.role_function || c.category_group || 'Kontakt' }})
+                  </option>
+                </select>
+              </div>
+              <div class="sm:col-span-3">
+                <input
+                  v-model="newEntryAttendeeName"
+                  type="text"
+                  placeholder="Name"
+                  class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
+                />
+              </div>
+              <div class="sm:col-span-3">
+                <input
+                  v-model="newEntryAttendeeRole"
+                  type="text"
+                  :placeholder="$t('journal.role_placeholder')"
+                  class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <button
+                  type="button"
+                  @click="addCustomAttendee"
+                  class="w-full h-full py-2 px-2 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white transition cursor-pointer"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+
+            <!-- List of Attendees with Presence Checkboxes -->
+            <div v-if="newEntryForm.attendees.length > 0" class="space-y-1.5 pt-2 max-h-40 overflow-y-auto">
+              <div
+                v-for="(atd, atdIdx) in newEntryForm.attendees"
+                :key="atdIdx"
+                class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 text-xs"
+              >
+                <div class="flex items-center space-x-2 min-w-0">
+                  <label class="flex items-center space-x-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      v-model="atd.present"
+                      class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-3.5 h-3.5"
+                    />
+                    <span :class="atd.present ? 'font-bold text-slate-900' : 'text-slate-400 line-through'">
+                      {{ atd.name }}
+                    </span>
+                  </label>
+                  <span v-if="atd.role" class="text-[10px] text-slate-500">({{ atd.role }})</span>
+                </div>
+                <div class="flex items-center space-x-2 shrink-0">
+                  <span
+                    class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                    :class="atd.present ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'"
+                  >
+                    {{ atd.present ? $t('journal.present') : $t('journal.absent') }}
+                  </span>
+                  <button
+                    type="button"
+                    @click="removeAttendee(atdIdx)"
+                    class="text-slate-400 hover:text-rose-600 font-bold px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Protocol Content -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              {{ $t('journal.field_content') }}
+            </label>
             <textarea
-              v-model="journalForm.content"
-              required
-              rows="4"
-              placeholder="Genaue Beschreibung oder Zusammenfassung..."
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+              v-model="newEntryForm.content"
+              rows="6"
+              :placeholder="$t('journal.field_content_placeholder')"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             ></textarea>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <!-- Attachments Section -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.attachments') }}</label>
+            <div class="p-3 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 text-center hover:bg-slate-100/60 transition cursor-pointer relative">
+              <input
+                type="file"
+                multiple
+                @change="handleEntryAttachments"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <UploadCloud class="w-6 h-6 text-slate-400 mx-auto mb-1" />
+              <p class="text-xs font-semibold text-slate-700">{{ $t('journal.drop_files') }}</p>
+            </div>
+
+            <!-- Uploaded files preview list -->
+            <div v-if="newEntryForm.attachments.length > 0" class="flex flex-wrap gap-2 mt-2">
+              <div
+                v-for="(att, attIdx) in newEntryForm.attachments"
+                :key="attIdx"
+                class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-xs text-cyan-950"
+              >
+                <span>📎</span>
+                <span class="truncate max-w-[140px] font-medium">{{ att.file_name }}</span>
+                <span class="text-[10px] text-cyan-700 font-normal">({{ formatFileSize(att.file_size) }})</span>
+                <button
+                  type="button"
+                  @click="removeEntryAttachment(attIdx)"
+                  class="text-rose-500 hover:text-rose-700 font-bold ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100 shrink-0">
             <button
               type="button"
-              @click="showNewJournalModal = false"
+              @click="showNewEntryModal = false"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
-              Abbrechen
+              {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
+              :disabled="savingJournal"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              Eintrag speichern
+              {{ savingJournal ? $t('journal.saving') : $t('journal.save_entry') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 2: NEUE NOTIZ & E-MAIL IMPORT (mit KI DeepSeek Engine) -->
+    <div
+      v-if="showNewNoteModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in"
+    >
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
+          <div>
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <span class="text-xl">✉️</span>
+              <span>{{ $t('journal.modal_note_title') }}</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              {{ $t('journal.modal_note_desc') }}
+            </p>
+          </div>
+          <button
+            @click="showNewNoteModal = false"
+            type="button"
+            class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="saveNewNote" class="space-y-4 overflow-y-auto pr-1 flex-1">
+          <div v-if="journalError" class="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold">
+            {{ journalError }}
+          </div>
+
+          <!-- E-Mail Dropzone & Ingestion Banner -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border border-amber-200 shadow-2xs relative">
+            <div class="flex items-start space-x-2.5 mb-2">
+              <span class="text-xl">⚡</span>
+              <div>
+                <h4 class="text-xs font-black text-amber-950">{{ $t('journal.email_ingestion_title') }}</h4>
+                <p class="text-[11px] text-amber-900 leading-snug mt-0.5">
+                  {{ $t('journal.email_ingestion_desc') }}
+                </p>
+              </div>
+            </div>
+
+            <div class="relative border-2 border-dashed border-amber-300/80 rounded-xl p-3 bg-white/80 text-center hover:bg-white transition cursor-pointer">
+              <input
+                type="file"
+                accept=".eml,.msg,.txt"
+                @change="handleNoteDropEml"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Mail class="w-5 h-5 text-amber-700 mx-auto mb-1" />
+              <p class="text-xs font-bold text-amber-900">.eml oder Textdatei hier ablegen zum automatischen Auslesen</p>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              {{ $t('journal.field_title') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="newNoteForm.title"
+              type="text"
+              required
+              placeholder="z.B. Bauherrenentscheid Farbe Fassade"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            />
+          </div>
+
+          <!-- Category & Visibility -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.field_category') }}</label>
+              <select
+                v-model="newNoteForm.category"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              >
+                <option value="email">✉️ {{ $t('journal.category_email') }}</option>
+                <option value="allgemein">📝 {{ $t('journal.category_allgemein') }}</option>
+                <option value="wetter_behinderung">⛈️ {{ $t('journal.category_wetter_behinderung') }}</option>
+                <option value="regie">⏱️ {{ $t('journal.category_regie') }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.visibility_label') }}</label>
+              <select
+                v-model="newNoteForm.visibility"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              >
+                <option value="all">🌐 {{ $t('journal.visibility_all') }}</option>
+                <option value="company">🏢 {{ $t('journal.visibility_company') }}</option>
+                <option value="group">👥 {{ $t('journal.visibility_group') }}</option>
+                <option value="only_me">🔒 {{ $t('journal.visibility_only_me') }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Allowed Group if visibility === group -->
+          <div v-if="newNoteForm.visibility === 'group'">
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.group_label') }}</label>
+            <select
+              v-model="newNoteForm.allowed_group_id"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            >
+              <option :value="null">{{ $t('journal.select_group') }}</option>
+              <option v-for="g in userGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+            </select>
+          </div>
+
+          <!-- Email Sender Info (if category is email) -->
+          <div v-if="newNoteForm.category === 'email'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/40 rounded-xl border border-amber-200/60">
+            <div>
+              <label class="block text-xs font-bold text-amber-950 mb-1">Absender Name</label>
+              <input
+                v-model="newNoteForm.sender_name"
+                type="text"
+                placeholder="z.B. Max Muster"
+                class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-amber-950 mb-1">Absender E-Mail</label>
+              <input
+                v-model="newNoteForm.sender_email"
+                type="email"
+                placeholder="z.B. m.muster@partner.ch"
+                class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <!-- Content / Email Body -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">
+              {{ $t('journal.field_content') }} <span class="text-rose-500">*</span>
+            </label>
+            <textarea
+              v-model="newNoteForm.content"
+              rows="6"
+              required
+              placeholder="Notiz oder Inhalt der E-Mail hier einfügen..."
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            ></textarea>
+          </div>
+
+          <!-- AI Analysis Toggle Switch -->
+          <div class="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/70 to-blue-50/90 border border-cyan-200 shadow-2xs">
+            <label class="flex items-start space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="newNoteForm.analyzeWithAi"
+                class="mt-1 rounded text-[#00A3C4] focus:ring-[#00A3C4] w-4 h-4"
+              />
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <Sparkles class="w-4 h-4 text-[#00A3C4]" />
+                  <span class="text-xs font-black text-cyan-950">{{ $t('journal.analyze_with_ai') }}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">DeepSeek Engine</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                  Generiert eine prägnante Zusammenfassung und schlägt interaktive Aktionskarten (neue Aufgaben, Fristverschiebungen, Erledigungen) vor.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Attachments -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.attachments') }}</label>
+            <div class="p-3 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 text-center hover:bg-slate-100/60 transition cursor-pointer relative">
+              <input
+                type="file"
+                multiple
+                @change="handleNoteAttachments"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <UploadCloud class="w-6 h-6 text-slate-400 mx-auto mb-1" />
+              <p class="text-xs font-semibold text-slate-700">{{ $t('journal.drop_files') }}</p>
+            </div>
+
+            <!-- Uploaded files preview list -->
+            <div v-if="newNoteForm.attachments.length > 0" class="flex flex-wrap gap-2 mt-2">
+              <div
+                v-for="(att, attIdx) in newNoteForm.attachments"
+                :key="attIdx"
+                class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-950"
+              >
+                <span>📎</span>
+                <span class="truncate max-w-[140px] font-medium">{{ att.file_name }}</span>
+                <span class="text-[10px] text-amber-700 font-normal">({{ formatFileSize(att.file_size) }})</span>
+                <button
+                  type="button"
+                  @click="removeNoteAttachment(attIdx)"
+                  class="text-rose-500 hover:text-rose-700 font-bold ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100 shrink-0">
+            <button
+              type="button"
+              @click="showNewNoteModal = false"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+            >
+              {{ $t('common.abbrechen') }}
+            </button>
+            <button
+              type="submit"
+              :disabled="savingJournal"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5"
+            >
+              <Sparkles v-if="newNoteForm.analyzeWithAi && !savingJournal" class="w-3.5 h-3.5" />
+              <span>
+                {{ savingJournal ? (newNoteForm.analyzeWithAi ? $t('journal.analyzing') : $t('journal.saving')) : (newNoteForm.analyzeWithAi ? 'Mit KI analysieren & speichern' : $t('journal.save_note')) }}
+              </span>
             </button>
           </div>
         </form>
@@ -3848,7 +4637,18 @@ import {
   Mic,
   ExternalLink,
   MoreVertical,
-  AlertTriangle
+  AlertTriangle,
+  BookOpen,
+  Sparkles,
+  CheckCircle2,
+  Users,
+  Contact,
+  Settings,
+  LayoutGrid,
+  UploadCloud,
+  Download,
+  Send,
+  ListFilter
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
@@ -4225,11 +5025,79 @@ const settingsForm = ref<any>({
 })
 const savingProjectSettings = ref(false)
 
-const showNewJournalModal = ref(false)
-const journalForm = ref<any>({
-  entry_type: 'manual',
+// Projektjournal State & Filter
+const showNewEntryModal = ref(false)
+const showNewNoteModal = ref(false)
+const showNewJournalModal = showNewEntryModal // backwards compatibility
+const savingJournal = ref(false)
+const journalError = ref('')
+const journalFilterType = ref<'all' | 'entry' | 'note'>('all')
+const journalFilterCategory = ref('all')
+const journalSearchQuery = ref('')
+const expandedMailIds = ref<Record<string, boolean>>({})
+const userGroups = ref<any[]>([])
+
+// Attendees Helper State
+const newEntryAttendeeName = ref('')
+const newEntryAttendeeEmail = ref('')
+const newEntryAttendeeRole = ref('')
+const selectedContactToAdd = ref('')
+
+// Form Models
+const newEntryForm = ref<any>({
   title: '',
-  content: ''
+  type: 'entry',
+  category: 'bausitzung',
+  visibility: 'all',
+  allowed_group_id: null,
+  task_id: null,
+  entry_date: new Date().toISOString().slice(0, 10),
+  content: '',
+  attendees: [] as any[],
+  attachments: [] as any[]
+})
+
+const newNoteForm = ref<any>({
+  title: '',
+  type: 'note',
+  category: 'email',
+  visibility: 'all',
+  allowed_group_id: null,
+  sender_name: '',
+  sender_email: '',
+  content: '',
+  analyzeWithAi: true,
+  attachments: [] as any[]
+})
+
+const journalForm = newEntryForm // backwards compatibility
+
+const entriesCount = computed(() => {
+  return (journalEntries.value || []).filter((e: any) => e.type === 'entry').length
+})
+
+const notesCount = computed(() => {
+  return (journalEntries.value || []).filter((e: any) => e.type === 'note').length
+})
+
+const filteredJournals = computed(() => {
+  let list = [...(journalEntries.value || [])]
+  if (journalFilterType.value !== 'all') {
+    list = list.filter((e: any) => e.type === journalFilterType.value)
+  }
+  if (journalFilterCategory.value !== 'all') {
+    list = list.filter((e: any) => e.category === journalFilterCategory.value)
+  }
+  if (journalSearchQuery.value.trim()) {
+    const q = journalSearchQuery.value.trim().toLowerCase()
+    list = list.filter((e: any) =>
+      (e.title && e.title.toLowerCase().includes(q)) ||
+      (e.content && e.content.toLowerCase().includes(q)) ||
+      (e.author_name && e.author_name.toLowerCase().includes(q)) ||
+      (e.metadata?.ai_summary && e.metadata.ai_summary.toLowerCase().includes(q))
+    )
+  }
+  return list
 })
 
 const showInviteMemberModal = ref(false)
@@ -4324,8 +5192,10 @@ const getAvailableTemplateFields = (header: string) => {
   return commonCustomFieldTemplates.filter((t: any) => !existingKeys.has(t.key))
 }
 
-const getSectionTitle = (title: string) => {
-  if (!title) return ''
+const getSectionTitle = (titleOrId: string) => {
+  if (!titleOrId) return ''
+  const foundList = lists.value.find((l: any) => l.id === titleOrId)
+  const title = foundList ? foundList.title : titleOrId
   if (title.startsWith('sections.') || te(title)) {
     return t(title)
   }
@@ -5040,11 +5910,18 @@ const deleteField = async (fieldId: string) => {
 
 const loadJournals = async () => {
   try {
-    const res = await $fetch<any>(`/api/journals?project_id=${projectId}`, {
+    const res = await $fetch<any>(`/api/projects/${projectId}/journal`, {
       headers: authHeaders()
     })
     journalEntries.value = res.entries || []
-  } catch {}
+  } catch {
+    try {
+      const fallback = await $fetch<any>(`/api/journals?project_id=${projectId}`, {
+        headers: authHeaders()
+      })
+      journalEntries.value = fallback.entries || []
+    } catch {}
+  }
 }
 
 const createList = async () => {
@@ -6043,24 +6920,445 @@ const deleteTask = async () => {
   }
 }
 
-const createJournalEntry = async () => {
+const loadUserGroups = async () => {
   try {
-    await $fetch('/api/journals', {
+    const res = await $fetch<any>('/api/groups', {
+      headers: authHeaders()
+    })
+    userGroups.value = res.groups || []
+  } catch {}
+}
+
+const openNewEntryModal = async () => {
+  newEntryForm.value = {
+    title: '',
+    type: 'entry',
+    category: 'bausitzung',
+    visibility: 'all',
+    allowed_group_id: null,
+    task_id: null,
+    entry_date: new Date().toISOString().slice(0, 10),
+    content: '',
+    attendees: [] as any[],
+    attachments: [] as any[]
+  }
+  newEntryAttendeeName.value = ''
+  newEntryAttendeeEmail.value = ''
+  newEntryAttendeeRole.value = ''
+  selectedContactToAdd.value = ''
+  journalError.value = ''
+  showNewEntryModal.value = true
+  if (userGroups.value.length === 0) {
+    loadUserGroups()
+  }
+  if (projectContacts.value.length === 0) {
+    loadProjectContacts()
+  }
+}
+
+const openNewNoteModal = async () => {
+  newNoteForm.value = {
+    title: '',
+    type: 'note',
+    category: 'email',
+    visibility: 'all',
+    allowed_group_id: null,
+    sender_name: '',
+    sender_email: '',
+    content: '',
+    analyzeWithAi: true,
+    attachments: [] as any[]
+  }
+  journalError.value = ''
+  showNewNoteModal.value = true
+  if (userGroups.value.length === 0) {
+    loadUserGroups()
+  }
+}
+
+const addContactToAttendees = () => {
+  if (!selectedContactToAdd.value) return
+  const contact = projectContacts.value.find((c: any) => c.id === selectedContactToAdd.value)
+  if (!contact) return
+  const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || 'Kontakt'
+  if (!newEntryForm.value.attendees.some((a: any) => a.contact_id === contact.id)) {
+    newEntryForm.value.attendees.push({
+      contact_id: contact.id,
+      name: fullName,
+      email: contact.email || null,
+      role: contact.role_function || contact.category_group || '',
+      present: true
+    })
+  }
+  selectedContactToAdd.value = ''
+}
+
+const addCustomAttendee = () => {
+  const name = newEntryAttendeeName.value.trim()
+  if (!name) return
+  newEntryForm.value.attendees.push({
+    contact_id: null,
+    name,
+    email: newEntryAttendeeEmail.value.trim() || null,
+    role: newEntryAttendeeRole.value.trim() || '',
+    present: true
+  })
+  newEntryAttendeeName.value = ''
+  newEntryAttendeeEmail.value = ''
+  newEntryAttendeeRole.value = ''
+}
+
+const removeAttendee = (idx: number) => {
+  newEntryForm.value.attendees.splice(idx, 1)
+}
+
+const handleEntryAttachments = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  for (let i = 0; i < target.files.length; i++) {
+    const file = target.files[i]
+    const base64 = await readFileAsDataUrl(file)
+    newEntryForm.value.attachments.push({
+      file_name: file.name,
+      file_type: file.type || 'application/octet-stream',
+      file_size: file.size,
+      file_path: base64
+    })
+  }
+}
+
+const removeEntryAttachment = (idx: number) => {
+  newEntryForm.value.attachments.splice(idx, 1)
+}
+
+const handleNoteAttachments = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  for (let i = 0; i < target.files.length; i++) {
+    const file = target.files[i]
+    const base64 = await readFileAsDataUrl(file)
+    newNoteForm.value.attachments.push({
+      file_name: file.name,
+      file_type: file.type || 'application/octet-stream',
+      file_size: file.size,
+      file_path: base64
+    })
+  }
+}
+
+const removeNoteAttachment = (idx: number) => {
+  newNoteForm.value.attachments.splice(idx, 1)
+}
+
+const handleNoteDropEml = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  const file = target.files[0]
+  const text = await file.text()
+
+  const subjectMatch = text.match(/^Subject:\s*(.+)$/im)
+  if (subjectMatch && subjectMatch[1]) {
+    newNoteForm.value.title = subjectMatch[1].trim()
+  } else {
+    newNoteForm.value.title = file.name.replace(/\.[^/.]+$/, '')
+  }
+
+  const fromMatch = text.match(/^From:\s*(.+)$/im)
+  if (fromMatch && fromMatch[1]) {
+    const rawFrom = fromMatch[1].trim()
+    const emailMatch = rawFrom.match(/<([^>]+)>/)
+    if (emailMatch) {
+      newNoteForm.value.sender_email = emailMatch[1].trim()
+      newNoteForm.value.sender_name = rawFrom.replace(/<[^>]+>/, '').replace(/["']/g, '').trim()
+    } else {
+      newNoteForm.value.sender_email = rawFrom
+      newNoteForm.value.sender_name = rawFrom.split('@')[0]
+    }
+  }
+
+  const split = text.split(/\r?\n\r?\n/)
+  if (split.length > 1) {
+    newNoteForm.value.content = split.slice(1).join('\n\n').trim()
+  } else {
+    newNoteForm.value.content = text.trim()
+  }
+
+  newNoteForm.value.category = 'email'
+  newNoteForm.value.analyzeWithAi = true
+
+  const base64 = await readFileAsDataUrl(file)
+  newNoteForm.value.attachments.push({
+    file_name: file.name,
+    file_type: file.type || 'message/rfc822',
+    file_size: file.size,
+    file_path: base64
+  })
+}
+
+const saveNewEntry = async () => {
+  if (!newEntryForm.value.title?.trim()) {
+    journalError.value = 'Bitte gib einen Titel für den Journaleintrag an.'
+    return
+  }
+  savingJournal.value = true
+  journalError.value = ''
+  try {
+    await $fetch(`/api/projects/${projectId}/journal`, {
       method: 'POST',
       headers: authHeaders(),
       body: {
         project_id: projectId,
-        entry_type: journalForm.value.entry_type,
-        title: journalForm.value.title,
-        content: journalForm.value.content
+        type: 'entry',
+        title: newEntryForm.value.title.trim(),
+        category: newEntryForm.value.category || 'bausitzung',
+        visibility: newEntryForm.value.visibility || 'all',
+        allowed_group_id: newEntryForm.value.visibility === 'group' ? newEntryForm.value.allowed_group_id : null,
+        task_id: newEntryForm.value.task_id || null,
+        content: newEntryForm.value.content?.trim() || '',
+        attendees: newEntryForm.value.attendees || [],
+        attachments: newEntryForm.value.attachments || [],
+        metadata: {
+          entry_date: newEntryForm.value.entry_date
+        }
       }
     })
-    showNewJournalModal.value = false
-    journalForm.value = { entry_type: 'manual', title: '', content: '' }
+    showNewEntryModal.value = false
     await loadJournals()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Notiz')
+    journalError.value = err.data?.statusMessage || err.message || 'Fehler beim Speichern des Journaleintrags'
+  } finally {
+    savingJournal.value = false
   }
+}
+
+const saveNewNote = async () => {
+  if (!newNoteForm.value.title?.trim() && !newNoteForm.value.content?.trim()) {
+    journalError.value = 'Bitte gib einen Titel oder Inhalt für die Notiz an.'
+    return
+  }
+  savingJournal.value = true
+  journalError.value = ''
+  try {
+    if (newNoteForm.value.analyzeWithAi) {
+      await $fetch(`/api/projects/${projectId}/journal/parse-email`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          subject: newNoteForm.value.title?.trim() || 'E-Mail Import',
+          content: newNoteForm.value.content?.trim() || '',
+          sender_name: newNoteForm.value.sender_name?.trim() || '',
+          sender_email: newNoteForm.value.sender_email?.trim() || '',
+          category: newNoteForm.value.category || 'email',
+          visibility: newNoteForm.value.visibility || 'all',
+          allowed_group_id: newNoteForm.value.visibility === 'group' ? newNoteForm.value.allowed_group_id : null,
+          attachments: newNoteForm.value.attachments || []
+        }
+      })
+    } else {
+      await $fetch(`/api/projects/${projectId}/journal`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          project_id: projectId,
+          type: 'note',
+          title: newNoteForm.value.title?.trim() || 'Notiz',
+          category: newNoteForm.value.category || 'allgemein',
+          visibility: newNoteForm.value.visibility || 'all',
+          allowed_group_id: newNoteForm.value.visibility === 'group' ? newNoteForm.value.allowed_group_id : null,
+          content: newNoteForm.value.content?.trim() || '',
+          attachments: newNoteForm.value.attachments || [],
+          metadata: newNoteForm.value.category === 'email' ? {
+            sender: {
+              name: newNoteForm.value.sender_name?.trim() || '',
+              email: newNoteForm.value.sender_email?.trim() || ''
+            }
+          } : null
+        }
+      })
+    }
+    showNewNoteModal.value = false
+    await loadJournals()
+  } catch (err: any) {
+    journalError.value = err.data?.statusMessage || err.message || 'Fehler beim Speichern der Notiz'
+  } finally {
+    savingJournal.value = false
+  }
+}
+
+const createJournalEntry = saveNewEntry
+
+const deleteJournalEntry = async (entry: any) => {
+  if (!confirm(t('journal.delete_entry_confirm') || 'Möchtest du diesen Journaleintrag wirklich löschen?')) return
+  try {
+    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Eintrags')
+  }
+}
+
+const applyCreateTaskAction = async (entry: any, item: any, idx: number) => {
+  item.applying = true
+  try {
+    const listId = item.section_id || (lists.value.length > 0 ? lists.value[0].id : null)
+    if (!listId) {
+      alert('Kein Abschnitt im Projekt vorhanden, um eine Aufgabe anzulegen.')
+      return
+    }
+
+    const res = await $fetch<any>('/api/tasks', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        project_id: projectId,
+        list_id: listId,
+        title: item.title || 'Neue Aufgabe aus Journal',
+        description: item.description || item.reason || '',
+        priority: item.priority || 'normal',
+        due_date: item.due_date || item.suggested_due_date || null
+      }
+    })
+
+    item.applied = true
+    item.created_task_id = res.task?.id
+
+    const meta = { ...(entry.metadata || {}) }
+    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { metadata: meta }
+    })
+
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Anlegen der Aufgabe')
+  } finally {
+    item.applying = false
+  }
+}
+
+const applyUpdateTaskAction = async (entry: any, item: any, idx: number) => {
+  if (!item.task_id) return
+  item.applying = true
+  try {
+    const updateBody: any = {}
+    if (item.suggested_due_date || item.due_date) {
+      updateBody.due_date = item.suggested_due_date || item.due_date
+    }
+    const st = item.suggested_status || item.status
+    if (st) {
+      updateBody.status = (st === 'completed' ? 'done' : st)
+    }
+    if (item.priority) {
+      updateBody.priority = item.priority
+    }
+
+    await $fetch(`/api/tasks/${item.task_id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: updateBody
+    })
+
+    item.applied = true
+
+    const meta = { ...(entry.metadata || {}) }
+    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { metadata: meta }
+    })
+
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren der Aufgabe')
+  } finally {
+    item.applying = false
+  }
+}
+
+const applyCompleteTaskAction = async (entry: any, item: any, idx: number) => {
+  if (!item.task_id) return
+  item.applying = true
+  try {
+    await $fetch(`/api/tasks/${item.task_id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { status: 'done' }
+    })
+
+    item.applied = true
+
+    const meta = { ...(entry.metadata || {}) }
+    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { metadata: meta }
+    })
+
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Abschliessen der Aufgabe')
+  } finally {
+    item.applying = false
+  }
+}
+
+const getCategoryBadge = (category: string, type: string) => {
+  if (type === 'entry') {
+    switch (category) {
+      case 'bausitzung':
+        return { label: t('journal.category_bausitzung') || 'Bausitzung', icon: '🏛️', bg: 'bg-cyan-100 text-[#00A3C4] border-cyan-200' }
+      case 'bautagebuch':
+        return { label: t('journal.category_bautagebuch') || 'Bautagebuch', icon: '📋', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+      case 'abnahmebegehung':
+        return { label: t('journal.category_abnahmebegehung') || 'Abnahmebegehung', icon: '🔍', bg: 'bg-purple-100 text-purple-800 border-purple-200' }
+      case 'wetter_behinderung':
+        return { label: t('journal.category_wetter_behinderung') || 'Wetter / Behinderung', icon: '⛈️', bg: 'bg-amber-100 text-amber-800 border-amber-200' }
+      case 'regie':
+        return { label: t('journal.category_regie') || 'Regie', icon: '⏱️', bg: 'bg-orange-100 text-orange-800 border-orange-200' }
+      default:
+        return { label: t('journal.category_allgemein') || 'Journaleintrag', icon: '📖', bg: 'bg-cyan-100 text-[#00A3C4] border-cyan-200' }
+    }
+  } else {
+    switch (category) {
+      case 'email':
+        return { label: t('journal.category_email') || 'E-Mail', icon: '✉️', bg: 'bg-amber-100 text-amber-900 border-amber-200' }
+      case 'wetter_behinderung':
+        return { label: t('journal.category_wetter_behinderung') || 'Wetter / Behinderung', icon: '⛈️', bg: 'bg-amber-100 text-amber-800 border-amber-200' }
+      case 'regie':
+        return { label: t('journal.category_regie') || 'Regie', icon: '⏱️', bg: 'bg-orange-100 text-orange-800 border-orange-200' }
+      default:
+        return { label: t('journal.category_note') || 'Journalnotiz', icon: '📝', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' }
+    }
+  }
+}
+
+const getVisibilityBadge = (visibility: string, allowedGroupId?: string) => {
+  switch (visibility) {
+    case 'only_me':
+      return { label: t('journal.visibility_only_me') || 'Nur ich', icon: '🔒', bg: 'bg-rose-50 text-rose-700 border-rose-200' }
+    case 'group': {
+      const g = userGroups.value.find((group: any) => group.id === allowedGroupId)
+      return { label: g ? g.name : (t('journal.visibility_group') || 'Gruppe'), icon: '👥', bg: 'bg-purple-50 text-purple-700 border-purple-200' }
+    }
+    case 'company':
+      return { label: t('journal.visibility_company') || 'Unternehmen', icon: '🏢', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' }
+    case 'all':
+    default:
+      return { label: t('journal.visibility_all') || 'Projekt', icon: '🌐', bg: 'bg-slate-100 text-slate-700 border-slate-200' }
+  }
+}
+
+const getTaskTitle = (taskId?: string) => {
+  if (!taskId) return 'Aufgabe'
+  for (const l of lists.value) {
+    const t = l.tasks?.find((task: any) => task.id === taskId)
+    if (t) return t.title
+  }
+  return `Aufgabe #${taskId}`
 }
 
 const inviteMember = async () => {

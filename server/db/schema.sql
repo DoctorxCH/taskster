@@ -148,13 +148,41 @@ CREATE TABLE IF NOT EXISTS time_entries (
 
 CREATE TABLE IF NOT EXISTS project_journals (
   id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  author_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
-  author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'entry',
+  category TEXT NOT NULL DEFAULT 'allgemein',
   entry_type TEXT NOT NULL DEFAULT 'manual',
   title TEXT NOT NULL,
   content TEXT NOT NULL,
+  visibility TEXT NOT NULL DEFAULT 'all',
+  allowed_group_id TEXT REFERENCES user_groups(id) ON DELETE SET NULL,
+  metadata TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_journal_attachments (
+  id TEXT PRIMARY KEY,
+  journal_id TEXT NOT NULL REFERENCES project_journals(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_journal_attendees (
+  id TEXT PRIMARY KEY,
+  journal_id TEXT NOT NULL REFERENCES project_journals(id) ON DELETE CASCADE,
+  contact_id TEXT REFERENCES contacts(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  role TEXT,
+  present INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS project_documents (

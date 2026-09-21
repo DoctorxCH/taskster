@@ -172,15 +172,50 @@ async function migrate() {
   await conn.query(`
     CREATE TABLE IF NOT EXISTS project_journals (
       id VARCHAR(64) PRIMARY KEY,
+      company_id VARCHAR(64) NULL,
       project_id VARCHAR(64) NOT NULL,
+      user_id VARCHAR(64) NULL,
+      author_id VARCHAR(64) NULL,
       task_id VARCHAR(64) NULL,
-      author_id VARCHAR(64) NOT NULL,
+      type VARCHAR(32) NOT NULL DEFAULT 'entry',
+      category VARCHAR(64) NOT NULL DEFAULT 'allgemein',
       entry_type VARCHAR(64) NOT NULL DEFAULT 'manual',
       title VARCHAR(255) NOT NULL,
-      content TEXT NOT NULL,
+      content LONGTEXT NOT NULL,
+      visibility VARCHAR(32) NOT NULL DEFAULT 'all',
+      allowed_group_id VARCHAR(64) NULL,
       metadata JSON NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_journals_project (project_id)
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_journals_project (project_id),
+      INDEX idx_journals_company (company_id),
+      INDEX idx_journals_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS project_journal_attachments (
+      id VARCHAR(64) PRIMARY KEY,
+      journal_id VARCHAR(64) NOT NULL,
+      file_name VARCHAR(255) NOT NULL,
+      file_path LONGTEXT NOT NULL,
+      file_type VARCHAR(128) NOT NULL,
+      file_size BIGINT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_pja_journal (journal_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS project_journal_attendees (
+      id VARCHAR(64) PRIMARY KEY,
+      journal_id VARCHAR(64) NOT NULL,
+      contact_id VARCHAR(64) NULL,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NULL,
+      role VARCHAR(255) NULL,
+      present TINYINT(1) NOT NULL DEFAULT 1,
+      INDEX idx_attendees_journal (journal_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
@@ -381,6 +416,14 @@ async function migrate() {
     "ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL",
     "ALTER TABLE folder_field_definitions ADD COLUMN entity_type VARCHAR(32) NOT NULL DEFAULT 'task'",
     "ALTER TABLE folder_field_definitions ADD COLUMN logic_rules JSON NULL",
+    "ALTER TABLE project_journals ADD COLUMN company_id VARCHAR(64) NULL",
+    "ALTER TABLE project_journals ADD COLUMN user_id VARCHAR(64) NULL",
+    "ALTER TABLE project_journals ADD COLUMN type VARCHAR(32) NOT NULL DEFAULT 'entry'",
+    "ALTER TABLE project_journals ADD COLUMN category VARCHAR(64) NOT NULL DEFAULT 'allgemein'",
+    "ALTER TABLE project_journals ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'all'",
+    "ALTER TABLE project_journals ADD COLUMN allowed_group_id VARCHAR(64) NULL",
+    "ALTER TABLE project_journals ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+    "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }

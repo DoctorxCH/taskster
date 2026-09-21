@@ -87,10 +87,42 @@ function ensureTables($pdo) {
             "ALTER TABLE folder_field_definitions ADD COLUMN label_key VARCHAR(128) NULL",
             "ALTER TABLE project_templates ADD COLUMN name_key VARCHAR(128) NULL",
             "ALTER TABLE project_templates ADD COLUMN description_key VARCHAR(128) NULL",
+            "ALTER TABLE project_journals ADD COLUMN company_id VARCHAR(64) NULL",
+            "ALTER TABLE project_journals ADD COLUMN user_id VARCHAR(64) NULL",
+            "ALTER TABLE project_journals ADD COLUMN type VARCHAR(32) NOT NULL DEFAULT 'entry'",
+            "ALTER TABLE project_journals ADD COLUMN category VARCHAR(64) NOT NULL DEFAULT 'allgemein'",
+            "ALTER TABLE project_journals ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'all'",
+            "ALTER TABLE project_journals ADD COLUMN allowed_group_id VARCHAR(64) NULL",
+            "ALTER TABLE project_journals ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+            "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
         }
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS project_journal_attachments (
+                id VARCHAR(64) PRIMARY KEY,
+                journal_id VARCHAR(64) NOT NULL,
+                file_name VARCHAR(255) NOT NULL,
+                file_path LONGTEXT NOT NULL,
+                file_type VARCHAR(128) NOT NULL,
+                file_size BIGINT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_pja_journal (journal_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS project_journal_attendees (
+                id VARCHAR(64) PRIMARY KEY,
+                journal_id VARCHAR(64) NOT NULL,
+                contact_id VARCHAR(64) NULL,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NULL,
+                role VARCHAR(255) NULL,
+                present TINYINT(1) NOT NULL DEFAULT 1,
+                INDEX idx_attendees_journal (journal_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
 
         // ROOT-CAUSE-FIX: Company Admins duerfen KEINE Plattform-admin_permissions haben.
         // Frueher wurden sie automatisch gesetzt -> Company Admins landeten im Plattform-Admin.
@@ -3919,51 +3951,118 @@ try {
         jsonResponse(['success' => true]);
     }
 
-    // 15. GET journals
-    if ($path === 'journals' && $method === 'GET') {
+    // 15. GET projects/:id/journal & GET journals
+    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || ($path === 'journals' && !empty($_GET['project_id']))) && $method === 'GET') {
         $user = requireAuth();
-        $projectId = $_GET['project_id'] ?? '';
-        
-        if (!empty($projectId)) {
-            evaluateProjectAccess($user, $projectId, 'read');
-            $stmt = $db->prepare("
-                SELECT j.*, u.name as author_name, t.title as task_title
-                FROM project_journals j
-                JOIN users u ON u.id = j.author_id
-                LEFT JOIN tasks t ON t.id = j.task_id
-                WHERE j.project_id = ?
-                ORDER BY j.created_at DESC
-            ");
-            $stmt->execute([$projectId]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT j.*, u.name as author_name, t.title as task_title, p.title as project_title
-                FROM project_journals j
-                JOIN users u ON u.id = j.author_id
-                LEFT JOIN tasks t ON t.id = j.task_id
-                LEFT JOIN projects p ON p.id = j.project_id
-                WHERE j.author_id = ?
-                ORDER BY j.created_at DESC
-                LIMIT 100
-            ");
-            $stmt->execute([$user['id']]);
-        }
+        $projectId = !empty($m[1]) ? $m[1] : ($_GET['project_id'] ?? '');
+        evaluateProjectAccess($user, $projectId, 'read');
 
-        $entries = array_map(function($e) {
-            $e['metadata'] = !empty($e['metadata']) ? (is_string($e['metadata']) ? json_decode($e['metadata'], true) : $e['metadata']) : [];
-            return $e;
-        }, $stmt->fetchAll());
+        $isSuperadmin = !empty($user['is_superadmin']) ? 1 : 0;
+        $userId = $user['id'];
+        $companyId = $user['company_id'] ?? '';
+
+        // Visibility-Matrix Filter:
+        // - only_me: Creator (or superadmin)
+        // - group: current_user in user_group_members for allowed_group_id (or superadmin)
+        // - company: same company_id
+        // - all: project read access
+        // Creator always has access to own entries
+        $stmt = $db->prepare("
+            SELECT j.*, 
+                   COALESCE(u.name, 'Unbekannt') as author_name,
+                   u.email as author_email,
+                   t.title as task_title
+            FROM project_journals j
+            LEFT JOIN users u ON u.id = COALESCE(j.user_id, j.author_id)
+            LEFT JOIN tasks t ON t.id = j.task_id
+            WHERE j.project_id = ?
+              AND (
+                ? = 1
+                OR COALESCE(j.user_id, j.author_id) = ?
+                OR j.visibility = 'all'
+                OR (j.visibility = 'company' AND j.company_id = ? AND ? != '')
+                OR (j.visibility = 'group' AND j.allowed_group_id IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM user_group_members ugm 
+                    WHERE ugm.group_id = j.allowed_group_id AND ugm.user_id = ?
+                ))
+              )
+            ORDER BY j.created_at DESC
+        ");
+        $stmt->execute([$projectId, $isSuperadmin, $userId, $companyId, $companyId, $userId]);
+        $rawEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $entries = [];
+        if (!empty($rawEntries)) {
+            $journalIds = array_column($rawEntries, 'id');
+            $inClause = implode(',', array_fill(0, count($journalIds), '?'));
+
+            // Attachments
+            $attStmt = $db->prepare("SELECT * FROM project_journal_attachments WHERE journal_id IN ($inClause) ORDER BY created_at ASC");
+            $attStmt->execute($journalIds);
+            $allAtts = $attStmt->fetchAll(PDO::FETCH_ASSOC);
+            $attachmentsByJournal = [];
+            foreach ($allAtts as $att) {
+                $attachmentsByJournal[$att['journal_id']][] = $att;
+            }
+
+            // Attendees
+            $atdStmt = $db->prepare("SELECT * FROM project_journal_attendees WHERE journal_id IN ($inClause) ORDER BY id ASC");
+            $atdStmt->execute($journalIds);
+            $allAtds = $atdStmt->fetchAll(PDO::FETCH_ASSOC);
+            $attendeesByJournal = [];
+            foreach ($allAtds as $atd) {
+                $atd['present'] = (bool)$atd['present'];
+                $attendeesByJournal[$atd['journal_id']][] = $atd;
+            }
+
+            foreach ($rawEntries as $e) {
+                $e['metadata'] = !empty($e['metadata']) ? (is_string($e['metadata']) ? json_decode($e['metadata'], true) : $e['metadata']) : [];
+                $e['attachments'] = $attachmentsByJournal[$e['id']] ?? [];
+                $e['attendees'] = $attendeesByJournal[$e['id']] ?? [];
+                $entries[] = $e;
+            }
+        }
 
         jsonResponse(['entries' => $entries]);
     }
 
-    // 16. POST journals
-    if ($path === 'journals' && $method === 'POST') {
+    // 15b. Legacy GET journals without project_id (User's own recent entries)
+    if ($path === 'journals' && $method === 'GET' && empty($_GET['project_id'])) {
         $user = requireAuth();
-        $projectId = $body['project_id'] ?? '';
+        $stmt = $db->prepare("
+            SELECT j.*, u.name as author_name, t.title as task_title, p.title as project_title
+            FROM project_journals j
+            JOIN users u ON u.id = COALESCE(j.user_id, j.author_id)
+            LEFT JOIN tasks t ON t.id = j.task_id
+            LEFT JOIN projects p ON p.id = j.project_id
+            WHERE COALESCE(j.user_id, j.author_id) = ?
+            ORDER BY j.created_at DESC
+            LIMIT 100
+        ");
+        $stmt->execute([$user['id']]);
+        $entries = array_map(function($e) {
+            $e['metadata'] = !empty($e['metadata']) ? (is_string($e['metadata']) ? json_decode($e['metadata'], true) : $e['metadata']) : [];
+            $e['attachments'] = [];
+            $e['attendees'] = [];
+            return $e;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        jsonResponse(['entries' => $entries]);
+    }
+
+    // 16. POST projects/:id/journal & POST journals
+    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || $path === 'journals') && $method === 'POST') {
+        $user = requireAuth();
+        $projectId = !empty($m[1]) ? $m[1] : ($body['project_id'] ?? '');
         $title = trim($body['title'] ?? '');
         $content = trim($body['content'] ?? '');
-        $entryType = $body['entry_type'] ?? 'manual';
+        $type = in_array($body['type'] ?? '', ['entry', 'note'], true) ? $body['type'] : 'entry';
+        $category = trim($body['category'] ?? 'allgemein');
+        $visibility = in_array($body['visibility'] ?? '', ['only_me', 'group', 'company', 'all'], true) ? $body['visibility'] : 'all';
+        $allowedGroupId = !empty($body['allowed_group_id']) ? $body['allowed_group_id'] : null;
+        $taskId = !empty($body['task_id']) ? $body['task_id'] : null;
+        $metadata = $body['metadata'] ?? [];
+        $attachments = is_array($body['attachments'] ?? null) ? $body['attachments'] : [];
+        $attendees = is_array($body['attendees'] ?? null) ? $body['attendees'] : [];
 
         if (empty($title) || empty($content)) {
             errorResponse('Titel und Inhalt sind erforderlich', 400);
@@ -3979,34 +4078,392 @@ try {
             ");
             $fStmt->execute([$user['company_id'] ?? '', $user['id']]);
             $projectId = $fStmt->fetchColumn();
-
             if (empty($projectId)) {
                 $anyPrj = $db->query("SELECT id FROM projects LIMIT 1")->fetchColumn();
                 if ($anyPrj) {
                     $projectId = $anyPrj;
                 } else {
-                    $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, visibility) VALUES (?, ?, ?, ?, ?)")->execute([
-                        $fldId, $user['id'], $user['company_id'] ?? null, 'Persönliche Notizen', 'private'
-                    ]);
-                    $projectId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $db->prepare("INSERT INTO projects (id, folder_id, title, description, is_default, visibility) VALUES (?, ?, ?, ?, 1, 'private')")->execute([
-                        $projectId, $fldId, 'Meine Notizen', 'Notizenablage'
-                    ]);
+                    errorResponse('Projekt nicht gefunden', 404);
                 }
             }
         }
 
-        if (!empty($projectId)) {
-            evaluateProjectAccess($user, $projectId, 'write');
-        }
+        evaluateProjectAccess($user, $projectId, 'write');
 
         $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO project_journals (id, project_id, author_id, entry_type, title, content) VALUES (?, ?, ?, ?, ?, ?)")->execute([
-            $jrnId, $projectId, $user['id'], $entryType, $title, $content
+        $metaJson = is_array($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE) : (is_string($metadata) ? $metadata : '{}');
+
+        $db->prepare("
+            INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, task_id, type, category, entry_type, title, content, visibility, allowed_group_id, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ")->execute([
+            $jrnId,
+            $user['company_id'] ?? null,
+            $projectId,
+            $user['id'],
+            $user['id'],
+            $taskId,
+            $type,
+            $category,
+            $type === 'note' ? 'note' : 'manual',
+            $title,
+            $content,
+            $visibility,
+            $allowedGroupId,
+            $metaJson
         ]);
 
-        jsonResponse(['success' => true, 'entry' => ['id' => $jrnId, 'project_id' => $projectId, 'title' => $title, 'content' => $content]]);
+        // Insert attachments
+        $savedAttachments = [];
+        if (!empty($attachments)) {
+            $attInsert = $db->prepare("
+                INSERT INTO project_journal_attachments (id, journal_id, file_name, file_path, file_type, file_size, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            foreach ($attachments as $att) {
+                if (!empty($att['file_name']) && !empty($att['file_path'])) {
+                    $attId = 'pja_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $attInsert->execute([
+                        $attId,
+                        $jrnId,
+                        $att['file_name'],
+                        $att['file_path'],
+                        $att['file_type'] ?? 'application/octet-stream',
+                        (int)($att['file_size'] ?? 0)
+                    ]);
+                    $savedAttachments[] = [
+                        'id' => $attId,
+                        'journal_id' => $jrnId,
+                        'file_name' => $att['file_name'],
+                        'file_path' => $att['file_path'],
+                        'file_type' => $att['file_type'] ?? 'application/octet-stream',
+                        'file_size' => (int)($att['file_size'] ?? 0),
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        }
+
+        // Insert attendees (only if type === 'entry')
+        $savedAttendees = [];
+        if ($type === 'entry' && !empty($attendees)) {
+            $atdInsert = $db->prepare("
+                INSERT INTO project_journal_attendees (id, journal_id, contact_id, name, email, role, present)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            foreach ($attendees as $atd) {
+                if (!empty($atd['name'])) {
+                    $atdId = 'pjat_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $presentVal = (!isset($atd['present']) || $atd['present'] === true || $atd['present'] === 1 || $atd['present'] === '1') ? 1 : 0;
+                    $atdInsert->execute([
+                        $atdId,
+                        $jrnId,
+                        !empty($atd['contact_id']) ? $atd['contact_id'] : null,
+                        trim($atd['name']),
+                        !empty($atd['email']) ? trim($atd['email']) : null,
+                        !empty($atd['role']) ? trim($atd['role']) : null,
+                        $presentVal
+                    ]);
+                    $savedAttendees[] = [
+                        'id' => $atdId,
+                        'journal_id' => $jrnId,
+                        'contact_id' => $atd['contact_id'] ?? null,
+                        'name' => trim($atd['name']),
+                        'email' => $atd['email'] ?? null,
+                        'role' => $atd['role'] ?? null,
+                        'present' => (bool)$presentVal
+                    ];
+                }
+            }
+        }
+
+        jsonResponse([
+            'success' => true,
+            'entry' => [
+                'id' => $jrnId,
+                'company_id' => $user['company_id'] ?? null,
+                'project_id' => $projectId,
+                'user_id' => $user['id'],
+                'author_name' => $user['name'],
+                'author_email' => $user['email'],
+                'type' => $type,
+                'category' => $category,
+                'title' => $title,
+                'content' => $content,
+                'visibility' => $visibility,
+                'allowed_group_id' => $allowedGroupId,
+                'metadata' => is_array($metadata) ? $metadata : json_decode($metaJson, true),
+                'attachments' => $savedAttachments,
+                'attendees' => $savedAttendees,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    // 16b. POST projects/:id/journal/parse-email (E-Mail Ingestion & KI Pipeline)
+    if (preg_match('#^projects/([^/]+)/journal/parse-email$#', $path, $m) && $method === 'POST') {
+        $user = requireAuth();
+        $projectId = $m[1];
+        evaluateProjectAccess($user, $projectId, 'write');
+
+        $emailText = trim($body['email_text'] ?? $body['content'] ?? '');
+        if (empty($emailText)) {
+            errorResponse('E-Mail-Text erforderlich', 400);
+        }
+
+        $sender = is_array($body['sender'] ?? null) ? $body['sender'] : [];
+        $recipients = is_array($body['recipients'] ?? null) ? $body['recipients'] : [];
+        $emailSubject = trim($body['subject'] ?? '');
+        $attachments = is_array($body['attachments'] ?? null) ? $body['attachments'] : [];
+
+        // 1. Kontaktprüfung & automatische Anlage falls nicht vorhanden
+        $senderEmail = trim($sender['email'] ?? '');
+        $senderName = trim($sender['name'] ?? '');
+        $senderRole = trim($sender['role'] ?? 'E-Mail Kontakt');
+        $senderCompany = trim($sender['company'] ?? '');
+
+        // Versuche Absender & Betreff aus E-Mail-Text zu extrahieren, falls nicht separat übergeben
+        if (empty($senderEmail) && preg_match('/(?:From|Von):\s*(?:([^<\r\n]+)\s*<)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?/i', $emailText, $fromMatch)) {
+            if (!empty($fromMatch[1])) $senderName = trim($fromMatch[1], " \"'");
+            $senderEmail = strtolower(trim($fromMatch[2]));
+        }
+        if (empty($emailSubject) && preg_match('/(?:Subject|Betreff):\s*(.+?)(?:\r?\n|$)/i', $emailText, $subMatch)) {
+            $emailSubject = trim($subMatch[1]);
+        }
+
+        // Kontakt in contacts prüfen/erstellen
+        if (!empty($senderEmail)) {
+            $companyId = $user['company_id'] ?? null;
+            $chkContact = $db->prepare("
+                SELECT id FROM contacts 
+                WHERE LOWER(email) = LOWER(?) 
+                  AND (company_id = ? OR (company_id IS NULL AND user_id = ?))
+                LIMIT 1
+            ");
+            $chkContact->execute([$senderEmail, $companyId, $user['id']]);
+            $contactExists = $chkContact->fetchColumn();
+
+            if (!$contactExists) {
+                $newContactId = 'cnt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $parts = preg_split('/\s+/', $senderName, 2);
+                $firstName = count($parts) > 1 ? $parts[0] : '';
+                $lastName = count($parts) > 1 ? $parts[1] : ($parts[0] ?: $senderEmail);
+
+                $db->prepare("
+                    INSERT INTO contacts (id, user_id, company_id, project_id, first_name, last_name, company_name, role_function, email, category_group, share_scope, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Sonstige', ?, NOW())
+                ")->execute([
+                    $newContactId,
+                    $user['id'],
+                    $companyId,
+                    $projectId,
+                    $firstName,
+                    $lastName,
+                    $senderCompany,
+                    $senderRole,
+                    $senderEmail,
+                    !empty($companyId) ? 'company' : 'private'
+                ]);
+            }
+        }
+
+        // 2. Projektkontext laden (Abschnitte & bestehende Aufgaben)
+        $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
+        $lStmt->execute([$projectId]);
+        $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.status, t.due_date FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
+        $tStmt->execute([$projectId]);
+        $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sectionsContext = json_encode(array_map(function($s) {
+            return ['id' => $s['id'], 'title' => $s['title']];
+        }, $sections), JSON_UNESCAPED_UNICODE);
+
+        $tasksContext = json_encode(array_map(function($t) {
+            return ['id' => $t['id'], 'section_id' => $t['list_id'], 'title' => $t['title'], 'status' => $t['status'], 'due_date' => $t['due_date']];
+        }, $existingTasks), JSON_UNESCAPED_UNICODE);
+
+        // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
+        $systemPrompt = "Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.\n"
+                      . "Analysiere den Inhalt der E-Mail präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.\n"
+                      . "Regeln:\n"
+                      . "1. summary: Sachliche, prägnante Zusammenfassung (max. 3-4 Sätze).\n"
+                      . "2. action_items: Liste relevanter Vorschläge basierend auf dem Mailtext:\n"
+                      . "   - type 'create_task': Falls eine neue Handlung, Bestellung, Mängelbehebung oder Frist nötig ist. 'section_id' MUSS einer der übergebenen Abschnitte sein. 'priority' ist 'normal', 'hoch' oder 'dringend'. 'due_date' im Format YYYY-MM-DD oder null.\n"
+                      . "   - type 'update_task': Falls eine bestehende Aufgabe aktualisiert werden muss (z.B. Terminverschiebung, Status). 'task_id' MUSS existieren.\n"
+                      . "   - type 'complete_task': Falls die E-Mail die Erledigung einer bestehenden Aufgabe bestätigt. 'task_id' MUSS existieren.\n"
+                      . "Gib AUSSCHLIESSLICH das JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.";
+
+        $userPrompt = "PROJEKT-ABSCHNITTE (SECTIONS):\n$sectionsContext\n\n"
+                    . "BESTEHENDE AUFGABEN (TASKS):\n$tasksContext\n\n"
+                    . "E-MAIL TEXT:\n\"\"\"\n$emailText\n\"\"\"\n\n"
+                    . "Erzeuge das JSON im folgenden Format:\n"
+                    . "{\n"
+                    . '  "subject": "Treffender Betreff",' . "\n"
+                    . '  "summary": "Zusammenfassung in 3-4 Sätzen",' . "\n"
+                    . '  "action_items": [' . "\n"
+                    . '    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" },' . "\n"
+                    . '    { "type": "update_task", "task_id": "task_id", "suggested_status": "in_progress", "suggested_due_date": null, "reason": "Begründung" },' . "\n"
+                    . '    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" }' . "\n"
+                    . "  ]\n"
+                    . "}";
+
+        $aiResult = null;
+        try {
+            $rawAi = callOpenRouter([
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt]
+            ], ['temperature' => 0.2]);
+
+            $cleanAi = trim($rawAi);
+            $cleanAi = preg_replace('/^```(?:json)?\s*/i', '', $cleanAi);
+            $cleanAi = preg_replace('/```$/', '', $cleanAi);
+            $cleanAi = trim($cleanAi);
+
+            $aiResult = json_decode($cleanAi, true);
+        } catch (Exception $aiEx) {
+            // Fallback falls KI nicht erreichbar
+            $aiResult = [
+                'subject' => !empty($emailSubject) ? $emailSubject : 'E-Mail Import',
+                'summary' => substr(strip_tags($emailText), 0, 200) . '...',
+                'action_items' => []
+            ];
+        }
+
+        $finalTitle = !empty($emailSubject) ? $emailSubject : (!empty($aiResult['subject']) ? $aiResult['subject'] : 'E-Mail Notiz');
+        $summary = $aiResult['summary'] ?? '';
+        $actionItems = is_array($aiResult['action_items'] ?? null) ? $aiResult['action_items'] : [];
+
+        // 4. Persistierung als Notiz (type = note, category = email)
+        $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $metadata = [
+            'sender' => [
+                'name' => $senderName,
+                'email' => $senderEmail,
+                'role' => $senderRole
+            ],
+            'recipients' => $recipients,
+            'ai_summary' => $summary,
+            'action_items' => $actionItems,
+            'raw_subject' => $emailSubject
+        ];
+
+        $metaJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
+
+        $db->prepare("
+            INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, type, category, entry_type, title, content, visibility, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'note', 'email', 'email', ?, ?, 'all', ?, NOW(), NOW())
+        ")->execute([
+            $jrnId,
+            $user['company_id'] ?? null,
+            $projectId,
+            $user['id'],
+            $user['id'],
+            $finalTitle,
+            $emailText,
+            $metaJson
+        ]);
+
+        // Attachments speichern
+        $savedAttachments = [];
+        if (!empty($attachments)) {
+            $attInsert = $db->prepare("
+                INSERT INTO project_journal_attachments (id, journal_id, file_name, file_path, file_type, file_size, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            foreach ($attachments as $att) {
+                if (!empty($att['file_name']) && !empty($att['file_path'])) {
+                    $attId = 'pja_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $attInsert->execute([
+                        $attId,
+                        $jrnId,
+                        $att['file_name'],
+                        $att['file_path'],
+                        $att['file_type'] ?? 'application/octet-stream',
+                        (int)($att['file_size'] ?? 0)
+                    ]);
+                    $savedAttachments[] = [
+                        'id' => $attId,
+                        'journal_id' => $jrnId,
+                        'file_name' => $att['file_name'],
+                        'file_path' => $att['file_path'],
+                        'file_type' => $att['file_type'] ?? 'application/octet-stream',
+                        'file_size' => (int)($att['file_size'] ?? 0),
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        }
+
+        jsonResponse([
+            'success' => true,
+            'entry' => [
+                'id' => $jrnId,
+                'company_id' => $user['company_id'] ?? null,
+                'project_id' => $projectId,
+                'user_id' => $user['id'],
+                'author_name' => $user['name'],
+                'author_email' => $user['email'],
+                'type' => 'note',
+                'category' => 'email',
+                'title' => $finalTitle,
+                'content' => $emailText,
+                'visibility' => 'all',
+                'metadata' => $metadata,
+                'attachments' => $savedAttachments,
+                'attendees' => [],
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    // 16c. PUT projects/:id/journal/:journalId
+    if (preg_match('#^projects/([^/]+)/journal/([^/]+)$#', $path, $m) && $method === 'PUT') {
+        $user = requireAuth();
+        $projectId = $m[1];
+        $journalId = $m[2];
+        evaluateProjectAccess($user, $projectId, 'write');
+
+        $jStmt = $db->prepare("SELECT * FROM project_journals WHERE id = ? AND project_id = ?");
+        $jStmt->execute([$journalId, $projectId]);
+        $existing = $jStmt->fetch();
+        if (!$existing) errorResponse('Journaleintrag nicht gefunden', 404);
+
+        $title = isset($body['title']) ? trim($body['title']) : $existing['title'];
+        $content = isset($body['content']) ? trim($body['content']) : $existing['content'];
+        $category = isset($body['category']) ? trim($body['category']) : $existing['category'];
+        $visibility = isset($body['visibility']) ? $body['visibility'] : $existing['visibility'];
+        $allowedGroupId = array_key_exists('allowed_group_id', $body) ? $body['allowed_group_id'] : $existing['allowed_group_id'];
+        
+        $metaJson = $existing['metadata'];
+        if (isset($body['metadata'])) {
+            $metaJson = is_array($body['metadata']) ? json_encode($body['metadata'], JSON_UNESCAPED_UNICODE) : $body['metadata'];
+        }
+
+        $db->prepare("
+            UPDATE project_journals
+            SET title = ?, content = ?, category = ?, visibility = ?, allowed_group_id = ?, metadata = ?, updated_at = NOW()
+            WHERE id = ? AND project_id = ?
+        ")->execute([$title, $content, $category, $visibility, $allowedGroupId, $metaJson, $journalId, $projectId]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // 16d. DELETE projects/:id/journal/:journalId
+    if (preg_match('#^projects/([^/]+)/journal/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $projectId = $m[1];
+        $journalId = $m[2];
+        evaluateProjectAccess($user, $projectId, 'write');
+
+        try { $db->prepare("DELETE FROM project_journal_attachments WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
+        try { $db->prepare("DELETE FROM project_journal_attendees WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
+        $db->prepare("DELETE FROM project_journals WHERE id = ? AND project_id = ?")->execute([$journalId, $projectId]);
+
+        jsonResponse(['success' => true]);
     }
 
     // --- COMPANY INVITATIONS & MEMBERS ENDPOINTS ---
