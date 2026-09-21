@@ -5897,10 +5897,11 @@ const executeImport = async () => {
         custom_data: {}
       }
 
-      (Object.entries(importColumnMapping.value) as [string, string][]).forEach(([colIdxStr, targetField]) => {
+      const mappingEntries = Object.entries(importColumnMapping.value) as [string, string][]
+      for (const [colIdxStr, targetField] of mappingEntries) {
         const colIdx = parseInt(colIdxStr)
         const cellVal = row[colIdx]?.trim() || ''
-        if (!targetField || !cellVal) return
+        if (!targetField || !cellVal) continue
 
         if (targetField === 'title') {
           taskPayload.title = cellVal
@@ -5932,7 +5933,7 @@ const executeImport = async () => {
           const key = targetField.replace('custom:', '')
           taskPayload.custom_data[key] = cellVal
         }
-      })
+      }
 
       if (taskPayload.title) {
         await $fetch('/api/tasks', {
