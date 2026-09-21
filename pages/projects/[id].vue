@@ -349,9 +349,9 @@
                 v-for="task in list.tasks"
                 :key="task.id"
                 :draggable="userRole !== 'viewer'"
-                class="relative bg-white border rounded-2xl p-4 transition-all duration-150 shadow-sm group select-none hover:shadow-md overflow-hidden"
+                class="relative bg-white border rounded-2xl p-4 transition-all duration-300 shadow-sm group select-none hover:shadow-md overflow-hidden"
                 :class="[
-                  draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : (stopwatchState.isRunning && stopwatchState.taskId === task.id ? 'ring-2 ring-cyan-500 border-cyan-400 shadow-md bg-cyan-50/20' : 'border-slate-200/90 hover:border-cyan-400'),
+                  highlightedTaskId === task.id ? 'ring-4 ring-cyan-400 border-cyan-500 shadow-xl bg-cyan-50/80 scale-[1.02]' : (draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : (stopwatchState.isRunning && stopwatchState.taskId === task.id ? 'ring-2 ring-cyan-500 border-cyan-400 shadow-md bg-cyan-50/20' : 'border-slate-200/90 hover:border-cyan-400')),
                   userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 ]"
                 @dragstart="onDragStart(task, list.id)"
@@ -2216,64 +2216,128 @@
               ></textarea>
             </div>
 
-            <!-- Checklist -->
-            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
-              <div class="flex items-center justify-between mb-2">
+            <!-- Checkliste & Unteraufgaben (integrierte Hierarchie) -->
+            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between">
                 <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
                   <span>✅</span>
-                  <span>Checkliste</span>
+                  <span>Checkliste & Unteraufgaben</span>
                 </label>
-                <span v-if="drawerTask.checklist?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
-                  {{ drawerTask.checklist.filter((c:any) => c.done).length }} / {{ drawerTask.checklist.length }} erledigt
-                  ({{ Math.round(drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) }}%)
+                <span v-if="drawerTask.checklist?.length || drawerSubtasks?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
+                  {{ (drawerTask.checklist || []).filter((c:any) => c.done).length + (drawerSubtasks || []).filter((s:any) => s.is_done).length }} /
+                  {{ (drawerTask.checklist || []).length + (drawerSubtasks || []).length }} erledigt
                 </span>
               </div>
 
-              <!-- Progress bar -->
-              <div v-if="drawerTask.checklist?.length" class="w-full bg-slate-200 rounded-full h-2 mb-3 overflow-hidden">
+              <!-- Overall progress bar -->
+              <div v-if="(drawerTask.checklist?.length || 0) + (drawerSubtasks?.length || 0) > 0" class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                 <div
                   class="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                  :style="{width: (drawerTask.checklist.filter((c:any) => c.done).length / drawerTask.checklist.length * 100) + '%'}"
+                  :style="{
+                    width: Math.round(
+                      (((drawerTask.checklist || []).filter((c:any) => c.done).length + (drawerSubtasks || []).filter((s:any) => s.is_done).length) /
+                      ((drawerTask.checklist || []).length + (drawerSubtasks || []).length)) * 100
+                    ) + '%'
+                  }"
                 ></div>
               </div>
 
-              <div class="space-y-1.5 mb-3">
+              <!-- Checklist Items & nested Subtasks -->
+              <div class="space-y-2">
+                <div v-if="!drawerTask.checklist?.length && !drawerSubtasks?.length" class="text-xs text-slate-400 italic text-center py-3 border border-dashed border-slate-200 rounded-xl">
+                  Keine Checklisten-Punkte oder Unteraufgaben vorhanden.
+                </div>
+
                 <div
                   v-for="(item, i) in drawerTask.checklist"
                   :key="item.id || i"
-                  class="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 group/cl shadow-xs hover:border-slate-300 transition"
+                  class="space-y-1.5"
                 >
-                  <input
-                    type="checkbox"
-                    :checked="item.done"
-                    @change="toggleChecklistItem(i)"
-                    :disabled="userRole === 'viewer'"
-                    class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-0 shrink-0 cursor-pointer"
-                  />
-                  <input
-                    v-model="item.text"
-                    @blur="autoSaveDrawer"
-                    :disabled="userRole === 'viewer'"
-                    class="flex-1 text-xs sm:text-sm bg-transparent focus:outline-none focus:bg-slate-50 rounded px-1 disabled:cursor-default"
-                    :class="item.done ? 'line-through text-slate-400 font-normal' : 'text-slate-800 font-semibold'"
-                  />
-                  <button
-                    v-if="userRole !== 'viewer'"
-                    @click="removeChecklistItem(i)"
-                    class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
-                    title="Punkt löschen"
-                  >
-                    ✕
-                  </button>
+                  <!-- Main Checklist Parent Item -->
+                  <div class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 group/cl shadow-xs hover:border-slate-300 transition">
+                    <input
+                      type="checkbox"
+                      :checked="item.done"
+                      @change="toggleChecklistItem(i)"
+                      :disabled="userRole === 'viewer'"
+                      class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-0 shrink-0 cursor-pointer"
+                    />
+                    <input
+                      v-model="item.text"
+                      @blur="autoSaveDrawer"
+                      :disabled="userRole === 'viewer'"
+                      class="flex-1 text-xs sm:text-sm bg-transparent focus:outline-none focus:bg-slate-50 rounded px-1 disabled:cursor-default"
+                      :class="item.done ? 'line-through text-slate-400 font-normal' : 'text-slate-800 font-bold'"
+                    />
+                    <button
+                      v-if="userRole !== 'viewer'"
+                      @click="removeChecklistItem(i)"
+                      class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
+                      title="Hauptpunkt löschen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Subtasks as Dependent Child Items under Checklist Item -->
+                  <div class="pl-6 space-y-1.5 border-l-2 border-cyan-200 ml-3">
+                    <div
+                      v-for="sub in (drawerSubtasks || []).filter((s:any) => s.checklist_item_id === item.id || (!s.checklist_item_id && i === 0))"
+                      :key="sub.id"
+                      class="flex items-center gap-2 p-2 rounded-xl bg-cyan-50/50 border border-cyan-100 group/sub text-xs"
+                    >
+                      <span class="text-cyan-600 font-bold">↳</span>
+                      <input
+                        type="checkbox"
+                        :checked="Boolean(sub.is_done)"
+                        @change="toggleSubtask(sub)"
+                        :disabled="userRole === 'viewer'"
+                        class="w-3.5 h-3.5 rounded border-cyan-300 text-cyan-600 focus:ring-0 shrink-0 cursor-pointer"
+                      />
+                      <span
+                        class="flex-1 text-xs"
+                        :class="sub.is_done ? 'line-through text-slate-400' : 'text-slate-700 font-semibold'"
+                      >
+                        {{ sub.title }}
+                      </span>
+                      <button
+                        v-if="userRole !== 'viewer'"
+                        @click="deleteSubtask(sub.id)"
+                        class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition text-[11px]"
+                        title="Unterpunkt löschen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <!-- Quick Add Subtask to this Checklist Item -->
+                    <div v-if="userRole !== 'viewer'" class="flex items-center gap-1.5 pt-0.5">
+                      <input
+                        v-model="itemSubtaskInputs[item.id || i]"
+                        @keyup.enter="addSubtaskToItem(item)"
+                        type="text"
+                        placeholder="+ Unterpunkt zur Checkliste hinzufügen..."
+                        class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#00A3C4]"
+                      />
+                      <button
+                        type="button"
+                        @click="addSubtaskToItem(item)"
+                        class="taskster_button px-3 text-[11px] h-[30px] rounded-lg"
+                      >
+                        + Unterpunkt
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
+              <!-- Main Checklist Item Creator -->
+              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2 pt-2 border-t border-slate-200">
                 <input
                   v-model="newChecklistInput"
                   @keyup.enter="addChecklistItem"
                   type="text"
-                  placeholder="+ Neuer Checklisten-Punkt..."
+                  placeholder="+ Neuer Haupt-Checklistenpunkt..."
                   class="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20"
                 />
                 <button
@@ -2281,67 +2345,7 @@
                   type="button"
                   class="taskster_button px-4 text-xs h-[36px] rounded-lg"
                 >
-                  + Hinzufügen
-                </button>
-              </div>
-            </div>
-
-            <!-- Subtasks -->
-            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
-              <div class="flex items-center justify-between mb-2">
-                <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
-                  <span>📎</span>
-                  <span>Unteraufgaben</span>
-                </label>
-                <span v-if="drawerSubtasks?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
-                  {{ drawerSubtasks.filter((s:any) => s.is_done).length }} / {{ drawerSubtasks.length }} erledigt
-                </span>
-              </div>
-
-              <div class="space-y-1.5 mb-3">
-                <div
-                  v-for="sub in drawerSubtasks"
-                  :key="sub.id"
-                  class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 group/sub shadow-xs hover:border-slate-300 transition"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="Boolean(sub.is_done)"
-                    @change="toggleSubtask(sub)"
-                    :disabled="userRole === 'viewer'"
-                    class="w-4 h-4 rounded-full border-slate-300 text-cyan-600 focus:ring-0 shrink-0 cursor-pointer"
-                  />
-                  <span
-                    class="flex-1 text-xs sm:text-sm"
-                    :class="sub.is_done ? 'line-through text-slate-400' : 'text-slate-800 font-semibold'"
-                  >
-                    {{ sub.title }}
-                  </span>
-                  <button
-                    v-if="userRole !== 'viewer'"
-                    @click="deleteSubtask(sub.id)"
-                    class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
-                    title="Unteraufgabe löschen"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="userRole !== 'viewer'" class="flex items-center gap-2">
-                <input
-                  v-model="newSubtaskInput"
-                  @keyup.enter="addSubtask"
-                  type="text"
-                  placeholder="+ Unteraufgabe hinzufügen..."
-                  class="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20"
-                />
-                <button
-                  @click="addSubtask"
-                  type="button"
-                  class="taskster_button px-4 text-xs h-[36px] rounded-lg"
-                >
-                  + Hinzufügen
+                  + Hauptpunkt
                 </button>
               </div>
             </div>
@@ -4115,6 +4119,76 @@ const editField = (f: any) => {
   showNewFieldModal.value = true
 }
 
+const saveCustomField = async () => {
+  if (!newFieldLabel.value.trim()) return
+  const optionsList = newFieldType.value === 'select'
+    ? newFieldOptionsRaw.value.split(/[,;\n]/).map(o => o.trim()).filter(Boolean)
+    : []
+
+  const payload: any = {
+    label: newFieldLabel.value.trim(),
+    field_type: newFieldType.value,
+    entity_type: newFieldEntityType.value,
+    options: optionsList
+  }
+
+  if (enableFieldLogic.value && logicDependsOnField.value) {
+    payload.logic_rules = {
+      depends_on_field: logicDependsOnField.value,
+      depends_on_value: logicDependsOnValue.value
+    }
+  } else {
+    payload.logic_rules = null
+  }
+
+  try {
+    if (editingFieldId.value) {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields/${editingFieldId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: payload
+      })
+    } else {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: payload
+      })
+    }
+    showNewFieldModal.value = false
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern des Zusatzfeldes')
+  }
+}
+
+const deleteCustomField = async (fieldId: string) => {
+  const f = fields.value.find((item: any) => item.id === fieldId)
+  if (!f) return
+
+  // Prüfe ob Feld in aktiven Aufgaben oder im Projekt genutzt wird
+  const isUsedInTasks = allProjectTasks.value.some((t: any) => t.custom_data && t.custom_data[f.field_key] !== undefined && t.custom_data[f.field_key] !== '' && t.custom_data[f.field_key] !== null)
+  const isUsedInProject = project.value?.custom_data && project.value.custom_data[f.field_key] !== undefined && project.value.custom_data[f.field_key] !== '' && project.value.custom_data[f.field_key] !== null
+
+  if (isUsedInTasks || isUsedInProject) {
+    alert(`Das Zusatzfeld "${f.label}" ist in aktiven Aufgaben oder im Projekt ausgefüllt und kann solange nicht gelöscht werden.`)
+    return
+  }
+
+  if (!confirm(`Möchtest du das Zusatzfeld "${f.label}" wirklich löschen?`)) return
+
+  try {
+    await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    showNewFieldModal.value = false
+    await loadProjectData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Zusatzfeldes')
+  }
+}
+
 // Project Settings form
 const settingsForm = ref<any>({
   title: '',
@@ -4151,8 +4225,10 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const newTagInput = ref('')
 const newChecklistInput = ref('')
 const newSubtaskInput = ref('')
+const itemSubtaskInputs = ref<Record<string, string>>({})
 const newCommentInput = ref('')
 const showDrawerTimeMenu = ref(false)
+const highlightedTaskId = ref<string | null>(null)
 
 // Section Pastel Colors
 const sectionPastelColors = [
@@ -4333,6 +4409,51 @@ const onDropToList = async (targetListId: string) => {
     })
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben')
+    await loadProjectData()
+  }
+}
+
+const draggedBoardSection = ref<any>(null)
+
+const onSectionDragStart = (section: any, e: DragEvent) => {
+  if (userRole.value === 'viewer') return
+  draggedBoardSection.value = section
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', section.id)
+  }
+}
+
+const onSectionDragOver = (section: any, e: DragEvent) => {
+  if (userRole.value === 'viewer' || !draggedBoardSection.value) return
+  if (draggedBoardSection.value.id !== section.id) {
+    e.preventDefault()
+  }
+}
+
+const onSectionDrop = async (targetSection: any, e: DragEvent) => {
+  if (userRole.value === 'viewer' || !draggedBoardSection.value) return
+  const src = draggedBoardSection.value
+  draggedBoardSection.value = null
+  if (src.id === targetSection.id) return
+
+  const srcIdx = lists.value.findIndex(l => l.id === src.id)
+  const targetIdx = lists.value.findIndex(l => l.id === targetSection.id)
+  if (srcIdx === -1 || targetIdx === -1) return
+
+  // Reorder locally
+  const [removed] = lists.value.splice(srcIdx, 1)
+  lists.value.splice(targetIdx, 0, removed)
+
+  try {
+    const payloadLists = lists.value.map((l, idx) => ({ id: l.id, sort_order: idx }))
+    await $fetch(`/api/projects/${projectId}/lists/reorder`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: { lists: payloadLists }
+    })
+  } catch (err: any) {
+    console.error('Failed to save section reorder:', err)
     await loadProjectData()
   }
 }
@@ -4906,7 +5027,6 @@ const newSectionTitleInModal = ref('')
 const savingSections = ref(false)
 const manageSectionsError = ref('')
 const draggedSectionModalIdx = ref<number | null>(null)
-const draggedBoardSection = ref<any>(null)
 
 const openManageSectionsModal = () => {
   managingSections.value = JSON.parse(JSON.stringify(lists.value))
@@ -5022,56 +5142,7 @@ const saveSectionsReorder = async () => {
   }
 }
 
-// Board-Level Section Drag & Drop
-const onSectionDragStart = (list: any, e: DragEvent) => {
-  draggedBoardSection.value = list
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', list.id)
-  }
-}
 
-const onSectionDragOver = (list: any, e: DragEvent) => {
-  e.preventDefault()
-  if (e.dataTransfer) {
-    e.dataTransfer.dropEffect = 'move'
-  }
-}
-
-const onSectionDrop = async (targetList: any, e: DragEvent) => {
-  e.preventDefault()
-  if (!draggedBoardSection.value || draggedBoardSection.value.id === targetList.id) {
-    draggedBoardSection.value = null
-    return
-  }
-  const fromIdx = lists.value.findIndex(l => l.id === draggedBoardSection.value.id)
-  const toIdx = lists.value.findIndex(l => l.id === targetList.id)
-  if (fromIdx === -1 || toIdx === -1) {
-    draggedBoardSection.value = null
-    return
-  }
-  const moved = lists.value.splice(fromIdx, 1)[0]
-  lists.value.splice(toIdx, 0, moved)
-  draggedBoardSection.value = null
-
-  try {
-    const payload = lists.value.map((sec, idx) => ({
-      id: sec.id,
-      sort_order: idx + 1
-    }))
-    await $fetch('/api/lists/reorder', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        project_id: projectId,
-        lists: payload
-      }
-    })
-    await loadProjectData()
-  } catch (err) {
-    console.error('Failed to save section reorder on board', err)
-  }
-}
 
 const drawerTaskAssignedUsers = ref<string[]>([])
 const showAssigneeDropdown = ref(false)
@@ -5190,8 +5261,16 @@ const saveNewTaskFromDrawer = async () => {
       }
     })
     isCreatingTaskInDrawer.value = false
-    drawerTask.value.id = res.task.id
+    const newId = res.task.id
+    drawerTask.value.id = newId
+    showTaskDrawer.value = false
     await loadProjectData()
+    highlightedTaskId.value = newId
+    setTimeout(() => {
+      if (highlightedTaskId.value === newId) {
+        highlightedTaskId.value = null
+      }
+    }, 3000)
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Erstellen der Aufgabe')
   }
@@ -5205,6 +5284,29 @@ const getTaskSectionTitle = (listId?: string) => {
 
 const onDrawerSectionChange = async () => {
   if (!drawerTask.value?.id || userRole.value === 'viewer') return
+  const targetListId = drawerTask.value.list_id
+  const taskId = drawerTask.value.id
+  
+  // Optimistisches Umhängen in lokaler Liste
+  let targetTaskObj: any = null
+  for (const l of lists.value) {
+    if (l.tasks) {
+      const idx = l.tasks.findIndex((t: any) => t.id === taskId)
+      if (idx !== -1) {
+        targetTaskObj = l.tasks.splice(idx, 1)[0]
+        break
+      }
+    }
+  }
+  if (targetTaskObj) {
+    targetTaskObj.list_id = targetListId
+    const targetList = lists.value.find(l => l.id === targetListId)
+    if (targetList) {
+      targetList.tasks = targetList.tasks || []
+      targetList.tasks.push(targetTaskObj)
+    }
+  }
+
   await autoSaveDrawer()
   await loadProjectData()
 }
@@ -5369,6 +5471,23 @@ const addSubtask = async () => {
   }
 }
 
+const addSubtaskToItem = async (item: any) => {
+  const key = item.id
+  const val = (itemSubtaskInputs.value[key] || '').trim()
+  if (!val || !drawerTask.value?.id) return
+  try {
+    const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/subtasks`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { title: val, checklist_item_id: item.id }
+    })
+    drawerSubtasks.value.push(res.subtask)
+    itemSubtaskInputs.value[key] = ''
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe')
+  }
+}
+
 const toggleSubtask = async (sub: any) => {
   try {
     const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}/subtasks/${sub.id}`, {
@@ -5404,10 +5523,12 @@ const addComment = async () => {
       headers: authHeaders(),
       body: { content: c }
     })
-    drawerComments.value.push(res.comment)
+    if (res?.comment) {
+      drawerComments.value.push(res.comment)
+    }
     newCommentInput.value = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Senden des Kommentars')
+    alert(err.data?.statusMessage || err.message || 'Fehler beim Senden des Kommentars')
   }
 }
 

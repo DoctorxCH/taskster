@@ -325,7 +325,7 @@
 
                       <template v-for="p in (matrixData?.projects || [])" :key="'p_' + p.id">
                         <span
-                          v-if="m.project_access?.[p.id] && m.project_access[p.id].role !== 'none' && (!m.folder_access || !m.folder_access[p.folder_id] || m.folder_access[p.folder_id].role === 'none')"
+                          v-if="m.project_access?.[p.id] && m.project_access[p.id].role !== 'none'"
                           class="px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1"
                           :class="getRoleBadgeClass(m.project_access[p.id].role)"
                         >
