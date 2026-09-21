@@ -54,3 +54,12 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
   - Einhaltung der Vorgaben: `taskster_button`, `taskster_button_light`, `taskster_button_accent`, `px-6 text-xs h-[42px] rounded-lg`, Liquid Glass Styling.
 - i18n:
   - Vollständige Übersetzungsschlüssel in `de.json`, `en.json` und `sk.json` unter `journal.*`.
+
+## Nachtrag & Hotfix (2026-09-22 01:36)
+1. **Remote MySQL Migration (Fehler: 1054 Unknown column 'company_id')**:
+   - `node scripts/migrate-mysql.cjs` remote gegen Hostcreators MySQL ausgeführt.
+   - Spalten `company_id`, `user_id`, `type`, `category`, `visibility`, `allowed_group_id`, `updated_at` in `project_journals` sowie die Tabellen `project_journal_attachments` und `project_journal_attendees` wurden in der MySQL-Produktionsdatenbank angelegt.
+2. **Teilnehmer-Auswahl Dropdown**:
+   - Problem: Das Dropdown lud zuvor ausschliesslich `projectContacts` (mit Filter `project_id = thisProject`), wodurch globale Unternehmens- und Benutzerkontakte fehlten und das Dropdown leer blieb.
+   - Lösung: Einführung von `availableContacts` und `attendeeContactOptions` (deduplizierte Zusammenführung von Projekt- und Unternehmenskontakten). Das Dropdown zeigt nun alle für den Benutzer berechtigten Kontakte mit Firmenname/Funktion an.
+
