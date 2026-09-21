@@ -860,7 +860,7 @@
                 </div>
               </div>
 
-              <!-- Right: Visibility Badge, AI Trigger & Delete -->
+              <!-- Right: Visibility Badge, AI Trigger, Bulk Apply & Delete -->
               <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
                 <button
                   v-if="userRole !== 'viewer'"
@@ -875,6 +875,19 @@
                 >
                   <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
                   <span>{{ analyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
+                </button>
+
+                <!-- Direct Sync Button if pending actions exist -->
+                <button
+                  v-if="userRole !== 'viewer' && entry.metadata?.action_items && entry.metadata.action_items.some(it => !it.applied)"
+                  type="button"
+                  @click="applyAllTaskActions(entry)"
+                  :disabled="isApplyingAllId === entry.id"
+                  class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center space-x-1 transition cursor-pointer"
+                  title="Alle erkannten Aufgaben ins Kanban-Board übertragen"
+                >
+                  <CheckCircle2 class="w-3 h-3" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
+                  <span>{{ isApplyingAllId === entry.id ? 'Synchronisiere...' : '⚡ Aktionen ins Board (' + entry.metadata.action_items.filter(it => !it.applied).length + ')' }}</span>
                 </button>
 
                 <span
@@ -956,11 +969,28 @@
                 </p>
               </div>
 
+              <!-- Notice if no action items were generated -->
+              <div v-if="entry.metadata?.ai_summary && (!entry.metadata?.action_items || entry.metadata.action_items.length === 0)" class="p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>ℹ️ Keine direkten Aufgabenaktionen im Text erkannt. Du kannst oben auf „KI aktualisieren“ klicken oder Aufgaben manuell anlegen.</span>
+              </div>
+
               <!-- Interactive AI Action Cards -->
               <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5 pt-1">
-                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
-                  <span>⚡</span>
-                  <span>{{ $t('journal.ai_suggested_actions') }} ({{ entry.metadata.action_items.length }}):</span>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                    <span>⚡</span>
+                    <span>{{ $t('journal.ai_suggested_actions') }} ({{ entry.metadata.action_items.length }}):</span>
+                  </div>
+                  <button
+                    v-if="userRole !== 'viewer' && entry.metadata.action_items.some(it => !it.applied)"
+                    type="button"
+                    @click="applyAllTaskActions(entry)"
+                    :disabled="isApplyingAllId === entry.id"
+                    class="text-xs font-bold px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs flex items-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <CheckCircle2 class="w-3.5 h-3.5" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
+                    <span>{{ isApplyingAllId === entry.id ? 'Wende an...' : '⚡ Alle ' + entry.metadata.action_items.filter(it => !it.applied).length + ' Aktionen ins Kanban-Board übernehmen' }}</span>
+                  </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -3880,6 +3910,14 @@
                 <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
                   Generiert eine prägnante Zusammenfassung des Protokolls und schlägt neue Aufgaben & Termine im Kanban-Board vor.
                 </p>
+                <label v-if="newEntryForm.analyzeWithAi" class="flex items-center space-x-2 mt-2 pt-2 border-t border-cyan-200/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="newEntryForm.autoApply"
+                    class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-3.5 h-3.5"
+                  />
+                  <span class="text-[11px] font-bold text-cyan-900">Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen</span>
+                </label>
               </div>
             </label>
           </div>
@@ -4067,6 +4105,14 @@
                 <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
                   Generiert eine prägnante Zusammenfassung und schlägt interaktive Aktionskarten (neue Aufgaben, Fristverschiebungen, Erledigungen) vor.
                 </p>
+                <label v-if="newNoteForm.analyzeWithAi" class="flex items-center space-x-2 mt-2 pt-2 border-t border-cyan-200/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="newNoteForm.autoApply"
+                    class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-3.5 h-3.5"
+                  />
+                  <span class="text-[11px] font-bold text-cyan-900">Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen</span>
+                </label>
               </div>
             </label>
           </div>
@@ -5114,6 +5160,7 @@ const loadAvailableContacts = async () => {
 }
 
 const analyzingEntryId = ref<string | null>(null)
+const isApplyingAllId = ref<string | null>(null)
 
 // Form Models
 const newEntryForm = ref<any>({
@@ -5126,6 +5173,7 @@ const newEntryForm = ref<any>({
   entry_date: new Date().toISOString().slice(0, 10),
   content: '',
   analyzeWithAi: true,
+  autoApply: false,
   attendees: [] as any[],
   attachments: [] as any[]
 })
@@ -5140,6 +5188,7 @@ const newNoteForm = ref<any>({
   sender_email: '',
   content: '',
   analyzeWithAi: true,
+  autoApply: false,
   attachments: [] as any[]
 })
 
@@ -7203,7 +7252,7 @@ const saveNewEntry = async () => {
 
     if (newEntryForm.value.analyzeWithAi && created.entry?.id && newEntryForm.value.content?.trim()) {
       try {
-        await $fetch(`/api/projects/${projectId}/journal/parse-email`, {
+        const aiRes = await $fetch<any>(`/api/projects/${projectId}/journal/parse-email`, {
           method: 'POST',
           headers: authHeaders(),
           body: {
@@ -7215,6 +7264,10 @@ const saveNewEntry = async () => {
             allowed_group_id: newEntryForm.value.visibility === 'group' ? newEntryForm.value.allowed_group_id : null
           }
         })
+        if (newEntryForm.value.autoApply && aiRes?.metadata?.action_items?.length) {
+          created.entry.metadata = aiRes.metadata
+          await applyAllTaskActions(created.entry)
+        }
       } catch (_) {}
     }
 
@@ -7236,7 +7289,7 @@ const saveNewNote = async () => {
   journalError.value = ''
   try {
     if (newNoteForm.value.analyzeWithAi) {
-      await $fetch(`/api/projects/${projectId}/journal/parse-email`, {
+      const aiRes = await $fetch<any>(`/api/projects/${projectId}/journal/parse-email`, {
         method: 'POST',
         headers: authHeaders(),
         body: {
@@ -7250,6 +7303,10 @@ const saveNewNote = async () => {
           attachments: newNoteForm.value.attachments || []
         }
       })
+      if (newNoteForm.value.autoApply && aiRes?.entry?.id && aiRes?.metadata?.action_items?.length) {
+        aiRes.entry.metadata = aiRes.metadata
+        await applyAllTaskActions(aiRes.entry)
+      }
     } else {
       await $fetch(`/api/projects/${projectId}/journal`, {
         method: 'POST',
@@ -7296,7 +7353,7 @@ const deleteJournalEntry = async (entry: any) => {
   }
 }
 
-const triggerAiAnalysis = async (entry: any) => {
+const triggerAiAnalysis = async (entry: any, autoApply = false) => {
   if (!entry.content?.trim() && !entry.title?.trim()) {
     alert('Eintrag hat keinen Text zum Analysieren.')
     return
@@ -7319,10 +7376,36 @@ const triggerAiAnalysis = async (entry: any) => {
     } else if (res.entry?.metadata) {
       entry.metadata = res.entry.metadata
     }
+
+    if (autoApply && entry.metadata?.action_items?.length) {
+      await applyAllTaskActions(entry)
+    }
   } catch (err: any) {
     alert(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse')
   } finally {
     analyzingEntryId.value = null
+  }
+}
+
+const applyAllTaskActions = async (entry: any) => {
+  if (!entry.metadata?.action_items || !entry.metadata.action_items.length) return
+  isApplyingAllId.value = entry.id
+  try {
+    for (let i = 0; i < entry.metadata.action_items.length; i++) {
+      const item = entry.metadata.action_items[i]
+      if (item.applied) continue
+      if (item.type === 'create_task') {
+        await applyCreateTaskAction(entry, item, i)
+      } else if (item.type === 'update_task') {
+        await applyUpdateTaskAction(entry, item, i)
+      } else if (item.type === 'complete_task') {
+        await applyCompleteTaskAction(entry, item, i)
+      }
+    }
+  } catch (err: any) {
+    console.error('Fehler beim Anwenden aller Aktionen:', err)
+  } finally {
+    isApplyingAllId.value = null
   }
 }
 

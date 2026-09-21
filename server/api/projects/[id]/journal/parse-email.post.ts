@@ -124,14 +124,15 @@ export default defineEventHandler(async (event) => {
   const tasksContext = JSON.stringify(existingTasks.map(t => ({ id: t.id, section_id: t.list_id, title: t.title, status: t.status, due_date: t.due_date })))
 
   // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
-  const systemPrompt = `Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.
-Analysiere den Inhalt der E-Mail präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.
-Regeln:
-1. summary: Sachliche, prägnante Zusammenfassung (max. 3-4 Sätze).
-2. action_items: Liste relevanter Vorschläge basierend auf dem Mailtext:
-   - type 'create_task': Falls eine neue Handlung, Bestellung, Mängelbehebung oder Frist nötig ist. 'section_id' MUSS einer der übergebenen Abschnitte sein. 'priority' ist 'normal', 'hoch' oder 'dringend'. 'due_date' im Format YYYY-MM-DD oder null.
-   - type 'update_task': Falls eine bestehende Aufgabe aktualisiert werden muss (z.B. Terminverschiebung, Status). 'task_id' MUSS existieren.
-   - type 'complete_task': Falls die E-Mail die Erledigung einer bestehenden Aufgabe bestätigt. 'task_id' MUSS existieren.
+  const systemPrompt = `Du bist ein proaktiver technischer Bauleiter-Assistent im System Taskster.
+Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.
+WICHTIGE REGELN:
+1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt (nicht pauschal 'Die E-Mail...').
+2. action_items: Liste relevanter Vorschläge (generiere proaktiv mindestens 1 konkreten Vorschlag, falls irgendeine Handlung, Freigabe, Erledigung, Abnahme, Mangel, Termin oder Dokumentation sinnvoll ist):
+   - type 'complete_task': Falls eine bestehende Aufgabe abgeschlossen/als erledigt markiert werden kann. Wenn eine bestehende Aufgabe anhand von Titel, Auftragsnummer, Adresse oder Gewerk thematisch passt, setze deren 'task_id'.
+   - type 'update_task': Falls eine bestehende Aufgabe aktualisiert werden soll (z.B. Terminverschiebung, Status, Priorität). 'task_id' angeben.
+   - type 'create_task': Falls KEINE passende bestehende Aufgabe existiert ODER ein neuer Folgeschritt, eine Abnahme, Prüfung oder Nachbereitung sinnvoll ist (z.B. 'Kontrollschacht Ersatz - Abschluss & Abnahme'). 'section_id' muss einer der übergebenen Abschnitte sein (wähle den passendsten wie z.B. Abschliessen, Tiefbau oder Vorbereiten). 'priority' ist 'normal', 'hoch' oder 'dringend'. 'due_date' im Format YYYY-MM-DD oder null.
+3. Sei proaktiv: Jeder Bauleitungseintrag soll für den Bauleiter direkt verwertbare Kanban-Aktionen vorschlagen!
 Gib AUSSCHLIESSLICH das JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.`
 
   const userPrompt = `PROJEKT-ABSCHNITTE (SECTIONS):
@@ -140,15 +141,15 @@ ${sectionsContext}
 BESTEHENDE AUFGABEN (TASKS):
 ${tasksContext}
 
-E-MAIL TEXT:
+EINTRAGSTEXT:
 """
 ${emailText}
 """
 
 Erzeuge das JSON im folgenden Format:
 {
-  "subject": "Treffender Betreff",
-  "summary": "Zusammenfassung in 3-4 Sätzen",
+  "subject": "Treffender Titel",
+  "summary": "Zusammenfassung in 2-3 Sätzen",
   "action_items": [
     { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" },
     { "type": "update_task", "task_id": "task_id", "suggested_status": "in_progress", "suggested_due_date": null, "reason": "Begründung" },

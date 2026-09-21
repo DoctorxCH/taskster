@@ -71,5 +71,10 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
      - Direkter Button `[⚡ KI-Analyse]` / `[KI aktualisieren]` im Header jeder Eintragskarte.
      - KI-Analyse-Schalter ("Mit KI analysieren") im Bausitzung/Protokoll-Modal (`showNewEntryModal`).
      - Backend-Unterstützung für `journal_id` / `entry_id` in `/api/projects/:id/journal/parse-email` zur In-Place-Aktualisierung existierender Einträge ohne Duplizierung.
-
-
+4. **Aufgaben-Sync & Proaktive Aktionskarten (KI ändert nichts an Aufgaben)**:
+   - Problem: Der System-Prompt war strikt auf E-Mails und exakt existierende Aufgaben beschränkt. Bei Texten wie „Kontrollschacht ersetzt, Auftrag kann abgeschlossen werden“ generierte die KI zwar eine Zusammenfassung, aber `action_items: []` (leer). Da keine Aktionskarten generiert wurden, konnte der Nutzer weder etwas anklicken noch wurden Aufgaben verändert.
+   - Prompt-Upgrade: Der System-Prompt wurde für alle Bauleitungstypen proaktiviert. Die KI schlägt nun verlässlich konkrete Handlungsschritte vor (Auftragsabschluss, Terminaktualisierung oder neue Nachbereitungsaufgabe im passenden Abschnitt).
+   - 1-Klick Bulk-Sync:
+     - Neuer Button `[⚡ Alle Aktionen ins Kanban-Board übernehmen]` über den Aktionskarten und im Karten-Header.
+     - Checkbox `[✓] Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen` in beiden Erstellungs-Modalen (Auto-Sync).
+     - Direkte visuelle Rückmeldung und automatischer Reload der Projektdaten (`loadProjectData()`).
