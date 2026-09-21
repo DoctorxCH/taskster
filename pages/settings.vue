@@ -1,21 +1,20 @@
 <template>
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-5">
-      <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
-        <LayoutDashboard class="w-3.5 h-3.5" />
-        <span>{{ $t('common.dashboard') }}</span>
-      </NuxtLink>
-      <span>/</span>
-      <span class="text-slate-800 font-medium flex items-center gap-1">
-        <SettingsIcon class="w-3.5 h-3.5 text-[#0891B2]" />
-        <span>{{ $t('common.einstellungen') }}</span>
-      </span>
-    </div>
-
-    <!-- Header -->
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- Header Card -->
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
+        <!-- Breadcrumb -->
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+          <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
+            <LayoutDashboard class="w-3.5 h-3.5" />
+            <span>{{ $t('common.dashboard') }}</span>
+          </NuxtLink>
+          <span>/</span>
+          <span class="text-slate-800 font-medium flex items-center gap-1">
+            <SettingsIcon class="w-3.5 h-3.5 text-[#0891B2]" />
+            <span>{{ $t('common.einstellungen') }}</span>
+          </span>
+        </div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ $t('common.einstellungen') }}</h1>
         <p class="text-sm text-slate-600 mt-1">
           {{ $t('settings.profil_kalender_benachrichtigungen_') }}

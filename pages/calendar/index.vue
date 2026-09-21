@@ -1,7 +1,7 @@
 <template>
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
     <!-- Kopfzeile -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
           <CalendarDays class="w-5 h-5 text-[#0891B2]" />
@@ -14,7 +14,7 @@
 
       <div class="flex flex-wrap items-center gap-2">
         <!-- Ansicht -->
-        <div class="flex items-center bg-white border border-slate-300 rounded-md p-0.5">
+        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-md p-0.5">
           <button
             v-for="v in views"
             :key="v.key"
@@ -273,11 +273,11 @@
           <div v-if="getEarlierEventsCount(d.key) > 0" class="sticky top-1 z-30 flex justify-center pointer-events-none h-0 overflow-visible">
             <button
               type="button"
-              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-transform hover:scale-105"
+              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-xs font-bold h-7 px-2.5 rounded-full flex items-center justify-center gap-1 transition-transform hover:scale-105"
               title="Nach oben zu früheren Terminen scrollen"
               @click.stop="scrollToEarlierEvents(d.key)"
             >
-              <ChevronUp class="w-3 h-3" />
+              <ChevronUp class="w-3.5 h-3.5" />
               <span>+{{ getEarlierEventsCount(d.key) }}</span>
             </button>
           </div>
@@ -285,11 +285,11 @@
           <div v-if="getLaterEventsCount(d.key) > 0" class="sticky bottom-7 z-30 flex justify-center pointer-events-none h-0 overflow-visible">
             <button
               type="button"
-              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-transform hover:scale-105"
+              class="pointer-events-auto shadow-md bg-[#0891B2] hover:bg-[#077ca0] text-white text-xs font-bold h-7 px-2.5 rounded-full flex items-center justify-center gap-1 transition-transform hover:scale-105"
               title="Nach unten zu späteren Terminen scrollen"
               @click.stop="scrollToLaterEvents(d.key)"
             >
-              <ChevronDown class="w-3 h-3" />
+              <ChevronDown class="w-3.5 h-3.5" />
               <span>+{{ getLaterEventsCount(d.key) }}</span>
             </button>
           </div>
