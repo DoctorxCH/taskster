@@ -2296,7 +2296,7 @@ const { user, authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
@@ -2309,6 +2309,7 @@ const activeSectionBadge = computed(() => {
     case 'finance': return 'Finanzen & Lizenzen'
     case 'templates': return 'Projekt-Vorlagen'
     case 'email': return 'E-Mail & Versand'
+    case 'invites': return 'Mitarbeiter-Einladungen'
     default: return 'Zentrale Administration'
   }
 })
@@ -2320,6 +2321,7 @@ const activeSectionTitle = computed(() => {
     case 'finance': return 'Finanzen, Abonnements & Lizenzen'
     case 'templates': return 'Projekt- & Aufgaben-Vorlagen'
     case 'email': return 'Zentrale E-Mail-Konfiguration'
+    case 'invites': return 'Mitarbeiter & Einladungen'
     default: return 'Taskster Plattform-Administration'
   }
 })
@@ -2331,6 +2333,7 @@ const activeSectionDescription = computed(() => {
     case 'finance': return 'Wiederkehrender monatlicher Umsatz (MRR), Firmenabos und Lizenz-Sitze.'
     case 'templates': return 'Vordefinierte Vorlagen für geschäftliche und private Bau- & Projektorganisation.'
     case 'email': return 'Resend & SMTP Einstellungen, E-Mail-Vorlagen und Versandprotokolle.'
+    case 'invites': return 'Lade neue Mitarbeiter in dein Unternehmen ein und verwalte Einladungen.'
     default: return 'Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.'
   }
 })
@@ -2355,21 +2358,22 @@ const activeEmailTemplatesCount = computed(() => {
   return emailTemplates.value.filter((t: any) => t.is_active).length
 })
 
-const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email') => {
+const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites') => {
   activeTab.value = tab
   router.replace({ query: { ...route.query, tab } })
 }
 
 function syncTabFromRoute() {
   const qTab = route.query.tab as any
-  const validTabs = ['users', 'companies', 'finance', 'templates', 'email']
+  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites']
   if (qTab && validTabs.includes(qTab)) {
     if (
       (qTab === 'users' && hasPermission('manage_users')) ||
       (qTab === 'companies' && hasPermission('company_settings')) ||
       (qTab === 'finance' && hasPermission('finance')) ||
       (qTab === 'templates' && hasPermission('manage_templates')) ||
-      (qTab === 'email' && hasPermission('company_settings'))
+      (qTab === 'email' && hasPermission('company_settings')) ||
+      qTab === 'invites'
     ) {
       activeTab.value = qTab
       return

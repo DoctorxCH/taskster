@@ -1189,8 +1189,8 @@ const newDailyTodoProjectId = ref('')
 const availableProjects = ref<any[]>([])
 const creatingDailyTodo = ref(false)
 
-const completedDailyTodosCount = computed(() => dailyTodos.value.filter(t => t.is_completed).length)
-const uncompletedDailyTodosCount = computed(() => dailyTodos.value.filter(t => !t.is_completed).length)
+const completedDailyTodosCount = computed(() => dailyTodos.value.filter((t: any) => t.is_completed).length)
+const uncompletedDailyTodosCount = computed(() => dailyTodos.value.filter((t: any) => !t.is_completed).length)
 const completionPercentage = computed(() => {
   if (dailyTodos.value.length === 0) return 0
   return Math.round((completedDailyTodosCount.value / dailyTodos.value.length) * 100)
@@ -1239,7 +1239,7 @@ const editFolderError = ref('')
 
 const totalProjects = computed(() => {
   if (isFreeUser.value) return projects.value.length
-  return folders.value.reduce((acc, f) => acc + (f.project_count || 0), 0)
+  return folders.value.reduce((acc: number, f: any) => acc + (f.project_count || 0), 0)
 })
 
 const filteredFolders = computed(() => folders.value)
@@ -1466,14 +1466,14 @@ const toggleDailyTodo = async (todo: any) => {
         is_completed: todo.is_completed
       }
     })
-    dailyTodos.value.sort((a, b) => Number(a.is_completed) - Number(b.is_completed))
+    dailyTodos.value.sort((a: any, b: any) => Number(a.is_completed) - Number(b.is_completed))
   } catch (err) {
     todo.is_completed = previousState
   }
 }
 
 const deleteDailyTodo = async (todoId: string) => {
-  const idx = dailyTodos.value.findIndex(t => t.id === todoId)
+  const idx = dailyTodos.value.findIndex((t: any) => t.id === todoId)
   if (idx === -1) return
   const [removed] = dailyTodos.value.splice(idx, 1)
   try {
@@ -1534,10 +1534,10 @@ const markAllNotificationsRead = async () => {
 
 const filteredNotifications = computed(() => {
   if (activeNotificationTab.value === 'mentions') {
-    return notifications.value.filter(n => n.type === 'new_comment' || n.type === 'invitation')
+    return notifications.value.filter((n: any) => n.type === 'new_comment' || n.type === 'invitation')
   }
   if (activeNotificationTab.value === 'projects') {
-    return notifications.value.filter(n => n.type === 'due_soon' || n.type === 'task_updated' || n.type === 'budget_exceeded')
+    return notifications.value.filter((n: any) => n.type === 'due_soon' || n.type === 'task_updated' || n.type === 'budget_exceeded')
   }
   return notifications.value
 })

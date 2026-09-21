@@ -296,6 +296,7 @@
           <div
             v-for="(list, listIdx) in lists"
             :key="list.id"
+            :ref="el => { if (el) sectionCols[listIdx] = el }"
             class="liquid_glass rounded-3xl p-4 flex flex-col transition-all duration-150 shadow-lg"
             :style="list.color ? { backgroundColor: list.color } : {}"
             :class="[
@@ -2900,7 +2901,7 @@
         <div v-if="importStep === 1" class="space-y-4">
           <div
             class="p-8 border-2 border-dashed border-slate-300 hover:border-cyan-500 rounded-3xl bg-slate-50 hover:bg-cyan-50/30 transition text-center cursor-pointer flex flex-col items-center justify-center"
-            @click="$refs.csvFileInput?.click()"
+            @click="csvFileInput?.click()"
             @dragover.prevent
             @drop.prevent="onCsvDrop"
           >
@@ -3842,7 +3843,7 @@ const onVoiceNoteSaved = (payload: any) => {
   if (payload.type === 'journal') {
     loadJournals()
   } else if (payload.type === 'task') {
-    loadProject()
+    loadProjectData()
   }
 }
 
@@ -3901,7 +3902,7 @@ const projectDuplicateCandidate = computed(() => {
 
   if (!ln && !em && mobDigits.length < 6) return null
 
-  return projectContacts.value.find(c => {
+  return projectContacts.value.find((c: any) => {
     if (c.id === projectContactForm.value.id) return false
     if (em && c.email && c.email.trim().toLowerCase() === em) return true
     if (mobDigits.length >= 6) {
@@ -4124,7 +4125,7 @@ const editField = (f: any) => {
 const saveCustomField = async () => {
   if (!newFieldLabel.value.trim()) return
   const optionsList = newFieldType.value === 'select'
-    ? newFieldOptionsRaw.value.split(/[,;\n]/).map(o => o.trim()).filter(Boolean)
+    ? newFieldOptionsRaw.value.split(/[,;\n]/).map((o: string) => o.trim()).filter(Boolean)
     : []
 
   const payload: any = {
@@ -4277,8 +4278,7 @@ const visibleDrawerFields = computed(() => {
 })
 
 const totalTasks = computed(() => {
-
-  return lists.value.reduce((acc, l) => acc + (l.tasks?.length || 0), 0)
+  return lists.value.reduce((acc: number, l: any) => acc + (l.tasks?.length || 0), 0)
 })
 
 const taskCustomFields = computed(() => {
@@ -4313,7 +4313,7 @@ const getAvailableTemplateFields = (header: string) => {
   const existingKeys = new Set(fields.value.map((f: any) => f.field_key))
   const colKey = getHeaderKey(header)
   existingKeys.add(colKey)
-  return commonCustomFieldTemplates.filter(t => !existingKeys.has(t.key))
+  return commonCustomFieldTemplates.filter((t: any) => !existingKeys.has(t.key))
 }
 
 const allProjectTasks = computed(() => {
@@ -4329,7 +4329,7 @@ const allProjectTasks = computed(() => {
 })
 
 const filteredTimeEntries = computed(() => {
-  return projectTimeEntries.value.filter(entry => {
+  return projectTimeEntries.value.filter((entry: any) => {
     if (timeFilterTask.value === '__project__' && entry.task_id) return false
     if (timeFilterTask.value && timeFilterTask.value !== '__project__' && entry.task_id !== timeFilterTask.value) return false
     if (timeFilterUser.value && entry.user_id !== timeFilterUser.value) return false
@@ -4391,8 +4391,8 @@ const onDropToList = async (targetListId: string) => {
 
   if (fromListId === targetListId) return
 
-  const sourceList = lists.value.find(l => l.id === fromListId)
-  const targetList = lists.value.find(l => l.id === targetListId)
+  const sourceList = lists.value.find((l: any) => l.id === fromListId)
+  const targetList = lists.value.find((l: any) => l.id === targetListId)
   if (!sourceList || !targetList) return
 
   sourceList.tasks = (sourceList.tasks || []).filter((t: any) => t.id !== taskToMove.id)
@@ -4416,6 +4416,8 @@ const onDropToList = async (targetListId: string) => {
 }
 
 const draggedBoardSection = ref<any>(null)
+// Referenzen auf die Spalten-Container (für das Drag-Ghost-Image)
+const sectionCols = ref<any[]>([])
 
 const onSectionDragStart = (section: any, e: DragEvent) => {
   if (userRole.value === 'viewer') return
@@ -4423,6 +4425,16 @@ const onSectionDragStart = (section: any, e: DragEvent) => {
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', section.id)
+
+    // Ganze Spalte als Drag-Vorschau verwenden (statt nur des schmalen Headers)
+    const idx = lists.value.findIndex((l: any) => l.id === section.id)
+    const colEl = idx >= 0 ? sectionCols.value[idx] : null
+    if (colEl && typeof e.dataTransfer.setDragImage === 'function') {
+      const rect = colEl.getBoundingClientRect()
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+      e.dataTransfer.setDragImage(colEl, offsetX, offsetY)
+    }
   }
 }
 
@@ -4439,8 +4451,8 @@ const onSectionDrop = async (targetSection: any, e: DragEvent) => {
   draggedBoardSection.value = null
   if (src.id === targetSection.id) return
 
-  const srcIdx = lists.value.findIndex(l => l.id === src.id)
-  const targetIdx = lists.value.findIndex(l => l.id === targetSection.id)
+  const srcIdx = lists.value.findIndex((l: any) => l.id === src.id)
+  const targetIdx = lists.value.findIndex((l: any) => l.id === targetSection.id)
   if (srcIdx === -1 || targetIdx === -1) return
 
   // Reorder locally
@@ -4448,7 +4460,7 @@ const onSectionDrop = async (targetSection: any, e: DragEvent) => {
   lists.value.splice(targetIdx, 0, removed)
 
   try {
-    const payloadLists = lists.value.map((l, idx) => ({ id: l.id, sort_order: idx }))
+    const payloadLists = lists.value.map((l: any, idx: number) => ({ id: l.id, sort_order: idx }))
     await $fetch(`/api/projects/${projectId}/lists/reorder`, {
       method: 'PUT',
       headers: authHeaders(),
@@ -4681,7 +4693,7 @@ const deleteProjectContact = async (c: any) => {
       method: 'DELETE',
       headers: authHeaders()
     })
-    projectContacts.value = projectContacts.value.filter(item => item.id !== c.id)
+    projectContacts.value = projectContacts.value.filter((item: any) => item.id !== c.id)
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
   }
@@ -4936,7 +4948,7 @@ const confirmDeleteProject = async () => {
 const saveField = async () => {
   try {
     const options = newFieldType.value === 'select'
-      ? newFieldOptionsRaw.value.split(',').map((s) => s.trim()).filter(Boolean)
+      ? newFieldOptionsRaw.value.split(',').map((s: string) => s.trim()).filter(Boolean)
       : []
 
     const logicRules = enableFieldLogic.value && logicDependsOnField.value
@@ -5121,7 +5133,7 @@ const saveSectionsReorder = async () => {
   savingSections.value = true
   manageSectionsError.value = ''
   try {
-    const payload = managingSections.value.map((sec, idx) => ({
+    const payload = managingSections.value.map((sec: any, idx: number) => ({
       id: sec.id,
       title: sec.title ? sec.title.trim() : `Abschnitt ${idx + 1}`,
       sort_order: idx + 1,
@@ -5306,7 +5318,7 @@ const onDrawerSectionChange = async () => {
   }
   if (targetTaskObj) {
     targetTaskObj.list_id = targetListId
-    const targetList = lists.value.find(l => l.id === targetListId)
+    const targetList = lists.value.find((l: any) => l.id === targetListId)
     if (targetList) {
       targetList.tasks = targetList.tasks || []
       targetList.tasks.push(targetTaskObj)
@@ -5620,7 +5632,7 @@ const handleFiles = async (files: File[]) => {
     } catch (err: any) {
       alert(err.data?.statusMessage || `Fehler beim Hochladen von "${file.name}"`)
     } finally {
-      uploadingFiles.value = uploadingFiles.value.filter(u => u.id !== uploadItem.id)
+      uploadingFiles.value = uploadingFiles.value.filter((u: any) => u.id !== uploadItem.id)
     }
   }
 }
@@ -5641,7 +5653,7 @@ const deleteDocument = async (docId: string) => {
       method: 'DELETE',
       headers: authHeaders()
     })
-    drawerDocuments.value = drawerDocuments.value.filter(d => d.id !== docId)
+    drawerDocuments.value = drawerDocuments.value.filter((d: any) => d.id !== docId)
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Löschen der Datei')
   }
@@ -5757,7 +5769,7 @@ const parseCsvFile = async (file: File) => {
 
     // Auto-guess mapping
     const mapping: Record<number, string> = {}
-    importHeaders.value.forEach((header, idx) => {
+    importHeaders.value.forEach((header: string, idx: number) => {
       const hLow = header.toLowerCase().trim()
       if (!Object.values(mapping).includes('title') && (hLow.includes('titel') || hLow.includes('title') || hLow.includes('aufgabe') || hLow.includes('task') || hLow.includes('name'))) {
         mapping[idx] = 'title'
@@ -5780,7 +5792,7 @@ const parseCsvFile = async (file: File) => {
           mapping[idx] = 'custom:' + matchField.field_key
         } else {
           // 2. Check common template fields
-          const matchTpl = commonCustomFieldTemplates.find(t =>
+          const matchTpl = commonCustomFieldTemplates.find((t: any) =>
             t.key.toLowerCase() === hLow || t.label.toLowerCase() === hLow || hLow.includes(t.key)
           )
           if (matchTpl) {
@@ -5847,13 +5859,13 @@ const executeImport = async () => {
   try {
     // 1. Alle neu gemappten Zusatzfelder automatisch in den Felddefinitionen des Ordners anlegen
     const existingFieldKeys = new Set(fields.value.map((f: any) => f.field_key))
-    for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+    for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value) as [string, string][]) {
       if (targetField && targetField.startsWith('custom:')) {
         const key = targetField.replace('custom:', '')
         if (!existingFieldKeys.has(key)) {
           const colIdx = parseInt(colIdxStr)
           const headerName = importHeaders.value[colIdx] || key
-          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
+          const matchedTpl = commonCustomFieldTemplates.find((t: any) => t.key === key)
           try {
             await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
               method: 'POST',
@@ -5885,7 +5897,7 @@ const executeImport = async () => {
         custom_data: {}
       }
 
-      Object.entries(importColumnMapping.value).forEach(([colIdxStr, targetField]) => {
+      (Object.entries(importColumnMapping.value) as [string, string][]).forEach(([colIdxStr, targetField]) => {
         const colIdx = parseInt(colIdxStr)
         const cellVal = row[colIdx]?.trim() || ''
         if (!targetField || !cellVal) return
@@ -5915,7 +5927,7 @@ const executeImport = async () => {
             taskPayload.due_date = cellVal
           }
         } else if (targetField === 'tags') {
-          taskPayload.tags = cellVal.split(/[,;|]/).map(t => t.trim()).filter(Boolean)
+          taskPayload.tags = cellVal.split(/[,;|]/).map((t: string) => t.trim()).filter(Boolean)
         } else if (targetField.startsWith('custom:')) {
           const key = targetField.replace('custom:', '')
           taskPayload.custom_data[key] = cellVal
@@ -6035,7 +6047,7 @@ const inviteMember = async () => {
   }
 }
 
-watch(currentView, (val) => {
+watch(currentView, (val: string) => {
   if (val === 'time') {
     loadProjectTimeEntries()
   } else if (val === 'settings') {
@@ -6081,7 +6093,7 @@ async function openTaskFromQuery() {
 }
 
 // Reagiert auf ?task= Änderungen, wenn die Projektseite bereits offen ist
-watch(() => route.query.task, (id) => {
+watch(() => route.query.task, (id: any) => {
   if (id && typeof id === 'string') openTaskFromQuery()
 })
 
