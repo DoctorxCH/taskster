@@ -1736,6 +1736,125 @@ function buildInviteBody($organizerName, $title, $startAt, $endAt, $location = n
     return implode("\n", $lines);
 }
 
+/**
+ * Parst und dekodiert rohen E-Mail-Text (MIME Multipart, Base64, Quoted-Printable, RFC 2047 Headers).
+ * Verhindert WAF-Blockaden (HTTP 403) und decodiert Base64-Inhalte zuverlässig in UTF-8.
+ */
+function parseMimeEmailText($rawText) {
+    if (empty($rawText) || !is_string($rawText)) {
+        return ['subject' => '', 'sender_name' => '', 'sender_email' => '', 'body' => ''];
+    }
+
+    $subject = '';
+    $fromName = '';
+    $fromEmail = '';
+    $body = '';
+
+    $decodeMimeHeader = function($str) {
+        if (function_exists('iconv_mime_decode')) {
+            $dec = @iconv_mime_decode($str, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+            if ($dec !== false && $dec !== '') return $dec;
+        }
+        return preg_replace_callback('/=\?([^?]+)\?([BQ])\?([^?]+)\?=/i', function($m) {
+            $charset = strtolower($m[1]);
+            $encoding = strtoupper($m[2]);
+            $data = $m[3];
+            if ($encoding === 'B') {
+                $decoded = base64_decode($data);
+                if (function_exists('mb_convert_encoding') && !str_contains($charset, 'utf')) {
+                    $decoded = @mb_convert_encoding($decoded, 'UTF-8', $charset);
+                }
+                return $decoded;
+            } elseif ($encoding === 'Q') {
+                return quoted_printable_decode(str_replace('_', ' ', $data));
+            }
+            return $m[0];
+        }, $str);
+    };
+
+    if (preg_match('/^Subject:\s*(.+?)(?=\r?\n[^\s]|$)/im', $rawText, $sm)) {
+        $subject = trim($decodeMimeHeader(preg_replace('/\r?\n\s+/', ' ', $sm[1])));
+    }
+    if (preg_match('/^From:\s*(.+?)(?=\r?\n[^\s]|$)/im', $rawText, $fm)) {
+        $rawFrom = trim($decodeMimeHeader(preg_replace('/\r?\n\s+/', ' ', $fm[1])));
+        if (preg_match('/<([^>]+)>/', $rawFrom, $em)) {
+            $fromEmail = strtolower(trim($em[1]));
+            $fromName = trim(str_replace(['"', "'"], '', preg_replace('/<[^>]+>/', '', $rawFrom)));
+        } else {
+            $fromEmail = strtolower($rawFrom);
+            $fromName = explode('@', $rawFrom)[0];
+        }
+    }
+
+    // Multipart Boundary
+    if (preg_match('/boundary=["\']?([^"';\r\n]+)["\']?/i', $rawText, $bm)) {
+        $boundary = $bm[1];
+        $parts = preg_split('/--' . preg_quote($boundary, '/') . '(?:--)?/', $rawText);
+        $plainPart = '';
+        $htmlPart = '';
+        foreach ($parts as $part) {
+            $tPart = trim($part);
+            if (empty($tPart) || $tPart === '--') continue;
+            $split = preg_split('/\r?\n\r?\n/', $tPart, 2);
+            $partHeaders = $split[0] ?? '';
+            $partBody = $split[1] ?? '';
+
+            $isPlain = stripos($partHeaders, 'text/plain') !== false;
+            $isHtml = stripos($partHeaders, 'text/html') !== false;
+            $isBase64 = stripos($partHeaders, 'base64') !== false;
+            $isQP = stripos($partHeaders, 'quoted-printable') !== false;
+
+            $decoded = $partBody;
+            if ($isBase64) {
+                $decoded = base64_decode(preg_replace('/\s+/', '', $partBody));
+            } elseif ($isQP) {
+                $decoded = quoted_printable_decode($partBody);
+            }
+
+            if ($isPlain && empty($plainPart)) {
+                $plainPart = trim($decoded);
+            } elseif ($isHtml && empty($htmlPart)) {
+                $htmlPart = trim($decoded);
+            }
+        }
+        if (!empty($plainPart)) {
+            $body = $plainPart;
+        } elseif (!empty($htmlPart)) {
+            $body = trim(strip_tags(preg_replace('/<(?:br|\/p)>/i', "\n", $htmlPart)));
+        }
+    }
+
+    // Single-Part Fallback
+    if (empty($body)) {
+        if (stripos($rawText, 'Content-Transfer-Encoding: base64') !== false) {
+            $split = preg_split('/\r?\n\r?\n/', $rawText, 2);
+            if (isset($split[1])) {
+                $decoded = base64_decode(preg_replace('/\s+/', '', $split[1]));
+                if (!empty($decoded)) $body = trim($decoded);
+            }
+        } elseif (stripos($rawText, 'Content-Transfer-Encoding: quoted-printable') !== false) {
+            $split = preg_split('/\r?\n\r?\n/', $rawText, 2);
+            if (isset($split[1])) {
+                $body = trim(quoted_printable_decode($split[1]));
+            }
+        } else {
+            $body = trim($rawText);
+        }
+    }
+
+    // Restliche MIME-Boundary-Zeilen und Content-Type Header strippen (verhindert WAF 403)
+    $body = preg_replace('/^--[a-zA-Z0-9_-]+[^\n]*\n?/m', '', $body);
+    $body = preg_replace('/^Content-(?:Type|Transfer-Encoding|Disposition):[^\n]*\n?/im', '', $body);
+    $body = trim($body);
+
+    return [
+        'subject' => $subject,
+        'sender_name' => $fromName,
+        'sender_email' => $fromEmail,
+        'body' => $body ?: $rawText
+    ];
+}
+
 /** Legt eine E-Mail in die Outbox (Versand spaeter per Cron/Worker). */
 function queueEmail($to, $toName, $subject, $body, $ics = null) {
     try {
@@ -4216,6 +4335,23 @@ try {
         $recipients = is_array($body['recipients'] ?? null) ? $body['recipients'] : [];
         $emailSubject = trim($body['subject'] ?? '');
         $attachments = is_array($body['attachments'] ?? null) ? $body['attachments'] : [];
+
+        // Automatische Erkennung & Dekodierung von MIME-Multipart, Base64 oder Quoted-Printable
+        if (stripos($emailText, 'Content-Transfer-Encoding') !== false || stripos($emailText, 'Content-Type:') !== false || preg_match('/^--[a-zA-Z0-9_-]+/m', $emailText)) {
+            $parsedMime = parseMimeEmailText($emailText);
+            if (!empty($parsedMime['body'])) {
+                $emailText = $parsedMime['body'];
+            }
+            if (empty($emailSubject) && !empty($parsedMime['subject'])) {
+                $emailSubject = $parsedMime['subject'];
+            }
+            if (empty($sender['email']) && !empty($parsedMime['sender_email'])) {
+                $sender['email'] = $parsedMime['sender_email'];
+                if (empty($sender['name']) && !empty($parsedMime['sender_name'])) {
+                    $sender['name'] = $parsedMime['sender_name'];
+                }
+            }
+        }
 
         // 1. Kontaktprüfung & automatische Anlage falls nicht vorhanden
         $senderEmail = trim($sender['email'] ?? '');
