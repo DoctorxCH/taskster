@@ -26,7 +26,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2.5 mb-1">
-              <div class="w-9 h-9 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0 text-xl">
+              <div class="w-9 h-9 flex items-center justify-center shrink-0 text-xl">
                 <span v-if="folder.icon">{{ folder.icon }}</span>
                 <Folder v-else class="w-5 h-5" />
               </div>
