@@ -6788,10 +6788,16 @@ const parseCsvFile = async (file: File) => {
 
     if (isExcel) {
       const data = await file.arrayBuffer()
+      if (!XLSX || typeof XLSX.read !== 'function') {
+        throw new Error('Excel-Bibliothek (XLSX) steht nicht zur Verfügung.')
+      }
       const wb = XLSX.read(data, { type: 'array' })
-      const sheetName = wb.SheetNames[0]
+      const sheetName = wb.SheetNames?.[0]
       if (!sheetName) throw new Error('Kein Tabellenblatt in der Datei gefunden.')
       const sheet = wb.Sheets[sheetName]
+      if (!XLSX.utils || typeof XLSX.utils.sheet_to_json !== 'function') {
+        throw new Error('Excel-Dienstprogramme unvollständig geladen.')
+      }
       const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
       if (rawRows.length < 2) throw new Error('Die Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.')
       headers = rawRows[0].map((h: any) => String(h || '').trim())
@@ -6818,8 +6824,8 @@ const parseCsvFile = async (file: File) => {
         return
       }
 
-      headers = parsed[0].map(h => h.trim())
-      rows = parsed.slice(1).filter(r => r.some(cell => cell.trim().length > 0))
+      headers = parsed[0].map(h => String(h || '').trim())
+      rows = parsed.slice(1).filter(r => r.some(cell => String(cell || '').trim().length > 0))
     }
 
     importHeaders.value = headers
@@ -6844,22 +6850,23 @@ const parseCsvFile = async (file: File) => {
       } else {
         // 1. Check existing custom fields
         const matchField = fields.value.find((f: any) => {
-          const fLbl = f.label_key ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
+          const fLbl = f.label_key && typeof t === 'function' ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
           return fLbl === hLow || (f.label || '').toLowerCase() === hLow || f.field_key?.toLowerCase() === hLow
         })
         if (matchField) {
           mapping[idx] = 'custom:' + matchField.field_key
         } else {
-          // 2. Check common template fields
-          const matchTpl = commonCustomFieldTemplates.find((t: any) => {
-            const tLbl = t.label_key ? t(t.label_key).toLowerCase() : t.label.toLowerCase()
-            return t.key.toLowerCase() === hLow || tLbl === hLow || t.label.toLowerCase() === hLow || hLow.includes(t.key)
+          // 2. Check common template fields (use 'tpl' to avoid shadowing i18n 't')
+          const matchTpl = commonCustomFieldTemplates.find((tpl: any) => {
+            const tLbl = tpl.label_key && typeof t === 'function' ? t(tpl.label_key).toLowerCase() : (tpl.label || '').toLowerCase()
+            return tpl.key.toLowerCase() === hLow || tLbl === hLow || (tpl.label || '').toLowerCase() === hLow || hLow.includes(tpl.key)
           })
           if (matchTpl) {
             mapping[idx] = 'custom:' + matchTpl.key
           } else {
             // 3. Auto-suggest as new custom field
-            mapping[idx] = 'custom:' + getHeaderKey(header)
+            const sanitizeFn = typeof getHeaderKey === 'function' ? getHeaderKey : (s: string) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+            mapping[idx] = 'custom:' + sanitizeFn(header)
           }
         }
       }
@@ -6925,7 +6932,7 @@ const executeImport = async () => {
         if (!existingFieldKeys.has(key)) {
           const colIdx = parseInt(colIdxStr)
           const headerName = importHeaders.value[colIdx] || key
-          const matchedTpl = commonCustomFieldTemplates.find((t: any) => t.key === key)
+          const matchedTpl = commonCustomFieldTemplates.find((tpl: any) => tpl.key === key)
           try {
             await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
               method: 'POST',
@@ -6982,11 +6989,11 @@ const executeImport = async () => {
         } else if (targetField === 'due_date') {
           taskPayload.due_date = parseImportDate(cellVal)
         } else if (targetField === 'tags') {
-          taskPayload.tags = cellVal.split(/[,;|]/).map((t: string) => t.trim()).filter(Boolean)
+          taskPayload.tags = cellVal.split(/[,;|]/).map((tagItem: string) => tagItem.trim()).filter(Boolean)
         } else if (targetField.startsWith('custom:')) {
           const key = targetField.replace('custom:', '')
           const matchedField = fields.value.find((f: any) => f.field_key === key)
-          const matchedTpl = commonCustomFieldTemplates.find((t: any) => t.key === key)
+          const matchedTpl = commonCustomFieldTemplates.find((tpl: any) => tpl.key === key)
           const fieldType = matchedField?.field_type || matchedTpl?.type
           if (fieldType === 'date') {
             taskPayload.custom_data[key] = parseImportDate(cellVal) || cellVal
@@ -7009,7 +7016,10 @@ const executeImport = async () => {
               const optVal = typeof opt === 'object' ? opt.value : opt
               const optKey = typeof opt === 'object' ? opt.label_key : ('fields.options.' + optVal)
               const optLabel = typeof opt === 'object' ? opt.label : optVal
-              if (optVal.toLowerCase() === lowVal || (optLabel && optLabel.toLowerCase() === lowVal) || (optKey && te(optKey) && t(optKey).toLowerCase() === lowVal)) {
+              const isMatch = optVal.toLowerCase() === lowVal ||
+                (optLabel && optLabel.toLowerCase() === lowVal) ||
+                (optKey && typeof te === 'function' && te(optKey) && typeof t === 'function' && t(optKey).toLowerCase() === lowVal)
+              if (isMatch) {
                 resolvedVal = optVal
                 break
               }

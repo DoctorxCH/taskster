@@ -692,7 +692,7 @@
                 Excel (.xlsx, .xls) oder CSV / TSV Datei auswählen oder hier ablegen
               </p>
               <p class="text-xs text-slate-500 mt-1 max-w-md">
-                Erzeugt automatisch ein neues Projekt, alle enthaltenen Phasen/Abschnitte und importiert alle Aufgaben auf einen Klick.
+                Importiert mehrere Projekte auf einen Klick direkt in den Ordner «{{ folder?.name }}».
               </p>
 
               <div class="mt-4 flex items-center space-x-3" @click.stop>
@@ -715,28 +715,11 @@
             <div v-if="importHeaders.length > 0" class="space-y-4 pt-2 border-t border-slate-100">
               <div class="p-3 bg-cyan-50/80 border border-cyan-200 rounded-2xl flex items-center justify-between text-xs">
                 <span class="text-cyan-950 font-bold">
-                  📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Zeilen, {{ importHeaders.length }} Spalten)
+                  📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Projekt(e) gefunden, {{ importHeaders.length }} Spalten)
                 </span>
                 <span class="text-cyan-800 font-semibold">
-                  {{ detectedImportPhases.length }} Abschnitt(e) erkannt
+                  Ordner: {{ folder?.name }}
                 </span>
-              </div>
-
-              <!-- Detected Phases Chips -->
-              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="font-bold text-slate-800">Zu erstellende Abschnitte / Phasen:</span>
-                  <span class="text-[11px] text-slate-500">Werden automatisch angelegt</span>
-                </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <span
-                    v-for="(phaseName, pIdx) in detectedImportPhases"
-                    :key="pIdx"
-                    class="px-2.5 py-1 rounded-lg text-xs bg-white border border-slate-200 text-slate-800 font-bold shadow-2xs"
-                  >
-                    📂 {{ phaseName }}
-                  </span>
-                </div>
               </div>
 
               <!-- Column Mapping -->
@@ -745,7 +728,7 @@
                   <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
                     Spaltenzuweisung (Mapping):
                   </label>
-                  <span class="text-[11px] text-slate-500 font-medium">Aufgabentitel ist Pflichtfeld</span>
+                  <span class="text-[11px] text-slate-500 font-medium">Projekttitel ist Pflichtfeld</span>
                 </div>
 
                 <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
@@ -754,7 +737,7 @@
                       <tr>
                         <th class="py-2.5 px-4">Spalte in Excel / CSV</th>
                         <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
-                        <th class="py-2.5 px-4">Zuweisung an Taskster-Feld</th>
+                        <th class="py-2.5 px-4">Zuweisung an Taskster Projekt-Feld</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
@@ -762,9 +745,6 @@
                         <td class="py-2.5 px-4 font-bold text-slate-900">{{ header }}</td>
                         <td class="py-2.5 px-4 text-slate-500 font-mono text-[11px] truncate max-w-xs">
                           {{ importParsedRows[0]?.[hIdx] || '-' }}
-                          <span v-if="importColumnMapping[hIdx] === 'due_date' && parseImportDate(importParsedRows[0]?.[hIdx]) && parseImportDate(importParsedRows[0]?.[hIdx]) !== String(importParsedRows[0]?.[hIdx]).trim()" class="ml-1.5 text-[11px] font-sans text-[#0891B2] font-semibold">
-                            → {{ parseImportDate(importParsedRows[0]?.[hIdx]) }}
-                          </span>
                         </td>
                         <td class="py-2.5 px-4">
                           <select
@@ -773,14 +753,13 @@
                             :class="importColumnMapping[hIdx] === 'title' ? 'border-[#0891B2] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : '')"
                           >
                             <option value="">-- Nicht importieren --</option>
-                            <optgroup label="Standard-Felder">
-                              <option value="list_title">📂 Phase / Abschnitt (Erzeugt Abschnitte)</option>
-                              <option value="title">📌 Aufgabentitel (Pflicht)</option>
-                              <option value="description">📋 Beschreibung</option>
-                              <option value="due_date">📅 Fälligkeitsdatum</option>
-                              <option value="priority">⚡ Priorität (niedrig/normal/hoch/dringend)</option>
-                              <option value="status">🔄 Status (todo/in_progress/done)</option>
-                              <option value="tags">🏷️ Tags / Schlagwörter</option>
+                            <optgroup label="Standard Projekt-Felder">
+                              <option value="title">📌 Projekttitel (Pflicht)</option>
+                              <option value="status">🔄 Status (active/archived/completed)</option>
+                              <option value="visibility">🔒 Sichtbarkeit (private/company)</option>
+                              <option value="currency">💰 Währung (CHF, EUR, USD)</option>
+                              <option value="budget_hours">⏱️ Budget Stunden</option>
+                              <option value="budget_amount">💵 Budget Betrag</option>
                             </optgroup>
 
                             <!-- Bestehende benutzerdefinierte Felder -->
@@ -838,8 +817,8 @@
             </div>
           </div>
 
-          <!-- SECTION B: PROJECT TITLE & GENERAL SETTINGS -->
-          <div class="space-y-4 pt-2 border-t border-slate-100">
+          <!-- SECTION B: PROJECT TITLE & GENERAL SETTINGS (Nur bei Vorlage oder Blanko-Projekt) -->
+          <div v-if="projectCreationMode !== 'import'" class="space-y-4 pt-2 border-t border-slate-100">
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">
                 Projekttitel / Name <span class="text-rose-500">*</span>
@@ -994,10 +973,10 @@
             </button>
             <button
               type="submit"
-              :disabled="creatingProject || (projectCreationMode === 'template' && !selectedTemplateId) || (projectCreationMode === 'import' && (!importParsedRows.length || !Object.values(importColumnMapping).includes('title'))) || !newProjectTitle.trim()"
+              :disabled="creatingProject || (projectCreationMode === 'template' && !selectedTemplateId) || (projectCreationMode === 'import' && (!importParsedRows.length || !Object.values(importColumnMapping).includes('title'))) || (projectCreationMode !== 'import' && !newProjectTitle.trim())"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span>{{ creatingProject ? 'Wird erstellt...' : (projectCreationMode === 'template' ? 'Projekt aus Vorlage erstellen' : (projectCreationMode === 'import' ? `Projekt mit allen ${importParsedRows.length} Aufgaben importieren` : 'Projekt erstellen')) }}</span>
+              <span>{{ creatingProject ? 'Wird verarbeitet...' : (projectCreationMode === 'template' ? 'Projekt aus Vorlage erstellen' : (projectCreationMode === 'import' ? `${importParsedRows.length} Projekt(e) in diesen Ordner importieren` : 'Projekt erstellen')) }}</span>
             </button>
           </div>
         </form>
@@ -1973,7 +1952,7 @@ const getAvailableTemplateFields = (header: string) => {
   const existingKeys = new Set(fields.value.map((f: any) => f.field_key))
   const colKey = getHeaderKey(header)
   existingKeys.add(colKey)
-  return commonCustomFieldTemplates.filter(t => !existingKeys.has(t.key))
+  return commonCustomFieldTemplates.filter((tpl: any) => !existingKeys.has(tpl.key))
 }
 
 const getFieldLabel = (key: string) => {
@@ -2054,29 +2033,26 @@ const addTemplatePhase = () => {
   }
 }
 
-// Download Sample Excel Template
+// Download Sample Excel Template for Projects
 const downloadSampleExcel = () => {
   const sampleData = [
-    ['Phase / Abschnitt', 'Aufgabentitel', 'Beschreibung', 'Fälligkeitsdatum', 'Priorität', 'Status', 'Tags'],
-    ['1. Planung & Vorbereitung', 'Bedarfsanalyse & Anforderungen', 'Ziele mit Stakeholdern abstimmen und dokumentieren', '2026-10-15', 'hoch', 'done', 'Planung, Analyse'],
-    ['1. Planung & Vorbereitung', 'Offerten einholen & vergleichen', 'Mindestens 2 Vergleichsangebote anfordern', '2026-10-20', 'normal', 'in_progress', 'Einkauf'],
-    ['2. Ausführung & Umsetzung', 'Material & Ressourcen bereitstellen', 'Lieferung auf Vollständigkeit und Qualität prüfen', '2026-10-25', 'dringend', 'todo', 'Material'],
-    ['2. Ausführung & Umsetzung', 'Montage & Arbeiten vor Ort', 'Umsetzung gemäss Pflichtenheft durchführen', '2026-10-30', 'normal', 'todo', 'Montage'],
-    ['3. Abschluss & Abnahme', 'Abschluss-Check & Protokoll', 'Mängelfreie Abnahme mit Auftraggeber dokumentieren', '2026-11-05', 'hoch', 'todo', 'Abnahme']
+    ['Projekttitel', 'Status', 'Sichtbarkeit', 'Währung', 'Budget Stunden', 'Budget Betrag'],
+    ['Neubau Einfamilienhaus Meier', 'active', 'private', 'CHF', '120', '150000'],
+    ['Sanierung Bürogebäude Nord', 'active', 'company', 'CHF', '80', '95000'],
+    ['Umbau Dachgeschoss', 'completed', 'private', 'CHF', '45', '42000']
   ]
   const ws = XLSX.utils.aoa_to_sheet(sampleData)
   ws['!cols'] = [
-    { wch: 28 },
-    { wch: 34 },
-    { wch: 45 },
-    { wch: 18 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 24 }
+    { wch: 35 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 16 }
   ]
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Projektplan')
-  XLSX.writeFile(wb, 'Taskster_Projekt_Import_Muster.xlsx')
+  XLSX.utils.book_append_sheet(wb, ws, 'Projekte')
+  XLSX.writeFile(wb, 'Taskster_Projekte_Import_Muster.xlsx')
 }
 
 const onImportFileDrop = (e: DragEvent) => {
@@ -2094,65 +2070,124 @@ const onImportFileSelected = (e: Event) => {
   }
 }
 
+const parseCSVString = (text: string, delimiter: string): string[][] => {
+  const lines = text.split(/\r\n|\n|\r/)
+  const result: string[][] = []
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const row: string[] = []
+    let inQuotes = false
+    let currentCell = ''
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"' || char === "'") {
+        inQuotes = !inQuotes
+      } else if (char === delimiter && !inQuotes) {
+        row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
+        currentCell = ''
+      } else {
+        currentCell += char
+      }
+    }
+    row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
+    result.push(row)
+  }
+  return result
+}
+
 const processImportFile = async (file: File) => {
   importError.value = ''
   importFileName.value = file.name
-  if (!newProjectTitle.value.trim()) {
-    newProjectTitle.value = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
-  }
 
   try {
-    const data = await file.arrayBuffer()
-    const wb = XLSX.read(data, { type: 'array' })
-    const sheetName = wb.SheetNames[0]
-    if (!sheetName) throw new Error('Kein Tabellenblatt in der Datei gefunden.')
-    const sheet = wb.Sheets[sheetName]
-    const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+    let headers: string[] = []
+    let rows: any[][] = []
 
-    if (rawRows.length < 2) {
-      throw new Error('Die Datei enthält keine Datenzeilen (mindestens 1 Kopfzeile und 1 Datenzeile erforderlich).')
+    if (isExcel) {
+      const data = await file.arrayBuffer()
+      if (!XLSX || typeof XLSX.read !== 'function') {
+        throw new Error('Excel-Bibliothek (XLSX) steht nicht zur Verfügung.')
+      }
+      const wb = XLSX.read(data, { type: 'array' })
+      const sheetName = wb.SheetNames?.[0]
+      if (!sheetName) throw new Error('Kein Tabellenblatt in der Datei gefunden.')
+      const sheet = wb.Sheets[sheetName]
+      if (!XLSX.utils || typeof XLSX.utils.sheet_to_json !== 'function') {
+        throw new Error('Excel-Dienstprogramme unvollständig geladen.')
+      }
+      const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+      if (rawRows.length < 2) {
+        throw new Error('Die Datei enthält keine Datenzeilen (mindestens 1 Kopfzeile und 1 Datenzeile erforderlich).')
+      }
+      headers = rawRows[0].map((h: any) => String(h || '').trim())
+      rows = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+    } else {
+      const text = await file.text()
+      if (!text || !text.trim()) {
+        importError.value = 'Die ausgewählte Datei ist leer.'
+        return
+      }
+
+      // Delimiter-Erkennung: Semikolon, Tab oder Komma
+      const firstLine = text.split(/\r\n|\n|\r/)[0] || ''
+      let delimiter = ','
+      if ((firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length) {
+        delimiter = ';'
+      } else if ((firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length) {
+        delimiter = '\t'
+      }
+
+      const parsed = parseCSVString(text, delimiter)
+      if (parsed.length < 2) {
+        importError.value = 'Die CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.'
+        return
+      }
+      headers = parsed[0].map(h => String(h || '').trim())
+      rows = parsed.slice(1).filter(r => r.some(cell => String(cell || '').trim().length > 0))
     }
 
-    importHeaders.value = rawRows[0].map((h: any) => String(h || '').trim())
-    importParsedRows.value = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+    importHeaders.value = headers
+    importParsedRows.value = rows
 
-    // Auto-detect columns
+    // Auto-detect project columns
     const mapping: Record<number, string> = {}
     importHeaders.value.forEach((h, idx) => {
-      const lower = h.toLowerCase()
-      if (!Object.values(mapping).includes('list_title') && (lower.includes('phase') || lower.includes('abschnitt') || lower.includes('liste') || lower.includes('stage') || lower.includes('bereich'))) {
-        mapping[idx] = 'list_title'
-      } else if (!Object.values(mapping).includes('title') && (lower.includes('titel') || lower.includes('title') || lower.includes('aufgabe') || lower.includes('task') || lower.includes('name'))) {
+      const lower = h.toLowerCase().trim()
+      if (!Object.values(mapping).includes('title') && (lower.includes('titel') || lower.includes('title') || lower.includes('projekt') || lower.includes('project') || lower.includes('name'))) {
         mapping[idx] = 'title'
-      } else if (!Object.values(mapping).includes('description') && (lower.includes('beschreib') || lower.includes('desc') || lower.includes('detail') || lower.includes('notiz'))) {
-        mapping[idx] = 'description'
-      } else if (!Object.values(mapping).includes('due_date') && (lower.includes('fällig') || lower.includes('due') || lower.includes('datum') || lower.includes('date') || lower.includes('termin'))) {
-        mapping[idx] = 'due_date'
-      } else if (!Object.values(mapping).includes('priority') && (lower.includes('prio') || lower.includes('dring'))) {
-        mapping[idx] = 'priority'
       } else if (!Object.values(mapping).includes('status') && (lower.includes('status') || lower.includes('zustand') || lower.includes('state'))) {
         mapping[idx] = 'status'
-      } else if (!Object.values(mapping).includes('tags') && (lower.includes('tag') || lower.includes('label') || lower.includes('kategorie') || lower.includes('schlagwort'))) {
-        mapping[idx] = 'tags'
+      } else if (!Object.values(mapping).includes('visibility') && (lower.includes('sichtbar') || lower.includes('visibility') || lower.includes('zugriff'))) {
+        mapping[idx] = 'visibility'
+      } else if (!Object.values(mapping).includes('currency') && (lower.includes('währung') || lower.includes('waehrung') || lower.includes('currency') || lower.includes('valuta'))) {
+        mapping[idx] = 'currency'
+      } else if (!Object.values(mapping).includes('budget_hours') && (lower.includes('stunden') || lower.includes('hours') || lower.includes('zeitbudget') || lower.includes('aufwand'))) {
+        mapping[idx] = 'budget_hours'
+      } else if (!Object.values(mapping).includes('budget_amount') && (lower.includes('betrag') || lower.includes('amount') || lower.includes('budget') || lower.includes('kosten'))) {
+        mapping[idx] = 'budget_amount'
       } else {
         // 1. Benutzerdefinierte Felder dieses Ordners erkennen
         const matchField = fields.value.find((f: any) => {
-          const fLbl = f.label_key ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
+          const fLbl = f.label_key && typeof t === 'function' ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
           return fLbl === lower || (f.label || '').toLowerCase() === lower || f.field_key?.toLowerCase() === lower
         })
         if (matchField) {
           mapping[idx] = 'custom:' + matchField.field_key
         } else {
-          // 2. Häufige Vorlagen-Felder erkennen
-          const matchTpl = commonCustomFieldTemplates.find(t => {
-            const tLbl = t.label_key ? t(t.label_key).toLowerCase() : t.label.toLowerCase()
-            return t.key.toLowerCase() === lower || tLbl === lower || t.label.toLowerCase() === lower || lower.includes(t.key)
+          // 2. Häufige Vorlagen-Felder erkennen (Parameter tpl verhindert Shadowing der i18n t-Funktion)
+          const matchTpl = commonCustomFieldTemplates.find((tpl: any) => {
+            const tLbl = tpl.label_key && typeof t === 'function' ? t(tpl.label_key).toLowerCase() : (tpl.label || '').toLowerCase()
+            return tpl.key.toLowerCase() === lower || tLbl === lower || (tpl.label || '').toLowerCase() === lower || lower.includes(tpl.key)
           })
           if (matchTpl) {
             mapping[idx] = 'custom:' + matchTpl.key
           } else {
-            // 3. Automatisch als neues Zusatzfeld mit Spaltennamen anbieten
-            mapping[idx] = 'custom:' + getHeaderKey(h)
+            // 3. Als neues Zusatzfeld mit Spaltennamen anbieten
+            const sanitizeFn = typeof getHeaderKey === 'function' ? getHeaderKey : (s: string) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+            mapping[idx] = 'custom:' + sanitizeFn(h)
           }
         }
       }
@@ -2162,20 +2197,6 @@ const processImportFile = async (file: File) => {
     importError.value = 'Fehler beim Lesen der Excel/CSV-Datei: ' + (err.message || err)
   }
 }
-
-const detectedImportPhases = computed(() => {
-  const phaseColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'list_title')?.[0]
-  if (phaseColIdxStr === undefined) return ['Aufgaben']
-  const phaseColIdx = parseInt(phaseColIdxStr)
-  const phases: string[] = []
-  for (const row of importParsedRows.value) {
-    const val = String(row[phaseColIdx] || '').trim()
-    if (val && !phases.includes(val)) {
-      phases.push(val)
-    }
-  }
-  return phases.length > 0 ? phases : ['Aufgaben']
-})
 
 const resetNewProjectForm = () => {
   newProjectTitle.value = ''
@@ -2234,6 +2255,129 @@ const createProject = async () => {
   projectModalError.value = ''
   creatingProject.value = true
   try {
+    if (projectCreationMode.value === 'import') {
+      const titleColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'title')?.[0]
+      if (titleColIdxStr === undefined) {
+        throw new Error('Bitte weise mindestens einer Spalte das Pflichtfeld "Projekttitel" zu.')
+      }
+      const titleColIdx = parseInt(titleColIdxStr)
+      const statusColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'status')?.[0]
+      const statusColIdx = statusColIdxStr !== undefined ? parseInt(statusColIdxStr) : null
+      const visColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'visibility')?.[0]
+      const visColIdx = visColIdxStr !== undefined ? parseInt(visColIdxStr) : null
+      const currColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'currency')?.[0]
+      const currColIdx = currColIdxStr !== undefined ? parseInt(currColIdxStr) : null
+      const bhColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'budget_hours')?.[0]
+      const bhColIdx = bhColIdxStr !== undefined ? parseInt(bhColIdxStr) : null
+      const baColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'budget_amount')?.[0]
+      const baColIdx = baColIdxStr !== undefined ? parseInt(baColIdxStr) : null
+
+      const projectsToImport: any[] = []
+      for (const row of importParsedRows.value) {
+        const pTitle = String(row[titleColIdx] || '').trim()
+        if (!pTitle) continue
+
+        let pStatus = 'active'
+        if (statusColIdx !== null) {
+          const s = String(row[statusColIdx] || '').toLowerCase().trim()
+          if (s.includes('arch') || s.includes('archiv')) pStatus = 'archived'
+          else if (s.includes('comp') || s.includes('erledigt') || s.includes('abgeschlossen') || s.includes('fertig')) pStatus = 'completed'
+          else if (s.includes('hold') || s.includes('paus') || s.includes('wart')) pStatus = 'on_hold'
+          else pStatus = 'active'
+        }
+
+        let pVis = 'private'
+        if (visColIdx !== null) {
+          const v = String(row[visColIdx] || '').toLowerCase().trim()
+          if (v.includes('comp') || v.includes('firm') || v.includes('unternehm') || v.includes('team') || v.includes('publ') || v.includes('öffentlich')) {
+            pVis = user.value?.company_id ? 'company' : 'private'
+          } else {
+            pVis = 'private'
+          }
+        }
+
+        let pCurr = 'CHF'
+        if (currColIdx !== null) {
+          const c = String(row[currColIdx] || '').trim().toUpperCase()
+          if (c) pCurr = c
+        }
+
+        let pBh: number | null = null
+        if (bhColIdx !== null) {
+          const rawH = String(row[bhColIdx] || '').replace(/[^0-9.,]/g, '').replace(',', '.')
+          if (rawH && !isNaN(Number(rawH))) pBh = Number(rawH)
+        }
+
+        let pBa: number | null = null
+        if (baColIdx !== null) {
+          const rawA = String(row[baColIdx] || '').replace(/[^0-9.,]/g, '').replace(',', '.')
+          if (rawA && !isNaN(Number(rawA))) pBa = Number(rawA)
+        }
+
+        const pCustomData: Record<string, any> = {}
+        for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+          if (!targetField || !targetField.startsWith('custom:')) continue
+          const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
+          if (!cellVal) continue
+          const key = targetField.replace('custom:', '')
+          pCustomData[key] = cellVal
+        }
+
+        projectsToImport.push({
+          folder_id: folderId,
+          title: pTitle,
+          status: pStatus,
+          visibility: pVis,
+          currency: pCurr,
+          budget_hours: pBh,
+          budget_amount: pBa,
+          custom_data: pCustomData
+        })
+      }
+
+      if (projectsToImport.length === 0) {
+        throw new Error('Keine gültigen Projekte in der Datei gefunden.')
+      }
+
+      // Felddefinitionen für neu gemappte Zusatzfelder an Server übermitteln (entity_type: 'project')
+      const customFieldDefsToCreate: any[] = []
+      for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
+        if (!targetField || !targetField.startsWith('custom:')) continue
+        const colIdx = parseInt(colIdxStr)
+        const key = targetField.replace('custom:', '')
+        const headerName = importHeaders.value[colIdx] || key
+        const alreadyExists = fields.value.some((f: any) => f.field_key === key)
+        if (!alreadyExists && !customFieldDefsToCreate.some(f => f.field_key === key)) {
+          const matchedTpl = commonCustomFieldTemplates.find((tpl: any) => tpl.key === key)
+          customFieldDefsToCreate.push({
+            field_key: key,
+            label: matchedTpl?.label || headerName,
+            label_key: matchedTpl?.label_key || null,
+            field_type: matchedTpl?.type || 'text',
+            entity_type: 'project',
+            options: (matchedTpl as any)?.options || []
+          })
+        }
+      }
+
+      await $fetch<any>('/api/projects', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          folder_id: folderId,
+          projects: projectsToImport,
+          custom_field_definitions: customFieldDefsToCreate
+        }
+      })
+
+      showNewProjectModal.value = false
+      resetNewProjectForm()
+      await loadFolderData()
+      alert(`${projectsToImport.length} Projekt(e) erfolgreich importiert!`)
+      return
+    }
+
+    // Standard Einzel-Projekt Erstellung (Vorlage / Blanko)
     const payload: any = {
       folder_id: folderId,
       title: newProjectTitle.value.trim(),
@@ -2248,134 +2392,6 @@ const createProject = async () => {
       if (selectedTemplateLists.value.length > 0) {
         payload.custom_lists = selectedTemplateLists.value
       }
-    } else if (projectCreationMode.value === 'import') {
-      const titleColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'title')?.[0]
-      if (titleColIdxStr === undefined) {
-        throw new Error('Bitte weise mindestens einer Spalte das Pflichtfeld "Aufgabentitel" zu.')
-      }
-      const titleColIdx = parseInt(titleColIdxStr)
-      const phaseColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'list_title')?.[0]
-      const phaseColIdx = phaseColIdxStr !== undefined ? parseInt(phaseColIdxStr) : null
-      const descColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'description')?.[0]
-      const descColIdx = descColIdxStr !== undefined ? parseInt(descColIdxStr) : null
-      const dueColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'due_date')?.[0]
-      const dueColIdx = dueColIdxStr !== undefined ? parseInt(dueColIdxStr) : null
-      const prioColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'priority')?.[0]
-      const prioColIdx = prioColIdxStr !== undefined ? parseInt(prioColIdxStr) : null
-      const statusColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'status')?.[0]
-      const statusColIdx = statusColIdxStr !== undefined ? parseInt(statusColIdxStr) : null
-      const tagColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'tags')?.[0]
-      const tagColIdx = tagColIdxStr !== undefined ? parseInt(tagColIdxStr) : null
-
-      payload.custom_lists = detectedImportPhases.value
-
-      const tasksToImport: any[] = []
-      for (const row of importParsedRows.value) {
-        const taskTitle = String(row[titleColIdx] || '').trim()
-        if (!taskTitle) continue
-
-        const secTitle = phaseColIdx !== null ? String(row[phaseColIdx] || '').trim() : ''
-        const desc = descColIdx !== null ? String(row[descColIdx] || '').trim() : ''
-        const rawDate = dueColIdx !== null ? parseImportDate(row[dueColIdx]) : null
-        let prio = 'normal'
-        if (prioColIdx !== null) {
-          const p = String(row[prioColIdx] || '').toLowerCase()
-          if (p.includes('dring') || p.includes('urgent')) prio = 'dringend'
-          else if (p.includes('hoch') || p.includes('high')) prio = 'hoch'
-          else if (p.includes('niedrig') || p.includes('low')) prio = 'niedrig'
-        }
-        let stat = 'todo'
-        if (statusColIdx !== null) {
-          const s = String(row[statusColIdx] || '').toLowerCase()
-          if (s.includes('done') || s.includes('erledigt') || s.includes('abgeschlossen')) stat = 'done'
-          else if (s.includes('in_progress') || s.includes('arbeit') || s.includes('lauf')) stat = 'in_progress'
-        }
-        let tagList: string[] = []
-        if (tagColIdx !== null) {
-          tagList = String(row[tagColIdx] || '').split(/[,;|]/).map(t => t.trim()).filter(Boolean)
-        }
-
-        // Benutzerdefinierte Felder aus dem Mapping uebernehmen
-        const customData: Record<string, string> = {}
-        for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
-          if (!targetField || !targetField.startsWith('custom:')) continue
-          const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
-          if (!cellVal) continue
-          const key = targetField.replace('custom:', '')
-          const matchedField = fields.value.find((f: any) => f.field_key === key)
-          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
-          const fieldType = matchedField?.field_type || matchedTpl?.type
-          if (fieldType === 'date') {
-            customData[key] = parseImportDate(cellVal) || cellVal
-          } else if (fieldType === 'checkbox') {
-            const low = cellVal.toLowerCase().trim()
-            if (['ja', 'yes', 'ano', 'áno', 'true', '1', 'x', '✓'].includes(low)) {
-              customData[key] = 'true'
-            } else if (['nein', 'no', 'nie', 'false', '0'].includes(low)) {
-              customData[key] = 'false'
-            } else {
-              customData[key] = cellVal
-            }
-          } else if (fieldType === 'select') {
-            const rawOptions = (matchedField?.options && matchedField.options.length)
-              ? matchedField.options
-              : (matchedTpl?.options || [])
-            const lowVal = cellVal.toLowerCase().trim()
-            let resolvedVal = cellVal
-            for (const opt of rawOptions) {
-              const optVal = typeof opt === 'object' ? opt.value : opt
-              const optKey = typeof opt === 'object' ? opt.label_key : ('fields.options.' + optVal)
-              const optLabel = typeof opt === 'object' ? opt.label : optVal
-              if (optVal.toLowerCase() === lowVal || (optLabel && optLabel.toLowerCase() === lowVal) || (optKey && te(optKey) && t(optKey).toLowerCase() === lowVal)) {
-                resolvedVal = optVal
-                break
-              }
-            }
-            customData[key] = resolvedVal
-          } else {
-            customData[key] = cellVal
-          }
-        }
-
-        tasksToImport.push({
-          list_title: secTitle || detectedImportPhases.value[0] || 'Aufgaben',
-          title: taskTitle,
-          description: desc,
-          due_date: rawDate || null,
-          priority: prio,
-          status: stat,
-          tags: tagList,
-          custom_data: customData
-        })
-      }
-
-      if (tasksToImport.length === 0) {
-        throw new Error('Keine gültigen Aufgaben in der Datei gefunden.')
-      }
-
-      // Felddefinitionen für neu gemappte Zusatzfelder an Server übermitteln
-      const customFieldDefsToCreate: any[] = []
-      for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
-        if (!targetField || !targetField.startsWith('custom:')) continue
-        const colIdx = parseInt(colIdxStr)
-        const key = targetField.replace('custom:', '')
-        const headerName = importHeaders.value[colIdx] || key
-        const alreadyExists = fields.value.some((f: any) => f.field_key === key)
-        if (!alreadyExists && !customFieldDefsToCreate.some(f => f.field_key === key)) {
-          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
-          customFieldDefsToCreate.push({
-            field_key: key,
-            label: matchedTpl?.label || headerName,
-            label_key: matchedTpl?.label_key || null,
-            field_type: matchedTpl?.type || 'text',
-            entity_type: (matchedTpl as any)?.entity_type || 'task',
-            options: (matchedTpl as any)?.options || []
-          })
-        }
-      }
-
-      payload.import_tasks = tasksToImport
-      payload.custom_field_definitions = customFieldDefsToCreate
     }
 
     const res = await $fetch<any>('/api/projects', {

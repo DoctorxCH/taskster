@@ -6,12 +6,8 @@ import { randomUUID } from 'crypto'
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const body = await readBody(event)
-  const { title, template_id, custom_lists, import_tasks } = body
+  const { title, template_id, custom_lists, import_tasks, projects } = body
   let { folder_id } = body
-
-  if (!title || !title.trim()) {
-    throw createError({ statusCode: 400, statusMessage: 'Projekttitel ist erforderlich' })
-  }
 
   // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
   // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
@@ -32,6 +28,106 @@ export default defineEventHandler(async (event) => {
   const canCreate = folder.owner_id === user.id || (user.company_id && user.company_id === folder.company_id && user.company_role === 'admin')
   if (!canCreate) {
     throw createError({ statusCode: 403, statusMessage: 'Keine Berechtigung zur Projekterstellung in diesem Ordner' })
+  }
+
+  // --- BATCH PROJECT IMPORT (z. B. aus CSV-/Excel-Import im Ordner) ---
+  if (Array.isArray(projects) && projects.length > 0) {
+    if (isFreeUser) {
+      const activeProjectsCount = (db.prepare(`
+        SELECT COUNT(*) as count FROM projects p
+        JOIN project_folders pf ON pf.id = p.folder_id
+        LEFT JOIN project_members pm ON pm.project_id = p.id
+        WHERE (pf.owner_id = ? OR pm.user_id = ?) AND p.status = 'active'
+      `).get(user.id, user.id) as any).count
+
+      if (activeProjectsCount + projects.length > 3) {
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Free-Plan Limit erreicht: Im kostenlosen Plan darfst du maximal in 3 Projekten gleichzeitig mitarbeiten. Bitte auf Pro upgraden oder einer Company beitreten.'
+        })
+      }
+    }
+
+    // Benutzerdefinierte Felder registrieren, falls uebergeben
+    const customFieldDefs = Array.isArray(body.custom_field_definitions) ? body.custom_field_definitions : []
+    const existingFolderKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
+    const countFolderFields = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
+    let curSortOrder = countFolderFields + 1
+
+    for (const cfd of customFieldDefs) {
+      const rawKey = String(cfd.field_key || cfd.label || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '')
+      if (!rawKey || existingFolderKeys.includes(rawKey)) continue
+
+      const fId = 'fld_def_' + randomUUID().substring(0, 8)
+      const fLabel = String(cfd.label || rawKey).trim()
+      const fLabelKey = cfd.label_key || null
+      db.prepare(`
+        INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        fId,
+        folder_id,
+        rawKey,
+        fLabel,
+        fLabelKey,
+        cfd.field_type || 'text',
+        cfd.entity_type || 'project',
+        JSON.stringify(cfd.options || []),
+        cfd.logic_rules ? JSON.stringify(cfd.logic_rules) : '{}',
+        0,
+        curSortOrder++
+      )
+      existingFolderKeys.push(rawKey)
+    }
+
+    const insProject = db.prepare(`
+      INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const insList = db.prepare(`
+      INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+      VALUES (?, ?, ?, 'inherit', 1)
+    `)
+
+    const createdProjects: any[] = []
+    const insertTransaction = db.transaction((projectItems: any[]) => {
+      for (const p of projectItems) {
+        const pTitle = String(p.title || '').trim()
+        if (!pTitle) continue
+
+        const pId = 'prj_' + randomUUID().substring(0, 8)
+        const pStatus = (p.status && ['active', 'archived', 'completed', 'on_hold'].includes(p.status)) ? p.status : 'active'
+        const pVis = (user.company_id && p.visibility === 'company') ? 'company' : 'private'
+        const pCurr = String(p.currency || 'CHF').trim()
+        const pBh = p.budget_hours != null && p.budget_hours !== '' ? Number(p.budget_hours) : 0
+        const pBa = p.budget_amount != null && p.budget_amount !== '' ? Number(p.budget_amount) : 0
+        const pCd = p.custom_data && typeof p.custom_data === 'object' ? JSON.stringify(p.custom_data) : '{}'
+
+        insProject.run(pId, folder_id, pTitle, pStatus, pVis, pCurr, pBh, pBa, pCd)
+        const listId = 'lst_' + randomUUID().substring(0, 8)
+        insList.run(listId, pId, 'Aufgabenliste 1')
+
+        createdProjects.push({
+          id: pId,
+          folder_id,
+          title: pTitle,
+          status: pStatus
+        })
+      }
+    })
+
+    insertTransaction(projects)
+
+    return {
+      success: true,
+      count: createdProjects.length,
+      projects: createdProjects
+    }
+  }
+
+  // --- EINZELNES PROJEKT ANLEGEN ---
+  if (!title || !title.trim()) {
+    throw createError({ statusCode: 400, statusMessage: 'Projekttitel ist erforderlich' })
   }
 
   // Free user limit check: "Free user darf max. in 3 projekten gleichzeitig mitarbeiten."
@@ -57,11 +153,12 @@ export default defineEventHandler(async (event) => {
   const budgetAmount = body.budget_amount != null && body.budget_amount !== '' ? Number(body.budget_amount) : 0
   const customData = body.custom_data && typeof body.custom_data === 'object' ? JSON.stringify(body.custom_data) : '{}'
   const visibility = (user.company_id && body.visibility === 'company') ? 'company' : 'private'
+  const status = (body.status && ['active', 'archived', 'completed', 'on_hold'].includes(body.status)) ? body.status : 'active'
 
   db.prepare(`
     INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
-    VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)
-  `).run(projectId, folder_id, title.trim(), visibility, currency, budgetHours, budgetAmount, customData)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(projectId, folder_id, title.trim(), status, visibility, currency, budgetHours, budgetAmount, customData)
 
   // Determine lists to create
   const listsToCreate: string[] = []

@@ -3260,9 +3260,102 @@ try {
             }
         }
 
+        // --- BATCH PROJECT IMPORT (z. B. aus CSV-/Excel-Import im Ordner) ---
+        $batchProjects = $body['projects'] ?? null;
+        if (!empty($batchProjects) && is_array($batchProjects)) {
+            if ($isFreeUser) {
+                $countStmt = $db->prepare("
+                    SELECT COUNT(*) as count FROM projects p
+                    JOIN project_folders pf ON pf.id = p.folder_id
+                    LEFT JOIN project_members pm ON pm.project_id = p.id
+                    WHERE (pf.owner_id = ? OR pm.user_id = ?) AND p.status = 'active'
+                ");
+                $countStmt->execute([$user['id'], $user['id']]);
+                $activeCount = (int)($countStmt->fetch()['count'] ?? 0);
+                if ($activeCount + count($batchProjects) > 3) {
+                    errorResponse('Free-Plan Limit erreicht: Im kostenlosen Plan darfst du maximal in 3 Projekten gleichzeitig mitarbeiten. Bitte auf Pro upgraden oder einer Company beitreten.', 403);
+                }
+            }
+
+            // Custom Field Definitions anlegen, falls uebergeben
+            $cfDefs = $body['custom_field_definitions'] ?? [];
+            if (is_array($cfDefs) && count($cfDefs) > 0) {
+                $existStmt = $db->prepare("SELECT field_key FROM folder_field_definitions WHERE folder_id = ?");
+                $existStmt->execute([$folderId]);
+                $existingKeys = $existStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                $cntStmt = $db->prepare("SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?");
+                $cntStmt->execute([$folderId]);
+                $sortOrder = (int)($cntStmt->fetch()['c'] ?? 0) + 1;
+
+                $insDefStmt = $db->prepare("
+                    INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+
+                foreach ($cfDefs as $cfd) {
+                    $rawKey = preg_replace('/[^a-z0-9_]/', '_', strtolower(trim($cfd['field_key'] ?? $cfd['label'] ?? '')));
+                    $rawKey = trim($rawKey, '_');
+                    if (!$rawKey || in_array($rawKey, $existingKeys)) continue;
+
+                    $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $fLabel = trim($cfd['label'] ?? $rawKey);
+                    $fLabelKey = $cfd['label_key'] ?? null;
+                    $fType = $cfd['field_type'] ?? 'text';
+                    $fEnt = $cfd['entity_type'] ?? 'project';
+                    $fOpt = json_encode($cfd['options'] ?? []);
+                    $fRules = json_encode($cfd['logic_rules'] ?? (object)[]);
+
+                    $insDefStmt->execute([$fId, $folderId, $rawKey, $fLabel, $fLabelKey, $fType, $fEnt, $fOpt, $fRules, 0, $sortOrder++]);
+                    $existingKeys[] = $rawKey;
+                }
+            }
+
+            $insPrjStmt = $db->prepare("
+                INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $insPmStmt = $db->prepare("
+                INSERT INTO project_members (id, project_id, user_id, role)
+                VALUES (?, ?, ?, 'owner')
+            ");
+            $insLstStmt = $db->prepare("
+                INSERT INTO lists (id, project_id, title, access_mode, sort_order)
+                VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
+            ");
+
+            $created = [];
+            foreach ($batchProjects as $p) {
+                $pTitle = trim($p['title'] ?? '');
+                if (!$pTitle) continue;
+
+                $pId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $pStatus = (!empty($p['status']) && in_array($p['status'], ['active', 'archived', 'completed', 'on_hold'])) ? $p['status'] : 'active';
+                $pVis = (!empty($user['company_id']) && ($p['visibility'] ?? '') === 'company') ? 'company' : 'private';
+                $pCurr = !empty($p['currency']) ? trim($p['currency']) : 'CHF';
+                $pBh = array_key_exists('budget_hours', $p) && $p['budget_hours'] !== null && $p['budget_hours'] !== '' ? floatval($p['budget_hours']) : 0.0;
+                $pBa = array_key_exists('budget_amount', $p) && $p['budget_amount'] !== null && $p['budget_amount'] !== '' ? floatval($p['budget_amount']) : 0.0;
+                $pCd = !empty($p['custom_data']) && is_array($p['custom_data']) ? json_encode($p['custom_data']) : '{}';
+
+                $insPrjStmt->execute([$pId, $folderId, $pTitle, $pStatus, $pVis, $pCurr, $pBh, $pBa, $pCd]);
+                $pmId = 'pm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $insPmStmt->execute([$pmId, $pId, $user['id']]);
+                $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $insLstStmt->execute([$lstId, $pId]);
+
+                $created[] = ['id' => $pId, 'folder_id' => $folderId, 'title' => $pTitle, 'status' => $pStatus];
+            }
+
+            jsonResponse(['success' => true, 'count' => count($created), 'projects' => $created]);
+        }
+
+        // --- EINZELNES PROJEKT ANLEGEN ---
+        if (!$title) errorResponse('Titel erforderlich', 400);
+
+        $status = (!empty($body['status']) && in_array($body['status'], ['active', 'archived', 'completed', 'on_hold'])) ? $body['status'] : 'active';
         $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)")->execute([
-            $prjId, $folderId, $title, $visibility, $currency, $budgetHours, $budgetAmount, json_encode($customData)
+        $db->prepare("INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+            $prjId, $folderId, $title, $status, $visibility, $currency, $budgetHours, $budgetAmount, json_encode($customData)
         ]);
 
         // Add creator to project_members as owner
