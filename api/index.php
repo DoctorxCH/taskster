@@ -1787,7 +1787,7 @@ function parseMimeEmailText($rawText) {
     }
 
     // Multipart Boundary
-    if (preg_match('/boundary=["\']?([^"';\r\n]+)["\']?/i', $rawText, $bm)) {
+    if (preg_match('/boundary=["\']?([^"\'\r\n;]+)["\']?/i', $rawText, $bm)) {
         $boundary = $bm[1];
         $parts = preg_split('/--' . preg_quote($boundary, '/') . '(?:--)?/', $rawText);
         $plainPart = '';
@@ -2241,9 +2241,9 @@ $path = preg_replace('#^.*?/api/?#', '', $uri);
 $path = trim($path, '/');
 $method = $_SERVER['REQUEST_METHOD'];
 $body = getJsonBody();
-$db = getDb();
 
 try {
+    $db = getDb();
     // 1. POST auth/login
     if ($path === 'auth/login' && $method === 'POST') {
         $email = trim($body['email'] ?? '');
@@ -8402,6 +8402,6 @@ try {
     errorResponse("Endpoint nicht gefunden: {$method} {$path}", 404);
 
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     errorResponse('Server Error: ' . $e->getMessage(), 500);
 }

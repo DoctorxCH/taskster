@@ -452,7 +452,7 @@ async function migrate() {
   const insertUserSql = `
     INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE name=VALUES(name), company_role=VALUES(company_role), password_hash=VALUES(password_hash);
+    ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email), company_role=VALUES(company_role), password_hash=VALUES(password_hash);
   `
 
   await conn.query(insertUserSql, ['user-superadmin-01', null, null, 1, 1, 'Taskster Admin', 'admin@kurka.ch', pwHash])
