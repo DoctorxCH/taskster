@@ -36,6 +36,7 @@ Erweiterung der Projektordner- und Projekt-Detailansichten um strukturierte Zusa
 - **Import-Phasen-Konfigurator:**
   - Im Projekt-Import-Modal können Workflow-Abschnitte (Default: `['Offen', 'In Arbeit', 'Abgeschlossen']`) angepasst werden.
   - Neu erstellte und importierte Projekte erhalten automatisch diese Abschnitte.
+- **Ordner-Vorlage:** Zuweisung einer Standard-Branchenvorlage für den gesamten Ordner im Bearbeitungs-Modal (`showEditFolderModal`). Die Vorlagen-Phasen und Zusatzfelder werden automatisch für den Ordner hinterlegt und bei allen neu erstellten sowie importierten Projekten voreingestellt. Im Ordner-Header wird ein Badge `Vorlage: [Name]` angezeigt.
 
 ### 4. Frontend Projekt-Detail (`pages/projects/[id].vue`)
 - **Breadcrumbs:** In den Haupt-Container verschoben.

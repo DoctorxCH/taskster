@@ -2978,10 +2978,12 @@ try {
         $companyId = !empty($user['company_id']) ? $user['company_id'] : ($body['company_id'] ?? null);
         $visibility = (!empty($companyId) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
-        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, ?, ?, ?)")
-           ->execute([$fldId, $user['id'], $companyId, $name, $icon, $visibility]);
+        $settings = !empty($body['settings']) ? (is_string($body['settings']) ? $body['settings'] : json_encode($body['settings'], JSON_UNESCAPED_UNICODE)) : '{}';
 
-        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'visibility' => $visibility, 'owner_id' => $user['id'], 'company_id' => $companyId]]);
+        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility, settings) VALUES (?, ?, ?, ?, ?, ?, ?)")
+           ->execute([$fldId, $user['id'], $companyId, $name, $icon, $visibility, $settings]);
+
+        jsonResponse(['folder' => ['id' => $fldId, 'name' => $name, 'icon' => $icon, 'visibility' => $visibility, 'owner_id' => $user['id'], 'company_id' => $companyId, 'settings' => $settings]]);
     }
 
     // 5b. PUT folders/:id

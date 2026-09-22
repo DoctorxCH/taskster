@@ -50,6 +50,24 @@
               </span>
               <span v-if="folder.company_name" class="text-slate-700 font-medium">• {{ folder.company_name }}</span>
               <span>• {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
+              <span
+                v-if="currentFolderTemplate"
+                class="px-2.5 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-[#0891B2] text-xs font-semibold flex items-center gap-1 cursor-pointer hover:bg-cyan-100 transition"
+                @click="openEditFolderModal"
+                :title="`Projektordner-Vorlage: ${currentFolderTemplate.name}. Klicken zum Anpassen.`"
+              >
+                <BookOpen class="w-3.5 h-3.5 text-[#0891B2]" />
+                <span>Vorlage: <strong>{{ currentFolderTemplate.name }}</strong></span>
+              </span>
+              <button
+                v-else-if="user?.id === folder.owner_id"
+                @click="openEditFolderModal"
+                class="px-2.5 py-0.5 rounded-full border border-dashed border-slate-300 text-slate-500 hover:text-[#0891B2] hover:border-cyan-300 text-xs font-medium flex items-center gap-1 cursor-pointer transition"
+                title="Branchen-Vorlage für diesen Projektordner zuweisen"
+              >
+                <Plus class="w-3 h-3" />
+                <span>Ordner-Vorlage zuweisen</span>
+              </button>
             </p>
           </div>
 
@@ -1647,6 +1665,37 @@
             <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
           </div>
 
+          <!-- Standard-Projektvorlage für den gesamten Ordner -->
+          <div class="p-3.5 bg-cyan-50/50 border border-cyan-200/80 rounded-2xl space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <BookOpen class="w-4 h-4 text-[#0891B2]" />
+                <span>Projektvorlage für diesen Ordner</span>
+              </label>
+              <span v-if="editFolderTemplateId" class="text-[10px] font-bold text-[#0891B2] px-2 py-0.5 bg-white rounded-full border border-cyan-200 shadow-2xs">
+                Aktiv
+              </span>
+            </div>
+            <select
+              v-model="editFolderTemplateId"
+              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891B2] font-medium cursor-pointer"
+            >
+              <option value="">Keine Vorlage (Freie / Manuelle Abschnitte)</option>
+              <option v-for="tpl in CONSTRUCTION_TEMPLATES" :key="tpl.id" :value="tpl.id">
+                {{ tpl.name }} — {{ tpl.subcategory }}
+              </option>
+            </select>
+            <div v-if="selectedEditTemplate" class="text-[11px] text-slate-600 bg-white p-3 rounded-xl border border-cyan-100 leading-relaxed space-y-1 shadow-2xs">
+              <p><strong>Info:</strong> {{ selectedEditTemplate.description }}</p>
+              <p class="text-slate-500 font-medium">
+                <strong>Standard-Phasen:</strong> {{ selectedEditTemplate.lists.map(l => (te as any)(l) || l.replace('sections.', '')).join(' → ') }}
+              </p>
+            </div>
+            <p v-else class="text-[11px] text-slate-500">
+              Wähle eine Branchen-Vorlage (z. B. Hochbau, Tiefbau, FTTH, Gebäudeautomation), um allen neuen Projekten und CSV-Imports in diesem Ordner automatisch Vorlagen-Phasen & Zusatzfelder zuzuweisen.
+            </p>
+          </div>
+
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
           <div v-if="user?.company_id || folder?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
@@ -2984,8 +3033,20 @@ const editFolderName = ref('')
 const editFolderIcon = ref('📁')
 const editFolderVisibility = ref('private')
 const editFolderDefaultProjectId = ref('')
+const editFolderTemplateId = ref('')
 const savingFolder = ref(false)
 const editFolderError = ref('')
+
+const currentFolderTemplate = computed(() => {
+  const tId = folder.value?.settings?.template_id
+  if (!tId) return null
+  return CONSTRUCTION_TEMPLATES.find(t => t.id === tId) || null
+})
+
+const selectedEditTemplate = computed(() => {
+  if (!editFolderTemplateId.value) return null
+  return CONSTRUCTION_TEMPLATES.find(t => t.id === editFolderTemplateId.value) || null
+})
 
 const availableFolderIcons = [
   // Job & Gewerbe
@@ -3019,6 +3080,7 @@ const openEditFolderModal = () => {
   editFolderIcon.value = folder.value.icon || '📁'
   editFolderVisibility.value = folder.value.visibility || 'private'
   editFolderDefaultProjectId.value = projects.value.find(p => p.is_default)?.id || projects.value[0]?.id || ''
+  editFolderTemplateId.value = folder.value.settings?.template_id || ''
   editFolderError.value = ''
   showEditFolderModal.value = true
 }
@@ -3027,6 +3089,46 @@ const updateFolder = async () => {
   editFolderError.value = ''
   savingFolder.value = true
   try {
+    const existingSettings = folder.value?.settings ? (typeof folder.value.settings === 'string' ? JSON.parse(folder.value.settings) : { ...folder.value.settings }) : {}
+    existingSettings.template_id = editFolderTemplateId.value || null
+
+    if (editFolderTemplateId.value) {
+      const matchedTpl = CONSTRUCTION_TEMPLATES.find(t => t.id === editFolderTemplateId.value)
+      if (matchedTpl) {
+        existingSettings.default_sections = matchedTpl.lists.map(lKey => {
+          const titleStr = (te as any)(lKey) || lKey.replace('sections.', '')
+          const isTarget = lKey.includes('handover') || lKey.includes('abgeschlossen') ? 1 : 0
+          return { title: titleStr, is_completed_target: isTarget }
+        })
+
+        // Auto-create custom fields defined in template for this folder
+        if (matchedTpl.fields && Array.isArray(matchedTpl.fields)) {
+          for (const f of matchedTpl.fields) {
+            const rawKey = f.field_key
+            if (!fields.value.some((existing: any) => existing.field_key === rawKey)) {
+              try {
+                await $fetch(`/api/folders/${folderId}/fields`, {
+                  method: 'POST',
+                  headers: authHeaders(),
+                  body: {
+                    field_key: rawKey,
+                    label: (te as any)(f.label_key) || f.label,
+                    label_key: f.label_key,
+                    field_type: f.field_type,
+                    entity_type: f.entity_type,
+                    options: f.options || [],
+                    is_required: f.is_required ? 1 : 0
+                  }
+                })
+              } catch (e) {
+                // Ignore duplicate field error
+              }
+            }
+          }
+        }
+      }
+    }
+
     const res = await $fetch<any>(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: authHeaders(),
@@ -3034,13 +3136,15 @@ const updateFolder = async () => {
         name: editFolderName.value,
         icon: editFolderIcon.value,
         visibility: editFolderVisibility.value,
-        default_project_id: editFolderDefaultProjectId.value || null
+        default_project_id: editFolderDefaultProjectId.value || null,
+        settings: existingSettings
       }
     })
     if (res?.folder) {
       folder.value.name = res.folder.name
       folder.value.icon = res.folder.icon
       folder.value.visibility = res.folder.visibility
+      folder.value.settings = res.folder.settings
     }
     showEditFolderModal.value = false
     await loadFolderData()
@@ -3653,8 +3757,8 @@ const resetNewProjectForm = () => {
   newProjectTitle.value = ''
   newProjectVisibility.value = 'private'
   newProjectCustomData.value = {}
-  selectedTemplateId.value = null
-  selectedTemplateLists.value = []
+  selectedTemplateId.value = currentFolderTemplate.value ? currentFolderTemplate.value.id : null
+  selectedTemplateLists.value = currentFolderTemplate.value ? [...currentFolderTemplate.value.lists] : []
   newTemplatePhaseInput.value = ''
   importFileName.value = ''
   importHeaders.value = []
