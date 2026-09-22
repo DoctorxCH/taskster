@@ -1665,8 +1665,8 @@
             <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
           </div>
 
-          <!-- Standard-Projektvorlage für den gesamten Ordner -->
-          <div class="p-3.5 bg-cyan-50/50 border border-cyan-200/80 rounded-2xl space-y-2">
+          <!-- Standard-Projektvorlage & Abschnitte für den gesamten Ordner -->
+          <div class="p-3.5 bg-cyan-50/50 border border-cyan-200/80 rounded-2xl space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-xs font-bold text-slate-900 flex items-center gap-1.5">
                 <BookOpen class="w-4 h-4 text-[#0891B2]" />
@@ -1678,6 +1678,7 @@
             </div>
             <select
               v-model="editFolderTemplateId"
+              @change="onEditFolderTemplateChange"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891B2] font-medium cursor-pointer"
             >
               <option value="">Keine Vorlage (Freie / Manuelle Abschnitte)</option>
@@ -1687,13 +1688,120 @@
             </select>
             <div v-if="selectedEditTemplate" class="text-[11px] text-slate-600 bg-white p-3 rounded-xl border border-cyan-100 leading-relaxed space-y-1 shadow-2xs">
               <p><strong>Info:</strong> {{ selectedEditTemplate.description }}</p>
-              <p class="text-slate-500 font-medium">
-                <strong>Standard-Phasen:</strong> {{ selectedEditTemplate.lists.map(l => resolveText(l, l.replace('sections.', ''))).join(' → ') }}
-              </p>
             </div>
             <p v-else class="text-[11px] text-slate-500">
-              Wähle eine Branchen-Vorlage (z. B. Hochbau, Tiefbau, FTTH, Gebäudeautomation), um allen neuen Projekten und CSV-Imports in diesem Ordner automatisch Vorlagen-Phasen & Zusatzfelder zuzuweisen.
+              Wähle eine Branchen-Vorlage (z. B. Hochbau, Tiefbau, FTTH, Gebäudeautomation) oder passe die Abschnitte unten manuell an.
             </p>
+
+            <!-- Abschnitte / Phasen anpassen, ändern, hinzufügen -->
+            <div class="pt-2 border-t border-cyan-100/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                  <span>Workflow-Phasen / Abschnitte ({{ editFolderSections.length }})</span>
+                </span>
+                <button
+                  type="button"
+                  v-if="selectedEditTemplate"
+                  @click="resetEditFolderSectionsFromTemplate"
+                  class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                >
+                  ↺ Aus Vorlage neu laden
+                </button>
+                <button
+                  type="button"
+                  v-else
+                  @click="resetEditFolderSectionsToStandard"
+                  class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                >
+                  ↺ Standard-Phasen
+                </button>
+              </div>
+
+              <!-- List of editable sections -->
+              <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                <div
+                  v-for="(sec, sIdx) in editFolderSections"
+                  :key="sIdx"
+                  class="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-slate-300 shadow-2xs transition"
+                >
+                  <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {{ sIdx + 1 }}
+                  </span>
+                  
+                  <!-- Title input -->
+                  <input
+                    v-model="sec.title"
+                    type="text"
+                    required
+                    placeholder="Phasenname"
+                    class="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                  />
+
+                  <!-- Ziel für Erledigt Toggle -->
+                  <button
+                    type="button"
+                    @click="toggleEditFolderSectionTarget(sIdx)"
+                    class="px-2 py-1 rounded-lg text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer shrink-0"
+                    :class="sec.is_completed_target == 1
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400/20'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'"
+                    :title="sec.is_completed_target == 1 ? 'Aktueller Ziel-Abschnitt für erledigte Aufgaben' : 'Als Ziel-Abschnitt für erledigte Aufgaben festlegen'"
+                  >
+                    <span>{{ sec.is_completed_target == 1 ? '✓ Ziel Erledigt' : '○ Ziel Erledigt' }}</span>
+                  </button>
+
+                  <!-- Reorder: Up & Down & Remove -->
+                  <div class="flex items-center space-x-0.5 shrink-0">
+                    <button
+                      type="button"
+                      @click="moveEditFolderSectionUp(sIdx)"
+                      :disabled="sIdx === 0"
+                      class="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs"
+                      title="Nach oben verschieben"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      @click="moveEditFolderSectionDown(sIdx)"
+                      :disabled="sIdx === editFolderSections.length - 1"
+                      class="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs"
+                      title="Nach unten verschieben"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      type="button"
+                      @click="removeEditFolderSection(sIdx)"
+                      :disabled="editFolderSections.length <= 1"
+                      class="p-1 rounded hover:bg-rose-50 text-rose-500 hover:text-rose-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs ml-0.5"
+                      title="Abschnitt entfernen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inline Add Section Input -->
+              <div class="flex items-center gap-2 pt-1">
+                <input
+                  v-model="newFolderSectionTitle"
+                  @keydown.enter.prevent="addEditFolderSection"
+                  type="text"
+                  placeholder="+ Neuer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
+                  class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#0891B2] font-medium"
+                />
+                <button
+                  type="button"
+                  @click="addEditFolderSection"
+                  :disabled="!newFolderSectionTitle.trim()"
+                  class="taskster_button px-3 text-xs h-[34px] rounded-lg shrink-0 disabled:opacity-40"
+                >
+                  + Hinzufügen
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
@@ -3037,6 +3145,78 @@ const editFolderTemplateId = ref('')
 const savingFolder = ref(false)
 const editFolderError = ref('')
 
+interface FolderSectionItem {
+  title: string
+  is_completed_target: number
+}
+const editFolderSections = ref<FolderSectionItem[]>([])
+const newFolderSectionTitle = ref('')
+
+const onEditFolderTemplateChange = () => {
+  if (editFolderTemplateId.value) {
+    const matchedTpl = CONSTRUCTION_TEMPLATES.find(t => t.id === editFolderTemplateId.value)
+    if (matchedTpl) {
+      editFolderSections.value = matchedTpl.lists.map(lKey => ({
+        title: resolveText(lKey, lKey.replace('sections.', '')),
+        is_completed_target: (lKey.includes('handover') || lKey.includes('abgeschlossen') || lKey.includes('commissioning')) ? 1 : 0
+      }))
+    }
+  }
+}
+
+const resetEditFolderSectionsFromTemplate = () => {
+  if (selectedEditTemplate.value) {
+    editFolderSections.value = selectedEditTemplate.value.lists.map(lKey => ({
+      title: resolveText(lKey, lKey.replace('sections.', '')),
+      is_completed_target: (lKey.includes('handover') || lKey.includes('abgeschlossen') || lKey.includes('commissioning')) ? 1 : 0
+    }))
+  }
+}
+
+const resetEditFolderSectionsToStandard = () => {
+  editFolderSections.value = [
+    { title: 'Offen', is_completed_target: 0 },
+    { title: 'In Arbeit', is_completed_target: 0 },
+    { title: 'Abgeschlossen', is_completed_target: 1 }
+  ]
+}
+
+const addEditFolderSection = () => {
+  const t = newFolderSectionTitle.value.trim()
+  if (!t) return
+  editFolderSections.value.push({
+    title: t,
+    is_completed_target: 0
+  })
+  newFolderSectionTitle.value = ''
+}
+
+const removeEditFolderSection = (idx: number) => {
+  if (editFolderSections.value.length <= 1) return
+  editFolderSections.value.splice(idx, 1)
+}
+
+const moveEditFolderSectionUp = (idx: number) => {
+  if (idx <= 0) return
+  const temp = editFolderSections.value[idx]
+  editFolderSections.value[idx] = editFolderSections.value[idx - 1]
+  editFolderSections.value[idx - 1] = temp
+}
+
+const moveEditFolderSectionDown = (idx: number) => {
+  if (idx >= editFolderSections.value.length - 1) return
+  const temp = editFolderSections.value[idx]
+  editFolderSections.value[idx] = editFolderSections.value[idx + 1]
+  editFolderSections.value[idx + 1] = temp
+}
+
+const toggleEditFolderSectionTarget = (idx: number) => {
+  const current = editFolderSections.value[idx].is_completed_target
+  editFolderSections.value.forEach((s, i) => {
+    s.is_completed_target = (i === idx && !current) ? 1 : 0
+  })
+}
+
 const currentFolderTemplate = computed(() => {
   const tId = folder.value?.settings?.template_id
   if (!tId) return null
@@ -3082,6 +3262,36 @@ const openEditFolderModal = () => {
   editFolderDefaultProjectId.value = projects.value.find(p => p.is_default)?.id || projects.value[0]?.id || ''
   editFolderTemplateId.value = folder.value.settings?.template_id || ''
   editFolderError.value = ''
+  newFolderSectionTitle.value = ''
+
+  const rawSections = folder.value.settings?.default_sections
+  if (Array.isArray(rawSections) && rawSections.length > 0) {
+    editFolderSections.value = rawSections.map((s: any) => ({
+      title: typeof s === 'string' ? s : (s.title || ''),
+      is_completed_target: typeof s === 'object' && s.is_completed_target ? 1 : 0
+    }))
+  } else if (folder.value.settings?.template_id) {
+    const matchedTpl = CONSTRUCTION_TEMPLATES.find(t => t.id === folder.value.settings.template_id)
+    if (matchedTpl) {
+      editFolderSections.value = matchedTpl.lists.map(lKey => ({
+        title: resolveText(lKey, lKey.replace('sections.', '')),
+        is_completed_target: (lKey.includes('handover') || lKey.includes('abgeschlossen') || lKey.includes('commissioning')) ? 1 : 0
+      }))
+    } else {
+      editFolderSections.value = [
+        { title: 'Offen', is_completed_target: 0 },
+        { title: 'In Arbeit', is_completed_target: 0 },
+        { title: 'Abgeschlossen', is_completed_target: 1 }
+      ]
+    }
+  } else {
+    editFolderSections.value = [
+      { title: 'Offen', is_completed_target: 0 },
+      { title: 'In Arbeit', is_completed_target: 0 },
+      { title: 'Abgeschlossen', is_completed_target: 1 }
+    ]
+  }
+
   showEditFolderModal.value = true
 }
 
@@ -3092,15 +3302,20 @@ const updateFolder = async () => {
     const existingSettings = folder.value?.settings ? (typeof folder.value.settings === 'string' ? JSON.parse(folder.value.settings) : { ...folder.value.settings }) : {}
     existingSettings.template_id = editFolderTemplateId.value || null
 
+    const cleanedSections = editFolderSections.value
+      .map((s, idx) => ({
+        title: s.title.trim() || `Abschnitt ${idx + 1}`,
+        is_completed_target: s.is_completed_target ? 1 : 0
+      }))
+      .filter(s => s.title.length > 0)
+
+    if (cleanedSections.length > 0) {
+      existingSettings.default_sections = cleanedSections
+    }
+
     if (editFolderTemplateId.value) {
       const matchedTpl = CONSTRUCTION_TEMPLATES.find(t => t.id === editFolderTemplateId.value)
       if (matchedTpl) {
-        existingSettings.default_sections = matchedTpl.lists.map(lKey => {
-          const titleStr = resolveText(lKey, lKey.replace('sections.', ''))
-          const isTarget = lKey.includes('handover') || lKey.includes('abgeschlossen') || lKey.includes('commissioning') ? 1 : 0
-          return { title: titleStr, is_completed_target: isTarget }
-        })
-
         // Auto-create custom fields defined in template for this folder
         if (matchedTpl.fields && Array.isArray(matchedTpl.fields)) {
           for (const f of matchedTpl.fields) {
@@ -3871,7 +4086,7 @@ const loadFolderData = async () => {
     fields.value = res.fields || []
     timeSummary.value = res.timeSummary || null
     if (res.folder?.settings?.default_sections && Array.isArray(res.folder.settings.default_sections) && res.folder.settings.default_sections.length > 0) {
-      importWorkflowSections.value = [...res.folder.settings.default_sections]
+      importWorkflowSections.value = res.folder.settings.default_sections.map((s: any) => typeof s === 'string' ? s : (s.title || ''))
     }
     await Promise.all([loadFolderJournals(), loadFolderContacts()])
   } catch (err: any) {

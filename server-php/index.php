@@ -3695,9 +3695,10 @@ try {
             }
         } else if (!empty($customLists) && is_array($customLists)) {
             foreach ($customLists as $cl) {
-                $cl = trim((string)$cl);
-                if ($cl !== '') {
-                    $listsToCreate[] = ['title' => $cl, 'is_completed_target' => in_array(mb_strtolower($cl), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0];
+                $clTitle = is_array($cl) ? trim($cl['title'] ?? '') : trim((string)$cl);
+                if ($clTitle !== '') {
+                    $isTarget = is_array($cl) ? (!empty($cl['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($clTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0);
+                    $listsToCreate[] = ['title' => $clTitle, 'is_completed_target' => $isTarget];
                 }
             }
         }
