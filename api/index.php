@@ -3228,8 +3228,6 @@ try {
         $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0;
         $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
-        if (!$title) errorResponse('Titel erforderlich', 400);
-
         // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
         // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
         $isFreeUser = empty($user['is_pro']) && empty($user['company_id']) && empty($user['is_superadmin']);
