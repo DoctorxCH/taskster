@@ -115,7 +115,7 @@
                 class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-800"
               >
                 <span class="text-[#0891B2] font-semibold mr-1.5">{{ getFieldLabel(key) }}:</span>
-                <span class="text-slate-900 font-semibold">{{ val }}</span>
+                <span class="text-slate-900 font-semibold">{{ formatCustomFieldValue(val, key) }}</span>
               </span>
             </div>
           </div>
@@ -461,7 +461,7 @@
                     :key="key"
                     class="text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                   >
-                    {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val) }}</strong>
+                    {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val, key) }}</strong>
                   </span>
                 </div>
 
@@ -668,7 +668,7 @@
                           :key="key"
                           class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600"
                         >
-                          {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val) }}</strong>
+                          {{ getFieldLabel(key) }}: <strong class="text-slate-800">{{ formatCustomFieldValue(val, key) }}</strong>
                         </span>
                       </div>
                       <span v-else class="text-slate-400">-</span>
@@ -1333,7 +1333,7 @@
                       class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
                     />
                     <span class="text-xs font-medium text-slate-700">
-                      {{ settingsForm.custom_data[f.field_key] ? '✓ Ja / Aktiv' : 'Nein / Inaktiv' }}
+                      {{ settingsForm.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
                     </span>
                   </label>
                 </div>
@@ -2233,7 +2233,7 @@
                     class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
                   />
                   <span class="text-xs font-semibold" :class="taskForm.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
-                    {{ taskForm.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
+                    {{ taskForm.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
                   </span>
                 </label>
               </div>
@@ -2525,7 +2525,7 @@
                         class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
                       />
                       <span class="text-xs font-semibold" :class="drawerTask.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
-                        {{ drawerTask.custom_data[f.field_key] ? '✓ Ja' : 'Nein' }}
+                        {{ drawerTask.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
                       </span>
                     </label>
                   </div>
@@ -5373,13 +5373,20 @@ const getFieldLabel = (key: string) => {
 }
 
 const formatCustomFieldValue = (val: any, fieldKey?: string) => {
-  if (val === true || val === 'true') return '✓ Ja'
-  if (val === false || val === 'false') return 'Nein'
+  if (val === true || val === 'true') return '✓ ' + (te('common.yes') ? t('common.yes') : 'Ja')
+  if (val === false || val === 'false') return te('common.no') ? t('common.no') : 'Nein'
   if (val === null || val === undefined || val === '') return '-'
   if (fieldKey) {
     const f = fields.value.find((item: any) => item.field_key === fieldKey)
     if (f && f.options && f.options.length) {
       const opt = f.options.find((o: any) => (typeof o === 'object' ? o.value : o) === String(val))
+      if (opt) {
+        return typeof opt === 'object' ? (opt.label_key ? t(opt.label_key) : (opt.label || opt.value)) : (te('fields.options.' + opt) ? t('fields.options.' + opt) : opt)
+      }
+    }
+    const tpl = commonCustomFieldTemplates.find((item: any) => item.key === fieldKey)
+    if (tpl && tpl.options && tpl.options.length) {
+      const opt = tpl.options.find((o: any) => (typeof o === 'object' ? o.value : o) === String(val))
       if (opt) {
         return typeof opt === 'object' ? (opt.label_key ? t(opt.label_key) : (opt.label || opt.value)) : (te('fields.options.' + opt) ? t('fields.options.' + opt) : opt)
       }
@@ -6348,7 +6355,7 @@ const saveNewTaskFromDrawer = async () => {
 const getTaskSectionTitle = (listId?: string) => {
   if (!listId) return ''
   const l = lists.value.find((item: any) => item.id === listId)
-  return l ? l.title : ''
+  return l ? getSectionTitle(l.title) : ''
 }
 
 const onDrawerSectionChange = async () => {
@@ -6978,10 +6985,39 @@ const executeImport = async () => {
           taskPayload.tags = cellVal.split(/[,;|]/).map((t: string) => t.trim()).filter(Boolean)
         } else if (targetField.startsWith('custom:')) {
           const key = targetField.replace('custom:', '')
-          const def = fields.value.find((f: any) => f.field_key === key)
+          const matchedField = fields.value.find((f: any) => f.field_key === key)
           const matchedTpl = commonCustomFieldTemplates.find((t: any) => t.key === key)
-          const isDateField = def?.field_type === 'date' || matchedTpl?.type === 'date'
-          taskPayload.custom_data[key] = isDateField ? (parseImportDate(cellVal) || cellVal) : cellVal
+          const fieldType = matchedField?.field_type || matchedTpl?.type
+          if (fieldType === 'date') {
+            taskPayload.custom_data[key] = parseImportDate(cellVal) || cellVal
+          } else if (fieldType === 'checkbox') {
+            const low = cellVal.toLowerCase().trim()
+            if (['ja', 'yes', 'ano', 'áno', 'true', '1', 'x', '✓'].includes(low)) {
+              taskPayload.custom_data[key] = 'true'
+            } else if (['nein', 'no', 'nie', 'false', '0'].includes(low)) {
+              taskPayload.custom_data[key] = 'false'
+            } else {
+              taskPayload.custom_data[key] = cellVal
+            }
+          } else if (fieldType === 'select') {
+            const rawOptions = (matchedField?.options && matchedField.options.length)
+              ? matchedField.options
+              : (matchedTpl?.options || [])
+            const lowVal = cellVal.toLowerCase().trim()
+            let resolvedVal = cellVal
+            for (const opt of rawOptions) {
+              const optVal = typeof opt === 'object' ? opt.value : opt
+              const optKey = typeof opt === 'object' ? opt.label_key : ('fields.options.' + optVal)
+              const optLabel = typeof opt === 'object' ? opt.label : optVal
+              if (optVal.toLowerCase() === lowVal || (optLabel && optLabel.toLowerCase() === lowVal) || (optKey && te(optKey) && t(optKey).toLowerCase() === lowVal)) {
+                resolvedVal = optVal
+                break
+              }
+            }
+            taskPayload.custom_data[key] = resolvedVal
+          } else {
+            taskPayload.custom_data[key] = cellVal
+          }
         }
       }
 

@@ -1,4 +1,6 @@
 {
+  "common.yes": "Ja",
+  "common.no": "Nein",
   "common.dashboard": "Dashboard",
   "common.aktionen": "Aktionen",
   "common.benutzer": "Benutzer",

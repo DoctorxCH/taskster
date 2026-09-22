@@ -1,5 +1,7 @@
 {
-  "common.dashboard": "Dashboard",
+  "common.yes": "Áno",
+  "common.no": "Nie",
+  "common.dashboard": "Nástenka",
   "common.aktionen": "Akcie",
   "common.benutzer": "Používateľ",
   "common.fertig": "Hotovo",

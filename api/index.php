@@ -3362,13 +3362,14 @@ try {
 
                 $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
                 $fLabel = trim((string)($cfd['label'] ?? $fKey));
+                $fLabelKey = $cfd['label_key'] ?? null;
                 $fType = $cfd['field_type'] ?? 'text';
                 $fEntity = $cfd['entity_type'] ?? 'task';
                 $fOpts = $cfd['options'] ?? [];
                 $fRules = $cfd['logic_rules'] ?? null;
 
-                $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)")
-                   ->execute([$fId, $folderId, $fKey, $fLabel, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $sortOrder++]);
+                $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)")
+                   ->execute([$fId, $folderId, $fKey, $fLabel, $fLabelKey, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $sortOrder++]);
                 $existingKeys[] = $fKey;
             }
         }

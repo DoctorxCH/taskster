@@ -282,7 +282,7 @@
                   :key="key"
                   class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium"
                 >
-                  <strong class="text-[#0891B2]">{{ getFieldLabel(key) }}:</strong> {{ val }}
+                  <strong class="text-[#0891B2]">{{ getFieldLabel(key) }}:</strong> {{ formatCustomFieldValue(val, key) }}
                 </span>
               </div>
 
@@ -386,7 +386,7 @@
                         :key="key"
                         class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-800 font-medium"
                       >
-                        {{ getFieldLabel(key) }}: <strong class="text-slate-900">{{ val }}</strong>
+                        {{ getFieldLabel(key) }}: <strong class="text-slate-900">{{ formatCustomFieldValue(val, key) }}</strong>
                       </span>
                     </div>
                     <span v-else class="text-slate-400">-</span>
@@ -1533,7 +1533,7 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
-import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
+import { CONSTRUCTION_TEMPLATES, TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
 
 const { t, te } = useI18n()
 
@@ -1881,7 +1881,7 @@ const newProjectCustomData = ref<Record<string, any>>({})
 const creatingProject = ref(false)
 const projectModalError = ref('')
 
-const templates = ref<any[]>([])
+const templates = ref<any[]>(CONSTRUCTION_TEMPLATES)
 const loadingTemplates = ref(false)
 const projectCreationMode = ref<'template' | 'import' | 'blank'>('template')
 const selectedTemplateId = ref<string | null>(null)
@@ -1945,7 +1945,9 @@ const filteredTemplates = computed(() => {
     const q = templateSearchQuery.value.toLowerCase().trim()
     const matchSearch = !q || (
       t.name?.toLowerCase().includes(q) ||
+      (t.name_key && te(t.name_key) && t(t.name_key).toLowerCase().includes(q)) ||
       t.description?.toLowerCase().includes(q) ||
+      (t.description_key && te(t.description_key) && t(t.description_key).toLowerCase().includes(q)) ||
       t.subcategory?.toLowerCase().includes(q)
     )
     return matchCat && matchSearch
@@ -1980,6 +1982,32 @@ const getFieldLabel = (key: string) => {
   const tpl = commonCustomFieldTemplates.find((item: any) => item.key === key)
   if (tpl) return tpl.label_key ? t(tpl.label_key) : tpl.label
   return key
+}
+
+const formatCustomFieldValue = (val: any, fieldKey?: string) => {
+  if (val === true || val === 'true') return '✓ ' + (te('common.yes') ? t('common.yes') : 'Ja')
+  if (val === false || val === 'false') return te('common.no') ? t('common.no') : 'Nein'
+  if (val === null || val === undefined || val === '') return '-'
+  if (fieldKey) {
+    const f = fields.value.find((item: any) => item.field_key === fieldKey)
+    if (f && f.options && f.options.length) {
+      const opt = f.options.find((o: any) => (typeof o === 'object' ? o.value : o) === String(val))
+      if (opt) {
+        return typeof opt === 'object' ? (opt.label_key ? t(opt.label_key) : (opt.label || opt.value)) : (te('fields.options.' + opt) ? t('fields.options.' + opt) : opt)
+      }
+    }
+    const tpl = commonCustomFieldTemplates.find((item: any) => item.key === fieldKey)
+    if (tpl && tpl.options && tpl.options.length) {
+      const opt = tpl.options.find((o: any) => (typeof o === 'object' ? o.value : o) === String(val))
+      if (opt) {
+        return typeof opt === 'object' ? (opt.label_key ? t(opt.label_key) : (opt.label || opt.value)) : (te('fields.options.' + opt) ? t('fields.options.' + opt) : opt)
+      }
+    }
+  }
+  if (typeof val === 'string' && te('fields.options.' + val)) {
+    return t('fields.options.' + val)
+  }
+  return String(val)
 }
 
 const fetchTemplates = async () => {
@@ -2276,8 +2304,37 @@ const createProject = async () => {
           const key = targetField.replace('custom:', '')
           const matchedField = fields.value.find((f: any) => f.field_key === key)
           const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
-          const isDateField = matchedField?.field_type === 'date' || matchedTpl?.type === 'date'
-          customData[key] = isDateField ? (parseImportDate(cellVal) || cellVal) : cellVal
+          const fieldType = matchedField?.field_type || matchedTpl?.type
+          if (fieldType === 'date') {
+            customData[key] = parseImportDate(cellVal) || cellVal
+          } else if (fieldType === 'checkbox') {
+            const low = cellVal.toLowerCase().trim()
+            if (['ja', 'yes', 'ano', 'áno', 'true', '1', 'x', '✓'].includes(low)) {
+              customData[key] = 'true'
+            } else if (['nein', 'no', 'nie', 'false', '0'].includes(low)) {
+              customData[key] = 'false'
+            } else {
+              customData[key] = cellVal
+            }
+          } else if (fieldType === 'select') {
+            const rawOptions = (matchedField?.options && matchedField.options.length)
+              ? matchedField.options
+              : (matchedTpl?.options || [])
+            const lowVal = cellVal.toLowerCase().trim()
+            let resolvedVal = cellVal
+            for (const opt of rawOptions) {
+              const optVal = typeof opt === 'object' ? opt.value : opt
+              const optKey = typeof opt === 'object' ? opt.label_key : ('fields.options.' + optVal)
+              const optLabel = typeof opt === 'object' ? opt.label : optVal
+              if (optVal.toLowerCase() === lowVal || (optLabel && optLabel.toLowerCase() === lowVal) || (optKey && te(optKey) && t(optKey).toLowerCase() === lowVal)) {
+                resolvedVal = optVal
+                break
+              }
+            }
+            customData[key] = resolvedVal
+          } else {
+            customData[key] = cellVal
+          }
         }
 
         tasksToImport.push({
