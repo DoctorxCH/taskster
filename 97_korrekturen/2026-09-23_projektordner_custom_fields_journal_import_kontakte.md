@@ -41,6 +41,7 @@ Erweiterung der Projektordner- und Projekt-Detailansichten um strukturierte Zusa
 - **Breadcrumbs:** In den Haupt-Container verschoben.
 - **Stoppuhr-Design:** Großes schwarzes Banner auf Task-Karten entfernt; durch dezentes pulsierendes Icon (`Clock text-rose-500 animate-pulse`) ersetzt.
 - **Aufgaben-Filterleiste:** Textsuche nach Titel/Beschreibung/Tags sowie Filter nach Priorität und Zuweisung.
+- **Kaskaden-Fix (Board/Tabelle):** Die neue Filterleiste wurde zusammen mit Board und Tabelle in ein sauberes `<template v-else>` überführt, sodass die Abschnitte (Kanban & Tabellenansicht) bei vorhandenen Listen korrekt gerendert werden (zuvor unterbrach ein `v-if="lists.length > 0"` die `v-else-if`-Kette).
 - **Zusatzfelder:** Aufteilung in kompakte Badges (`compactProjectFields`) und mehrzeilige Notiz-Karten (`multiLineProjectFields`).
 - **Feld-Modal:** `editingFieldId` entsperrt zur nachträglichen Änderung des Feldtyps.
 

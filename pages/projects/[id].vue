@@ -384,8 +384,9 @@
           </button>
         </div>
 
-        <!-- Task Search & Filter Toolbar -->
-        <div v-if="lists.length > 0" class="mb-4 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <template v-else>
+          <!-- Task Search & Filter Toolbar -->
+          <div class="mb-4 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
             <!-- Search Input -->
             <div class="relative flex-1 min-w-[180px] max-w-sm">
@@ -466,7 +467,7 @@
         </div>
 
         <!-- MODE A: BOARD (KANBAN MEISTERTASK-STYLE COLUMNS) -->
-        <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2200px]:grid-cols-6 gap-6 items-start">
+        <div v-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2200px]:grid-cols-6 gap-6 items-start">
           <div
             v-for="(list, listIdx) in lists"
             :key="list.id"
@@ -839,6 +840,7 @@
             </div>
           </div>
         </div>
+        </template>
       </div>
 
       <!-- VIEW 2: JOURNAL & NOTIZEN -->
