@@ -551,7 +551,8 @@
                 <div>
                   <div class="flex items-start justify-between mb-3">
                     <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
-                      <Folder class="w-5 h-5" />
+                      <span v-if="folder.icon">{{ folder.icon }}</span>
+                      <Folder v-else class="w-5 h-5" />
                     </div>
                     <div class="flex items-center space-x-1.5">
                       <span
@@ -909,6 +910,25 @@
             />
           </div>
 
+          <!-- Icon Selector -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon aus Liste auswählen</label>
+            <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
+              <button
+                v-for="item in availableFolderIcons"
+                :key="item.icon"
+                type="button"
+                @click="editFolderIcon = item.icon"
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
+                :class="editFolderIcon === item.icon ? 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
+                :title="item.label"
+              >
+                {{ item.icon }}
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
+          </div>
+
           <!-- Sichtbarkeit im Unternehmen -->
           <div v-if="user?.company_id || editFolderCompanyId" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
             <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
@@ -1233,9 +1253,36 @@ const folderModalError = ref('')
 const showEditFolderModal = ref(false)
 const editFolderId = ref('')
 const editFolderName = ref('')
+const editFolderIcon = ref('📁')
 const editFolderVisibility = ref('private')
 const savingFolder = ref(false)
 const editFolderError = ref('')
+
+const availableFolderIcons = [
+  // Job & Gewerbe
+  { icon: '📁', label: 'Standard Ordner' },
+  { icon: '🏗️', label: 'Bau & Tiefbau' },
+  { icon: '💻', label: 'IT & Software' },
+  { icon: '📐', label: 'Architektur & Planung' },
+  { icon: '⚡', label: 'Elektro & Energie' },
+  { icon: '🔧', label: 'Montage & Service' },
+  { icon: '🚚', label: 'Logistik & Transport' },
+  { icon: '📊', label: 'Finanzen & Controlling' },
+  { icon: '⚖️', label: 'Recht & Notariat' },
+  { icon: '🏥', label: 'Gesundheit & Praxis' },
+  { icon: '🏢', label: 'Immobilien & Liegenschaften' },
+  // Privat & Haushalt
+  { icon: '🏠', label: 'Haus & Umbau' },
+  { icon: '🏡', label: 'Garten & Aussen' },
+  { icon: '🛋️', label: 'Wohnen & Interior' },
+  { icon: '🎂', label: 'Event & Feier' },
+  { icon: '✈️', label: 'Reisen & Urlaub' },
+  { icon: '🚗', label: 'Fahrzeuge & Garage' },
+  { icon: '📑', label: 'Privat & Steuern' },
+  { icon: '🎯', label: 'Ziele & Pläne' },
+  { icon: '📦', label: 'Umzug & Lager' },
+  { icon: '🎨', label: 'Kreativ & Hobby' }
+]
 
 const totalProjects = computed(() => {
   if (isFreeUser.value) return projects.value.length
@@ -1299,6 +1346,7 @@ const editFolderProjectCount = ref<number>(0)
 const openEditFolderModal = (folder: any) => {
   editFolderId.value = folder.id
   editFolderName.value = folder.name
+  editFolderIcon.value = folder.icon || '📁'
   editFolderVisibility.value = folder.visibility || 'private'
   editFolderCompanyId.value = folder.company_id || null
   editFolderCompanyName.value = folder.company_name || null
@@ -1587,6 +1635,7 @@ const updateFolder = async () => {
       headers: authHeaders(),
       body: {
         name: editFolderName.value,
+        icon: editFolderIcon.value,
         visibility: editFolderVisibility.value
       }
     })

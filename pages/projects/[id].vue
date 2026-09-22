@@ -1,25 +1,5 @@
 <template>
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
-      <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
-        <LayoutDashboard class="w-3.5 h-3.5" />
-        <span>Dashboard</span>
-      </NuxtLink>
-      <span>/</span>
-      <template v-if="!isFreeUser">
-        <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
-          <Folder class="w-3.5 h-3.5" />
-          <span>{{ project?.folder_name || 'Ordner' }}</span>
-        </NuxtLink>
-        <span>/</span>
-      </template>
-      <span class="text-slate-800 font-semibold flex items-center gap-1">
-        <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
-        <span>{{ project?.title || 'Projekt' }}</span>
-      </span>
-    </div>
-
     <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
       Lade Projektdaten...
@@ -31,6 +11,26 @@
         class="border rounded-lg p-5 shadow-xs space-y-4 transition-all"
         :class="project.status === 'completed' ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white border-slate-200'"
       >
+        <!-- Breadcrumb inside white card -->
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
+          <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+            <LayoutDashboard class="w-3.5 h-3.5" />
+            <span>Dashboard</span>
+          </NuxtLink>
+          <span>/</span>
+          <template v-if="!isFreeUser">
+            <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+              <Folder class="w-3.5 h-3.5" />
+              <span>{{ project?.folder_name || 'Ordner' }}</span>
+            </NuxtLink>
+            <span>/</span>
+          </template>
+          <span class="text-slate-800 font-semibold flex items-center gap-1">
+            <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
+            <span>{{ project?.title || 'Projekt' }}</span>
+          </span>
+        </div>
+
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <!-- Left: Title & Badges -->
           <div>
@@ -111,39 +111,58 @@
               <span v-if="project.company_name" class="text-slate-700 font-medium">• {{ project.company_name }}</span>
             </p>
 
-            <!-- Project-level custom fields display in header -->
-            <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-2 pt-2">
+            <!-- Compact Custom Fields Pills -->
+            <div v-if="compactProjectFields.length > 0" class="flex flex-wrap gap-2 pt-2">
               <span
-                v-for="(val, key) in project.custom_data"
-                :key="key"
-                class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-800"
+                v-for="item in compactProjectFields"
+                :key="item.key"
+                class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs"
               >
-                <span class="text-[#0891B2] font-semibold mr-1.5">{{ getFieldLabel(key) }}:</span>
-                <span class="text-slate-900 font-semibold">{{ formatCustomFieldValue(val, key) }}</span>
+                <span class="text-[#0891B2] font-semibold mr-1.5">{{ item.label }}:</span>
+                <span class="text-slate-900 font-semibold">{{ item.value }}</span>
               </span>
+            </div>
+
+            <!-- Multi-line / Textarea Custom Fields (Prominent Note/Callout Box) -->
+            <div v-if="multiLineProjectFields.length > 0" class="space-y-2 pt-2">
+              <div
+                v-for="item in multiLineProjectFields"
+                :key="item.key"
+                class="flex items-start gap-2.5 p-3 rounded-xl bg-sky-50/70 border border-sky-200 text-slate-800 shadow-2xs"
+              >
+                <Info class="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <div class="flex-1 min-w-0">
+                  <span class="text-[11px] font-bold text-sky-900 uppercase tracking-wider block mb-0.5">
+                    {{ item.label }}
+                  </span>
+                  <div class="text-xs text-slate-900 font-medium whitespace-pre-wrap leading-relaxed select-text">
+                    {{ item.value }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Right: Actions (View, Stopwatch, Import, Voice, Section collapsed into More menu) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <!-- Running Project Stopwatch (always visible so it can be stopped) -->
+            <!-- Running Project Stopwatch (Subtle Pulsing Badge) -->
             <div
               v-if="userRole !== 'viewer' && stopwatchState.isRunning && stopwatchState.projectId === project?.id"
-              class="flex items-center space-x-2 px-3 py-1 bg-slate-900 text-white rounded-md border border-cyan-400/60 shadow-xs h-9 select-none"
+              class="flex items-center space-x-2 px-2.5 py-1 bg-rose-50 text-rose-700 rounded-md border border-rose-200 shadow-2xs text-xs font-semibold select-none h-9"
             >
-              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-              <div class="flex flex-col text-left leading-tight">
-                <span class="text-[9px] font-semibold text-cyan-300 uppercase tracking-wider truncate max-w-[120px]">
+              <Clock class="w-3.5 h-3.5 text-rose-600 animate-pulse shrink-0" />
+              <div class="flex flex-col text-left leading-none">
+                <span class="text-[9px] font-bold text-rose-900 uppercase tracking-wider truncate max-w-[100px]">
                   {{ stopwatchState.taskId ? stopwatchState.taskTitle : 'Projekt' }}
                 </span>
-                <span class="font-mono font-bold text-xs text-white">
+                <span class="font-mono text-xs font-bold text-rose-700">
                   {{ formatSeconds(stopwatchState.elapsedSeconds) }}
                 </span>
               </div>
               <button
                 @click="openStopModal"
                 type="button"
-                class="ml-1 px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-bold cursor-pointer"
+                class="ml-1 px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold cursor-pointer"
                 title="Stoppuhr stoppen & buchen"
               >
                 Stopp
@@ -365,6 +384,87 @@
           </button>
         </div>
 
+        <!-- Task Search & Filter Toolbar -->
+        <div v-if="lists.length > 0" class="mb-4 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
+            <!-- Search Input -->
+            <div class="relative flex-1 min-w-[180px] max-w-sm">
+              <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                v-model="taskSearchQuery"
+                type="text"
+                placeholder="Aufgaben durchsuchen (Titel, Notizen, Tags)..."
+                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+              <button
+                v-if="taskSearchQuery"
+                @click="taskSearchQuery = ''"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Priority Filter -->
+            <select
+              v-model="taskPriorityFilter"
+              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+            >
+              <option value="">Alle Prioritäten</option>
+              <option value="urgent">🔴 Dringend</option>
+              <option value="high">🟠 Hoch</option>
+              <option value="medium">🟡 Mittel</option>
+              <option value="low">🟢 Niedrig</option>
+            </select>
+
+            <!-- Assignee Filter -->
+            <select
+              v-model="taskAssigneeFilter"
+              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+            >
+              <option value="">Alle Zuständigen</option>
+              <option value="unassigned">Nicht zugewiesen</option>
+              <option v-for="m in allProjectAssignees" :key="m.id" :value="m.id">
+                {{ m.name }}
+              </option>
+            </select>
+
+            <!-- Reset Filters -->
+            <button
+              v-if="taskSearchQuery || taskPriorityFilter || taskAssigneeFilter"
+              @click="taskSearchQuery = ''; taskPriorityFilter = ''; taskAssigneeFilter = ''"
+              type="button"
+              class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-md font-semibold cursor-pointer"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+
+          <!-- View Switcher (Board vs Table) -->
+          <div class="inline-flex items-center p-0.5 bg-slate-100 border border-slate-200 rounded-md shadow-2xs">
+            <button
+              type="button"
+              @click="taskViewMode = 'board'"
+              class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
+              :class="taskViewMode === 'board' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+              title="Kanban Board"
+            >
+              <LayoutGrid class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Board</span>
+            </button>
+            <button
+              type="button"
+              @click="taskViewMode = 'table'"
+              class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
+              :class="taskViewMode === 'table' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+              title="Tabellen-Ansicht"
+            >
+              <List class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Tabelle</span>
+            </button>
+          </div>
+        </div>
+
         <!-- MODE A: BOARD (KANBAN MEISTERTASK-STYLE COLUMNS) -->
         <div v-else-if="taskViewMode === 'board'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2200px]:grid-cols-6 gap-6 items-start">
           <div
@@ -404,7 +504,7 @@
                 ]"></span>
                 <h3 class="text-sm font-black text-slate-900">{{ getSectionTitle(list.title) }}</h3>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-xs border border-slate-200/60">
-                  {{ list.tasks?.length || 0 }}
+                  {{ getFilteredTasks(list.tasks).length }}
                 </span>
               </div>
 
@@ -421,38 +521,18 @@
             <!-- Tasks in this section -->
             <div class="space-y-3 min-h-[60px] p-1 rounded-2xl transition-colors" :class="dragOverListId === list.id ? 'bg-cyan-50/70' : ''">
               <div
-                v-for="task in list.tasks"
+                v-for="task in getFilteredTasks(list.tasks)"
                 :key="task.id"
                 :draggable="userRole !== 'viewer'"
                 class="relative bg-white border rounded-2xl p-4 transition-all duration-300 shadow-sm group select-none hover:shadow-md overflow-hidden"
                 :class="[
-                  highlightedTaskId === task.id ? 'ring-4 ring-cyan-400 border-cyan-500 shadow-xl bg-cyan-50/80 scale-[1.02]' : (draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : (stopwatchState.isRunning && stopwatchState.taskId === task.id ? 'ring-2 ring-cyan-500 border-cyan-400 shadow-md bg-cyan-50/20' : 'border-slate-200/90 hover:border-cyan-400')),
+                  highlightedTaskId === task.id ? 'ring-4 ring-cyan-400 border-cyan-500 shadow-xl bg-cyan-50/80 scale-[1.02]' : (draggedTask?.id === task.id ? 'opacity-40 border-dashed border-cyan-500 scale-[0.98]' : (stopwatchState.isRunning && stopwatchState.taskId === task.id ? 'ring-2 ring-rose-400 border-rose-300 shadow-md bg-rose-50/30' : 'border-slate-200/90 hover:border-cyan-400')),
                   userRole !== 'viewer' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 ]"
                 @dragstart="onDragStart(task, list.id)"
                 @dragend="onDragEnd"
                 @click="openTaskDrawer(task)"
               >
-                <!-- Live Running Stopwatch on this card -->
-                <div
-                  v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
-                  class="mb-2.5 px-2.5 py-1.5 rounded-xl bg-slate-950 text-white flex items-center justify-between shadow-sm animate-in fade-in"
-                >
-                  <div class="flex items-center space-x-1.5">
-                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                    <span class="text-[9px] uppercase font-bold text-cyan-400">Läuft:</span>
-                    <span class="font-mono font-black text-xs text-cyan-200">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
-                  </div>
-                  <button
-                    type="button"
-                    @click.stop="openStopModal"
-                    class="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[9px] font-bold shadow-xs transition"
-                    title="Stoppen & Zeit buchen"
-                  >
-                    ⏹️ Stoppen
-                  </button>
-                </div>
-
                 <!-- Drag handle & Task Header -->
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <div class="flex items-start space-x-2">
@@ -466,6 +546,13 @@
                     >
                       <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
                     </button>
+
+                    <!-- Small Pulsing Stopwatch indicator on task card -->
+                    <Clock
+                      v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
+                      class="w-3.5 h-3.5 text-rose-500 animate-pulse shrink-0 mt-0.5"
+                      title="Zeiterfassung läuft..."
+                    />
 
                     <span
                       v-if="userRole !== 'viewer'"
@@ -612,7 +699,7 @@
                 <span class="w-3 h-3 rounded-full bg-cyan-500"></span>
                 <h3 class="text-sm font-black text-slate-900">{{ getSectionTitle(list.title) }}</h3>
                 <span class="text-xs px-2 py-0.5 rounded-full bg-white text-slate-600 font-bold border border-slate-200">
-                  {{ list.tasks?.length || 0 }}
+                  {{ getFilteredTasks(list.tasks).length }}
                 </span>
               </div>
               <button
@@ -624,8 +711,8 @@
               </button>
             </div>
 
-            <div v-if="!list.tasks || list.tasks.length === 0" class="p-4 text-center text-xs text-slate-400">
-              Keine Aufgaben in diesem Abschnitt.
+            <div v-if="!getFilteredTasks(list.tasks) || getFilteredTasks(list.tasks).length === 0" class="p-4 text-center text-xs text-slate-400">
+              Keine Aufgaben gefunden.
             </div>
 
             <div v-else class="overflow-x-auto">
@@ -642,7 +729,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
                   <tr
-                    v-for="task in list.tasks"
+                    v-for="task in getFilteredTasks(list.tasks)"
                     :key="task.id"
                     class="hover:bg-slate-50 transition cursor-pointer"
                     @click="openEditTaskModal(task)"
@@ -658,6 +745,12 @@
                         >
                           <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
                         </button>
+                        <!-- Small Pulsing Stopwatch indicator in table row -->
+                        <Clock
+                          v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
+                          class="w-3.5 h-3.5 text-rose-500 animate-pulse shrink-0"
+                          title="Zeiterfassung läuft..."
+                        />
                         <div class="min-w-0">
                           <div class="font-bold truncate" :class="task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900'">
                             {{ task.title }}
@@ -693,10 +786,10 @@
                           :style="{ width: Math.min(100, Math.round(((task.tracked_hours || 0) / task.budget_hours) * 100)) + '%' }"
                         ></div>
                       </div>
-                      <!-- Live Timer in Table row if active -->
-                      <div v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id" class="mt-1.5 inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-slate-950 text-white text-[10px] font-mono font-bold shadow-xs">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                        <span class="text-cyan-300">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
+                      <!-- Live Timer in Table row if active: compact indicator -->
+                      <div v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id" class="mt-1 inline-flex items-center space-x-1 text-rose-600 text-[10px] font-semibold">
+                        <Clock class="w-3 h-3 text-rose-500 animate-pulse" />
+                        <span class="font-mono font-bold">{{ formatSeconds(stopwatchState.elapsedSeconds) }}</span>
                       </div>
                     </td>
                     <td class="py-3 px-4">
@@ -2013,116 +2106,141 @@
           <div
             v-for="c in projectContacts"
             :key="c.id"
-            class="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:bg-white hover:shadow-md transition group"
+            class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all"
           >
             <div>
-              <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="flex items-start space-x-2.5 min-w-0">
-                  <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+              <!-- Card Top: Avatar, Name, Company, Function -->
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
                     {{ (c.first_name?.charAt(0) || '') + (c.last_name?.charAt(0) || '') }}
                   </div>
                   <div class="min-w-0">
-                    <h4 class="text-xs font-black text-slate-900 truncate">
+                    <h3 class="text-sm font-semibold text-slate-900 truncate leading-tight">
                       {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }}
-                    </h4>
-                    <p v-if="c.company_name" class="text-[11px] font-bold text-cyan-800 truncate">
-                      🏢 {{ c.company_name }}
+                    </h3>
+                    <p v-if="c.company_name" class="text-xs font-medium text-cyan-800 truncate mt-0.5 flex items-center gap-1">
+                      <Building2 class="w-3 h-3 text-cyan-600 shrink-0" />
+                      <span>{{ c.company_name }}</span>
                     </p>
-                    <p v-if="c.role_function" class="text-[10px] font-semibold text-slate-600 truncate">
-                      👷 {{ c.role_function }}
+                    <p v-if="c.role_function" class="text-xs text-slate-600 truncate mt-0.5 flex items-center gap-1">
+                      <HardHat class="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>{{ c.role_function }}</span>
                     </p>
                   </div>
                 </div>
 
+                <!-- Scope / Sharing Badge -->
                 <span
-                  class="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold border"
-                  :class="c.share_scope === 'company' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'"
+                  class="shrink-0 px-2 py-0.5 rounded-sm text-xs font-medium border"
+                  :class="c.share_scope === 'company' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
                 >
-                  {{ c.share_scope === 'company' ? '🏢 Team' : '🔒 Projekt' }}
+                  {{ c.share_scope === 'company' ? 'Team' : 'Privat' }}
                 </span>
               </div>
 
-              <!-- Details (Phone, Mobile, Email) -->
-              <div class="space-y-1 text-[11px] bg-white p-2.5 rounded-xl border border-slate-100 mb-2">
-                <div v-if="c.mobile" class="flex items-center space-x-1.5">
-                  <span class="text-slate-400">📱</span>
-                  <a :href="`tel:${c.mobile}`" class="font-bold text-[#00A3C4] hover:underline truncate">
+              <!-- Group & Tags Badges -->
+              <div class="flex flex-wrap items-center gap-1.5 mb-3">
+                <span v-if="c.category_group" class="px-2 py-0.5 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                  {{ c.category_group }}
+                </span>
+                <span
+                  v-for="(tag, idx) in c.tags"
+                  :key="idx"
+                  class="px-2 py-0.5 rounded-sm text-xs font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
+                >
+                  #{{ tag }}
+                </span>
+              </div>
+
+              <!-- Contact Details (Phone, Mobile, Email) -->
+              <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
+                <div v-if="c.mobile" class="flex items-center gap-2">
+                  <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
                     {{ c.mobile }}
                   </a>
+                  <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold ml-auto" title="WhatsApp Chat öffnen">
+                    WhatsApp
+                  </a>
                 </div>
-                <div v-if="c.phone" class="flex items-center space-x-1.5">
-                  <span class="text-slate-400">📞</span>
-                  <a :href="`tel:${c.phone}`" class="text-slate-700 hover:underline truncate">
+
+                <div v-if="c.phone" class="flex items-center gap-2">
+                  <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <a :href="`tel:${c.phone}`" class="font-medium text-slate-800 hover:underline truncate">
                     {{ c.phone }}
                   </a>
                 </div>
-                <div v-if="c.email" class="flex items-center space-x-1.5">
-                  <span class="text-slate-400">✉️</span>
-                  <a :href="`mailto:${c.email}`" class="text-cyan-800 font-semibold hover:underline truncate">
+
+                <div v-if="c.email" class="flex items-center gap-2">
+                  <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <a :href="`mailto:${c.email}`" class="font-medium text-cyan-800 hover:underline truncate">
                     {{ c.email }}
                   </a>
                 </div>
-                <div v-if="!c.mobile && !c.phone && !c.email" class="text-[10px] text-slate-400 italic">
+
+                <div v-if="!c.mobile && !c.phone && !c.email" class="text-xs text-slate-400 italic">
                   Keine Kontaktdaten hinterlegt
                 </div>
               </div>
 
               <!-- Website & Address -->
-              <div v-if="c.website || c.address" class="space-y-1 text-[11px] bg-white p-2.5 rounded-xl border border-slate-100 mb-2">
-                <div v-if="c.website" class="flex items-center space-x-1.5">
-                  <span class="text-slate-400">🌐</span>
-                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-bold text-[#00A3C4] hover:underline truncate">
+              <div v-if="c.website || c.address" class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
+                <div v-if="c.website" class="flex items-center gap-2">
+                  <Globe class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-medium text-[#0891B2] hover:underline truncate">
                     {{ c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') }}
                   </a>
                 </div>
                 <div v-if="c.address" class="flex items-start justify-between gap-1 pt-0.5">
-                  <div class="flex items-start space-x-1.5 min-w-0">
-                    <span class="text-slate-400 shrink-0 mt-0.5">📍</span>
+                  <div class="flex items-start gap-1.5 min-w-0">
+                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                     <span class="text-slate-700 font-medium truncate">{{ c.address }}</span>
                   </div>
                   <a
                     :href="`https://www.openstreetmap.org/search?query=${encodeURIComponent(c.address)}`"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 hover:bg-emerald-100"
+                    class="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 hover:bg-emerald-100"
                     title="In OpenStreetMap öffnen"
                   >
-                    🗺️ Karte
+                    Karte
                   </a>
                 </div>
               </div>
 
-              <p v-if="c.notes" class="text-[10px] text-slate-500 line-clamp-2 italic mb-2">
+              <p v-if="c.notes" class="text-xs text-slate-500 line-clamp-2 italic mb-3">
                 "{{ c.notes }}"
               </p>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+            <!-- Footer: Actions -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
               <button
                 @click="exportContactVCard(c)"
                 type="button"
-                class="text-[10px] font-bold text-slate-600 hover:text-[#00A3C4] flex items-center space-x-1 py-0.5 px-1.5 rounded hover:bg-cyan-50"
+                class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
                 title="vCard herunterladen"
               >
-                <span>📥</span>
+                <Download class="w-3.5 h-3.5" />
                 <span>vCard</span>
               </button>
-              <div v-if="c.can_edit && userRole !== 'viewer'" class="flex items-center space-x-1">
+              <div v-if="c.can_edit && userRole !== 'viewer'" class="flex items-center gap-1">
                 <button
                   @click="openEditProjectContactModal(c)"
                   type="button"
-                  class="p-1 text-slate-400 hover:text-[#00A3C4] rounded transition text-xs font-bold"
+                  class="p-1.5 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition cursor-pointer"
                   title="Bearbeiten"
                 >
-                  ✏️
+                  <Pencil class="w-3.5 h-3.5" />
                 </button>
                 <button
                   @click="deleteProjectContact(c)"
                   type="button"
-                  class="p-1 text-slate-400 hover:text-rose-600 rounded transition text-xs font-bold"
+                  class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                   title="Löschen"
                 >
-                  🗑️
+                  <Trash2 class="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -3762,19 +3880,17 @@
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                :disabled="!!editingFieldId"
                 @click="newFieldEntityType = 'task'"
-                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center disabled:opacity-60"
-                :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
+                :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
               >
                 Aufgaben-Feld
               </button>
               <button
                 type="button"
-                :disabled="!!editingFieldId"
                 @click="newFieldEntityType = 'project'"
-                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center disabled:opacity-60"
-                :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
+                :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
               >
                 Projekt-Feld
               </button>
@@ -3796,8 +3912,7 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
-              :disabled="!!editingFieldId"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer disabled:opacity-60"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer"
             >
               <option value="text">Textzeile (kurz)</option>
               <option value="textarea">Längerer Text / Notizfeld (mehrzeilig)</option>
@@ -5300,6 +5415,10 @@ const formatProjectContactUrl = (url?: string) => {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
+const cleanPhoneForWhatsApp = (num: string) => {
+  return (num || '').replace(/[^0-9]/g, '')
+}
+
 // Live Stopwatch Integration
 const {
   state: stopwatchState,
@@ -5984,6 +6103,70 @@ const formatCustomFieldValue = (val: any, fieldKey?: string) => {
   return String(val)
 }
 
+const isMultiLineCustomField = (key: string, val: any) => {
+  const f = fields.value.find((item: any) => item.field_key === key)
+  if (f && f.field_type === 'textarea') return true
+  const strVal = String(val ?? '')
+  if (strVal.includes('\n')) return true
+  if (['info', 'notiz', 'bemerkung', 'beschreibung', 'details'].includes(String(key).toLowerCase()) && strVal.length > 25) return true
+  return false
+}
+
+const compactProjectFields = computed(() => {
+  if (!project.value?.custom_data) return []
+  return Object.entries(project.value.custom_data)
+    .filter(([key, val]) => val !== null && val !== '' && !isMultiLineCustomField(key, val))
+    .map(([key, val]) => ({ key, label: getFieldLabel(key), value: formatCustomFieldValue(val, key) }))
+})
+
+const multiLineProjectFields = computed(() => {
+  if (!project.value?.custom_data) return []
+  return Object.entries(project.value.custom_data)
+    .filter(([key, val]) => val !== null && val !== '' && isMultiLineCustomField(key, val))
+    .map(([key, val]) => ({ key, label: getFieldLabel(key), value: formatCustomFieldValue(val, key) }))
+})
+
+const taskSearchQuery = ref('')
+const taskPriorityFilter = ref('')
+const taskAssigneeFilter = ref('')
+
+const allProjectAssignees = computed(() => {
+  const map = new Map<string, { id: string, name: string }>()
+  if (project.value?.owner_id) {
+    map.set(project.value.owner_id, { id: project.value.owner_id, name: project.value.owner_name || 'Projektleiter' })
+  }
+  for (const m of members.value || []) {
+    if (m.user_id && !map.has(m.user_id)) {
+      map.set(m.user_id, { id: m.user_id, name: m.name || m.email || 'Mitglied' })
+    }
+  }
+  return Array.from(map.values())
+})
+
+const getFilteredTasks = (listTasks: any[]) => {
+  if (!listTasks || !Array.isArray(listTasks)) return []
+  return listTasks.filter((task: any) => {
+    if (taskSearchQuery.value) {
+      const q = taskSearchQuery.value.toLowerCase().trim()
+      const titleMatch = (task.title || '').toLowerCase().includes(q)
+      const descMatch = (task.description || '').toLowerCase().includes(q)
+      const tagsMatch = Array.isArray(task.tags) && task.tags.some((t: string) => String(t).toLowerCase().includes(q))
+      if (!titleMatch && !descMatch && !tagsMatch) return false
+    }
+    if (taskPriorityFilter.value && task.priority !== taskPriorityFilter.value) {
+      return false
+    }
+    if (taskAssigneeFilter.value) {
+      if (taskAssigneeFilter.value === 'unassigned') {
+        if (task.assignee_id) return false
+      } else if (task.assignee_id !== taskAssigneeFilter.value) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
 // Check conditional visibility of a task field
 const isFieldVisibleForTask = (f: any) => {
   if (!f.logic_rules || !f.logic_rules.depends_on_field) return true
@@ -6598,6 +6781,8 @@ const saveField = async () => {
         headers: authHeaders(),
         body: {
           label: newFieldLabel.value,
+          field_type: newFieldType.value,
+          entity_type: newFieldEntityType.value,
           options,
           logic_rules: logicRules
         }

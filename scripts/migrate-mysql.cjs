@@ -447,6 +447,11 @@ async function migrate() {
     "ALTER TABLE project_journals ADD COLUMN allowed_group_id VARCHAR(64) NULL",
     "ALTER TABLE project_journals ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
+    "ALTER TABLE project_folders ADD COLUMN settings JSON NULL",
+    "ALTER TABLE contacts ADD COLUMN folder_id VARCHAR(64) NULL",
+    "ALTER TABLE project_journals ADD COLUMN folder_id VARCHAR(64) NULL",
+    "ALTER TABLE project_journals MODIFY COLUMN project_id VARCHAR(64) NULL",
+    "ALTER TABLE projects ADD COLUMN template_id VARCHAR(64) NULL",
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }

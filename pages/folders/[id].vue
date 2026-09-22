@@ -1,18 +1,5 @@
 <template>
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
-      <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
-        <LayoutDashboard class="w-3.5 h-3.5" />
-        <span>Dashboard</span>
-      </NuxtLink>
-      <span>/</span>
-      <span class="text-slate-800 font-semibold flex items-center gap-1">
-        <Folder class="w-3.5 h-3.5 text-[#0891B2]" />
-        <span>{{ folder?.name || 'Ordner' }}</span>
-      </span>
-    </div>
-
     <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
       Lade Ordnerdetails und Projekte...
@@ -21,12 +8,27 @@
     <div v-else-if="folder" class="space-y-6">
       <!-- Single Unified Header & Folder Dashboard Card -->
       <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+        <!-- Breadcrumb inside white card -->
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
+          <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1 font-medium">
+            <LayoutDashboard class="w-3.5 h-3.5" />
+            <span>Dashboard</span>
+          </NuxtLink>
+          <span>/</span>
+          <span class="text-slate-800 font-semibold flex items-center gap-1">
+            <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
+            <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
+            <span>{{ folder?.name || 'Ordner' }}</span>
+          </span>
+        </div>
+
         <!-- Row 1: Folder Title, Meta & Main Action Buttons -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2.5 mb-1">
-              <div class="w-9 h-9 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0">
-                <Folder class="w-5 h-5" />
+              <div class="w-9 h-9 rounded-lg bg-cyan-50 border border-cyan-200 text-[#0891B2] flex items-center justify-center shrink-0 text-xl">
+                <span v-if="folder.icon">{{ folder.icon }}</span>
+                <Folder v-else class="w-5 h-5" />
               </div>
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ folder.name }}</h1>
               <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200 ml-1">
@@ -52,6 +54,16 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
+            <!-- Quick Journal Entry Button -->
+            <button
+              @click="openQuickFolderJournalModal"
+              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
+              title="Projektjournal-Eintrag erfassen"
+            >
+              <BookOpen class="w-3.5 h-3.5 text-[#0891B2]" />
+              <span class="font-semibold">+ PJ erfassen</span>
+            </button>
+
             <!-- More Actions Dropdown -->
             <div class="relative">
               <button
@@ -213,210 +225,572 @@
             </div>
           </div>
         </div>
-      </div>
 
-        <!-- Empty State -->
-        <div v-if="projects.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-          <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
-            <Folder class="w-6 h-6" />
-          </div>
-          <h3 class="text-base font-bold text-slate-900">Noch keine Projekte in diesem Ordner</h3>
-          <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
-            Erstelle jetzt dein erstes Projekt – z.B. aus einer unserer Vorlagen mit vorgefertigten Phasen.
-          </p>
+        <!-- Row 3: Folder Navigation Tabs -->
+        <div class="flex items-center gap-1.5 border-t border-slate-200 pt-3 overflow-x-auto text-xs font-semibold">
           <button
-            @click="openNewProjectModal"
-            class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            type="button"
+            @click="currentFolderTab = 'projects'"
+            class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+            :class="currentFolderTab === 'projects' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
-            <Plus class="w-3.5 h-3.5" />
-            <span>Neues Projekt anlegen</span>
+            <LayoutGrid class="w-4 h-4" />
+            <span>Projekte ({{ projects.length }})</span>
+          </button>
+          <button
+            type="button"
+            @click="currentFolderTab = 'journal'"
+            class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+            :class="currentFolderTab === 'journal' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+          >
+            <BookOpen class="w-4 h-4" />
+            <span>Projektjournal ({{ folderJournals.length }})</span>
+          </button>
+          <button
+            type="button"
+            @click="currentFolderTab = 'fields'"
+            class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+            :class="currentFolderTab === 'fields' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+          >
+            <SlidersHorizontal class="w-4 h-4" />
+            <span>Benutzerdefinierte Felder ({{ fields.length }})</span>
+          </button>
+          <button
+            type="button"
+            @click="currentFolderTab = 'contacts'"
+            class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
+            :class="currentFolderTab === 'contacts' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+          >
+            <Contact class="w-4 h-4" />
+            <span>Kontakte ({{ folderContacts.length }})</span>
           </button>
         </div>
+      </div>
 
-        <!-- VIEW MODE 1: GRID / KACHELN -->
-        <div v-else-if="projectViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
-            v-for="project in sortedProjects"
-            :key="project.id"
-            class="border rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
-            :class="project.status === 'completed'
-              ? 'bg-emerald-500/10 border-emerald-300 ring-1 ring-emerald-400/20'
-              : 'bg-white border-slate-200 hover:border-[#0891B2]'"
-          >
-            <div>
-              <div class="flex items-start justify-between mb-3">
-                <div
-                  class="w-9 h-9 rounded flex items-center justify-center border"
-                  :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+        <!-- TAB 1: PROJEKTE -->
+        <div v-if="currentFolderTab === 'projects'" class="space-y-4">
+          <!-- Search & Filter Toolbar -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs">
+            <div class="flex items-center gap-2 flex-1 max-w-md">
+              <div class="relative w-full">
+                <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  v-model="projectSearchQuery"
+                  type="text"
+                  placeholder="Projekte durchsuchen (Titel, Adresse, Ref-Nr...)"
+                  class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                />
+                <button
+                  v-if="projectSearchQuery"
+                  @click="projectSearchQuery = ''"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                 >
-                  <ClipboardList class="w-5 h-5" />
-                </div>
-                <div class="flex items-center space-x-1 flex-wrap gap-1">
-                  <span
-                    v-if="project.is_default"
-                    class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900 flex items-center space-x-1"
-                    title="Standard-Projekt dieses Ordners"
-                  >
-                    <Star class="w-3 h-3 text-amber-600" />
-                    <span>Standard</span>
-                  </span>
-                  <span
-                    class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
-                    :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
-                  >
-                    <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
-                    <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                    <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
-                  </span>
-                  <span
-                    class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase"
-                    :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
-                  >
-                    {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
-                  </span>
-                </div>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap justify-between sm:justify-end">
+              <!-- Status Filter Pills -->
+              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+                <button
+                  type="button"
+                  @click="projectStatusFilter = 'all'"
+                  class="px-2.5 py-1 rounded-md transition cursor-pointer"
+                  :class="projectStatusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  Alle ({{ projects.length }})
+                </button>
+                <button
+                  type="button"
+                  @click="projectStatusFilter = 'active'"
+                  class="px-2.5 py-1 rounded-md transition cursor-pointer"
+                  :class="projectStatusFilter === 'active' ? 'bg-white text-[#0891B2] shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  Aktiv ({{ activeProjectsCount }})
+                </button>
+                <button
+                  type="button"
+                  @click="projectStatusFilter = 'completed'"
+                  class="px-2.5 py-1 rounded-md transition cursor-pointer"
+                  :class="projectStatusFilter === 'completed' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  Erledigt ({{ completedProjectsCount }})
+                </button>
               </div>
 
-              <h3 class="text-base font-bold text-slate-900 group-hover:text-[#0891B2] transition mb-2">
-                {{ project.title }}
-              </h3>
-
-              <!-- Project Custom Fields chips -->
-              <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-3">
-                <span
-                  v-for="(val, key) in project.custom_data"
-                  :key="key"
-                  class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium"
+              <!-- View Switcher -->
+              <div class="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+                <button
+                  type="button"
+                  @click="projectViewMode = 'grid'"
+                  class="p-1.5 rounded text-xs transition cursor-pointer"
+                  :class="projectViewMode === 'grid' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
+                  title="Kachelansicht"
                 >
-                  <strong class="text-[#0891B2]">{{ getFieldLabel(key) }}:</strong> {{ formatCustomFieldValue(val, key) }}
-                </span>
+                  <LayoutGrid class="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  @click="projectViewMode = 'list'"
+                  class="p-1.5 rounded text-xs transition cursor-pointer"
+                  :class="projectViewMode === 'list' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
+                  title="Listenansicht"
+                >
+                  <List class="w-4 h-4" />
+                </button>
               </div>
+            </div>
+          </div>
 
-              <div class="grid grid-cols-4 gap-1.5 py-2.5 border-y border-slate-100 my-3 text-center">
-                <div>
-                  <div class="text-[9px] text-slate-500 uppercase font-semibold">Abschnitte</div>
-                  <div class="text-xs font-bold text-slate-900">{{ project.list_count }}</div>
+          <!-- Empty State -->
+          <div v-if="filteredProjects.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <Folder class="w-6 h-6" />
+            </div>
+            <h3 class="text-base font-bold text-slate-900">
+              {{ projectSearchQuery || projectStatusFilter !== 'all' ? 'Keine passenden Projekte gefunden' : 'Noch keine Projekte in diesem Ordner' }}
+            </h3>
+            <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
+              {{ projectSearchQuery || projectStatusFilter !== 'all' ? 'Passe die Suchkriterien oder Filter an, um Projekte anzuzeigen.' : 'Erstelle jetzt dein erstes Projekt – z.B. aus einer unserer Vorlagen oder per Excel/CSV Import.' }}
+            </p>
+            <button
+              v-if="!projectSearchQuery && projectStatusFilter === 'all'"
+              @click="openNewProjectModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Neues Projekt anlegen</span>
+            </button>
+            <button
+              v-else
+              @click="projectSearchQuery = ''; projectStatusFilter = 'all'"
+              class="taskster_button_light px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            >
+              <span>Filter zurücksetzen</span>
+            </button>
+          </div>
+
+          <!-- VIEW MODE 1: GRID / KACHELN -->
+          <div v-else-if="projectViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              v-for="project in filteredProjects"
+              :key="project.id"
+              class="border rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
+              :class="project.status === 'completed'
+                ? 'bg-emerald-500/10 border-emerald-300 ring-1 ring-emerald-400/20'
+                : 'bg-white border-slate-200 hover:border-[#0891B2]'"
+            >
+              <div>
+                <div class="flex items-start justify-between mb-3">
+                  <div
+                    class="w-9 h-9 rounded flex items-center justify-center border"
+                    :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                  >
+                    <ClipboardList class="w-5 h-5" />
+                  </div>
+                  <div class="flex items-center space-x-1 flex-wrap gap-1">
+                    <span
+                      v-if="project.is_default"
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900 flex items-center space-x-1"
+                      title="Standard-Projekt dieses Ordners"
+                    >
+                      <Star class="w-3 h-3 text-amber-600" />
+                      <span>Standard</span>
+                    </span>
+                    <span
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
+                      :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                    >
+                      <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
+                      <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
+                      <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                    </span>
+                    <span
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                    >
+                      {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <div class="text-[9px] text-slate-500 uppercase font-semibold">Aufgaben</div>
-                  <div class="text-xs font-bold text-slate-900">{{ project.task_count }}</div>
+
+                <h3 class="text-base font-bold text-slate-900 group-hover:text-[#0891B2] transition mb-2">
+                  {{ project.title }}
+                </h3>
+
+                <!-- Compact Project Custom Fields Pills -->
+                <div v-if="getCompactCustomData(project.custom_data).length > 0" class="flex flex-wrap gap-1.5 mb-2.5">
+                  <span
+                    v-for="f in getCompactCustomData(project.custom_data)"
+                    :key="f.key"
+                    class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium"
+                  >
+                    <strong class="text-[#0891B2]">{{ f.label }}:</strong> {{ f.value }}
+                  </span>
                 </div>
-                <div>
-                  <div class="text-[9px] text-slate-500 uppercase font-semibold">Team</div>
-                  <div class="text-xs font-bold text-slate-900">{{ project.member_count }}</div>
+
+                <!-- Structured Multi-line Custom Field Box (e.g. Info, Notiz, Beschreibung) -->
+                <div v-if="getMultiLineCustomData(project.custom_data).length > 0" class="space-y-1.5 mb-3">
+                  <div
+                    v-for="f in getMultiLineCustomData(project.custom_data)"
+                    :key="f.key"
+                    class="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 text-xs"
+                  >
+                    <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1 mb-1">
+                      <StickyNote class="w-3 h-3 text-amber-600 shrink-0" />
+                      <span>{{ f.label }}</span>
+                    </div>
+                    <p class="text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                      {{ f.value }}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <div class="text-[9px] text-[#0891B2] uppercase font-semibold">Aufwand</div>
-                  <div class="text-xs font-bold" :class="(project.tracked_hours || 0) > (project.budget_hours || 0) && project.budget_hours > 0 ? 'text-rose-600' : 'text-slate-900'">
-                    {{ project.tracked_hours || 0 }}h
+
+                <div class="grid grid-cols-4 gap-1.5 py-2.5 border-y border-slate-100 my-3 text-center">
+                  <div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Abschnitte</div>
+                    <div class="text-xs font-bold text-slate-900">{{ project.list_count }}</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Aufgaben</div>
+                    <div class="text-xs font-bold text-slate-900">{{ project.task_count }}</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Team</div>
+                    <div class="text-xs font-bold text-slate-900">{{ project.member_count }}</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-[#0891B2] uppercase font-semibold">Aufwand</div>
+                    <div class="text-xs font-bold" :class="(project.tracked_hours || 0) > (project.budget_hours || 0) && project.budget_hours > 0 ? 'text-rose-600' : 'text-slate-900'">
+                      {{ project.tracked_hours || 0 }}h
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="pt-2 flex items-center gap-2">
-              <NuxtLink
-                :to="`/projects/${project.id}`"
-                class="taskster_button flex-1 px-4 text-xs h-8 rounded-md flex items-center justify-center space-x-1"
-              >
-                <span>Projekt öffnen</span>
-                <ArrowRight class="w-3.5 h-3.5" />
-              </NuxtLink>
-              <button
-                v-if="canManageProject(project)"
-                type="button"
-                @click.stop="openDeleteProjectModal(project)"
-                class="p-2 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
-                :title="$t('dashboard.projekt_loeschen')"
-              >
-                <Trash2 class="w-3.5 h-3.5" />
-              </button>
+              <div class="pt-2 flex items-center gap-2">
+                <NuxtLink
+                  :to="`/projects/${project.id}`"
+                  class="taskster_button flex-1 px-4 text-xs h-8 rounded-md flex items-center justify-center space-x-1"
+                >
+                  <span>Projekt öffnen</span>
+                  <ArrowRight class="w-3.5 h-3.5" />
+                </NuxtLink>
+                <button
+                  v-if="canManageProject(project)"
+                  type="button"
+                  @click.stop="openDeleteProjectModal(project)"
+                  class="p-2 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
+                  :title="$t('dashboard.projekt_loeschen')"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW MODE 2: LIST / TABELLE -->
+          <div v-else class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th class="py-3 px-4">Projekttitel</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4">Abschnitte & Aufgaben</th>
+                    <th class="py-3 px-4">Aufwand & Budget</th>
+                    <th class="py-3 px-4">Projekt-Felder</th>
+                    <th class="py-3 px-4 text-right">Aktion</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
+                  <tr
+                    v-for="project in filteredProjects"
+                    :key="project.id"
+                    class="transition"
+                    :class="project.status === 'completed' ? 'bg-emerald-50/50 hover:bg-emerald-100/50' : 'hover:bg-slate-50/50'"
+                  >
+                    <td class="py-3 px-4">
+                      <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition text-sm">
+                        {{ project.title }}
+                      </NuxtLink>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center space-x-1.5">
+                        <span
+                          class="px-2 py-0.5 rounded text-[10px] font-semibold border flex items-center space-x-1"
+                          :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                        >
+                          <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
+                          <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
+                          <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                        </span>
+                        <span
+                          class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase"
+                          :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                        >
+                          {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <span class="text-slate-900 font-bold">{{ project.task_count }} Aufgaben</span>
+                      <span class="text-slate-500"> in {{ project.list_count }} Abschnitten</span>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center space-x-1.5">
+                        <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+                        <span class="font-bold text-slate-900">{{ project.tracked_hours || 0 }} Std.</span>
+                        <span v-if="project.budget_hours" class="text-[10px] text-slate-500 font-normal">/ {{ project.budget_hours }} Std.</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="space-y-1">
+                        <div class="flex flex-wrap gap-1">
+                          <span
+                            v-for="f in getCompactCustomData(project.custom_data)"
+                            :key="f.key"
+                            class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-800 font-medium"
+                          >
+                            {{ f.label }}: <strong class="text-slate-900">{{ f.value }}</strong>
+                          </span>
+                        </div>
+                        <div v-if="getMultiLineCustomData(project.custom_data).length > 0" class="pt-0.5">
+                          <span
+                            v-for="f in getMultiLineCustomData(project.custom_data)"
+                            :key="f.key"
+                            class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 font-semibold"
+                            :title="`${f.label}: ${f.value}`"
+                          >
+                            <StickyNote class="w-3 h-3 text-amber-600" />
+                            <span>{{ f.label }}: {{ f.value.length > 25 ? f.value.slice(0, 25) + '...' : f.value }}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <span v-else class="text-slate-400">-</span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="flex items-center justify-end space-x-2">
+                        <NuxtLink
+                          :to="`/projects/${project.id}`"
+                          class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center space-x-1"
+                        >
+                          <span>Öffnen</span>
+                          <ArrowRight class="w-3.5 h-3.5" />
+                        </NuxtLink>
+                        <button
+                          v-if="canManageProject(project)"
+                          type="button"
+                          @click.stop="openDeleteProjectModal(project)"
+                          class="p-1.5 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
+                          :title="$t('dashboard.projekt_loeschen')"
+                        >
+                          <Trash2 class="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <!-- VIEW MODE 2: LIST / TABELLE -->
-        <div v-else class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
-          <div class="overflow-x-auto">
+        <!-- TAB 2: PROJEKTJOURNAL -->
+        <div v-else-if="currentFolderTab === 'journal'" class="space-y-4">
+          <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <BookOpen class="w-4 h-4 text-[#0891B2]" />
+                <span>Projektjournal in diesem Ordner</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Alle Journal- und Bautagebucheinträge über die Projekte in «{{ folder.name }}».
+              </p>
+            </div>
+            <button
+              @click="openQuickFolderJournalModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Neuen PJ-Eintrag erfassen</span>
+            </button>
+          </div>
+
+          <!-- Empty State Journals -->
+          <div v-if="folderJournals.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <BookOpen class="w-6 h-6" />
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Noch keine Journal-Einträge vorhanden</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
+              Erfasse Notizen, Mängel oder Baufortschritte direkt für diesen Ordner oder weise sie automatisch einem Projekt zu.
+            </p>
+            <button
+              @click="openQuickFolderJournalModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Ersten Eintrag erfassen</span>
+            </button>
+          </div>
+
+          <!-- Journal Entries List -->
+          <div v-else class="space-y-3">
+            <div
+              v-for="entry in folderJournals"
+              :key="entry.id"
+              class="bg-white border border-slate-200 rounded-lg p-5 shadow-2xs hover:shadow-xs transition"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-slate-900">{{ entry.user_name || 'Benutzer' }}</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="text-xs text-slate-500">{{ new Date(entry.entry_date || entry.created_at).toLocaleDateString('de-CH') }}</span>
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase"
+                    :class="entry.category === 'mangel' ? 'bg-rose-50 text-rose-700 border-rose-200' : (entry.category === 'baufortschritt' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200')"
+                  >
+                    {{ entry.category || 'Notiz' }}
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <NuxtLink
+                    v-if="entry.project_id"
+                    :to="`/projects/${entry.project_id}`"
+                    class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[#0891B2] border border-slate-200 flex items-center gap-1 transition"
+                  >
+                    <Folder class="w-3 h-3" />
+                    <span>Projekt: {{ getProjectTitle(entry.project_id) }}</span>
+                  </NuxtLink>
+                  <span v-else class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                    Ordner-Journal
+                  </span>
+                  <button
+                    v-if="entry.can_edit || user?.id === folder.owner_id || user?.is_superadmin"
+                    @click="deleteFolderJournal(entry.id)"
+                    class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                    title="Eintrag löschen"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <h4 v-if="entry.title" class="text-sm font-bold text-slate-900 mb-1.5">
+                {{ entry.title }}
+              </h4>
+
+              <p class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                {{ entry.content }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: BENUTZERDEFINIERTE FELDER -->
+        <div v-else-if="currentFolderTab === 'fields'" class="space-y-4">
+          <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <SlidersHorizontal class="w-4 h-4 text-[#0891B2]" />
+                <span>Benutzerdefinierte Felder für diesen Ordner</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Definiere eigene Attribute für Projekte und Aufgaben. Diese stehen allen Projekten dieses Ordners zur Verfügung.
+              </p>
+            </div>
+            <button
+              @click="openCreateFieldModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Neues Feld anlegen</span>
+            </button>
+          </div>
+
+          <!-- Empty State Fields -->
+          <div v-if="fields.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <SlidersHorizontal class="w-6 h-6" />
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Noch keine Zusatzfelder definiert</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
+              Erstelle strukturierte Attribute wie Bauleiter, Vorgangsnummer, Fertigstellungstermin oder mehrzeilige Notizfelder.
+            </p>
+            <button
+              @click="openCreateFieldModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Erstes Feld anlegen</span>
+            </button>
+          </div>
+
+          <!-- Fields Table -->
+          <div v-else class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
-                  <th class="py-3 px-4">Projekttitel</th>
-                  <th class="py-3 px-4">Status</th>
-                  <th class="py-3 px-4">Abschnitte & Aufgaben</th>
-                  <th class="py-3 px-4">Aufwand & Budget</th>
-                  <th class="py-3 px-4">Projekt-Felder</th>
-                  <th class="py-3 px-4 text-right">Aktion</th>
+                  <th class="py-3 px-4">Feld-Bezeichnung (Label)</th>
+                  <th class="py-3 px-4">Bereich</th>
+                  <th class="py-3 px-4">Feldtyp</th>
+                  <th class="py-3 px-4">Pflichtfeld</th>
+                  <th class="py-3 px-4">Details / Optionen</th>
+                  <th class="py-3 px-4 text-right">Aktionen</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
-                <tr
-                  v-for="project in sortedProjects"
-                  :key="project.id"
-                  class="transition"
-                  :class="project.status === 'completed' ? 'bg-emerald-50/50 hover:bg-emerald-100/50' : 'hover:bg-slate-50/50'"
-                >
+                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50/50 transition">
                   <td class="py-3 px-4">
-                    <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition text-sm">
-                      {{ project.title }}
-                    </NuxtLink>
+                    <div class="font-bold text-slate-900">{{ f.label_key ? $t(f.label_key) : f.label }}</div>
+                    <div class="text-[10px] text-slate-400 font-mono">{{ f.field_key }}</div>
                   </td>
                   <td class="py-3 px-4">
-                    <div class="flex items-center space-x-1.5">
-                      <span
-                        class="px-2 py-0.5 rounded text-[10px] font-semibold border flex items-center space-x-1"
-                        :class="project.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-100 border-slate-200 text-slate-700'"
-                      >
-                        <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
-                        <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                        <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
-                      </span>
-                      <span
-                        class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase"
-                        :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
-                      >
-                        {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
-                      </span>
-                    </div>
+                    <span
+                      class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border"
+                      :class="f.entity_type === 'project' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'"
+                    >
+                      {{ f.entity_type === 'project' ? 'Projekt-Feld' : 'Aufgaben-Feld' }}
+                    </span>
                   </td>
                   <td class="py-3 px-4">
-                    <span class="text-slate-900 font-bold">{{ project.task_count }} Aufgaben</span>
-                    <span class="text-slate-500"> in {{ project.list_count }} Abschnitten</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                      {{ getFieldTypeLabel(f.field_type) }}
+                    </span>
                   </td>
                   <td class="py-3 px-4">
-                    <div class="flex items-center space-x-1.5">
-                      <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
-                      <span class="font-bold text-slate-900">{{ project.tracked_hours || 0 }} Std.</span>
-                      <span v-if="project.budget_hours" class="text-[10px] text-slate-500 font-normal">/ {{ project.budget_hours }} Std.</span>
-                    </div>
+                    <span class="text-xs" :class="f.is_required ? 'text-rose-600 font-bold' : 'text-slate-400'">
+                      {{ f.is_required ? '✓ Ja' : 'Nein' }}
+                    </span>
                   </td>
-                  <td class="py-3 px-4">
-                    <div v-if="project.custom_data && Object.keys(project.custom_data).length > 0" class="flex flex-wrap gap-1">
-                      <span
-                        v-for="(val, key) in project.custom_data"
-                        :key="key"
-                        class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-800 font-medium"
-                      >
-                        {{ getFieldLabel(key) }}: <strong class="text-slate-900">{{ formatCustomFieldValue(val, key) }}</strong>
-                      </span>
-                    </div>
+                  <td class="py-3 px-4 text-slate-500 text-xs">
+                    <span v-if="f.options && f.options.length" class="text-cyan-700">
+                      {{ f.options.join(', ') }}
+                    </span>
+                    <span v-else-if="f.field_type === 'textarea'" class="italic text-slate-400">
+                      Mehrzeiliges Notizfeld
+                    </span>
                     <span v-else class="text-slate-400">-</span>
                   </td>
                   <td class="py-3 px-4 text-right">
                     <div class="flex items-center justify-end space-x-2">
-                      <NuxtLink
-                        :to="`/projects/${project.id}`"
-                        class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center space-x-1"
-                      >
-                        <span>Öffnen</span>
-                        <ArrowRight class="w-3.5 h-3.5" />
-                      </NuxtLink>
                       <button
-                        v-if="canManageProject(project)"
                         type="button"
-                        @click.stop="openDeleteProjectModal(project)"
+                        @click="openEditFieldModal(f)"
+                        class="taskster_button_light px-2.5 text-xs h-7 rounded-md inline-flex items-center space-x-1 cursor-pointer"
+                        title="Feld bearbeiten"
+                      >
+                        <Pencil class="w-3 h-3 text-[#0891B2]" />
+                        <span>Bearbeiten</span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="deleteFolderField(f.id)"
                         class="p-1.5 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
-                        :title="$t('dashboard.projekt_loeschen')"
+                        title="Feld löschen"
                       >
                         <Trash2 class="w-3.5 h-3.5" />
                       </button>
@@ -425,6 +799,173 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: KONTAKTE -->
+        <div v-else-if="currentFolderTab === 'contacts'" class="space-y-4">
+          <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <Contact class="w-4 h-4 text-[#0891B2]" />
+                <span>Kontakte in diesem Ordner</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Kontakte gelten pro Projektordner und stehen in allen zugehörigen Projekten zur Verfügung.
+              </p>
+            </div>
+            <button
+              @click="openCreateContactModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Neuer Kontakt</span>
+            </button>
+          </div>
+
+          <!-- Empty State Contacts -->
+          <div v-if="folderContacts.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <Contact class="w-6 h-6" />
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Noch keine Kontakte in diesem Ordner</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
+              Erfasse Bauleiter, Handwerker, Ingenieure oder Eigentümer für diesen Ordner.
+            </p>
+            <button
+              @click="openCreateContactModal"
+              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Ersten Kontakt anlegen</span>
+            </button>
+          </div>
+
+          <!-- Unified Contact Cards Grid (1:1 with pages/contacts/index.vue) -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              v-for="c in folderContacts"
+              :key="c.id"
+              class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition"
+            >
+              <div>
+                <!-- Card Top: Avatar, Name, Company, Function -->
+                <div class="flex items-start justify-between gap-3 mb-3">
+                  <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                      {{ getContactInitials(c) }}
+                    </div>
+                    <div class="min-w-0">
+                      <h3 class="text-sm font-semibold text-slate-900 truncate leading-tight">
+                        {{ formatContactFullName(c) }}
+                      </h3>
+                      <p v-if="c.company_name" class="text-xs font-medium text-cyan-800 truncate mt-0.5 flex items-center gap-1">
+                        <Building2 class="w-3 h-3 text-cyan-600 shrink-0" />
+                        <span>{{ c.company_name }}</span>
+                      </p>
+                      <p v-if="c.role_function" class="text-xs text-slate-600 truncate mt-0.5 flex items-center gap-1">
+                        <HardHat class="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{{ c.role_function }}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Scope Badge -->
+                  <span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                    Ordner-Kontakt
+                  </span>
+                </div>
+
+                <!-- Group & Tags Badges -->
+                <div v-if="c.category_group || (c.tags && c.tags.length > 0)" class="flex flex-wrap items-center gap-1.5 mb-3">
+                  <span v-if="c.category_group" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    {{ c.category_group }}
+                  </span>
+                  <span
+                    v-for="(tag, idx) in c.tags"
+                    :key="idx"
+                    class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200"
+                  >
+                    #{{ tag }}
+                  </span>
+                </div>
+
+                <!-- Contact Details (Phone, Mobile, Email, Address) -->
+                <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
+                  <div v-if="c.mobile" class="flex items-center gap-2">
+                    <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
+                      {{ c.mobile }}
+                    </a>
+                    <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold ml-auto" title="WhatsApp Chat öffnen">
+                      WhatsApp
+                    </a>
+                  </div>
+
+                  <div v-if="c.phone && !c.mobile" class="flex items-center gap-2">
+                    <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <a :href="`tel:${c.phone}`" class="font-medium text-[#0891B2] hover:underline truncate">
+                      {{ c.phone }}
+                    </a>
+                  </div>
+
+                  <div v-if="c.email" class="flex items-center gap-2">
+                    <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <a :href="`mailto:${c.email}`" class="font-medium text-slate-800 hover:text-[#0891B2] hover:underline truncate">
+                      {{ c.email }}
+                    </a>
+                  </div>
+
+                  <div v-if="c.address || c.city" class="flex items-center gap-2">
+                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <a
+                      :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([c.address, c.zip_code, c.city].filter(Boolean).join(', '))}`"
+                      target="_blank"
+                      rel="noopener"
+                      class="text-slate-600 hover:text-[#0891B2] hover:underline truncate"
+                    >
+                      {{ [c.address, [c.zip_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') }}
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Notes -->
+                <p v-if="c.notes" class="text-xs text-slate-500 italic mb-3 line-clamp-2">
+                  "{{ c.notes }}"
+                </p>
+              </div>
+
+              <!-- Footer: Actions -->
+              <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+                <button
+                  @click="exportContactVCard(c)"
+                  type="button"
+                  class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
+                  title="vCard herunterladen"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <span>vCard</span>
+                </button>
+                <div class="flex items-center gap-1">
+                  <button
+                    @click="openEditContactModal(c)"
+                    type="button"
+                    class="p-1.5 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition cursor-pointer"
+                    title="Bearbeiten"
+                  >
+                    <Pencil class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    @click="deleteFolderContact(c)"
+                    type="button"
+                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                    title="Löschen"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -825,6 +1366,69 @@
                   >
                     <span class="text-slate-400 font-bold">#{{ rIdx + 1 }}:</span>
                     <span class="text-slate-700 truncate">{{ row.join(' | ') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Workflow-Abschnitte (Phasen) für importierte Projekte -->
+              <div class="space-y-2 p-3.5 bg-cyan-50/60 border border-cyan-200 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>📋</span>
+                    <span>Workflow-Abschnitte (Phasen) für importierte Projekte:</span>
+                  </label>
+                  <button
+                    type="button"
+                    @click="resetImportSectionsToDefault"
+                    class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer text-left"
+                  >
+                    ↺ Auf Standard (Offen, In Arbeit, Abgeschlossen)
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500">
+                  Diese Phasen werden für alle importierten Projekte erstellt und als Standard-Vorlage für diesen Ordner gespeichert.
+                </p>
+
+                <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                  <div
+                    v-for="(sec, sIdx) in importWorkflowSections"
+                    :key="sIdx"
+                    class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs bg-white border border-slate-300 text-slate-800 font-bold shadow-2xs"
+                  >
+                    <span class="text-[#0891B2] text-[10px] font-mono">{{ sIdx + 1 }}.</span>
+                    <input
+                      v-model="importWorkflowSections[sIdx]"
+                      type="text"
+                      class="bg-transparent border-0 focus:ring-0 p-0 text-xs font-bold text-slate-800 w-24 sm:w-28 focus:outline-none"
+                    />
+                    <button
+                      v-if="importWorkflowSections.length > 1"
+                      type="button"
+                      @click="removeImportSection(sIdx)"
+                      class="text-slate-400 hover:text-rose-600 ml-1 font-bold text-xs cursor-pointer"
+                      title="Abschnitt entfernen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Inline Add Section -->
+                  <div class="flex items-center space-x-1 pl-1">
+                    <input
+                      v-model="newImportSectionInput"
+                      @keydown.enter.prevent="addImportSection"
+                      type="text"
+                      placeholder="+ Neuer Abschnitt..."
+                      class="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2] w-36"
+                    />
+                    <button
+                      v-if="newImportSectionInput.trim()"
+                      type="button"
+                      @click="addImportSection"
+                      class="px-2 py-1 bg-[#0891B2] text-white text-[11px] font-bold rounded-lg hover:opacity-90 cursor-pointer"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1494,6 +2098,385 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal: Quick Journal Entry -->
+    <div v-if="showQuickJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <BookOpen class="w-4 h-4 text-[#0891B2]" />
+              <span>Journal-Eintrag erfassen</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Ordner: <strong class="text-slate-800">{{ folder?.name }}</strong>
+            </p>
+          </div>
+          <button @click="showQuickJournalModal = false" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div v-if="quickJournalError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+          {{ quickJournalError }}
+        </div>
+
+        <form @submit.prevent="saveQuickJournal" class="space-y-3.5">
+          <!-- Project Assignment -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              Projekt-Zuweisung
+            </label>
+            <select
+              v-model="quickJournalProjectId"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="auto">✨ Automatisch zuweisen (anhand Text/Titel)</option>
+              <optgroup v-if="projects.length > 0" label="Spezifisches Projekt auswählen">
+                <option v-for="p in projects" :key="p.id" :value="p.id">
+                  📁 {{ p.title }}
+                </option>
+              </optgroup>
+              <option value="">General (Nur Ordner-Journal)</option>
+            </select>
+            <p class="text-[11px] text-slate-500 mt-1">
+              {{ quickJournalProjectId === 'auto' ? 'Das System ordnet den Eintrag automatisch dem passenden Projekt zu (z.B. nach Kundennummer, Adresse oder Name im Text).' : '' }}
+            </p>
+          </div>
+
+          <!-- Category -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Kategorie</label>
+              <select
+                v-model="quickJournalCategory"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              >
+                <option value="notiz">Notiz</option>
+                <option value="baufortschritt">Baufortschritt</option>
+                <option value="mangel">Mangel / Beanstandung</option>
+                <option value="abnahme">Abnahme / Übergabe</option>
+                <option value="telefonat">Telefonat / Besprechung</option>
+                <option value="allgemein">Allgemein</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Betreff / Titel</label>
+              <input
+                v-model="quickJournalTitle"
+                type="text"
+                placeholder="z.B. Bauabnahme Keller"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              Inhalt / Bericht <span class="text-rose-500">*</span>
+            </label>
+            <textarea
+              v-model="quickJournalContent"
+              required
+              rows="4"
+              placeholder="Bericht, Feststellungen, Beschlüsse oder Notizen..."
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2] resize-y"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              @click="showQuickJournalModal = false"
+              class="taskster_button_light px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="savingQuickJournal || !quickJournalContent.trim()"
+              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              <span>{{ savingQuickJournal ? 'Wird gespeichert...' : 'Eintrag speichern' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add / Edit Custom Field (Unlocked) -->
+    <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">
+              {{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Definiere ein Attribut für Aufgaben oder Projekte in «{{ folder?.name }}».
+            </p>
+          </div>
+          <button @click="showFieldModal = false" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div v-if="fieldModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+          {{ fieldModalError }}
+        </div>
+
+        <form @submit.prevent="saveFolderField" class="space-y-4">
+          <!-- Gültigkeitsbereich: Projekt vs Aufgabe (Always Enabled) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Gültigkeitsbereich</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                @click="newFieldEntityType = 'task'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
+                :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                Aufgaben-Feld
+              </button>
+              <button
+                type="button"
+                @click="newFieldEntityType = 'project'"
+                class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
+                :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+              >
+                Projekt-Feld
+              </button>
+            </div>
+          </div>
+
+          <!-- Label -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              Feld-Bezeichnung (Label) <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="newFieldLabel"
+              type="text"
+              required
+              placeholder="z.B. Info, Bauleiter, Vorgang, Fertigstellung..."
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            />
+          </div>
+
+          <!-- Field Type (Always Enabled, Unlocked!) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
+            <select
+              v-model="newFieldType"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+            >
+              <option value="text">Textzeile (kurz)</option>
+              <option value="textarea">Mehrzeiliger Text / Notizfeld</option>
+              <option value="select">Auswahlliste (Dropdown)</option>
+              <option value="number">Zahl</option>
+              <option value="date">Datum</option>
+              <option value="checkbox">Ja / Nein (Checkbox)</option>
+              <option value="url">Link / URL</option>
+              <option value="email">E-Mail</option>
+              <option value="phone">Telefon</option>
+            </select>
+          </div>
+
+          <!-- Select Options if select -->
+          <div v-if="newFieldType === 'select'" class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <label class="block text-xs font-bold text-slate-700">Optionen für Auswahlliste</label>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <span
+                v-for="(opt, oIdx) in newFieldOptions"
+                :key="oIdx"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-white border border-slate-300 text-slate-800 font-semibold"
+              >
+                <span>{{ opt }}</span>
+                <button type="button" @click="newFieldOptions.splice(oIdx, 1)" class="text-rose-500 hover:text-rose-700 font-bold ml-1">✕</button>
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                v-model="newFieldOptionInput"
+                @keydown.enter.prevent="addSelectOption"
+                type="text"
+                placeholder="+ Option eingeben und Enter drücken"
+                class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0891B2]"
+              />
+              <button
+                type="button"
+                @click="addSelectOption"
+                class="px-3 py-1.5 bg-[#0891B2] text-white text-xs font-bold rounded-lg cursor-pointer"
+              >
+                Hinzufügen
+              </button>
+            </div>
+          </div>
+
+          <!-- Required Checkbox -->
+          <div class="pt-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                v-model="newFieldIsRequired"
+                type="checkbox"
+                class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+              />
+              <span class="text-xs font-semibold text-slate-700">Pflichtfeld (Eingabe erforderlich)</span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              @click="showFieldModal = false"
+              class="taskster_button_light px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="savingField || !newFieldLabel.trim()"
+              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              <span>{{ savingField ? 'Wird gespeichert...' : 'Feld speichern' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add / Edit Contact -->
+    <div v-if="showContactModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 my-8">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">
+              {{ editingContactId ? 'Kontakt bearbeiten' : 'Neuen Kontakt erfassen' }}
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Gilt für Ordner <strong class="text-slate-800">{{ folder?.name }}</strong> und alle zugehörigen Projekte.
+            </p>
+          </div>
+          <button @click="showContactModal = false" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div v-if="contactModalError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+          {{ contactModalError }}
+        </div>
+
+        <form @submit.prevent="saveFolderContact" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              Name / Vollständiger Name <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="contactForm.name"
+              type="text"
+              required
+              placeholder="z.B. Marco Rossi"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Firma / Unternehmen</label>
+              <input
+                v-model="contactForm.company_name"
+                type="text"
+                placeholder="z.B. Rossi Bau AG"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Funktion / Rolle</label>
+              <input
+                v-model="contactForm.role_function"
+                type="text"
+                placeholder="z.B. Bauleiter, Polier"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Mobiltelefon (WhatsApp)</label>
+              <input
+                v-model="contactForm.mobile"
+                type="tel"
+                placeholder="+41 79 123 45 67"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Telefon Festnetz</label>
+              <input
+                v-model="contactForm.phone"
+                type="tel"
+                placeholder="+41 41 123 45 67"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <input
+              v-model="contactForm.email"
+              type="email"
+              placeholder="m.rossi@firma.ch"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            />
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Strasse & Hausnr.</label>
+              <input
+                v-model="contactForm.address"
+                type="text"
+                placeholder="Hauptstrasse 12"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">PLZ & Ort</label>
+              <input
+                v-model="contactForm.city"
+                type="text"
+                placeholder="6000 Luzern"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Notizen / Bemerkungen</label>
+            <textarea
+              v-model="contactForm.notes"
+              rows="2"
+              placeholder="Wichtige Hinweise oder Erreichbarkeit..."
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2] resize-y"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              @click="showContactModal = false"
+              class="taskster_button_light px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              :disabled="savingContact || !contactForm.name.trim()"
+              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
+            >
+              <span>{{ savingContact ? 'Wird gespeichert...' : 'Kontakt speichern' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1523,7 +2506,17 @@ import {
   List,
   FileUp,
   MoreVertical,
-  AlertTriangle
+  AlertTriangle,
+  BookOpen,
+  Contact,
+  SlidersHorizontal,
+  HardHat,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  Download,
+  StickyNote
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { CONSTRUCTION_TEMPLATES, TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
@@ -1546,6 +2539,438 @@ const sortedProjects = computed(() => {
     return 0
   })
 })
+
+// Tab navigation state
+const currentFolderTab = ref<'projects' | 'journal' | 'fields' | 'contacts'>('projects')
+
+// Project Search & Filter state
+const projectSearchQuery = ref('')
+const projectStatusFilter = ref<'all' | 'active' | 'completed'>('all')
+
+const activeProjectsCount = computed(() => {
+  return projects.value.filter(p => p.status !== 'completed' && p.status !== 'archived').length
+})
+
+const completedProjectsCount = computed(() => {
+  return projects.value.filter(p => p.status === 'completed').length
+})
+
+const filteredProjects = computed(() => {
+  return sortedProjects.value.filter(p => {
+    if (projectStatusFilter.value === 'active' && (p.status === 'completed' || p.status === 'archived')) {
+      return false
+    }
+    if (projectStatusFilter.value === 'completed' && p.status !== 'completed') {
+      return false
+    }
+    if (projectSearchQuery.value) {
+      const q = projectSearchQuery.value.toLowerCase().trim()
+      const titleMatch = (p.title || '').toLowerCase().includes(q)
+      const customMatch = p.custom_data && Object.values(p.custom_data).some(v => String(v).toLowerCase().includes(q))
+      if (!titleMatch && !customMatch) return false
+    }
+    return true
+  })
+})
+
+const isMultiLineCustomField = (key: string, val: any) => {
+  const f = fields.value.find((item: any) => item.field_key === key)
+  if (f && f.field_type === 'textarea') return true
+  const strVal = String(val ?? '')
+  if (strVal.includes('\n')) return true
+  if (['info', 'notiz', 'bemerkung', 'beschreibung', 'details'].includes(String(key).toLowerCase()) && strVal.length > 25) return true
+  return false
+}
+
+const getCompactCustomData = (customData?: Record<string, any>) => {
+  if (!customData) return []
+  return Object.entries(customData)
+    .filter(([key, val]) => val !== null && val !== '' && !isMultiLineCustomField(key, val))
+    .map(([key, val]) => ({ key, label: getFieldLabel(key), value: formatCustomFieldValue(val, key) }))
+}
+
+const getMultiLineCustomData = (customData?: Record<string, any>) => {
+  if (!customData) return []
+  return Object.entries(customData)
+    .filter(([key, val]) => val !== null && val !== '' && isMultiLineCustomField(key, val))
+    .map(([key, val]) => ({ key, label: getFieldLabel(key), value: formatCustomFieldValue(val, key) }))
+}
+
+// Workflow Abschnitte Vorlage für Import
+const importWorkflowSections = ref<string[]>(['Offen', 'In Arbeit', 'Abgeschlossen'])
+const newImportSectionInput = ref('')
+
+const resetImportSectionsToDefault = () => {
+  importWorkflowSections.value = ['Offen', 'In Arbeit', 'Abgeschlossen']
+}
+
+const addImportSection = () => {
+  const s = newImportSectionInput.value.trim()
+  if (s && !importWorkflowSections.value.includes(s)) {
+    importWorkflowSections.value.push(s)
+    newImportSectionInput.value = ''
+  }
+}
+
+const removeImportSection = (idx: number) => {
+  if (importWorkflowSections.value.length > 1) {
+    importWorkflowSections.value.splice(idx, 1)
+  }
+}
+
+// Quick Journal state & methods
+const showQuickJournalModal = ref(false)
+const quickJournalProjectId = ref('auto')
+const quickJournalTitle = ref('')
+const quickJournalContent = ref('')
+const quickJournalCategory = ref('notiz')
+const quickJournalError = ref('')
+const savingQuickJournal = ref(false)
+
+const openQuickFolderJournalModal = () => {
+  quickJournalProjectId.value = 'auto'
+  quickJournalTitle.value = ''
+  quickJournalContent.value = ''
+  quickJournalCategory.value = 'notiz'
+  quickJournalError.value = ''
+  showQuickJournalModal.value = true
+}
+
+const folderJournals = ref<any[]>([])
+const loadingFolderJournals = ref(false)
+
+const loadFolderJournals = async () => {
+  loadingFolderJournals.value = true
+  try {
+    const res = await $fetch<any>(`/api/journals?folder_id=${folderId}`, {
+      headers: authHeaders()
+    })
+    folderJournals.value = res.entries || res.journals || []
+  } catch (err) {
+    console.error('Failed to load folder journals:', err)
+  } finally {
+    loadingFolderJournals.value = false
+  }
+}
+
+const getProjectTitle = (pId?: string) => {
+  if (!pId) return ''
+  const p = projects.value.find(item => item.id === pId)
+  return p ? p.title : pId
+}
+
+const saveQuickJournal = async () => {
+  if (!quickJournalContent.value.trim()) return
+  savingQuickJournal.value = true
+  quickJournalError.value = ''
+  try {
+    await $fetch('/api/journals', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        folder_id: folderId,
+        project_id: quickJournalProjectId.value === 'auto' ? 'auto' : (quickJournalProjectId.value || null),
+        title: quickJournalTitle.value.trim(),
+        content: quickJournalContent.value.trim(),
+        category: quickJournalCategory.value
+      }
+    })
+    showQuickJournalModal.value = false
+    await loadFolderJournals()
+    await loadFolderData()
+  } catch (err: any) {
+    quickJournalError.value = err.data?.statusMessage || err.message || 'Journal-Eintrag konnte nicht gespeichert werden'
+  } finally {
+    savingQuickJournal.value = false
+  }
+}
+
+const deleteFolderJournal = async (journalId: string) => {
+  if (!confirm('Diesen Journal-Eintrag wirklich löschen?')) return
+  try {
+    await $fetch(`/api/journals/${journalId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadFolderJournals()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Eintrags')
+  }
+}
+
+// Custom Fields Management in Folder
+const showFieldModal = ref(false)
+const editingFieldId = ref<string | null>(null)
+const newFieldLabel = ref('')
+const newFieldKey = ref('')
+const newFieldType = ref('text')
+const newFieldEntityType = ref<'project' | 'task'>('project')
+const newFieldIsRequired = ref(false)
+const newFieldOptions = ref<string[]>([])
+const newFieldOptionInput = ref('')
+const savingField = ref(false)
+const fieldModalError = ref('')
+
+const openCreateFieldModal = () => {
+  editingFieldId.value = null
+  newFieldLabel.value = ''
+  newFieldKey.value = ''
+  newFieldType.value = 'text'
+  newFieldEntityType.value = 'project'
+  newFieldIsRequired.value = false
+  newFieldOptions.value = []
+  newFieldOptionInput.value = ''
+  fieldModalError.value = ''
+  showFieldModal.value = true
+}
+
+const openEditFieldModal = (f: any) => {
+  editingFieldId.value = f.id
+  newFieldLabel.value = f.label_key && te(f.label_key) ? t(f.label_key) : (f.label || '')
+  newFieldKey.value = f.field_key
+  newFieldType.value = f.field_type || 'text'
+  newFieldEntityType.value = f.entity_type === 'task' ? 'task' : 'project'
+  newFieldIsRequired.value = !!f.is_required
+  newFieldOptions.value = Array.isArray(f.options) ? [...f.options] : []
+  newFieldOptionInput.value = ''
+  fieldModalError.value = ''
+  showFieldModal.value = true
+}
+
+const addSelectOption = () => {
+  const opt = newFieldOptionInput.value.trim()
+  if (opt && !newFieldOptions.value.includes(opt)) {
+    newFieldOptions.value.push(opt)
+    newFieldOptionInput.value = ''
+  }
+}
+
+const saveFolderField = async () => {
+  if (!newFieldLabel.value.trim()) return
+  savingField.value = true
+  fieldModalError.value = ''
+  try {
+    if (editingFieldId.value) {
+      await $fetch(`/api/folders/${folderId}/fields/${editingFieldId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: {
+          label: newFieldLabel.value.trim(),
+          field_type: newFieldType.value,
+          entity_type: newFieldEntityType.value,
+          is_required: newFieldIsRequired.value ? 1 : 0,
+          options: newFieldOptions.value
+        }
+      })
+    } else {
+      const generatedKey = newFieldKey.value.trim() || newFieldLabel.value.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+      await $fetch(`/api/folders/${folderId}/fields`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          label: newFieldLabel.value.trim(),
+          field_key: generatedKey,
+          field_type: newFieldType.value,
+          entity_type: newFieldEntityType.value,
+          is_required: newFieldIsRequired.value ? 1 : 0,
+          options: newFieldOptions.value
+        }
+      })
+    }
+    showFieldModal.value = false
+    await loadFolderData()
+  } catch (err: any) {
+    fieldModalError.value = err.data?.statusMessage || err.message || 'Feld konnte nicht gespeichert werden'
+  } finally {
+    savingField.value = false
+  }
+}
+
+const deleteFolderField = async (fieldId: string) => {
+  if (!confirm('Dieses benutzerdefinierte Feld wirklich löschen?')) return
+  try {
+    await $fetch(`/api/folders/${folderId}/fields/${fieldId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadFolderData()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Felds')
+  }
+}
+
+// Contacts Management in Folder
+const folderContacts = ref<any[]>([])
+const loadingFolderContacts = ref(false)
+const showContactModal = ref(false)
+const editingContactId = ref<string | null>(null)
+const contactModalError = ref('')
+const savingContact = ref(false)
+
+const contactForm = reactive({
+  name: '',
+  company_name: '',
+  role_function: '',
+  email: '',
+  phone: '',
+  mobile: '',
+  address: '',
+  city: '',
+  zip_code: '',
+  category_group: '',
+  notes: '',
+  tags: [] as string[]
+})
+
+const loadFolderContacts = async () => {
+  loadingFolderContacts.value = true
+  try {
+    const res = await $fetch<any>(`/api/contacts?folder_id=${folderId}`, {
+      headers: authHeaders()
+    })
+    folderContacts.value = res.contacts || []
+  } catch (err) {
+    console.error('Failed to load folder contacts:', err)
+  } finally {
+    loadingFolderContacts.value = false
+  }
+}
+
+const openCreateContactModal = () => {
+  editingContactId.value = null
+  contactForm.name = ''
+  contactForm.company_name = ''
+  contactForm.role_function = ''
+  contactForm.email = ''
+  contactForm.phone = ''
+  contactForm.mobile = ''
+  contactForm.address = ''
+  contactForm.city = ''
+  contactForm.zip_code = ''
+  contactForm.category_group = ''
+  contactForm.notes = ''
+  contactForm.tags = []
+  contactModalError.value = ''
+  showContactModal.value = true
+}
+
+const openEditContactModal = (c: any) => {
+  editingContactId.value = c.id
+  contactForm.name = formatContactFullName(c)
+  contactForm.company_name = c.company_name || ''
+  contactForm.role_function = c.role_function || ''
+  contactForm.email = c.email || ''
+  contactForm.phone = c.phone || ''
+  contactForm.mobile = c.mobile || ''
+  contactForm.address = c.address || ''
+  contactForm.city = c.city || ''
+  contactForm.zip_code = c.zip_code || ''
+  contactForm.category_group = c.category_group || ''
+  contactForm.notes = c.notes || ''
+  contactForm.tags = Array.isArray(c.tags) ? [...c.tags] : []
+  contactModalError.value = ''
+  showContactModal.value = true
+}
+
+const saveFolderContact = async () => {
+  if (!contactForm.name.trim()) return
+  savingContact.value = true
+  contactModalError.value = ''
+  try {
+    const payload = {
+      folder_id: folderId,
+      first_name: contactForm.name.split(' ')[0] || '',
+      last_name: contactForm.name.split(' ').slice(1).join(' ') || '',
+      company_name: contactForm.company_name,
+      role_function: contactForm.role_function,
+      email: contactForm.email,
+      phone: contactForm.phone,
+      mobile: contactForm.mobile,
+      address: contactForm.address,
+      city: contactForm.city,
+      zip_code: contactForm.zip_code,
+      category_group: contactForm.category_group,
+      notes: contactForm.notes,
+      tags: contactForm.tags
+    }
+    if (editingContactId.value) {
+      await $fetch(`/api/contacts/${editingContactId.value}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: payload
+      })
+    } else {
+      await $fetch('/api/contacts', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: payload
+      })
+    }
+    showContactModal.value = false
+    await loadFolderContacts()
+  } catch (err: any) {
+    contactModalError.value = err.data?.statusMessage || err.message || 'Kontakt konnte nicht gespeichert werden'
+  } finally {
+    savingContact.value = false
+  }
+}
+
+const deleteFolderContact = async (c: any) => {
+  if (!confirm(`Möchtest du den Kontakt "${formatContactFullName(c)}" wirklich löschen?`)) return
+  try {
+    await $fetch(`/api/contacts/${c.id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    })
+    await loadFolderContacts()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
+  }
+}
+
+const formatContactFullName = (c: any) => {
+  if (!c) return ''
+  const parts = [c.first_name, c.last_name].filter(Boolean)
+  return parts.length > 0 ? parts.join(' ') : (c.name || 'Unbekannt')
+}
+
+const getContactInitials = (c: any) => {
+  const name = formatContactFullName(c) || c.company_name || '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
+const cleanPhoneForWhatsApp = (num?: string) => {
+  return (num || '').replace(/[^0-9]/g, '')
+}
+
+const exportContactVCard = (c: any) => {
+  const vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${formatContactFullName(c)}`,
+    c.company_name ? `ORG:${c.company_name}` : '',
+    c.role_function ? `TITLE:${c.role_function}` : '',
+    c.email ? `EMAIL;TYPE=INTERNET:${c.email}` : '',
+    c.mobile ? `TEL;TYPE=CELL:${c.mobile}` : '',
+    c.phone ? `TEL;TYPE=WORK:${c.phone}` : '',
+    (c.address || c.city) ? `ADR;TYPE=WORK:;;${c.address || ''};${c.city || ''};;${c.zip_code || ''};` : '',
+    c.notes ? `NOTE:${c.notes.replace(/\n/g, '\\n')}` : '',
+    'END:VCARD'
+  ].filter(Boolean).join('\r\n')
+
+  const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${(formatContactFullName(c) || 'kontakt').replace(/[^a-z0-9]/gi, '_')}.vcf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 const fields = ref<any[]>([])
 const loading = ref(true)
 const projectViewMode = ref<'grid' | 'list'>('grid')
@@ -2268,6 +3693,10 @@ const loadFolderData = async () => {
     projects.value = res.projects || []
     fields.value = res.fields || []
     timeSummary.value = res.timeSummary || null
+    if (res.folder?.settings?.default_sections && Array.isArray(res.folder.settings.default_sections) && res.folder.settings.default_sections.length > 0) {
+      importWorkflowSections.value = [...res.folder.settings.default_sections]
+    }
+    await Promise.all([loadFolderJournals(), loadFolderContacts()])
   } catch (err: any) {
     if (err.statusCode === 404 || err.statusCode === 401) {
       navigateTo('/dashboard')
@@ -2406,7 +3835,8 @@ const createProject = async () => {
         body: {
           folder_id: folderId,
           projects: projectsToImport,
-          custom_field_definitions: customFieldDefsToCreate
+          custom_field_definitions: customFieldDefsToCreate,
+          sections: importWorkflowSections.value
         }
       })
 
@@ -2432,6 +3862,8 @@ const createProject = async () => {
       if (selectedTemplateLists.value.length > 0) {
         payload.custom_lists = selectedTemplateLists.value
       }
+    } else if (projectCreationMode.value === 'blank' && folder.value?.settings?.default_sections?.length) {
+      payload.custom_lists = folder.value.settings.default_sections
     }
 
     const res = await $fetch<any>('/api/projects', {

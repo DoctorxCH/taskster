@@ -95,6 +95,11 @@ function ensureTables($pdo) {
             "ALTER TABLE companies ADD COLUMN billing_email VARCHAR(255) NULL",
             "ALTER TABLE companies ADD COLUMN stripe_customer_id VARCHAR(128) NULL",
             "ALTER TABLE company_invitations ADD COLUMN license_type VARCHAR(32) NOT NULL DEFAULT 'pro'",
+            "ALTER TABLE project_folders ADD COLUMN settings JSON NULL",
+            "ALTER TABLE contacts ADD COLUMN folder_id VARCHAR(64) NULL",
+            "ALTER TABLE project_journals ADD COLUMN folder_id VARCHAR(64) NULL",
+            "ALTER TABLE project_journals MODIFY COLUMN project_id VARCHAR(64) NULL",
+            "ALTER TABLE projects ADD COLUMN template_id VARCHAR(64) NULL",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -3005,7 +3010,12 @@ try {
         }
         if (!$name) errorResponse('Name erforderlich', 400);
 
-        $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ?, company_id = ? WHERE id = ?")->execute([$name, $icon, $visibility, $companyId, $fldId]);
+        $settings = $folder['settings'] ?? '{}';
+        if (isset($body['settings'])) {
+            $settings = is_string($body['settings']) ? $body['settings'] : json_encode($body['settings'], JSON_UNESCAPED_UNICODE);
+        }
+
+        $db->prepare("UPDATE project_folders SET name = ?, icon = ?, visibility = ?, company_id = ?, settings = ? WHERE id = ?")->execute([$name, $icon, $visibility, $companyId, $settings, $fldId]);
 
         if (!empty($body['default_project_id'])) {
             $defPrjId = trim($body['default_project_id']);
@@ -3176,6 +3186,9 @@ try {
             'totalBudgetHours' => $folderTotalBudgetHours,
             'totalBudgetAmount' => $folderTotalBudgetAmount
         ];
+
+        $folder['settings'] = !empty($folder['settings']) ? (is_string($folder['settings']) ? json_decode($folder['settings'], true) : $folder['settings']) : [];
+        if (!is_array($folder['settings'])) $folder['settings'] = [];
 
         jsonResponse(['folder' => $folder, 'fields' => $fields, 'projects' => $projects, 'timeSummary' => $timeSummary]);
     }
@@ -3415,11 +3428,14 @@ try {
         $label = isset($body['label']) ? trim($body['label']) : $existingField['label'];
         if ($label === '') errorResponse('Feld-Beschriftung darf nicht leer sein', 400);
 
-        $options = isset($body['options']) ? json_encode($body['options']) : $existingField['options'];
-        $logicRules = array_key_exists('logic_rules', $body) ? ($body['logic_rules'] ? json_encode($body['logic_rules']) : null) : $existingField['logic_rules'];
+        $fieldType = isset($body['field_type']) ? trim($body['field_type']) : $existingField['field_type'];
+        $entityType = isset($body['entity_type']) ? trim($body['entity_type']) : ($existingField['entity_type'] ?? 'task');
+        $isRequired = isset($body['is_required']) ? ($body['is_required'] ? 1 : 0) : ($existingField['is_required'] ?? 0);
+        $options = isset($body['options']) ? (is_string($body['options']) ? $body['options'] : json_encode($body['options'])) : $existingField['options'];
+        $logicRules = array_key_exists('logic_rules', $body) ? ($body['logic_rules'] ? (is_string($body['logic_rules']) ? $body['logic_rules'] : json_encode($body['logic_rules'])) : null) : $existingField['logic_rules'];
 
-        $db->prepare("UPDATE folder_field_definitions SET label = ?, options = ?, logic_rules = ? WHERE id = ? AND folder_id = ?")->execute([
-            $label, $options, $logicRules, $fieldId, $fldId
+        $db->prepare("UPDATE folder_field_definitions SET label = ?, field_type = ?, entity_type = ?, is_required = ?, options = ?, logic_rules = ? WHERE id = ? AND folder_id = ?")->execute([
+            $label, $fieldType, $entityType, $isRequired, $options, $logicRules, $fieldId, $fldId
         ]);
 
         jsonResponse(['success' => true]);
@@ -3545,17 +3561,46 @@ try {
                 }
             }
 
+            // Sections / Workflow-Listen ermitteln
+            $sectionsToUse = [];
+            if (!empty($body['sections']) && is_array($body['sections'])) {
+                foreach ($body['sections'] as $sec) {
+                    $sTitle = is_array($sec) ? trim($sec['title'] ?? '') : trim((string)$sec);
+                    if ($sTitle === '') continue;
+                    $isTarget = is_array($sec) ? (!empty($sec['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($sTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0);
+                    $sectionsToUse[] = ['title' => $sTitle, 'is_completed_target' => $isTarget];
+                }
+                if (!empty($sectionsToUse)) {
+                    $fSettings = !empty($folder['settings']) ? (is_string($folder['settings']) ? json_decode($folder['settings'], true) : $folder['settings']) : [];
+                    if (!is_array($fSettings)) $fSettings = [];
+                    $fSettings['default_sections'] = $sectionsToUse;
+                    $db->prepare("UPDATE project_folders SET settings = ? WHERE id = ?")->execute([json_encode($fSettings, JSON_UNESCAPED_UNICODE), $folderId]);
+                }
+            } else {
+                $fSettings = !empty($folder['settings']) ? (is_string($folder['settings']) ? json_decode($folder['settings'], true) : $folder['settings']) : [];
+                if (is_array($fSettings) && !empty($fSettings['default_sections']) && is_array($fSettings['default_sections'])) {
+                    $sectionsToUse = $fSettings['default_sections'];
+                }
+            }
+            if (empty($sectionsToUse)) {
+                $sectionsToUse = [
+                    ['title' => 'Offen', 'is_completed_target' => 0],
+                    ['title' => 'In Arbeit', 'is_completed_target' => 0],
+                    ['title' => 'Abgeschlossen', 'is_completed_target' => 1]
+                ];
+            }
+
             $insPrjStmt = $db->prepare("
-                INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data, template_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'folder_workflow')
             ");
             $insPmStmt = $db->prepare("
                 INSERT INTO project_members (id, project_id, user_id, role)
                 VALUES (?, ?, ?, 'owner')
             ");
             $insLstStmt = $db->prepare("
-                INSERT INTO lists (id, project_id, title, access_mode, sort_order)
-                VALUES (?, ?, 'Aufgabenliste 1', 'inherit', 1)
+                INSERT INTO lists (id, project_id, title, access_mode, sort_order, is_completed_target)
+                VALUES (?, ?, ?, 'inherit', ?, ?)
             ");
 
             $created = [];
@@ -3575,13 +3620,20 @@ try {
                 $pmId = 'pm_' . substr(bin2hex(random_bytes(6)), 0, 8);
                 $insPmStmt->execute([$pmId, $pId, $user['id']]);
 
-                // Erste Liste dynamisch ermitteln oder anlegen (Gefahr 4 Absicherung)
-                $lstStmt = $db->prepare("SELECT id FROM lists WHERE project_id = ? ORDER BY sort_order ASC LIMIT 1");
-                $lstStmt->execute([$pId]);
-                $firstListId = $lstStmt->fetchColumn();
+                // Workflow-Listen anlegen
+                $firstListId = null;
+                $order = 1;
+                foreach ($sectionsToUse as $sec) {
+                    $sTitle = is_array($sec) ? trim($sec['title'] ?? '') : trim((string)$sec);
+                    if ($sTitle === '') continue;
+                    $isTarget = is_array($sec) ? (!empty($sec['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($sTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0);
+                    $lId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    if (!$firstListId) $firstListId = $lId;
+                    $insLstStmt->execute([$lId, $pId, $sTitle, $order++, $isTarget]);
+                }
                 if (!$firstListId) {
                     $firstListId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $insLstStmt->execute([$firstListId, $pId]);
+                    $insLstStmt->execute([$firstListId, $pId, 'Offen', 1, 0]);
                 }
 
                 // Dynamische Aufgaben-Erstellung aus CSV-Spalte
@@ -3611,8 +3663,9 @@ try {
 
         $status = (!empty($body['status']) && in_array($body['status'], ['active', 'archived', 'completed', 'on_hold'])) ? $body['status'] : 'active';
         $prjId = 'prj_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
-            $prjId, $folderId, $title, $status, $visibility, $currency, $budgetHours, $budgetAmount, json_encode($customData)
+        $appliedTemplateId = $templateId ?: 'folder_workflow';
+        $db->prepare("INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data, template_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+            $prjId, $folderId, $title, $status, $visibility, $currency, $budgetHours, $budgetAmount, json_encode($customData), $appliedTemplateId
         ]);
 
         // Add creator to project_members as owner
@@ -3623,11 +3676,24 @@ try {
 
         // Listen / Abschnitte bestimmen
         $listsToCreate = [];
-        if (!empty($customLists) && is_array($customLists)) {
+        if (!empty($body['sections']) && is_array($body['sections'])) {
+            foreach ($body['sections'] as $sec) {
+                $sTitle = is_array($sec) ? trim($sec['title'] ?? '') : trim((string)$sec);
+                if ($sTitle === '') continue;
+                $isTarget = is_array($sec) ? (!empty($sec['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($sTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0);
+                $listsToCreate[] = ['title' => $sTitle, 'is_completed_target' => $isTarget];
+            }
+            if (!empty($listsToCreate)) {
+                $fSettings = !empty($folder['settings']) ? (is_string($folder['settings']) ? json_decode($folder['settings'], true) : $folder['settings']) : [];
+                if (!is_array($fSettings)) $fSettings = [];
+                $fSettings['default_sections'] = $listsToCreate;
+                $db->prepare("UPDATE project_folders SET settings = ? WHERE id = ?")->execute([json_encode($fSettings, JSON_UNESCAPED_UNICODE), $folderId]);
+            }
+        } else if (!empty($customLists) && is_array($customLists)) {
             foreach ($customLists as $cl) {
                 $cl = trim((string)$cl);
-                if ($cl !== '' && !in_array($cl, $listsToCreate)) {
-                    $listsToCreate[] = $cl;
+                if ($cl !== '') {
+                    $listsToCreate[] = ['title' => $cl, 'is_completed_target' => in_array(mb_strtolower($cl), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0];
                 }
             }
         }
@@ -3640,34 +3706,53 @@ try {
             if ($tmpl && empty($listsToCreate)) {
                 $tLists = !empty($tmpl['lists']) ? (is_string($tmpl['lists']) ? json_decode($tmpl['lists'], true) : $tmpl['lists']) : [];
                 if (!empty($tLists) && is_array($tLists)) {
-                    $listsToCreate = $tLists;
+                    foreach ($tLists as $tl) {
+                        $tlTitle = is_array($tl) ? ($tl['title'] ?? '') : (string)$tl;
+                        if ($tlTitle) {
+                            $listsToCreate[] = ['title' => $tlTitle, 'is_completed_target' => is_array($tl) ? (!empty($tl['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($tlTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0)];
+                        }
+                    }
                 }
             }
         }
 
         // Falls ueber import_tasks Abschnitte definiert wurden, die noch fehlen:
         if (!empty($importTasks) && is_array($importTasks)) {
+            $existingTitles = array_map(function($x) { return is_array($x) ? $x['title'] : (string)$x; }, $listsToCreate);
             foreach ($importTasks as $it) {
                 $sec = trim((string)($it['list_title'] ?? ''));
-                if ($sec !== '' && !in_array($sec, $listsToCreate)) {
-                    $listsToCreate[] = $sec;
+                if ($sec !== '' && !in_array($sec, $existingTitles)) {
+                    $listsToCreate[] = ['title' => $sec, 'is_completed_target' => 0];
+                    $existingTitles[] = $sec;
                 }
             }
         }
 
         if (empty($listsToCreate)) {
-            $listsToCreate = ['Aufgabenliste 1'];
+            $fSettings = !empty($folder['settings']) ? (is_string($folder['settings']) ? json_decode($folder['settings'], true) : $folder['settings']) : [];
+            if (is_array($fSettings) && !empty($fSettings['default_sections']) && is_array($fSettings['default_sections'])) {
+                $listsToCreate = $fSettings['default_sections'];
+            } else {
+                $listsToCreate = [
+                    ['title' => 'Offen', 'is_completed_target' => 0],
+                    ['title' => 'In Arbeit', 'is_completed_target' => 0],
+                    ['title' => 'Abgeschlossen', 'is_completed_target' => 1]
+                ];
+            }
         }
 
         // Listen anlegen und Map speichern: strtolower(title) => list_id
         $listMap = [];
         $firstListId = null;
         $order = 1;
-        foreach ($listsToCreate as $listTitle) {
+        foreach ($listsToCreate as $item) {
+            $listTitle = is_array($item) ? trim($item['title'] ?? '') : trim((string)$item);
+            if ($listTitle === '') continue;
+            $isTarget = is_array($item) ? (!empty($item['is_completed_target']) ? 1 : 0) : (in_array(mb_strtolower($listTitle), ['abgeschlossen', 'done', 'erledigt', 'fertig']) ? 1 : 0);
             $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
             if (!$firstListId) $firstListId = $lstId;
-            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, 'inherit', ?)")
-               ->execute([$lstId, $prjId, $listTitle, $order++]);
+            $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order, is_completed_target) VALUES (?, ?, ?, 'inherit', ?, ?)")
+               ->execute([$lstId, $prjId, $listTitle, $order++, $isTarget]);
             $listMap[mb_strtolower(trim($listTitle))] = $lstId;
         }
 
@@ -4556,14 +4641,40 @@ try {
     }
 
     // 15. GET projects/:id/journal & GET journals
-    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || ($path === 'journals' && !empty($_GET['project_id']))) && $method === 'GET') {
+    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || ($path === 'journals' && (!empty($_GET['project_id']) || !empty($_GET['folder_id'])))) && $method === 'GET') {
         $user = requireAuth();
         $projectId = !empty($m[1]) ? $m[1] : ($_GET['project_id'] ?? '');
-        evaluateProjectAccess($user, $projectId, 'read');
+        $folderId = trim($_GET['folder_id'] ?? '');
+
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'read');
+        } else if ($folderId) {
+            // Folder access check
+            $fCheckStmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+            $fCheckStmt->execute([$folderId]);
+            $folder = $fCheckStmt->fetch();
+            if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+            if ($folder['owner_id'] !== $user['id']) {
+                if ($folder['visibility'] !== 'company' || empty($user['company_id']) || $user['company_id'] !== $folder['company_id']) {
+                    errorResponse('Keine Berechtigung', 403);
+                }
+            }
+        }
 
         $isSuperadmin = !empty($user['is_superadmin']) ? 1 : 0;
         $userId = $user['id'];
         $companyId = $user['company_id'] ?? '';
+
+        $whereClause = "";
+        $queryParams = [];
+        if ($projectId) {
+            $whereClause = "j.project_id = ?";
+            $queryParams[] = $projectId;
+        } else {
+            $whereClause = "(j.folder_id = ? OR j.project_id IN (SELECT id FROM projects WHERE folder_id = ?))";
+            $queryParams[] = $folderId;
+            $queryParams[] = $folderId;
+        }
 
         // Visibility-Matrix Filter:
         // - only_me: Creator (or superadmin)
@@ -4575,11 +4686,13 @@ try {
             SELECT j.*, 
                    COALESCE(u.name, 'Unbekannt') as author_name,
                    u.email as author_email,
-                   t.title as task_title
+                   t.title as task_title,
+                   p.title as project_title
             FROM project_journals j
             LEFT JOIN users u ON u.id = COALESCE(j.user_id, j.author_id)
             LEFT JOIN tasks t ON t.id = j.task_id
-            WHERE j.project_id = ?
+            LEFT JOIN projects p ON p.id = j.project_id
+            WHERE $whereClause
               AND (
                 ? = 1
                 OR COALESCE(j.user_id, j.author_id) = ?
@@ -4592,7 +4705,8 @@ try {
               )
             ORDER BY j.created_at DESC
         ");
-        $stmt->execute([$projectId, $isSuperadmin, $userId, $companyId, $companyId, $userId]);
+        $allParams = array_merge($queryParams, [$isSuperadmin, $userId, $companyId, $companyId, $userId]);
+        $stmt->execute($allParams);
         $rawEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $entries = [];
@@ -4631,7 +4745,7 @@ try {
     }
 
     // 15b. Legacy GET journals without project_id (User's own recent entries)
-    if ($path === 'journals' && $method === 'GET' && empty($_GET['project_id'])) {
+    if ($path === 'journals' && $method === 'GET' && empty($_GET['project_id']) && empty($_GET['folder_id'])) {
         $user = requireAuth();
         $stmt = $db->prepare("
             SELECT j.*, u.name as author_name, t.title as task_title, p.title as project_title
@@ -4656,6 +4770,7 @@ try {
     // 16. POST projects/:id/journal & POST journals
     if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || $path === 'journals') && $method === 'POST') {
         $user = requireAuth();
+        $folderId = !empty($body['folder_id']) ? trim($body['folder_id']) : null;
         $projectId = !empty($m[1]) ? $m[1] : ($body['project_id'] ?? '');
         $title = trim($body['title'] ?? '');
         $content = trim($body['content'] ?? '');
@@ -4672,37 +4787,89 @@ try {
             errorResponse('Titel und Inhalt sind erforderlich', 400);
         }
 
-        if (empty($projectId)) {
+        // Auto assignment if projectId is empty or 'auto':
+        if ((empty($projectId) || $projectId === 'auto') && $folderId) {
+            $pStmt = $db->prepare("SELECT id, title, custom_data FROM projects WHERE folder_id = ?");
+            $pStmt->execute([$folderId]);
+            $folderProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+            $fullText = mb_strtolower($title . ' ' . $content);
+            $matchedPrjId = null;
+            foreach ($folderProjects as $fp) {
+                $t = mb_strtolower(trim($fp['title']));
+                if ($t !== '' && mb_strpos($fullText, $t) !== false) {
+                    $matchedPrjId = $fp['id'];
+                    break;
+                }
+                if (!empty($fp['custom_data'])) {
+                    $cd = is_string($fp['custom_data']) ? json_decode($fp['custom_data'], true) : $fp['custom_data'];
+                    if (is_array($cd)) {
+                        foreach ($cd as $val) {
+                            $vStr = mb_strtolower(trim((string)$val));
+                            if (mb_strlen($vStr) >= 3 && mb_strpos($fullText, $vStr) !== false) {
+                                $matchedPrjId = $fp['id'];
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+            if ($matchedPrjId) {
+                $projectId = $matchedPrjId;
+            } else {
+                $defP = $db->prepare("SELECT id FROM projects WHERE folder_id = ? ORDER BY is_default DESC, created_at ASC LIMIT 1");
+                $defP->execute([$folderId]);
+                $projectId = $defP->fetchColumn() ?: null;
+            }
+        }
+
+        if (empty($projectId) && empty($folderId)) {
             $fStmt = $db->prepare("
-                SELECT p.id FROM projects p
+                SELECT p.id, p.folder_id FROM projects p
                 JOIN project_folders pf ON pf.id = p.folder_id
                 WHERE pf.company_id = ? OR pf.owner_id = ?
                 ORDER BY p.is_default DESC, p.created_at ASC
                 LIMIT 1
             ");
             $fStmt->execute([$user['company_id'] ?? '', $user['id']]);
-            $projectId = $fStmt->fetchColumn();
-            if (empty($projectId)) {
-                $anyPrj = $db->query("SELECT id FROM projects LIMIT 1")->fetchColumn();
+            $pRow = $fStmt->fetch();
+            if ($pRow) {
+                $projectId = $pRow['id'];
+                $folderId = $pRow['folder_id'];
+            } else {
+                $anyPrj = $db->query("SELECT id, folder_id FROM projects LIMIT 1")->fetch();
                 if ($anyPrj) {
-                    $projectId = $anyPrj;
+                    $projectId = $anyPrj['id'];
+                    $folderId = $anyPrj['folder_id'];
                 } else {
                     errorResponse('Projekt nicht gefunden', 404);
                 }
             }
         }
 
-        evaluateProjectAccess($user, $projectId, 'write');
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'write');
+            if (!$folderId) {
+                $fSt = $db->prepare("SELECT folder_id FROM projects WHERE id = ?");
+                $fSt->execute([$projectId]);
+                $folderId = $fSt->fetchColumn() ?: null;
+            }
+        } else if ($folderId) {
+            $fCheckStmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+            $fCheckStmt->execute([$folderId]);
+            $fld = $fCheckStmt->fetch();
+            if (!$fld) errorResponse('Ordner nicht gefunden', 404);
+        }
 
         $jrnId = 'jrn_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $metaJson = is_array($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE) : (is_string($metadata) ? $metadata : '{}');
 
         $db->prepare("
-            INSERT INTO project_journals (id, company_id, project_id, user_id, author_id, task_id, type, category, entry_type, title, content, visibility, allowed_group_id, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO project_journals (id, company_id, folder_id, project_id, user_id, author_id, task_id, type, category, entry_type, title, content, visibility, allowed_group_id, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ")->execute([
             $jrnId,
             $user['company_id'] ?? null,
+            $folderId,
             $projectId,
             $user['id'],
             $user['id'],
@@ -8448,6 +8615,7 @@ try {
     // 32. GET contacts
     if ($path === 'contacts' && $method === 'GET') {
         $user = requireAuth();
+        $folderId = trim($_GET['folder_id'] ?? '');
         $projectId = trim($_GET['project_id'] ?? '');
         $group = trim($_GET['group'] ?? '');
         $scope = trim($_GET['scope'] ?? '');
@@ -8487,13 +8655,41 @@ try {
                 $params[':cid_p'] = $user['company_id'];
             }
 
+            // 4. Folder-linked contacts
+            $userWhere[] = "(c.folder_id IS NOT NULL AND c.folder_id IN (
+                SELECT pf_acc.id FROM project_folders pf_acc
+                WHERE pf_acc.owner_id = :uid_f1
+                   OR EXISTS (SELECT 1 FROM folder_members fm WHERE fm.folder_id = pf_acc.id AND fm.user_id = :uid_f2)
+                   " . (!empty($user['company_id']) ? "OR (pf_acc.company_id = :cid_f AND pf_acc.visibility = 'company')" : "") . "
+            ))";
+            $params[':uid_f1'] = $user['id'];
+            $params[':uid_f2'] = $user['id'];
+            if (!empty($user['company_id'])) {
+                $params[':cid_f'] = $user['company_id'];
+            }
+
             $where[] = '(' . implode(' OR ', $userWhere) . ')';
         }
 
         // Additional filters:
-        if ($projectId !== '') {
-            $where[] = "c.project_id = :f_project_id";
-            $params[':f_project_id'] = $projectId;
+        if ($folderId !== '') {
+            $where[] = "(c.folder_id = :f_folder_id OR c.project_id IN (SELECT id FROM projects WHERE folder_id = :f_folder_id2))";
+            $params[':f_folder_id'] = $folderId;
+            $params[':f_folder_id2'] = $folderId;
+        } else if ($projectId !== '') {
+            // Contacts belong to folder!
+            $stmtP = $db->prepare("SELECT folder_id FROM projects WHERE id = ?");
+            $stmtP->execute([$projectId]);
+            $pFolderId = $stmtP->fetchColumn();
+            if ($pFolderId) {
+                $where[] = "(c.folder_id = :f_pfolder_id OR c.project_id = :f_project_id OR c.project_id IN (SELECT id FROM projects WHERE folder_id = :f_pfolder_id2))";
+                $params[':f_pfolder_id'] = $pFolderId;
+                $params[':f_project_id'] = $projectId;
+                $params[':f_pfolder_id2'] = $pFolderId;
+            } else {
+                $where[] = "c.project_id = :f_project_id";
+                $params[':f_project_id'] = $projectId;
+            }
         }
 
         if ($group !== '') {
@@ -8522,11 +8718,13 @@ try {
         $sql = "
             SELECT c.*, 
                    p.title AS project_title,
-                   pf.name AS folder_name,
+                   COALESCE(pf.name, pf2.name) AS folder_name,
+                   COALESCE(c.folder_id, p.folder_id) AS resolved_folder_id,
                    u.name AS creator_name
             FROM contacts c
+            LEFT JOIN project_folders pf ON pf.id = c.folder_id
             LEFT JOIN projects p ON p.id = c.project_id
-            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN project_folders pf2 ON pf2.id = p.folder_id
             LEFT JOIN users u ON u.id = c.user_id
         ";
         if (!empty($where)) {
@@ -8563,7 +8761,14 @@ try {
         $phone = trim($body['phone'] ?? '');
         $mobile = trim($body['mobile'] ?? '');
         $email = trim($body['email'] ?? '');
+        $folderId = !empty($body['folder_id']) ? trim($body['folder_id']) : null;
         $projectId = !empty($body['project_id']) ? trim($body['project_id']) : null;
+        if (!$folderId && $projectId) {
+            $stmtPf = $db->prepare("SELECT folder_id FROM projects WHERE id = ?");
+            $stmtPf->execute([$projectId]);
+            $folderId = $stmtPf->fetchColumn() ?: null;
+        }
+
         $categoryGroup = trim($body['category_group'] ?? '');
         $address = trim($body['address'] ?? '');
         $website = trim($body['website'] ?? '');
@@ -8631,11 +8836,11 @@ try {
 
         $stmt = $db->prepare("
             INSERT INTO contacts (
-                id, user_id, company_id, project_id, first_name, last_name,
+                id, user_id, company_id, folder_id, project_id, first_name, last_name,
                 company_name, role_function, phone, mobile, email,
                 category_group, address, website, latitude, longitude, tags, notes, share_scope, created_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?, NOW()
             )
@@ -8644,6 +8849,7 @@ try {
             $id,
             $user['id'],
             $user['company_id'] ?? null,
+            $folderId,
             $projectId,
             $firstName ?: null,
             $lastName,
@@ -8663,10 +8869,11 @@ try {
         ]);
 
         $fetchStmt = $db->prepare("
-            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            SELECT c.*, p.title AS project_title, COALESCE(pf.name, pf2.name) AS folder_name, u.name AS creator_name
             FROM contacts c
+            LEFT JOIN project_folders pf ON pf.id = c.folder_id
             LEFT JOIN projects p ON p.id = c.project_id
-            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN project_folders pf2 ON pf2.id = p.folder_id
             LEFT JOIN users u ON u.id = c.user_id
             WHERE c.id = ?
         ");
@@ -8686,10 +8893,11 @@ try {
         $contactId = $m[1];
 
         $stmt = $db->prepare("
-            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            SELECT c.*, p.title AS project_title, COALESCE(pf.name, pf2.name) AS folder_name, u.name AS creator_name
             FROM contacts c
+            LEFT JOIN project_folders pf ON pf.id = c.folder_id
             LEFT JOIN projects p ON p.id = c.project_id
-            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN project_folders pf2 ON pf2.id = p.folder_id
             LEFT JOIN users u ON u.id = c.user_id
             WHERE c.id = ?
         ");
@@ -8753,7 +8961,14 @@ try {
         $phone = array_key_exists('phone', $body) ? trim($body['phone']) : $contact['phone'];
         $mobile = array_key_exists('mobile', $body) ? trim($body['mobile']) : $contact['mobile'];
         $email = array_key_exists('email', $body) ? trim($body['email']) : $contact['email'];
+        $folderId = array_key_exists('folder_id', $body) ? (!empty($body['folder_id']) ? trim($body['folder_id']) : null) : ($contact['folder_id'] ?? null);
         $projectId = array_key_exists('project_id', $body) ? (!empty($body['project_id']) ? trim($body['project_id']) : null) : $contact['project_id'];
+        if (!$folderId && $projectId) {
+            $stmtPf = $db->prepare("SELECT folder_id FROM projects WHERE id = ?");
+            $stmtPf->execute([$projectId]);
+            $folderId = $stmtPf->fetchColumn() ?: null;
+        }
+
         $categoryGroup = array_key_exists('category_group', $body) ? trim($body['category_group']) : $contact['category_group'];
         $address = array_key_exists('address', $body) ? trim($body['address']) : ($contact['address'] ?? null);
         $website = array_key_exists('website', $body) ? trim($body['website']) : ($contact['website'] ?? null);
@@ -8778,7 +8993,7 @@ try {
         $upStmt = $db->prepare("
             UPDATE contacts
             SET first_name = ?, last_name = ?, company_name = ?, role_function = ?,
-                phone = ?, mobile = ?, email = ?, project_id = ?, category_group = ?,
+                phone = ?, mobile = ?, email = ?, folder_id = ?, project_id = ?, category_group = ?,
                 address = ?, website = ?, latitude = ?, longitude = ?, tags = ?, notes = ?, share_scope = ?
             WHERE id = ?
         ");
@@ -8790,6 +9005,7 @@ try {
             $phone ?: null,
             $mobile ?: null,
             $email ?: null,
+            $folderId,
             $projectId,
             $categoryGroup ?: null,
             $address ?: null,
@@ -8803,10 +9019,11 @@ try {
         ]);
 
         $fetchStmt = $db->prepare("
-            SELECT c.*, p.title AS project_title, pf.name AS folder_name, u.name AS creator_name
+            SELECT c.*, p.title AS project_title, COALESCE(pf.name, pf2.name) AS folder_name, u.name AS creator_name
             FROM contacts c
+            LEFT JOIN project_folders pf ON pf.id = c.folder_id
             LEFT JOIN projects p ON p.id = c.project_id
-            LEFT JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN project_folders pf2 ON pf2.id = p.folder_id
             LEFT JOIN users u ON u.id = c.user_id
             WHERE c.id = ?
         ");

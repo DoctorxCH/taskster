@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS project_folders (
   name TEXT NOT NULL,
   icon TEXT DEFAULT '📁',
   visibility TEXT NOT NULL DEFAULT 'private',
+  settings TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS projects (
   budget_hours REAL DEFAULT NULL,
   budget_amount REAL DEFAULT NULL,
   visibility TEXT NOT NULL DEFAULT 'private',
+  template_id TEXT,
   is_default INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -153,7 +155,8 @@ CREATE TABLE IF NOT EXISTS time_entries (
 CREATE TABLE IF NOT EXISTS project_journals (
   id TEXT PRIMARY KEY,
   company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
-  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  folder_id TEXT REFERENCES project_folders(id) ON DELETE CASCADE,
+  project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   author_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
@@ -335,6 +338,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   company_id TEXT REFERENCES companies(id) ON DELETE SET NULL,
+  folder_id TEXT REFERENCES project_folders(id) ON DELETE CASCADE,
   project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
   first_name TEXT,
   last_name TEXT NOT NULL,
