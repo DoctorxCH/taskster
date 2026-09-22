@@ -52,12 +52,7 @@ function ensureTables($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        $count = $pdo->query("SELECT COUNT(*) FROM project_templates WHERE is_system = 1 AND id IN ('template_building_construction', 'template_civil_engineering', 'template_network_infrastructure', 'template_property_maintenance')")->fetchColumn();
-        if ((int)$count < 4) {
-            seedTemplates($pdo);
-        }
-
-        // Column migrations (idempotent)
+        // Column migrations (idempotent, always run first)
         $colMigrations = [
             "ALTER TABLE project_folders ADD COLUMN icon VARCHAR(64) DEFAULT '📁'",
             "ALTER TABLE tasks ADD COLUMN assigned_to VARCHAR(64) DEFAULT NULL",
@@ -104,6 +99,13 @@ function ensureTables($pdo) {
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
         }
+
+        try {
+            $count = $pdo->query("SELECT COUNT(*) FROM project_templates WHERE is_system = 1 AND id IN ('template_building_construction', 'template_civil_engineering', 'template_network_infrastructure', 'template_property_maintenance')")->fetchColumn();
+            if ((int)$count < 4) {
+                seedTemplates($pdo);
+            }
+        } catch (Exception $e) {}
 
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS company_memberships (
@@ -2367,12 +2369,18 @@ function getUserPlanDetails($db, $user) {
 
     $isTrial = false;
     $daysLeft = 0;
-    $uStmt = $db->prepare("SELECT trial_ends_at, is_pro FROM users WHERE id = ?");
-    $uStmt->execute([$user['id']]);
-    $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+    $trialEndsAt = $user['trial_ends_at'] ?? null;
+    $isPro = !empty($user['is_pro']);
 
-    $trialEndsAt = $uRow['trial_ends_at'] ?? ($user['trial_ends_at'] ?? null);
-    $isPro = !empty($uRow['is_pro']) || !empty($user['is_pro']);
+    try {
+        $uStmt = $db->prepare("SELECT trial_ends_at, is_pro FROM users WHERE id = ?");
+        $uStmt->execute([$user['id']]);
+        $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+        if ($uRow) {
+            if (array_key_exists('trial_ends_at', $uRow)) $trialEndsAt = $uRow['trial_ends_at'];
+            if (isset($uRow['is_pro'])) $isPro = !empty($uRow['is_pro']);
+        }
+    } catch (Exception $e) {}
 
     if (!empty($trialEndsAt)) {
         $now = time();
