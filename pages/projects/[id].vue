@@ -20,7 +20,8 @@
           <span>/</span>
           <template v-if="!isFreeUser">
             <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
-              <Folder class="w-3.5 h-3.5" />
+              <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
+              <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
               <span>{{ project?.folder_name || 'Ordner' }}</span>
             </NuxtLink>
             <span>/</span>
