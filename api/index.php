@@ -4540,20 +4540,77 @@ try {
             }
         }
 
+        $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
+        $lStmt->execute([$projectId]);
+        $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, t.custom_data FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
+        $tStmt->execute([$projectId]);
+        $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Intelligente automatische Aufgabenerkennung anhand Adresse, Name, Kundennummer oder Feldern
+        if (!$linkedTaskId && !empty($existingTasks)) {
+            $combinedText = strtolower(($emailSubject ?: '') . ' ' . ($emailText ?: ''));
+            $bestTaskId = null;
+            $bestScore = 0;
+
+            foreach ($existingTasks as $t) {
+                $score = 0;
+                $tTitle = strtolower(trim($t['title'] ?? ''));
+                if (!empty($tTitle)) {
+                    if (str_contains($combinedText, $tTitle)) {
+                        $score += 50;
+                    } else {
+                        $tokens = preg_split('/[\s\-_,\.\/]+/', $tTitle);
+                        $matchCount = 0;
+                        foreach ($tokens as $tok) {
+                            $tok = trim($tok);
+                            if (strlen($tok) >= 4 && str_contains($combinedText, $tok)) {
+                                $matchCount++;
+                            }
+                        }
+                        if ($matchCount >= 2) {
+                            $score += $matchCount * 15;
+                        }
+                    }
+                }
+
+                if (!empty($t['custom_data'])) {
+                    $cd = is_string($t['custom_data']) ? json_decode($t['custom_data'], true) : $t['custom_data'];
+                    if (is_array($cd)) {
+                        foreach ($cd as $v) {
+                            if ($v !== null && (is_string($v) || is_numeric($v))) {
+                                $valStr = strtolower(trim((string)$v));
+                                if (strlen($valStr) >= 3 && str_contains($combinedText, $valStr)) {
+                                    $score += 35;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if ($score > $bestScore && $score >= 30) {
+                    $bestScore = $score;
+                    $bestTaskId = $t['id'];
+                }
+            }
+
+            if ($bestTaskId) {
+                $linkedTaskId = $bestTaskId;
+                if ($targetJournalId) {
+                    try {
+                        $db->prepare("UPDATE project_journals SET task_id = ? WHERE id = ? AND project_id = ?")->execute([$linkedTaskId, $targetJournalId, $projectId]);
+                    } catch (Exception $e) {}
+                }
+            }
+        }
+
         $linkedTask = null;
         if ($linkedTaskId) {
             $ltStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, l.title as list_title FROM tasks t LEFT JOIN lists l ON l.id = t.list_id WHERE t.id = ?");
             $ltStmt->execute([$linkedTaskId]);
             $linkedTask = $ltStmt->fetch(PDO::FETCH_ASSOC);
         }
-
-        $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
-        $lStmt->execute([$projectId]);
-        $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
-        $tStmt->execute([$projectId]);
-        $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $sectionsContext = json_encode(array_map(function($s) {
             return ['id' => $s['id'], 'title' => $s['title']];
@@ -4782,6 +4839,7 @@ try {
         $category = isset($body['category']) ? trim($body['category']) : $existing['category'];
         $visibility = isset($body['visibility']) ? $body['visibility'] : $existing['visibility'];
         $allowedGroupId = array_key_exists('allowed_group_id', $body) ? $body['allowed_group_id'] : $existing['allowed_group_id'];
+        $taskId = array_key_exists('task_id', $body) ? (!empty($body['task_id']) ? trim($body['task_id']) : null) : $existing['task_id'];
         
         $metaJson = $existing['metadata'];
         if (isset($body['metadata'])) {
@@ -4790,9 +4848,9 @@ try {
 
         $db->prepare("
             UPDATE project_journals
-            SET title = ?, content = ?, category = ?, visibility = ?, allowed_group_id = ?, metadata = ?, updated_at = NOW()
+            SET title = ?, content = ?, category = ?, visibility = ?, allowed_group_id = ?, task_id = ?, metadata = ?, updated_at = NOW()
             WHERE id = ? AND project_id = ?
-        ")->execute([$title, $content, $category, $visibility, $allowedGroupId, $metaJson, $journalId, $projectId]);
+        ")->execute([$title, $content, $category, $visibility, $allowedGroupId, $taskId, $metaJson, $journalId, $projectId]);
 
         jsonResponse(['success' => true]);
     }

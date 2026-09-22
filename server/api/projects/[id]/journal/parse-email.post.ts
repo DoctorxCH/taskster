@@ -280,11 +280,76 @@ export default defineEventHandler(async (event) => {
 
   const sections = db.prepare(`SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC`).all(projectId) as any[]
   const existingTasks = db.prepare(`
-    SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date 
+    SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, t.custom_data
     FROM tasks t 
     JOIN lists l ON l.id = t.list_id 
     WHERE l.project_id = ?
   `).all(projectId) as any[]
+
+  // Intelligente automatische Aufgabenerkennung anhand Adresse, Name, Kundennummer oder Feldern
+  if (!linkedTaskId && existingTasks.length > 0) {
+    const combinedText = ((emailSubject || '') + ' ' + (emailText || '')).toLowerCase()
+    let bestTaskId: string | null = null
+    let bestScore = 0
+
+    for (const t of existingTasks) {
+      let score = 0
+      const tTitle = (t.title || '').trim().toLowerCase()
+      if (tTitle) {
+        if (combinedText.includes(tTitle)) {
+          score += 50
+        } else {
+          const tokens = tTitle.split(/[\s\-_,./]+/).filter((tok: string) => tok.length >= 4)
+          let matchCount = 0
+          for (const tok of tokens) {
+            if (combinedText.includes(tok)) matchCount++
+          }
+          if (matchCount >= 2) {
+            score += matchCount * 15
+          }
+        }
+      }
+
+      if (t.custom_data) {
+        try {
+          const cd = typeof t.custom_data === 'string' ? JSON.parse(t.custom_data) : t.custom_data
+          if (cd && typeof cd === 'object') {
+            for (const [, v] of Object.entries(cd)) {
+              if (v !== null && v !== undefined && (typeof v === 'string' || typeof v === 'number')) {
+                const valStr = String(v).trim().toLowerCase()
+                if (valStr.length >= 3 && combinedText.includes(valStr)) {
+                  score += 35
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (score > bestScore && score >= 30) {
+        bestScore = score
+        bestTaskId = t.id
+      }
+    }
+
+    if (bestTaskId) {
+      linkedTaskId = bestTaskId
+      if (targetJournalId) {
+        try {
+          db.prepare(`UPDATE project_journals SET task_id = ? WHERE id = ? AND project_id = ?`).run(linkedTaskId, targetJournalId, projectId)
+        } catch (_) {}
+      }
+    }
+  }
+
+  if (linkedTaskId && !linkedTask) {
+    linkedTask = db.prepare(`
+      SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, l.title as list_title 
+      FROM tasks t 
+      LEFT JOIN lists l ON l.id = t.list_id 
+      WHERE t.id = ?
+    `).get(linkedTaskId) as any
+  }
 
   const sectionsContext = JSON.stringify(sections.map(s => ({ id: s.id, title: s.title })))
   const tasksContext = JSON.stringify(existingTasks.map(t => ({

@@ -735,77 +735,151 @@
           </div>
         </div>
 
-        <!-- Filter & Search Toolbar -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
-          <!-- Type Filter Tabs -->
-          <div class="flex items-center p-1 bg-slate-100 rounded-xl space-x-1 w-full md:w-auto">
-            <button
-              type="button"
-              @click="journalFilterType = 'all'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
-              :class="journalFilterType === 'all' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-            >
-              {{ $t('journal.filter_all') }} ({{ journalEntries.length }})
-            </button>
-            <button
-              type="button"
-              @click="journalFilterType = 'entry'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
-              :class="journalFilterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-            >
-              {{ $t('journal.filter_entries') }} ({{ entriesCount }})
-            </button>
-            <button
-              type="button"
-              @click="journalFilterType = 'note'"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 md:flex-initial"
-              :class="journalFilterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-            >
-              {{ $t('journal.filter_notes') }} ({{ notesCount }})
-            </button>
-          </div>
+        <!-- Filter & Search Toolbar (2-Tier, comprehensive & clean) -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xs">
+          <!-- Tier 1: Main Type Tabs & Search -->
+          <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center p-1 bg-slate-100 rounded-2xl space-x-1 w-full md:w-auto overflow-x-auto">
+              <button
+                type="button"
+                @click="journalFilterType = 'all'"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                :class="journalFilterType === 'all' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>{{ $t('journal.filter_all') }}</span>
+                <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ journalEntries.length }}</span>
+              </button>
+              <button
+                type="button"
+                @click="journalFilterType = 'entry'"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                :class="journalFilterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>🏛️ {{ $t('journal.filter_entries') }}</span>
+                <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ entriesCount }}</span>
+              </button>
+              <button
+                type="button"
+                @click="journalFilterType = 'note'"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                :class="journalFilterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>✉️ {{ $t('journal.filter_notes') }}</span>
+                <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ notesCount }}</span>
+              </button>
+            </div>
 
-          <!-- Category dropdown & Search -->
-          <div class="flex items-center gap-2 w-full md:w-auto">
-            <select
-              v-model="journalFilterCategory"
-              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4]"
-            >
-              <option value="all">Alle Kategorien</option>
-              <option value="bausitzung">{{ $t('journal.category_bausitzung') }}</option>
-              <option value="bautagebuch">{{ $t('journal.category_bautagebuch') }}</option>
-              <option value="abnahmebegehung">{{ $t('journal.category_abnahmebegehung') }}</option>
-              <option value="wetter_behinderung">{{ $t('journal.category_wetter_behinderung') }}</option>
-              <option value="regie">{{ $t('journal.category_regie') }}</option>
-              <option value="email">{{ $t('journal.category_email') }}</option>
-              <option value="allgemein">{{ $t('journal.category_allgemein') }}</option>
-            </select>
-
-            <div class="relative flex-1 md:w-56">
-              <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <!-- Full-text search -->
+            <div class="relative w-full md:w-80">
+              <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-2.5" />
               <input
                 v-model="journalSearchQuery"
                 type="text"
-                :placeholder="$t('journal.search_placeholder')"
-                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
+                placeholder="Im Journal, E-Mails & Aufgaben suchen..."
+                class="w-full pl-9 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
               <button
                 v-if="journalSearchQuery"
                 @click="journalSearchQuery = ''"
-                class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
+          </div>
+
+          <!-- Tier 2: Granular Filters (Category, Task Link, Timeframe, AI Action Items) -->
+          <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 text-xs">
+            <!-- 1. Category Filter -->
+            <select
+              v-model="journalFilterCategory"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="all">📁 Alle Kategorien</option>
+              <option value="bausitzung">🏛️ {{ $t('journal.category_bausitzung') }}</option>
+              <option value="bautagebuch">📋 {{ $t('journal.category_bautagebuch') }}</option>
+              <option value="abnahmebegehung">🔍 {{ $t('journal.category_abnahmebegehung') }}</option>
+              <option value="wetter_behinderung">⛈️ {{ $t('journal.category_wetter_behinderung') }}</option>
+              <option value="regie">⏱️ {{ $t('journal.category_regie') }}</option>
+              <option value="email">✉️ {{ $t('journal.category_email') }}</option>
+              <option value="allgemein">📖 {{ $t('journal.category_allgemein') }}</option>
+            </select>
+
+            <!-- 2. Task Link / Assignment Filter -->
+            <select
+              v-model="journalFilterTask"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="all">🔗 Aufgaben: Alle Zuordnungen</option>
+              <option value="assigned">📌 Nur verknüpfte Einträge</option>
+              <option value="unassigned">⚠️ Ohne verknüpfte Aufgabe ({{ unassignedEntriesCount }})</option>
+              <optgroup label="Spezifische Aufgabe filtern" v-if="allProjectTasks.length > 0">
+                <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                  Aufgabe: {{ t.title }}
+                </option>
+              </optgroup>
+            </select>
+
+            <!-- 3. Period Filter -->
+            <select
+              v-model="journalFilterPeriod"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="all">📅 Zeitraum: Alle</option>
+              <option value="today">📅 Heute</option>
+              <option value="7days">📅 Letzte 7 Tage</option>
+              <option value="30days">📅 Letzte 30 Tage</option>
+            </select>
+
+            <!-- 4. Open Actions Toggle Pill -->
+            <button
+              type="button"
+              @click="journalFilterOpenActions = !journalFilterOpenActions"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer"
+              :class="journalFilterOpenActions
+                ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
+                : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+            >
+              <span>⚡</span>
+              <span>Offene KI-Aktionen</span>
+              <span
+                v-if="pendingActionsEntriesCount > 0"
+                class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold"
+                :class="journalFilterOpenActions ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-700'"
+              >
+                {{ pendingActionsEntriesCount }}
+              </span>
+            </button>
+
+            <!-- Reset Filters Button if any filter active -->
+            <button
+              v-if="journalFilterType !== 'all' || journalFilterCategory !== 'all' || journalFilterTask !== 'all' || journalFilterPeriod !== 'all' || journalFilterOpenActions || journalSearchQuery"
+              type="button"
+              @click="resetJournalFilters"
+              class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer ml-auto"
+            >
+              Filter zurücksetzen ✕
+            </button>
           </div>
         </div>
 
         <!-- Empty State -->
         <div v-if="filteredJournals.length === 0" class="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 shadow-xs max-w-lg mx-auto">
           <span class="text-4xl">📖</span>
-          <h3 class="text-base font-bold text-slate-800 mt-2">{{ $t('journal.no_entries') }}</h3>
-          <p class="text-xs text-slate-500 mt-1 mb-5">Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.</p>
-          <div v-if="userRole !== 'viewer'" class="flex items-center justify-center gap-3">
+          <h3 class="text-base font-bold text-slate-800 mt-2">Keine passenden Journaleinträge gefunden</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">
+            {{ journalEntries.length === 0 ? 'Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.' : 'Keine Einträge für die aktuellen Filtereinstellungen vorhanden.' }}
+          </p>
+          <div v-if="journalEntries.length > 0" class="flex items-center justify-center">
+            <button
+              type="button"
+              @click="resetJournalFilters"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+          <div v-else-if="userRole !== 'viewer'" class="flex items-center justify-center gap-3">
             <button
               @click="openNewEntryModal"
               type="button"
@@ -823,25 +897,25 @@
           </div>
         </div>
 
-        <!-- Feed Timeline Cards -->
-        <div v-else class="space-y-4">
+        <!-- Feed Timeline Cards (2-Spalten: Breit für Inhalt/KI, Schmal für Metadaten & Verknüpfungen) -->
+        <div v-else class="space-y-5">
           <div
             v-for="entry in filteredJournals"
             :key="entry.id"
-            class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs hover:shadow-md transition-all relative overflow-hidden"
+            class="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative overflow-hidden"
             :class="[
               entry.type === 'entry' ? 'border-l-4 border-l-[#00A3C4]' : (entry.category === 'email' ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-indigo-400')
             ]"
           >
-            <!-- Card Header -->
-            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3 pb-3 border-b border-slate-100">
-              <div class="flex items-start space-x-3">
+            <!-- Card Top Bar: Icon, Title, Badges, Author, Date, Quick Action Buttons -->
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+              <div class="flex items-start space-x-3 min-w-0">
                 <div class="text-2xl shrink-0 mt-0.5">
                   {{ getCategoryBadge(entry.category, entry.type).icon }}
                 </div>
-                <div>
+                <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
-                    <h4 class="text-base font-bold text-slate-900">{{ entry.title }}</h4>
+                    <h4 class="text-base font-bold text-slate-900 leading-snug">{{ entry.title }}</h4>
                     <span
                       class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border"
                       :class="getCategoryBadge(entry.category, entry.type).bg"
@@ -849,7 +923,7 @@
                       {{ getCategoryBadge(entry.category, entry.type).label }}
                     </span>
                   </div>
-                  <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
                     <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name }}</strong></span>
                     <span>•</span>
                     <span>{{ new Date(entry.created_at).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
@@ -860,7 +934,7 @@
                 </div>
               </div>
 
-              <!-- Right: Visibility Badge, AI Trigger, Bulk Apply & Delete -->
+              <!-- Top-Right Actions: AI Trigger, Bulk Apply, Visibility, Delete -->
               <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
                 <button
                   v-if="userRole !== 'viewer'"
@@ -898,6 +972,7 @@
                   <span>{{ getVisibilityBadge(entry.visibility, entry.allowed_group_id).icon }}</span>
                   <span>{{ getVisibilityBadge(entry.visibility, entry.allowed_group_id).label }}</span>
                 </span>
+
                 <button
                   v-if="userRole === 'owner' || userRole === 'admin' || entry.user_id === user?.id || entry.author_id === user?.id || user?.is_superadmin"
                   @click="deleteJournalEntry(entry)"
@@ -910,225 +985,320 @@
               </div>
             </div>
 
-            <!-- TYPE A: ATTENDEES BADGES (for Official Meeting Protocols) -->
-            <div v-if="entry.type === 'entry' && entry.attendees && entry.attendees.length > 0" class="mb-4 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1.5">
-                <Users class="w-3.5 h-3.5 text-[#00A3C4]" />
-                <span>Teilnehmer ({{ entry.attendees.filter(a => a.present).length }} anwesend / {{ entry.attendees.length }} geladen):</span>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <div
-                  v-for="atd in entry.attendees"
-                  :key="atd.id || atd.name"
-                  class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border shadow-2xs"
-                  :class="atd.present ? 'bg-white border-emerald-300 text-slate-800' : 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'"
-                >
-                  <span
-                    class="w-2 h-2 rounded-full shrink-0"
-                    :class="atd.present ? 'bg-emerald-500' : 'bg-slate-300'"
-                  ></span>
-                  <span>{{ atd.name }}</span>
-                  <span v-if="atd.role" class="text-[10px] text-slate-500 font-normal no-underline">({{ atd.role }})</span>
-                  <span v-if="!atd.present" class="text-[9px] font-bold uppercase text-slate-400 no-underline ml-1">Abwesend</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- EMAIL SENDER DETAILS (if sender info exists) -->
-            <div v-if="entry.metadata?.sender?.email" class="mb-3 p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 text-xs text-amber-950 flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span class="font-bold flex items-center space-x-1">
-                <Mail class="w-3.5 h-3.5 text-amber-700" />
-                <span>Von: {{ entry.metadata.sender.name || entry.metadata.sender.email }} &lt;{{ entry.metadata.sender.email }}&gt;</span>
-              </span>
-              <span v-if="entry.metadata.sender.role" class="text-amber-800 font-normal">• {{ entry.metadata.sender.role }}</span>
-            </div>
-
-            <!-- AI SUMMARY & INTERACTIVE ACTION CARDS (available for ALL journal entries!) -->
-            <div v-if="entry.metadata?.ai_summary || (entry.metadata?.action_items && entry.metadata.action_items.length > 0)" class="mb-4 space-y-3">
-              <!-- AI Summary Box -->
-              <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                  <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
-                    <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
-                    <span>{{ $t('journal.ai_summary') }}</span>
-                    <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
-                  </div>
-                  <button
-                    v-if="userRole !== 'viewer'"
-                    type="button"
-                    @click="triggerAiAnalysis(entry)"
-                    :disabled="analyzingEntryId === entry.id"
-                    class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
-                  >
-                    <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
-                    <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
-                  </button>
-                </div>
-                <p class="text-xs text-slate-800 leading-relaxed">
-                  {{ entry.metadata.ai_summary }}
-                </p>
-              </div>
-
-              <!-- Notice if no action items were generated -->
-              <div v-if="entry.metadata?.ai_summary && (!entry.metadata?.action_items || entry.metadata.action_items.length === 0)" class="p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>ℹ️ Keine direkten Aufgabenaktionen im Text erkannt. Du kannst oben auf „KI aktualisieren“ klicken oder Aufgaben manuell anlegen.</span>
-              </div>
-
-              <!-- Interactive AI Action Cards -->
-              <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5 pt-1">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
-                    <span>⚡</span>
-                    <span>{{ $t('journal.ai_suggested_actions') }} ({{ entry.metadata.action_items.length }}):</span>
-                  </div>
-                  <button
-                    v-if="userRole !== 'viewer' && entry.metadata.action_items.some(it => !it.applied)"
-                    type="button"
-                    @click="applyAllTaskActions(entry)"
-                    :disabled="isApplyingAllId === entry.id"
-                    class="text-xs font-bold px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs flex items-center space-x-1.5 transition cursor-pointer"
-                  >
-                    <CheckCircle2 class="w-3.5 h-3.5" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
-                    <span>{{ isApplyingAllId === entry.id ? 'Wende an...' : '⚡ Alle ' + entry.metadata.action_items.filter(it => !it.applied).length + ' Aktionen ins Kanban-Board übernehmen' }}</span>
-                  </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div
-                    v-for="(item, idx) in entry.metadata.action_items"
-                    :key="idx"
-                    class="p-3.5 rounded-2xl border transition shadow-xs flex flex-col justify-between"
-                    :class="[
-                      item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
-                        item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-400' :
-                        item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200 hover:border-amber-400' :
-                        'bg-purple-50/70 border-purple-200 hover:border-purple-400'
-                      )
-                    ]"
-                  >
-                    <div>
-                      <div class="flex items-center justify-between gap-1 mb-1.5">
-                        <span
-                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
-                          :class="[
-                            item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                            item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                            'bg-purple-100 text-purple-800 border-purple-300'
-                          ]"
-                        >
-                          {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
-                        </span>
-
-                        <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
-                          <CheckCircle2 class="w-3 h-3" />
-                          <span>{{ $t('journal.action_applied') }}</span>
-                        </span>
-                      </div>
-
-                      <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
-                        {{ item.title || getTaskTitle(item.task_id) }}
-                      </h5>
-
-                      <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
-                        {{ item.description || item.reason }}
-                      </p>
-
-                      <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-2">
-                        <span v-if="item.section_id" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
-                          📁 {{ getSectionTitle(item.section_id) }}
-                        </span>
-                        <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
-                          📅 {{ item.due_date || item.suggested_due_date }}
-                        </span>
-                        <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
-                          ⚡ {{ item.priority }}
-                        </span>
-                      </div>
+            <!-- Card Body Grid: 2 Spalten (Breit links für Inhalt & KI, Schmal rechts für Metadaten & Verknüpfung) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <!-- HAUPTBEREICH (BREIT - 8 Spalten): Fokus auf Inhalt, Notizen, KI-Zusammenfassung & Aktionskarten -->
+              <div class="lg:col-span-8 space-y-4">
+                <!-- AI Summary Box -->
+                <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
+                      <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                      <span>{{ $t('journal.ai_summary') }}</span>
+                      <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
                     </div>
-
-                    <div v-if="!item.applied && userRole !== 'viewer'" class="pt-2 border-t border-slate-200/60 mt-auto">
-                      <button
-                        v-if="item.type === 'create_task'"
-                        type="button"
-                        :disabled="item.applying"
-                        @click="applyCreateTaskAction(entry, item, idx)"
-                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
-                      >
-                        <Plus class="w-3 h-3" />
-                        <span>{{ item.applying ? 'Wird angelegt...' : $t('journal.action_create_task') }}</span>
-                      </button>
-
-                      <button
-                        v-else-if="item.type === 'update_task'"
-                        type="button"
-                        :disabled="item.applying"
-                        @click="applyUpdateTaskAction(entry, item, idx)"
-                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
-                      >
-                        <Pencil class="w-3 h-3" />
-                        <span>{{ item.applying ? 'Wird aktualisiert...' : $t('journal.action_update_task') }}</span>
-                      </button>
-
-                      <button
-                        v-else-if="item.type === 'complete_task'"
-                        type="button"
-                        :disabled="item.applying"
-                        @click="applyCompleteTaskAction(entry, item, idx)"
-                        class="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
-                      >
-                        <Check class="w-3 h-3" />
-                        <span>{{ item.applying ? 'Wird erledigt...' : $t('journal.action_complete_task') }}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Content Area (Text) -->
-            <div class="mt-2">
-              <div v-if="entry.type === 'note' && entry.category === 'email'" class="mb-2">
-                <button
-                  type="button"
-                  @click="expandedMailIds[entry.id] = !expandedMailIds[entry.id]"
-                  class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
-                >
-                  <span>{{ expandedMailIds[entry.id] ? 'E-Mail Text verbergen ▲' : 'Vollständigen E-Mail Text anzeigen ▼' }}</span>
-                </button>
-              </div>
-
-              <div
-                v-if="entry.type !== 'note' || entry.category !== 'email' || expandedMailIds[entry.id]"
-                class="text-xs text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans"
-              >
-                {{ entry.content }}
-              </div>
-            </div>
-
-            <!-- Attachments Gallery -->
-            <div v-if="entry.attachments && entry.attachments.length > 0" class="mt-3.5 pt-3 border-t border-slate-100">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1">
-                <Paperclip class="w-3 h-3 text-slate-400" />
-                <span>Dateianhänge ({{ entry.attachments.length }}):</span>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <div
-                  v-for="att in entry.attachments"
-                  :key="att.id"
-                  class="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-cyan-50/60 border border-slate-200 hover:border-cyan-300 transition text-xs group"
-                >
-                  <span class="text-sm">{{ getFileIcon(att.file_type) }}</span>
-                  <div class="min-w-0 max-w-[160px]">
-                    <a
-                      :href="att.file_path"
-                      :download="att.file_name"
-                      target="_blank"
-                      class="font-semibold text-slate-800 hover:text-[#00A3C4] truncate block"
-                      :title="att.file_name"
+                    <button
+                      v-if="userRole !== 'viewer'"
+                      type="button"
+                      @click="triggerAiAnalysis(entry)"
+                      :disabled="analyzingEntryId === entry.id"
+                      class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
                     >
-                      {{ att.file_name }}
-                    </a>
-                    <span class="text-[10px] text-slate-400">{{ formatFileSize(att.file_size) }}</span>
+                      <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+                      <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+                    </button>
+                  </div>
+                  <p class="text-xs text-slate-800 leading-relaxed font-sans">
+                    {{ entry.metadata.ai_summary }}
+                  </p>
+                </div>
+
+                <!-- Interactive AI Action Cards (falls vorhanden) -->
+                <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                      <span>⚡</span>
+                      <span>{{ $t('journal.ai_suggested_actions') }} ({{ entry.metadata.action_items.length }}):</span>
+                    </div>
+                    <button
+                      v-if="userRole !== 'viewer' && entry.metadata.action_items.some(it => !it.applied)"
+                      type="button"
+                      @click="applyAllTaskActions(entry)"
+                      :disabled="isApplyingAllId === entry.id"
+                      class="text-xs font-bold px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs flex items-center space-x-1.5 transition cursor-pointer"
+                    >
+                      <CheckCircle2 class="w-3.5 h-3.5" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
+                      <span>{{ isApplyingAllId === entry.id ? 'Wende an...' : '⚡ Alle ins Board übernehmen' }}</span>
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div
+                      v-for="(item, idx) in entry.metadata.action_items"
+                      :key="idx"
+                      class="p-3 rounded-2xl border transition shadow-xs flex flex-col justify-between"
+                      :class="[
+                        item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
+                          item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-400' :
+                          item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200 hover:border-amber-400' :
+                          'bg-purple-50/70 border-purple-200 hover:border-purple-400'
+                        )
+                      ]"
+                    >
+                      <div>
+                        <div class="flex items-center justify-between gap-1 mb-1">
+                          <span
+                            class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
+                            :class="[
+                              item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                              item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                              'bg-purple-100 text-purple-800 border-purple-300'
+                            ]"
+                          >
+                            {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
+                          </span>
+
+                          <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
+                            <CheckCircle2 class="w-3 h-3" />
+                            <span>{{ $t('journal.action_applied') }}</span>
+                          </span>
+                        </div>
+
+                        <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
+                          {{ item.title || getTaskTitle(item.task_id) }}
+                        </h5>
+
+                        <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
+                          {{ item.description || item.reason }}
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-2">
+                          <span v-if="item.section_id" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                            📁 {{ getSectionTitle(item.section_id) }}
+                          </span>
+                          <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                            📅 {{ item.due_date || item.suggested_due_date }}
+                          </span>
+                          <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
+                            ⚡ {{ item.priority }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div v-if="!item.applied && userRole !== 'viewer'" class="pt-2 border-t border-slate-200/60 mt-auto">
+                        <button
+                          v-if="item.type === 'create_task'"
+                          type="button"
+                          :disabled="item.applying"
+                          @click="applyCreateTaskAction(entry, item, idx)"
+                          class="w-full py-1 px-2.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <Plus class="w-3 h-3" />
+                          <span>{{ item.applying ? 'Wird angelegt...' : $t('journal.action_create_task') }}</span>
+                        </button>
+
+                        <button
+                          v-else-if="item.type === 'update_task'"
+                          type="button"
+                          :disabled="item.applying"
+                          @click="applyUpdateTaskAction(entry, item, idx)"
+                          class="w-full py-1 px-2.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <Pencil class="w-3 h-3" />
+                          <span>{{ item.applying ? 'Wird aktualisiert...' : $t('journal.action_update_task') }}</span>
+                        </button>
+
+                        <button
+                          v-else-if="item.type === 'complete_task'"
+                          type="button"
+                          :disabled="item.applying"
+                          @click="applyCompleteTaskAction(entry, item, idx)"
+                          class="w-full py-1 px-2.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <Check class="w-3 h-3" />
+                          <span>{{ item.applying ? 'Wird erledigt...' : $t('journal.action_complete_task') }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Text-Inhalt / E-Mail Body -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
+                    <button
+                      v-if="entry.type === 'note' && entry.category === 'email'"
+                      type="button"
+                      @click="expandedMailIds[entry.id] = !expandedMailIds[entry.id]"
+                      class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>{{ expandedMailIds[entry.id] ? 'E-Mail Text verbergen ▲' : 'Vollständigen E-Mail Text anzeigen ▼' }}</span>
+                    </button>
+                  </div>
+                  <div
+                    v-if="entry.type !== 'note' || entry.category !== 'email' || expandedMailIds[entry.id]"
+                    class="text-xs text-slate-800 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans max-h-96 overflow-y-auto"
+                  >
+                    {{ entry.content }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- METADATEN-SIDEBAR (SCHMAL - 4 Spalten): Verknüpfte Aufgabe, Absender, Teilnehmer, Anhänge -->
+              <div class="lg:col-span-4 space-y-3">
+                <!-- 1. Prominentes Aufgaben-Verknüpfungs-Widget -->
+                <div
+                  class="p-3.5 rounded-2xl border transition-all"
+                  :class="entry.task_id ? 'bg-cyan-50/70 border-cyan-200' : 'bg-slate-50/80 border-slate-200'"
+                >
+                  <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                    <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
+                      <span>📌</span>
+                      <span>Verknüpfte Aufgabe</span>
+                    </span>
+                    <span
+                      class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
+                      :class="entry.task_id ? 'bg-white border-cyan-300 text-cyan-800' : 'bg-amber-50 border-amber-200 text-amber-800'"
+                    >
+                      {{ entry.task_id ? (getSectionTitle(getTaskSectionId(entry.task_id)) || 'Zugeordnet') : 'Offen' }}
+                    </span>
+                  </div>
+
+                  <!-- Zustand A: Aufgabe bereits verknüpft -->
+                  <div v-if="entry.task_id" class="space-y-2">
+                    <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                      {{ entry.task_title || getTaskTitle(entry.task_id) }}
+                    </p>
+
+                    <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
+                    <div v-if="userRole !== 'viewer'" class="pt-1.5 border-t border-cyan-200/70">
+                      <select
+                        :value="entry.task_id"
+                        :disabled="updatingJournalTaskId === entry.id"
+                        @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                        class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                      >
+                        <option value="">-- Verknüpfung lösen --</option>
+                        <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                          {{ t.title }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Zustand B: Keine Aufgabe verknüpft -->
+                  <div v-else class="space-y-2.5">
+                    <!-- Automatischer Erkennungsvorschlag anhand Adresse / Name / Custom Fields -->
+                    <div
+                      v-if="getSuggestedTaskForEntry(entry)"
+                      class="p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 space-y-1.5 shadow-2xs"
+                    >
+                      <div class="text-[10px] font-black text-amber-950 uppercase tracking-wider flex items-center space-x-1">
+                        <span>✨</span>
+                        <span>Passende Aufgabe erkannt</span>
+                      </div>
+                      <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                        {{ getSuggestedTaskForEntry(entry)?.task.title }}
+                      </p>
+                      <p class="text-[10px] text-amber-800">
+                        Erkannt: <em>{{ getSuggestedTaskForEntry(entry)?.reason }}</em>
+                      </p>
+                      <button
+                        type="button"
+                        v-if="userRole !== 'viewer'"
+                        :disabled="updatingJournalTaskId === entry.id"
+                        @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
+                        class="w-full py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#0891b2] text-white text-xs font-bold transition flex items-center justify-center space-x-1 shadow-xs cursor-pointer"
+                      >
+                        <span>✓ Jetzt verknüpfen</span>
+                      </button>
+                    </div>
+
+                    <!-- Manuelle Schnellauswahl aus Aufgabenliste -->
+                    <div v-if="userRole !== 'viewer'" class="space-y-1">
+                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe manuell zuweisen:</label>
+                      <select
+                        :disabled="updatingJournalTaskId === entry.id"
+                        @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                        class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+                      >
+                        <option value="">-- Aufgabe auswählen --</option>
+                        <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                          {{ t.title }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Absender-Details (bei E-Mails) -->
+                <div v-if="entry.metadata?.sender?.email" class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/70 text-xs text-amber-950 space-y-1">
+                  <div class="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center space-x-1">
+                    <Mail class="w-3 h-3 text-amber-700" />
+                    <span>Absender</span>
+                  </div>
+                  <div class="font-bold text-slate-900 leading-tight">
+                    {{ entry.metadata.sender.name || entry.metadata.sender.email }}
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-mono truncate">
+                    &lt;{{ entry.metadata.sender.email }}&gt;
+                  </div>
+                  <div v-if="entry.metadata.sender.role" class="text-[10px] text-amber-800 font-semibold">
+                    Rolle: {{ entry.metadata.sender.role }}
+                  </div>
+                </div>
+
+                <!-- 3. Teilnehmerliste (bei Protokollen) -->
+                <div v-if="entry.type === 'entry' && entry.attendees && entry.attendees.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                  <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                    <span class="flex items-center space-x-1">
+                      <Users class="w-3 h-3 text-[#00A3C4]" />
+                      <span>Teilnehmer</span>
+                    </span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-white border border-slate-200 text-slate-700">
+                      {{ entry.attendees.filter(a => a.present).length }} / {{ entry.attendees.length }}
+                    </span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                    <div
+                      v-for="atd in entry.attendees"
+                      :key="atd.id || atd.name"
+                      class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[11px] font-medium border"
+                      :class="atd.present ? 'bg-white border-emerald-300 text-slate-800' : 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'"
+                    >
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="atd.present ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                      <span class="truncate max-w-[120px]">{{ atd.name }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. Dateianhänge -->
+                <div v-if="entry.attachments && entry.attachments.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                  <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                    <Paperclip class="w-3 h-3 text-slate-400" />
+                    <span>Dateianhänge ({{ entry.attachments.length }})</span>
+                  </div>
+                  <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    <div
+                      v-for="att in entry.attachments"
+                      :key="att.id"
+                      class="flex items-center justify-between p-2 rounded-xl bg-white hover:bg-cyan-50/60 border border-slate-200 hover:border-cyan-300 transition text-xs group"
+                    >
+                      <div class="flex items-center space-x-2 min-w-0">
+                        <span class="text-sm shrink-0">{{ getFileIcon(att.file_type) }}</span>
+                        <a
+                          :href="att.file_path"
+                          :download="att.file_name"
+                          target="_blank"
+                          class="font-semibold text-slate-800 hover:text-[#00A3C4] truncate block text-[11px]"
+                          :title="att.file_name"
+                        >
+                          {{ att.file_name }}
+                        </a>
+                      </div>
+                      <span class="text-[10px] text-slate-400 shrink-0 ml-1">{{ formatFileSize(att.file_size) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3745,7 +3915,12 @@
 
           <!-- Linked Task (optional) -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Verknüpfte Aufgabe (optional)</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
+              <span v-if="newEntryAutoDetectedReason" class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                ✨ Automatisch erkannt: {{ newEntryAutoDetectedReason }}
+              </span>
+            </div>
             <select
               v-model="newEntryForm.task_id"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
@@ -4057,7 +4232,12 @@
 
           <!-- Linked Task (optional) -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Verknüpfte Aufgabe (optional)</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
+              <span v-if="newNoteAutoDetectedReason" class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                ✨ Automatisch erkannt: {{ newNoteAutoDetectedReason }}
+              </span>
+            </div>
             <select
               v-model="newNoteForm.task_id"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
@@ -5144,9 +5324,121 @@ const savingJournal = ref(false)
 const journalError = ref('')
 const journalFilterType = ref<'all' | 'entry' | 'note'>('all')
 const journalFilterCategory = ref('all')
+const journalFilterTask = ref<'all' | 'assigned' | 'unassigned' | string>('all')
+const journalFilterPeriod = ref<'all' | 'today' | '7days' | '30days'>('all')
+const journalFilterOpenActions = ref(false)
 const journalSearchQuery = ref('')
 const expandedMailIds = ref<Record<string, boolean>>({})
 const userGroups = ref<any[]>([])
+
+const newEntryAutoDetectedReason = ref('')
+const newNoteAutoDetectedReason = ref('')
+const updatingJournalTaskId = ref<string | null>(null)
+
+// Intelligent Task Auto-Matching (Adresse, Name, Kundennummer, benutzerdefinierte Felder)
+const detectMatchingTask = (text: string) => {
+  if (!text || !allProjectTasks.value || allProjectTasks.value.length === 0) return null
+  const clean = text.toLowerCase()
+  let best: { task: any, score: number, reason: string } | null = null
+
+  for (const t of allProjectTasks.value) {
+    let score = 0
+    const reasons: string[] = []
+
+    // 1. Benutzerdefinierte Felder prüfen (z.B. Strasse, Ort, Adresse, Kundenreferenz, Auftragsnummer)
+    if (t.custom_data) {
+      const cd = typeof t.custom_data === 'string' ? (() => { try { return JSON.parse(t.custom_data) } catch { return {} } })() : t.custom_data
+      if (cd && typeof cd === 'object') {
+        for (const [k, v] of Object.entries(cd)) {
+          if (v !== null && v !== undefined && (typeof v === 'string' || typeof v === 'number')) {
+            const valStr = String(v).trim().toLowerCase()
+            if (valStr.length >= 3 && clean.includes(valStr)) {
+              score += 40
+              reasons.push(`${k}: ${v}`)
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Aufgabentitel und Schlüsselwörter prüfen
+    const title = (t.title || '').trim()
+    if (title) {
+      const lowerTitle = title.toLowerCase()
+      if (clean.includes(lowerTitle)) {
+        score += 60
+        reasons.push(`Titel: "${title}"`)
+      } else {
+        const tokens = lowerTitle.split(/[\s\-_,./]+/).filter((tok: string) => tok.length >= 4)
+        const matchedToks: string[] = []
+        for (const tok of tokens) {
+          if (clean.includes(tok)) {
+            matchedToks.push(tok)
+          }
+        }
+        if (matchedToks.length >= 2) {
+          score += matchedToks.length * 20
+          reasons.push(`Keywords: ${matchedToks.join(' ')}`)
+        }
+      }
+    }
+
+    if (score >= 30 && (!best || score > best.score)) {
+      best = { task: t, score, reason: reasons[0] || title }
+    }
+  }
+
+  return best
+}
+
+const getSuggestedTaskForEntry = (entry: any) => {
+  if (entry.task_id) return null
+  const combined = (entry.title || '') + ' ' + (entry.content || '') + ' ' + (entry.metadata?.ai_summary || '')
+  return detectMatchingTask(combined)
+}
+
+const getTaskSectionId = (taskId?: string) => {
+  if (!taskId) return ''
+  for (const l of lists.value) {
+    if (l.tasks?.some((t: any) => t.id === taskId)) {
+      return l.id
+    }
+  }
+  return ''
+}
+
+const updateJournalTaskLink = async (entry: any, newTaskId: string | null) => {
+  updatingJournalTaskId.value = entry.id
+  try {
+    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: {
+        task_id: newTaskId || null
+      }
+    })
+    entry.task_id = newTaskId || null
+    if (newTaskId) {
+      const tObj = allProjectTasks.value.find((t: any) => t.id === newTaskId)
+      entry.task_title = tObj?.title || null
+    } else {
+      entry.task_title = null
+    }
+  } catch (err: any) {
+    alert(err.data?.statusMessage || err.message || 'Fehler beim Aktualisieren der Aufgabenverknüpfung')
+  } finally {
+    updatingJournalTaskId.value = null
+  }
+}
+
+const resetJournalFilters = () => {
+  journalFilterType.value = 'all'
+  journalFilterCategory.value = 'all'
+  journalFilterTask.value = 'all'
+  journalFilterPeriod.value = 'all'
+  journalFilterOpenActions.value = false
+  journalSearchQuery.value = ''
+}
 
 // Attendees Helper State
 const newEntryAttendeeName = ref('')
@@ -5221,24 +5513,92 @@ const notesCount = computed(() => {
   return (journalEntries.value || []).filter((e: any) => e.type === 'note').length
 })
 
+const unassignedEntriesCount = computed(() => {
+  return (journalEntries.value || []).filter((e: any) => !e.task_id).length
+})
+
+const pendingActionsEntriesCount = computed(() => {
+  return (journalEntries.value || []).filter((e: any) => e.metadata?.action_items && e.metadata.action_items.some((it: any) => !it.applied)).length
+})
+
 const filteredJournals = computed(() => {
   let list = [...(journalEntries.value || [])]
+
+  // 1. Typ-Filter (Alle / Protokolle / Notizen)
   if (journalFilterType.value !== 'all') {
     list = list.filter((e: any) => e.type === journalFilterType.value)
   }
+
+  // 2. Kategorie-Filter
   if (journalFilterCategory.value !== 'all') {
     list = list.filter((e: any) => e.category === journalFilterCategory.value)
   }
+
+  // 3. Aufgaben-Zuordnung Filter
+  if (journalFilterTask.value === 'assigned') {
+    list = list.filter((e: any) => !!e.task_id)
+  } else if (journalFilterTask.value === 'unassigned') {
+    list = list.filter((e: any) => !e.task_id)
+  } else if (journalFilterTask.value !== 'all') {
+    list = list.filter((e: any) => e.task_id === journalFilterTask.value)
+  }
+
+  // 4. Zeitraum-Filter
+  if (journalFilterPeriod.value !== 'all') {
+    const now = Date.now()
+    list = list.filter((e: any) => {
+      const d = new Date(e.created_at || e.metadata?.entry_date).getTime()
+      if (isNaN(d)) return true
+      const diffDays = (now - d) / (1000 * 60 * 60 * 24)
+      if (journalFilterPeriod.value === 'today') return diffDays <= 1
+      if (journalFilterPeriod.value === '7days') return diffDays <= 7
+      if (journalFilterPeriod.value === '30days') return diffDays <= 30
+      return true
+    })
+  }
+
+  // 5. Nur offene KI-Aktionen Filter
+  if (journalFilterOpenActions.value) {
+    list = list.filter((e: any) => e.metadata?.action_items && e.metadata.action_items.some((it: any) => !it.applied))
+  }
+
+  // 6. Volltextsuche
   if (journalSearchQuery.value.trim()) {
     const q = journalSearchQuery.value.trim().toLowerCase()
     list = list.filter((e: any) =>
       (e.title && e.title.toLowerCase().includes(q)) ||
       (e.content && e.content.toLowerCase().includes(q)) ||
       (e.author_name && e.author_name.toLowerCase().includes(q)) ||
-      (e.metadata?.ai_summary && e.metadata.ai_summary.toLowerCase().includes(q))
+      (e.task_title && e.task_title.toLowerCase().includes(q)) ||
+      (e.metadata?.ai_summary && e.metadata.ai_summary.toLowerCase().includes(q)) ||
+      (e.metadata?.sender?.name && e.metadata.sender.name.toLowerCase().includes(q)) ||
+      (e.metadata?.sender?.email && e.metadata.sender.email.toLowerCase().includes(q))
     )
   }
+
   return list
+})
+
+// Auto-Detection Watcher for New Entry Form
+watch([() => newEntryForm.value.title, () => newEntryForm.value.content], ([t, c]) => {
+  if (!newEntryForm.value.task_id && (t || c)) {
+    const match = detectMatchingTask((t || '') + ' ' + (c || ''))
+    if (match) {
+      newEntryForm.value.task_id = match.task.id
+      newEntryAutoDetectedReason.value = match.reason
+    }
+  }
+})
+
+// Auto-Detection Watcher for New Note Form
+watch([() => newNoteForm.value.title, () => newNoteForm.value.content], ([t, c]) => {
+  if (!newNoteForm.value.task_id && (t || c)) {
+    const match = detectMatchingTask((t || '') + ' ' + (c || ''))
+    if (match) {
+      newNoteForm.value.task_id = match.task.id
+      newNoteAutoDetectedReason.value = match.reason
+    }
+  }
 })
 
 const showInviteMemberModal = ref(false)
