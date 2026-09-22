@@ -3354,9 +3354,10 @@ try {
         $options = $body['options'] ?? [];
         $logicRules = $body['logic_rules'] ?? null;
 
+        $labelKey = !empty($body['label_key']) ? trim($body['label_key']) : null;
         $fieldId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
-        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, field_type, entity_type, options, logic_rules) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")->execute([
-            $fieldId, $fldId, $key, $label, $type, $entityType, json_encode($options), $logicRules ? json_encode($logicRules) : null
+        $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+            $fieldId, $fldId, $key, $label, $labelKey, $type, $entityType, json_encode($options), $logicRules ? json_encode($logicRules) : null
         ]);
 
         jsonResponse(['success' => true, 'fieldId' => $fieldId, 'fieldKey' => $key]);
@@ -3430,14 +3431,15 @@ try {
         $label = isset($body['label']) ? trim($body['label']) : $existingField['label'];
         if ($label === '') errorResponse('Feld-Beschriftung darf nicht leer sein', 400);
 
+        $labelKey = array_key_exists('label_key', $body) ? (!empty($body['label_key']) ? trim($body['label_key']) : null) : ($existingField['label_key'] ?? null);
         $fieldType = isset($body['field_type']) ? trim($body['field_type']) : $existingField['field_type'];
         $entityType = isset($body['entity_type']) ? trim($body['entity_type']) : ($existingField['entity_type'] ?? 'task');
         $isRequired = isset($body['is_required']) ? ($body['is_required'] ? 1 : 0) : ($existingField['is_required'] ?? 0);
         $options = isset($body['options']) ? (is_string($body['options']) ? $body['options'] : json_encode($body['options'])) : $existingField['options'];
         $logicRules = array_key_exists('logic_rules', $body) ? ($body['logic_rules'] ? (is_string($body['logic_rules']) ? $body['logic_rules'] : json_encode($body['logic_rules'])) : null) : $existingField['logic_rules'];
 
-        $db->prepare("UPDATE folder_field_definitions SET label = ?, field_type = ?, entity_type = ?, is_required = ?, options = ?, logic_rules = ? WHERE id = ? AND folder_id = ?")->execute([
-            $label, $fieldType, $entityType, $isRequired, $options, $logicRules, $fieldId, $fldId
+        $db->prepare("UPDATE folder_field_definitions SET label = ?, label_key = ?, field_type = ?, entity_type = ?, is_required = ?, options = ?, logic_rules = ? WHERE id = ? AND folder_id = ?")->execute([
+            $label, $labelKey, $fieldType, $entityType, $isRequired, $options, $logicRules, $fieldId, $fldId
         ]);
 
         jsonResponse(['success' => true]);

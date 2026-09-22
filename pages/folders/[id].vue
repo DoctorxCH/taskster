@@ -763,7 +763,7 @@
               <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
                 <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50/50 transition">
                   <td class="py-3 px-4">
-                    <div class="font-bold text-slate-900">{{ f.label_key ? $t(f.label_key) : f.label }}</div>
+                    <div class="font-bold text-slate-900">{{ getFieldLabel(f) }}</div>
                     <div class="text-[10px] text-slate-400 font-mono">{{ f.field_key }}</div>
                   </td>
                   <td class="py-3 px-4">
@@ -785,8 +785,8 @@
                     </span>
                   </td>
                   <td class="py-3 px-4 text-slate-500 text-xs">
-                    <span v-if="f.options && f.options.length" class="text-cyan-700">
-                      {{ f.options.join(', ') }}
+                    <span v-if="f.options && (Array.isArray(f.options) ? f.options.length : true)" class="text-cyan-700">
+                      {{ formatFieldOptions(f.options) }}
                     </span>
                     <span v-else-if="f.field_type === 'textarea'" class="italic text-slate-400">
                       Mehrzeiliges Notizfeld
@@ -1688,7 +1688,7 @@
             <div v-if="selectedEditTemplate" class="text-[11px] text-slate-600 bg-white p-3 rounded-xl border border-cyan-100 leading-relaxed space-y-1 shadow-2xs">
               <p><strong>Info:</strong> {{ selectedEditTemplate.description }}</p>
               <p class="text-slate-500 font-medium">
-                <strong>Standard-Phasen:</strong> {{ selectedEditTemplate.lists.map(l => (te as any)(l) || l.replace('sections.', '')).join(' → ') }}
+                <strong>Standard-Phasen:</strong> {{ selectedEditTemplate.lists.map(l => resolveText(l, l.replace('sections.', ''))).join(' → ') }}
               </p>
             </div>
             <p v-else class="text-[11px] text-slate-500">
@@ -1762,9 +1762,9 @@
                 class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs shadow-2xs"
               >
                 <div>
-                  <span class="font-bold text-slate-900">{{ f.label }}</span>
+                  <span class="font-bold text-slate-900">{{ getFieldLabel(f) }}</span>
                   <span class="text-[10px] text-slate-500 ml-1.5 font-mono">({{ f.field_type }})</span>
-                  <span v-if="f.options && f.options.length" class="text-[10px] text-cyan-700 block italic">Optionen: {{ f.options.join(', ') }}</span>
+                  <span v-if="f.options && (Array.isArray(f.options) ? f.options.length : true)" class="text-[10px] text-cyan-700 block italic">Optionen: {{ formatFieldOptions(f.options) }}</span>
                 </div>
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                   {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
@@ -3096,8 +3096,8 @@ const updateFolder = async () => {
       const matchedTpl = CONSTRUCTION_TEMPLATES.find(t => t.id === editFolderTemplateId.value)
       if (matchedTpl) {
         existingSettings.default_sections = matchedTpl.lists.map(lKey => {
-          const titleStr = (te as any)(lKey) || lKey.replace('sections.', '')
-          const isTarget = lKey.includes('handover') || lKey.includes('abgeschlossen') ? 1 : 0
+          const titleStr = resolveText(lKey, lKey.replace('sections.', ''))
+          const isTarget = lKey.includes('handover') || lKey.includes('abgeschlossen') || lKey.includes('commissioning') ? 1 : 0
           return { title: titleStr, is_completed_target: isTarget }
         })
 
@@ -3105,24 +3105,48 @@ const updateFolder = async () => {
         if (matchedTpl.fields && Array.isArray(matchedTpl.fields)) {
           for (const f of matchedTpl.fields) {
             const rawKey = f.field_key
-            if (!fields.value.some((existing: any) => existing.field_key === rawKey)) {
+            const fieldLabel = resolveText(f.label_key, f.label)
+            const normalizedOptions = (f.options || []).map((opt: any) => {
+              if (typeof opt === 'string') return opt
+              if (opt && typeof opt === 'object') {
+                return resolveText(opt.label_key, opt.label || opt.value)
+              }
+              return String(opt)
+            })
+
+            const existingF = fields.value.find((ef: any) => ef.field_key === rawKey)
+            if (!existingF) {
               try {
                 await $fetch(`/api/folders/${folderId}/fields`, {
                   method: 'POST',
                   headers: authHeaders(),
                   body: {
                     field_key: rawKey,
-                    label: (te as any)(f.label_key) || f.label,
-                    label_key: f.label_key,
+                    label: fieldLabel,
+                    label_key: f.label_key || null,
                     field_type: f.field_type,
                     entity_type: f.entity_type,
-                    options: f.options || [],
+                    options: normalizedOptions,
                     is_required: f.is_required ? 1 : 0
                   }
                 })
               } catch (e) {
                 // Ignore duplicate field error
               }
+            } else if (existingF.label === '1' || existingF.label === 1 || !existingF.label) {
+              try {
+                await $fetch(`/api/folders/${folderId}/fields/${existingF.id}`, {
+                  method: 'PUT',
+                  headers: authHeaders(),
+                  body: {
+                    label: fieldLabel,
+                    label_key: f.label_key || null,
+                    field_type: f.field_type,
+                    entity_type: f.entity_type,
+                    options: normalizedOptions
+                  }
+                })
+              } catch (e) {}
             }
           }
         }
@@ -3508,12 +3532,61 @@ const getAvailableTemplateFields = (header: string) => {
   return commonCustomFieldTemplates.filter((tpl: any) => !existingKeys.has(tpl.key))
 }
 
-const getFieldLabel = (key: string) => {
-  const f = fields.value.find((item: any) => item.field_key === key)
-  if (f) return f.label_key ? t(f.label_key) : f.label
+const resolveText = (key?: string, fallback?: string) => {
+  if (!key) return fallback || ''
+  try {
+    if (typeof te === 'function' && te(key)) {
+      return t(key)
+    }
+  } catch {}
+  return fallback || key.replace(/^(sections|fields|templates)\./, '')
+}
+
+const getFieldLabel = (keyOrField: any) => {
+  if (!keyOrField) return ''
+  let f: any = null
+  let key: string = ''
+  if (typeof keyOrField === 'string') {
+    key = keyOrField
+    f = fields.value.find((item: any) => item.field_key === key)
+  } else if (typeof keyOrField === 'object') {
+    f = keyOrField
+    key = f.field_key || ''
+  }
+  if (f) {
+    if (f.label_key && typeof te === 'function' && te(f.label_key)) {
+      return t(f.label_key)
+    }
+    if (f.label && f.label !== '1' && f.label !== 1) return f.label
+  }
   const tpl = commonCustomFieldTemplates.find((item: any) => item.key === key)
-  if (tpl) return tpl.label_key ? t(tpl.label_key) : tpl.label
+  if (tpl) {
+    if (tpl.label_key && typeof te === 'function' && te(tpl.label_key)) return t(tpl.label_key)
+    return tpl.label || key
+  }
   return key
+}
+
+const formatFieldOptions = (options: any) => {
+  if (!options) return ''
+  let list = options
+  if (typeof list === 'string') {
+    try { list = JSON.parse(list) } catch { return list }
+  }
+  if (!Array.isArray(list)) return ''
+  return list.map((opt: any) => {
+    if (typeof opt === 'string') {
+      const optKey = 'fields.options.' + opt
+      return (typeof te === 'function' && te(optKey)) ? t(optKey) : opt
+    }
+    if (opt && typeof opt === 'object') {
+      if (opt.label_key && typeof te === 'function' && te(opt.label_key)) {
+        return t(opt.label_key)
+      }
+      return opt.label || opt.value || ''
+    }
+    return String(opt)
+  }).filter(Boolean).join(', ')
 }
 
 const formatCustomFieldValue = (val: any, fieldKey?: string) => {
