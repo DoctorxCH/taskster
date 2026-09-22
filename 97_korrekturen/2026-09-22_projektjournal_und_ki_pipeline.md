@@ -78,3 +78,10 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
      - Neuer Button `[⚡ Alle Aktionen ins Kanban-Board übernehmen]` über den Aktionskarten und im Karten-Header.
      - Checkbox `[✓] Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen` in beiden Erstellungs-Modalen (Auto-Sync).
      - Direkte visuelle Rückmeldung und automatischer Reload der Projektdaten (`loadProjectData()`).
+5. **Fokus auf verknüpfte Aufgabe (Linked Task Prioritization)**:
+   - Problem: Wenn ein Journaleintrag mit einer bestehenden Aufgabe verknüpft war (wie bei 'Test 2' mit `0100313383 - Hauptstr. Meggen`), wurde die `task_id` nicht an die KI-Pipeline übergeben. Zudem enthielt die Aufgabenliste im Prompt keine Beschreibungen (`description` wie z.B. 'ES Deckel wechseln'), wodurch die KI nicht wusste, worum es sich bei der verknüpften Aufgabe handelt, und fälschlicherweise eine neue Aufgabe vorschlug statt die bestehende abzuschliessen.
+   - Lösung:
+     - `task_id` wird nun explizit in `triggerAiAnalysis`, `saveNewEntry` und `saveNewNote` an das Backend übergeben und aus `project_journals` geladen.
+     - Im Backend (`api/index.php`, `public/api/index.php`, `server-php/index.php`, `server/api/projects/[id]/journal/parse-email.post.ts`) wird die verknüpfte Aufgabe mit Titel, Beschreibung, Abschnitt, Frist und aktuellem Status geladen und als `DIREKT VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT / HAUPTFOKUS)` an den KI-Prompt übergeben.
+     - Der System-Prompt weist die KI strikt an: Bezieht sich der Text auf die verknüpfte Aufgabe (z.B. Erledigung/Ersatz/Abschluss), wird zwingend ein `complete_task` für genau diese `task_id` generiert statt einer neuen Aufgabe.
+     - `newNoteForm` erhielt ebenfalls das Dropdown 'Verknüpfte Aufgabe (optional)'.

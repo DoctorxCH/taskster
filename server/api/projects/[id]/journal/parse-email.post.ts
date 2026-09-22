@@ -111,31 +111,76 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 2. Projektkontext laden (Abschnitte & Aufgaben)
+  // 2. Projektkontext & verknüpfte Aufgabe laden
+  let linkedTaskId = body.task_id || null
+  const targetJournalId = body.journal_id || body.entry_id
+  if (targetJournalId && !linkedTaskId) {
+    const jRow = db.prepare(`SELECT task_id FROM project_journals WHERE id = ? AND project_id = ?`).get(targetJournalId, projectId) as any
+    if (jRow?.task_id) {
+      linkedTaskId = jRow.task_id
+    }
+  }
+
+  let linkedTask: any = null
+  if (linkedTaskId) {
+    linkedTask = db.prepare(`
+      SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, l.title as list_title 
+      FROM tasks t 
+      LEFT JOIN lists l ON l.id = t.list_id 
+      WHERE t.id = ?
+    `).get(linkedTaskId) as any
+  }
+
   const sections = db.prepare(`SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC`).all(projectId) as any[]
   const existingTasks = db.prepare(`
-    SELECT t.id, t.list_id, t.title, t.status, t.due_date 
+    SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date 
     FROM tasks t 
     JOIN lists l ON l.id = t.list_id 
     WHERE l.project_id = ?
   `).all(projectId) as any[]
 
   const sectionsContext = JSON.stringify(sections.map(s => ({ id: s.id, title: s.title })))
-  const tasksContext = JSON.stringify(existingTasks.map(t => ({ id: t.id, section_id: t.list_id, title: t.title, status: t.status, due_date: t.due_date })))
+  const tasksContext = JSON.stringify(existingTasks.map(t => ({
+    id: t.id,
+    section_id: t.list_id,
+    title: t.title,
+    description: t.description ? String(t.description).substring(0, 100) : '',
+    status: t.status,
+    due_date: t.due_date
+  })))
+
+  let linkedTaskContext = ''
+  if (linkedTask) {
+    linkedTaskContext = `DIREKT VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT / HAUPTFOKUS):\n${JSON.stringify({
+      id: linkedTask.id,
+      section: linkedTask.list_title || linkedTask.list_id,
+      title: linkedTask.title,
+      description: linkedTask.description,
+      status: linkedTask.status,
+      due_date: linkedTask.due_date
+    })}\n\n`
+  }
 
   // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
-  const systemPrompt = `Du bist ein proaktiver technischer Bauleiter-Assistent im System Taskster.
+  const systemPrompt = `Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.
 Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.
 WICHTIGE REGELN:
-1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt (nicht pauschal 'Die E-Mail...').
-2. action_items: Liste relevanter Vorschläge (generiere proaktiv mindestens 1 konkreten Vorschlag, falls irgendeine Handlung, Freigabe, Erledigung, Abnahme, Mangel, Termin oder Dokumentation sinnvoll ist):
-   - type 'complete_task': Falls eine bestehende Aufgabe abgeschlossen/als erledigt markiert werden kann. Wenn eine bestehende Aufgabe anhand von Titel, Auftragsnummer, Adresse oder Gewerk thematisch passt, setze deren 'task_id'.
-   - type 'update_task': Falls eine bestehende Aufgabe aktualisiert werden soll (z.B. Terminverschiebung, Status, Priorität). 'task_id' angeben.
-   - type 'create_task': Falls KEINE passende bestehende Aufgabe existiert ODER ein neuer Folgeschritt, eine Abnahme, Prüfung oder Nachbereitung sinnvoll ist (z.B. 'Kontrollschacht Ersatz - Abschluss & Abnahme'). 'section_id' muss einer der übergebenen Abschnitte sein (wähle den passendsten wie z.B. Abschliessen, Tiefbau oder Vorbereiten). 'priority' ist 'normal', 'hoch' oder 'dringend'. 'due_date' im Format YYYY-MM-DD oder null.
-3. Sei proaktiv: Jeder Bauleitungseintrag soll für den Bauleiter direkt verwertbare Kanban-Aktionen vorschlagen!
+1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt.
+2. VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT):
+   Falls dieser Journaleintrag mit einer bestehenden Aufgabe verknüpft ist (siehe 'DIREKT VERKNÜPFTE AUFGABE'):
+   - Dieser Eintrag bezieht sich PRIMÄR auf genau diese verknüpfte Aufgabe!
+   - Falls der Text die Erledigung, den Abschluss oder die Fertigstellung beschreibt (z.B. 'ersetzt', 'erledigt', 'kann abgeschlossen werden', 'fertiggestellt', 'in Betrieb', 'abgenommen', 'fertig'):
+     -> Erzeuge zwingend ein 'complete_task' für diese verknüpfte Aufgabe (task_id: ID der verknüpften Aufgabe)!
+     -> Erstelle in diesem Fall KEINE neue Aufgabe (create_task), sondern schliesse die verknüpfte Aufgabe ab!
+   - Falls der Text Terminverschiebungen, Statusänderungen oder Details beschreibt:
+     -> Erzeuge ein 'update_task' für diese verknüpfte Aufgabe.
+3. ALLGEMEINE REGELN FÜR action_items:
+   - type 'complete_task': 'task_id' (insb. die verknüpfte Aufgabe), 'reason': Grund für Abschluss.
+   - type 'update_task': 'task_id', 'suggested_status', 'suggested_due_date', 'reason'.
+   - type 'create_task': Nur falls KEINE passende bestehende/verknüpfte Aufgabe existiert und ein neuer Arbeitsschritt angelegt werden muss.
 Gib AUSSCHLIESSLICH das JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.`
 
-  const userPrompt = `PROJEKT-ABSCHNITTE (SECTIONS):
+  const userPrompt = `${linkedTaskContext}PROJEKT-ABSCHNITTE (SECTIONS):
 ${sectionsContext}
 
 BESTEHENDE AUFGABEN (TASKS):
@@ -151,9 +196,9 @@ Erzeuge das JSON im folgenden Format:
   "subject": "Treffender Titel",
   "summary": "Zusammenfassung in 2-3 Sätzen",
   "action_items": [
-    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" },
+    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" },
     { "type": "update_task", "task_id": "task_id", "suggested_status": "in_progress", "suggested_due_date": null, "reason": "Begründung" },
-    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" }
+    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" }
   ]
 }`
 
@@ -203,7 +248,6 @@ Erzeuge das JSON im folgenden Format:
   const summary = aiResult.summary || ''
   const actionItems = Array.isArray(aiResult.action_items) ? aiResult.action_items : []
 
-  const targetJournalId = body.journal_id || body.entry_id
   if (targetJournalId) {
     const existing = db.prepare(`SELECT metadata FROM project_journals WHERE id = ? AND project_id = ?`).get(targetJournalId, projectId) as any
     let existingMeta: any = {}

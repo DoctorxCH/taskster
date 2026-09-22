@@ -4052,6 +4052,20 @@
             </select>
           </div>
 
+          <!-- Linked Task (optional) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Verknüpfte Aufgabe (optional)</label>
+            <select
+              v-model="newNoteForm.task_id"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
+            >
+              <option :value="null">-- Keine Verknüpfung --</option>
+              <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
+                {{ t.title }} ({{ getSectionTitle(t.list_id) }})
+              </option>
+            </select>
+          </div>
+
           <!-- Email Sender Info (if category is email) -->
           <div v-if="newNoteForm.category === 'email'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/40 rounded-xl border border-amber-200/60">
             <div>
@@ -5184,6 +5198,7 @@ const newNoteForm = ref<any>({
   category: 'email',
   visibility: 'all',
   allowed_group_id: null,
+  task_id: null,
   sender_name: '',
   sender_email: '',
   content: '',
@@ -7088,10 +7103,12 @@ const openNewNoteModal = async () => {
     category: 'email',
     visibility: 'all',
     allowed_group_id: null,
+    task_id: null,
     sender_name: '',
     sender_email: '',
     content: '',
     analyzeWithAi: true,
+    autoApply: false,
     attachments: [] as any[]
   }
   journalError.value = ''
@@ -7257,6 +7274,7 @@ const saveNewEntry = async () => {
           headers: authHeaders(),
           body: {
             journal_id: created.entry.id,
+            task_id: newEntryForm.value.task_id || null,
             subject: newEntryForm.value.title.trim(),
             content: newEntryForm.value.content.trim(),
             category: newEntryForm.value.category || 'bausitzung',
@@ -7293,6 +7311,7 @@ const saveNewNote = async () => {
         method: 'POST',
         headers: authHeaders(),
         body: {
+          task_id: newNoteForm.value.task_id || null,
           subject: newNoteForm.value.title?.trim() || 'E-Mail Import',
           content: newNoteForm.value.content?.trim() || '',
           sender_name: newNoteForm.value.sender_name?.trim() || '',
@@ -7314,6 +7333,7 @@ const saveNewNote = async () => {
         body: {
           project_id: projectId,
           type: 'note',
+          task_id: newNoteForm.value.task_id || null,
           title: newNoteForm.value.title?.trim() || 'Notiz',
           category: newNoteForm.value.category || 'allgemein',
           visibility: newNoteForm.value.visibility || 'all',
@@ -7365,6 +7385,7 @@ const triggerAiAnalysis = async (entry: any, autoApply = false) => {
       headers: authHeaders(),
       body: {
         journal_id: entry.id,
+        task_id: entry.task_id || null,
         subject: entry.title,
         content: entry.content,
         category: entry.category,

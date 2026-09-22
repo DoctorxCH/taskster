@@ -4268,12 +4268,30 @@ try {
             }
         }
 
-        // 2. Projektkontext laden (Abschnitte & bestehende Aufgaben)
+        // 2. Projektkontext & verknüpfte Aufgabe laden
+        $linkedTaskId = !empty($body['task_id']) ? $body['task_id'] : null;
+        $targetJournalId = !empty($body['journal_id']) ? $body['journal_id'] : (!empty($body['entry_id']) ? $body['entry_id'] : null);
+        if ($targetJournalId && empty($linkedTaskId)) {
+            $jCheckTask = $db->prepare("SELECT task_id FROM project_journals WHERE id = ? AND project_id = ?");
+            $jCheckTask->execute([$targetJournalId, $projectId]);
+            $foundTaskId = $jCheckTask->fetchColumn();
+            if (!empty($foundTaskId)) {
+                $linkedTaskId = $foundTaskId;
+            }
+        }
+
+        $linkedTask = null;
+        if ($linkedTaskId) {
+            $ltStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, l.title as list_title FROM tasks t LEFT JOIN lists l ON l.id = t.list_id WHERE t.id = ?");
+            $ltStmt->execute([$linkedTaskId]);
+            $linkedTask = $ltStmt->fetch(PDO::FETCH_ASSOC);
+        }
+
         $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
         $lStmt->execute([$projectId]);
         $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.status, t.due_date FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
+        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
         $tStmt->execute([$projectId]);
         $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -4282,22 +4300,50 @@ try {
         }, $sections), JSON_UNESCAPED_UNICODE);
 
         $tasksContext = json_encode(array_map(function($t) {
-            return ['id' => $t['id'], 'section_id' => $t['list_id'], 'title' => $t['title'], 'status' => $t['status'], 'due_date' => $t['due_date']];
+            return [
+                'id' => $t['id'],
+                'section_id' => $t['list_id'],
+                'title' => $t['title'],
+                'description' => !empty($t['description']) ? substr($t['description'], 0, 100) : '',
+                'status' => $t['status'],
+                'due_date' => $t['due_date']
+            ];
         }, $existingTasks), JSON_UNESCAPED_UNICODE);
 
+        $linkedTaskContext = "";
+        if ($linkedTask) {
+            $linkedTaskContext = "DIREKT VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT / HAUPTFOKUS):\n"
+                               . json_encode([
+                                   'id' => $linkedTask['id'],
+                                   'section' => $linkedTask['list_title'] ?? $linkedTask['list_id'],
+                                   'title' => $linkedTask['title'],
+                                   'description' => $linkedTask['description'],
+                                   'status' => $linkedTask['status'],
+                                   'due_date' => $linkedTask['due_date']
+                               ], JSON_UNESCAPED_UNICODE) . "\n\n";
+        }
+
         // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
-        $systemPrompt = "Du bist ein proaktiver technischer Bauleiter-Assistent im System Taskster.\n"
+        $systemPrompt = "Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.\n"
                       . "Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.\n"
                       . "WICHTIGE REGELN:\n"
-                      . "1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt (nicht pauschal 'Die E-Mail...').\n"
-                      . "2. action_items: Liste relevanter Vorschläge (generiere proaktiv mindestens 1 konkreten Vorschlag, falls irgendeine Handlung, Freigabe, Erledigung, Abnahme, Mangel, Termin oder Dokumentation sinnvoll ist):\n"
-                      . "   - type 'complete_task': Falls eine bestehende Aufgabe abgeschlossen/als erledigt markiert werden kann. Wenn eine bestehende Aufgabe anhand von Titel, Auftragsnummer, Adresse oder Gewerk thematisch passt, setze deren 'task_id'.\n"
-                      . "   - type 'update_task': Falls eine bestehende Aufgabe aktualisiert werden soll (z.B. Terminverschiebung, Status, Priorität). 'task_id' angeben.\n"
-                      . "   - type 'create_task': Falls KEINE passende bestehende Aufgabe existiert ODER ein neuer Folgeschritt, eine Abnahme, Prüfung oder Nachbereitung sinnvoll ist (z.B. 'Kontrollschacht Ersatz - Abschluss & Abnahme'). 'section_id' muss einer der übergebenen Abschnitte sein (wähle den passendsten wie z.B. Abschliessen, Tiefbau oder Vorbereiten). 'priority' ist 'normal', 'hoch' oder 'dringend'. 'due_date' im Format YYYY-MM-DD oder null.\n"
-                      . "3. Sei proaktiv: Jeder Bauleitungseintrag soll für den Bauleiter direkt verwertbare Kanban-Aktionen vorschlagen!\n"
+                      . "1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt.\n"
+                      . "2. VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT):\n"
+                      . "   Falls dieser Journaleintrag mit einer bestehenden Aufgabe verknüpft ist (siehe 'DIREKT VERKNÜPFTE AUFGABE'):\n"
+                      . "   - Dieser Eintrag bezieht sich PRIMÄR auf genau diese verknüpfte Aufgabe!\n"
+                      . "   - Falls der Text die Erledigung, den Abschluss oder die Fertigstellung beschreibt (z.B. 'ersetzt', 'erledigt', 'kann abgeschlossen werden', 'fertiggestellt', 'in Betrieb', 'abgenommen', 'fertig'):\n"
+                      . "     -> Erzeuge zwingend ein 'complete_task' für diese verknüpfte Aufgabe (task_id: ID der verknüpften Aufgabe)!\n"
+                      . "     -> Erstelle in diesem Fall KEINE neue Aufgabe (create_task), sondern schliesse die verknüpfte Aufgabe ab!\n"
+                      . "   - Falls der Text Terminverschiebungen, Statusänderungen oder Details beschreibt:\n"
+                      . "     -> Erzeuge ein 'update_task' für diese verknüpfte Aufgabe.\n"
+                      . "3. ALLGEMEINE REGELN FÜR action_items:\n"
+                      . "   - type 'complete_task': 'task_id' (insb. die verknüpfte Aufgabe), 'reason': Grund für Abschluss.\n"
+                      . "   - type 'update_task': 'task_id', 'suggested_status', 'suggested_due_date', 'reason'.\n"
+                      . "   - type 'create_task': Nur falls KEINE passende bestehende/verknüpfte Aufgabe existiert und ein neuer Arbeitsschritt angelegt werden muss.\n"
                       . "Gib AUSSCHLIESSLICH das JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.";
 
-        $userPrompt = "PROJEKT-ABSCHNITTE (SECTIONS):\n$sectionsContext\n\n"
+        $userPrompt = ($linkedTaskContext ? "$linkedTaskContext" : "")
+                    . "PROJEKT-ABSCHNITTE (SECTIONS):\n$sectionsContext\n\n"
                     . "BESTEHENDE AUFGABEN (TASKS):\n$tasksContext\n\n"
                     . "EINTRAGSTEXT:\n\"\"\"\n$emailText\n\"\"\"\n\n"
                     . "Erzeuge das JSON im folgenden Format:\n"
@@ -4305,9 +4351,9 @@ try {
                     . '  "subject": "Treffender Titel",' . "\n"
                     . '  "summary": "Zusammenfassung in 2-3 Sätzen",' . "\n"
                     . '  "action_items": [' . "\n"
-                    . '    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" },' . "\n"
+                    . '    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" },' . "\n"
                     . '    { "type": "update_task", "task_id": "task_id", "suggested_status": "in_progress", "suggested_due_date": null, "reason": "Begründung" },' . "\n"
-                    . '    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" }' . "\n"
+                    . '    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" }' . "\n"
                     . "  ]\n"
                     . "}";
 
