@@ -14,6 +14,11 @@ export interface User {
   currency?: string
   settings?: any
   avatar?: string | null
+  plan?: 'basic' | 'pro' | 'enterprise'
+  license_type?: 'basic' | 'pro' | 'enterprise'
+  is_trial?: boolean
+  trial_days_left?: number
+  trial_ends_at?: string | null
 }
 
 export const useAuth = () => {

@@ -61,10 +61,38 @@ export function initDatabase() {
     "ALTER TABLE project_journals ADD COLUMN allowed_group_id TEXT",
     "ALTER TABLE project_journals ADD COLUMN updated_at TEXT",
     "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
+    "ALTER TABLE lists ADD COLUMN is_completed_target INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN trial_ends_at TEXT",
+    "ALTER TABLE companies ADD COLUMN billing_email TEXT",
+    "ALTER TABLE companies ADD COLUMN stripe_customer_id TEXT",
+    "ALTER TABLE company_invitations ADD COLUMN license_type TEXT NOT NULL DEFAULT 'pro'",
   ]
   for (const sql of columnMigrations) {
     try { db.exec(sql) } catch (_) { /* column already exists */ }
   }
+
+  // Fallback migration: Jedes Projekt gehört zwingend zu einem Ordner
+  try {
+    const orphanProjects = db.prepare(`
+      SELECT p.id, p.title, pm.user_id, u.company_id
+      FROM projects p
+      LEFT JOIN project_folders pf ON pf.id = p.folder_id
+      LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.role = 'owner'
+      LEFT JOIN users u ON u.id = pm.user_id
+      WHERE p.folder_id IS NULL OR p.folder_id = '' OR pf.id IS NULL
+    `).all() as any[]
+    for (const orphan of orphanProjects) {
+      const ownerId = orphan.user_id || 'usr_default'
+      const companyId = orphan.company_id || null
+      let defFolder = db.prepare("SELECT id FROM project_folders WHERE owner_id = ? AND name = 'Allgemein' LIMIT 1").get(ownerId) as any
+      let fallbackFolderId = defFolder?.id
+      if (!fallbackFolderId) {
+        fallbackFolderId = 'fld_allgemein_' + Math.random().toString(36).substring(2, 8)
+        db.prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, 'Allgemein', '📁', 'private')").run(fallbackFolderId, ownerId, companyId)
+      }
+      db.prepare("UPDATE projects SET folder_id = ? WHERE id = ?").run(fallbackFolderId, orphan.id)
+    }
+  } catch (_) { /* ignore */ }
 
   // ROOT-CAUSE-FIX: Company Admins duerfen KEINE Plattform-admin_permissions haben.
   // Sie verwalten ihre Firma ueber company_role === 'admin' im /company Portal.

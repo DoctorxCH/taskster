@@ -9,13 +9,8 @@ export default defineEventHandler(async (event) => {
   const { title, template_id, custom_lists, import_tasks, projects } = body
   let { folder_id } = body
 
-  // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
-  // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
-  const isFreeUser = !user.is_pro && !user.company_id && !user.is_superadmin
+  // Fallback zu Standard-Ordner („Allgemein“), falls folder_id fehlt
   if (!folder_id) {
-    if (!isFreeUser) {
-      throw createError({ statusCode: 400, statusMessage: 'Ordner-ID ist erforderlich' })
-    }
     folder_id = getOrCreateDefaultFolder(user).id
   }
 
@@ -88,6 +83,10 @@ export default defineEventHandler(async (event) => {
       INSERT INTO lists (id, project_id, title, access_mode, sort_order)
       VALUES (?, ?, ?, 'inherit', 1)
     `)
+    const insTask = db.prepare(`
+      INSERT INTO tasks (id, list_id, title, status, sort_order)
+      VALUES (?, ?, ?, 'todo', ?)
+    `)
 
     const createdProjects: any[] = []
     const insertTransaction = db.transaction((projectItems: any[]) => {
@@ -106,6 +105,16 @@ export default defineEventHandler(async (event) => {
         insProject.run(pId, folder_id, pTitle, pStatus, pVis, pCurr, pBh, pBa, pCd)
         const listId = 'lst_' + randomUUID().substring(0, 8)
         insList.run(listId, pId, 'Aufgabenliste 1')
+
+        if (Array.isArray(p.tasks) && p.tasks.length > 0) {
+          let tOrder = 1
+          for (const taskItem of p.tasks) {
+            const taskTitle = typeof taskItem === 'object' && taskItem !== null ? String(taskItem.title || '').trim() : String(taskItem || '').trim()
+            if (!taskTitle) continue
+            const tId = 'tsk_' + randomUUID().substring(0, 8)
+            insTask.run(tId, listId, taskTitle, tOrder++)
+          }
+        }
 
         createdProjects.push({
           id: pId,

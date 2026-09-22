@@ -27,7 +27,10 @@
 
     <div v-else-if="project" class="space-y-6">
       <!-- Project Header -->
-      <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+      <div
+        class="border rounded-lg p-5 shadow-xs space-y-4 transition-all"
+        :class="project.status === 'completed' ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white border-slate-200'"
+      >
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <!-- Left: Title & Badges -->
           <div>
@@ -78,9 +81,10 @@
                 <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
               </span>
               <span
-                class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200"
+                class="px-2 py-0.5 rounded text-xs font-semibold border"
+                :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 border-slate-200'"
               >
-                Status: {{ project.status }}
+                {{ project.status === 'completed' ? '✓ Abgeschlossen' : 'Status: ' + project.status }}
               </span>
               <span
                 class="px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase"
@@ -145,6 +149,20 @@
                 Stopp
               </button>
             </div>
+
+            <!-- Quick Access Journal Button -->
+            <button
+              type="button"
+              @click="showQuickJournalDrawer = true; loadJournals()"
+              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
+              title="Projektjournal Seitenleiste öffnen"
+            >
+              <BookOpen class="w-4 h-4 text-slate-600" />
+              <span class="hidden sm:inline">Journal</span>
+              <span v-if="journalEntries.length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-cyan-100 text-[#00A3C4]">
+                {{ journalEntries.length }}
+              </span>
+            </button>
 
             <!-- More Actions Dropdown -->
             <div v-if="userRole !== 'viewer'" class="relative">
@@ -212,6 +230,32 @@
                   <Plus class="w-4 h-4 text-slate-500" />
                   <span>Neuer Abschnitt</span>
                 </button>
+
+                <div class="my-1 border-t border-slate-100"></div>
+                <div class="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Export (Enterprise)</div>
+                <button
+                  type="button"
+                  @click="showActionsMenu = false; triggerProjectExport('csv')"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
+                >
+                  <div class="flex items-center space-x-2">
+                    <Download class="w-4 h-4 text-slate-500" />
+                    <span>Projekt als CSV</span>
+                  </div>
+                  <span v-if="!canExportProject" class="text-[9px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">PRO</span>
+                </button>
+                <button
+                  type="button"
+                  @click="showActionsMenu = false; triggerProjectExport('json')"
+                  class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
+                >
+                  <div class="flex items-center space-x-2">
+                    <FileText class="w-4 h-4 text-slate-500" />
+                    <span>Projekt als JSON</span>
+                  </div>
+                  <span v-if="!canExportProject" class="text-[9px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">PRO</span>
+                </button>
+
                 <div v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin" class="my-1 border-t border-slate-100"></div>
                 <button
                   v-if="userRole === 'owner' || userRole === 'admin' || user?.is_superadmin"
@@ -1170,6 +1214,14 @@
                     <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                       {{ entry.task_title || getTaskTitle(entry.task_id) }}
                     </p>
+                    <button
+                      type="button"
+                      @click="openTaskDetailById(entry.task_id)"
+                      class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#0891b2] hover:underline transition cursor-pointer"
+                    >
+                      <ExternalLink class="w-3 h-3" />
+                      <span>Aufgabe öffnen</span>
+                    </button>
 
                     <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
                     <div v-if="userRole !== 'viewer'" class="pt-1.5 border-t border-cyan-200/70">
@@ -1198,8 +1250,8 @@
                         <span>✨</span>
                         <span>Passende Aufgabe erkannt</span>
                       </div>
-                      <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
-                        {{ getSuggestedTaskForEntry(entry)?.task.title }}
+                      <p class="text-xs font-bold text-slate-900 leading-snug">
+                        Möchtest du diesen Eintrag der Aufgabe „{{ getSuggestedTaskForEntry(entry)?.task.title }}“ zuweisen?
                       </p>
                       <p class="text-[10px] text-amber-800">
                         Erkannt: <em>{{ getSuggestedTaskForEntry(entry)?.reason }}</em>
@@ -1211,7 +1263,7 @@
                         @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
                         class="w-full py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#0891b2] text-white text-xs font-bold transition flex items-center justify-center space-x-1 shadow-xs cursor-pointer"
                       >
-                        <span>✓ Jetzt verknüpfen</span>
+                        <span>✓ Ja, zuweisen</span>
                       </button>
                     </div>
 
@@ -2217,6 +2269,19 @@
               <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
                 {{ sec.tasks?.length || sec.task_count || 0 }} Aufgaben
               </span>
+
+              <!-- Target Completed Section Toggle -->
+              <button
+                type="button"
+                @click="toggleCompletedTargetSection(idx)"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                :class="sec.is_completed_target == 1
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400/20'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'"
+                :title="sec.is_completed_target == 1 ? 'Aktueller Ziel-Abschnitt für erledigte Aufgaben' : 'Als Ziel-Abschnitt für erledigte Aufgaben festlegen'"
+              >
+                <span>{{ sec.is_completed_target == 1 ? '✓ Ziel für Erledigt' : '○ Ziel für Erledigt' }}</span>
+              </button>
 
               <!-- Action Controls: Up, Down, Delete -->
               <div class="flex items-center space-x-1">
@@ -4898,6 +4963,107 @@
       </div>
     </div>
   </div>
+
+  <!-- Quick Journal Slide-Over Drawer for Kanban -->
+    <div v-if="showQuickJournalDrawer" class="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs">
+      <div class="fixed inset-0" @click="showQuickJournalDrawer = false" />
+      <div class="relative w-full max-w-xl bg-white shadow-2xl h-full flex flex-col z-10 overflow-hidden border-l border-slate-200">
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div class="flex items-center space-x-2">
+            <BookOpen class="w-5 h-5 text-[#00A3C4]" />
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Projektjournal</h3>
+              <p class="text-[11px] text-slate-500">Schnellsuche & Einträge zuweisen</p>
+            </div>
+          </div>
+          <button @click="showQuickJournalDrawer = false" class="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition">✕</button>
+        </div>
+        <!-- Search -->
+        <div class="p-4 border-b border-slate-100">
+          <div class="relative">
+            <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              v-model="journalSearchQuery"
+              type="text"
+              placeholder="Im Journal & Notizen suchen..."
+              class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:border-[#00A3C4]"
+            />
+          </div>
+        </div>
+        <!-- Entries List -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div v-if="filteredJournals.length === 0" class="text-center py-12 text-xs text-slate-400">
+            Keine Journal-Einträge gefunden.
+          </div>
+          <div
+            v-for="entry in filteredJournals"
+            :key="entry.id"
+            class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-[#00A3C4] transition space-y-2 shadow-2xs"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-slate-900 truncate">{{ entry.title }}</span>
+              <span class="text-[10px] text-slate-400 shrink-0">{{ entry.entry_date }}</span>
+            </div>
+            <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">{{ entry.content }}</p>
+
+            <!-- AI Suggestion or Assigned Task -->
+            <div v-if="entry.task_id" class="flex items-center justify-between pt-1 border-t border-slate-100">
+              <span class="text-[11px] text-slate-500">Aufgabe: <strong class="text-slate-800">{{ entry.task_title || getTaskTitle(entry.task_id) }}</strong></span>
+              <button
+                type="button"
+                @click="openTaskDetailById(entry.task_id); showQuickJournalDrawer = false"
+                class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Aufgabe öffnen →</span>
+              </button>
+            </div>
+            <div v-else-if="getSuggestedTaskForEntry(entry)" class="p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+              <p class="text-[11px] font-bold text-amber-950">
+                Möchtest du diesen Eintrag der Aufgabe „{{ getSuggestedTaskForEntry(entry)?.task.title }}“ zuweisen?
+              </p>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
+                  class="px-2.5 py-1 rounded bg-[#00A3C4] hover:bg-[#0891b2] text-white text-[10px] font-bold transition cursor-pointer"
+                >
+                  ✓ Ja, zuweisen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Plan Upgrade Prompt -->
+    <div v-if="showUpgradeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-cyan-50 border border-cyan-200 text-[#00A3C4] flex items-center justify-center mx-auto text-xl">
+          ⭐
+        </div>
+        <h3 class="text-lg font-black text-slate-900">Tarif-Upgrade erforderlich</h3>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          {{ upgradeReason || 'Diese Funktion ist in deinem aktuellen Tarif nicht verfügbar.' }}
+        </p>
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            @click="showUpgradeModal = false"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            Schließen
+          </button>
+          <NuxtLink
+            to="/company"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center justify-center"
+          >
+            Tarife ansehen
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -4970,6 +5136,66 @@ const loading = ref(true)
 const currentView = ref<'tasks' | 'journal' | 'team' | 'settings' | 'time' | 'contacts'>('tasks')
 const taskViewMode = ref<'board' | 'table'>('board')
 const showActionsMenu = ref(false)
+
+const { canExportProject, promptUpgrade, showUpgradeModal, upgradeReason } = usePlanLimits()
+const showQuickJournalDrawer = ref(false)
+
+const openTaskDetailById = async (taskId: string) => {
+  let found: any = null
+  for (const list of lists.value) {
+    if (list.tasks) {
+      found = list.tasks.find((t: any) => t.id === taskId)
+      if (found) break
+    }
+  }
+  if (found) {
+    await openTaskDrawer(found)
+  } else {
+    try {
+      const res = await $fetch<any>(`/api/tasks/${taskId}`, { headers: authHeaders() })
+      if (res?.task) await openTaskDrawer(res.task)
+    } catch (e) {
+      console.error('Failed to open task', e)
+    }
+  }
+}
+
+const triggerProjectExport = async (format: 'csv' | 'json') => {
+  if (!canExportProject.value) {
+    promptUpgrade('export', 'Projekt-Export ist exklusiv für den Enterprise-Tarif verfügbar.')
+    return
+  }
+  try {
+    const res = await $fetch<any>(`/api/projects/${projectId}/export?format=${format}`, {
+      headers: authHeaders()
+    })
+    if (format === 'csv') {
+      const blob = new Blob([res], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${(project.value?.title || 'projekt').replace(/[^a-zA-Z0-9_-]/g, '_')}_export.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } else {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(res, null, 2))
+      const dlAnchor = document.createElement('a')
+      dlAnchor.setAttribute('href', dataStr)
+      dlAnchor.setAttribute('download', `${(project.value?.title || 'projekt').replace(/[^a-zA-Z0-9_-]/g, '_')}_export.json`)
+      document.body.appendChild(dlAnchor)
+      dlAnchor.click()
+      dlAnchor.remove()
+    }
+  } catch (err: any) {
+    if (err.statusCode === 403) {
+      promptUpgrade('export', 'Projekt-Export ist exklusiv für den Enterprise-Tarif verfügbar.')
+    } else {
+      alert(err.data?.statusMessage || 'Fehler beim Exportieren des Projekts')
+    }
+  }
+}
 
 // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
 const isFreeUser = computed(() => !user.value?.is_pro && !user.value?.company_id && !user.value?.is_superadmin)
@@ -6547,6 +6773,13 @@ const deleteSectionInModal = async (idx: number) => {
   }
 }
 
+const toggleCompletedTargetSection = (idx: number) => {
+  const current = managingSections.value[idx].is_completed_target
+  managingSections.value.forEach((s: any, i: number) => {
+    s.is_completed_target = (i === idx && !current) ? 1 : 0
+  })
+}
+
 const saveSectionsReorder = async () => {
   savingSections.value = true
   manageSectionsError.value = ''
@@ -6555,7 +6788,8 @@ const saveSectionsReorder = async () => {
       id: sec.id,
       title: sec.title ? sec.title.trim() : `Abschnitt ${idx + 1}`,
       sort_order: idx + 1,
-      color: sec.color || null
+      color: sec.color || null,
+      is_completed_target: sec.is_completed_target ? 1 : 0
     }))
     await $fetch('/api/lists/reorder', {
       method: 'POST',
@@ -6630,16 +6864,61 @@ const getTaskAssignees = (task: any): any[] => {
   })
 }
 
+const checkAndCascadeProjectCompletion = async () => {
+  if (!project.value || project.value.status === 'completed') return
+
+  let openCount = 0
+  for (const l of lists.value) {
+    if (Array.isArray(l.tasks)) {
+      for (const t of l.tasks) {
+        const isDone = (drawerTask.value?.id === t.id)
+          ? (drawerTask.value.status === 'done' || drawerTask.value.status === 'completed')
+          : (t.status === 'done' || t.status === 'completed')
+        if (!isDone) openCount++
+      }
+    }
+  }
+
+  if (openCount === 0) {
+    const confirmProj = confirm('Alle Aufgaben in diesem Projekt sind erledigt! Möchtest du das gesamte Projekt abschließen?')
+    if (confirmProj) {
+      try {
+        await $fetch(`/api/projects/${projectId}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: { status: 'completed' }
+        })
+        project.value.status = 'completed'
+        await loadProjectData()
+      } catch (err: any) {
+        console.error('Failed to complete project', err)
+      }
+    }
+  }
+}
+
 const toggleTaskCompleted = async (task: any) => {
   const previousStatus = task.status
   const newStatus = previousStatus === 'done' ? 'todo' : 'done'
   task.status = newStatus
   try {
+    const updateBody: any = { status: newStatus }
+    if (newStatus === 'done') {
+      const targetList = lists.value.find((l: any) => l.is_completed_target == 1)
+      if (targetList && targetList.id !== task.list_id) {
+        updateBody.list_id = targetList.id
+        task.list_id = targetList.id
+      }
+    }
     await $fetch(`/api/tasks/${task.id}`, {
       method: 'PUT',
       headers: authHeaders(),
-      body: { status: newStatus }
+      body: updateBody
     })
+    if (newStatus === 'done') {
+      await loadProjectData()
+      await checkAndCascadeProjectCompletion()
+    }
   } catch (err: any) {
     task.status = previousStatus
     alert(err.data?.statusMessage || 'Fehler beim Ändern des Aufgabenstatus')
@@ -6886,9 +7165,38 @@ const removeChecklistItem = (i: number) => {
   autoSaveDrawer()
 }
 
-const toggleChecklistItem = (i: number) => {
+const checkAndCascadeTaskCompletion = async () => {
+  if (!drawerTask.value?.id || drawerTask.value.status === 'done') return
+
+  const hasChecklist = Array.isArray(drawerTask.value.checklist) && drawerTask.value.checklist.length > 0
+  const hasSubtasks = Array.isArray(drawerSubtasks.value) && drawerSubtasks.value.length > 0
+
+  if (!hasChecklist && !hasSubtasks) return
+
+  const allChecklistDone = !hasChecklist || drawerTask.value.checklist.every((c: any) => Boolean(c.done))
+  const allSubtasksDone = !hasSubtasks || drawerSubtasks.value.every((s: any) => Boolean(s.is_done))
+
+  if (allChecklistDone && allSubtasksDone) {
+    const confirmComplete = confirm('Alle Unterpunkte und Checklistenpunkte sind erledigt. Möchtest du diese Aufgabe als erledigt markieren?')
+    if (confirmComplete) {
+      drawerTask.value.status = 'done'
+      const targetList = lists.value.find((l: any) => l.is_completed_target == 1)
+      if (targetList && targetList.id !== drawerTask.value.list_id) {
+        drawerTask.value.list_id = targetList.id
+      }
+      await autoSaveDrawer()
+      await loadProjectData()
+      await checkAndCascadeProjectCompletion()
+    }
+  }
+}
+
+const toggleChecklistItem = async (i: number) => {
   drawerTask.value.checklist[i].done = !drawerTask.value.checklist[i].done
-  autoSaveDrawer()
+  await autoSaveDrawer()
+  if (drawerTask.value.checklist[i].done) {
+    await checkAndCascadeTaskCompletion()
+  }
 }
 
 const addSubtask = async () => {
@@ -6933,6 +7241,9 @@ const toggleSubtask = async (sub: any) => {
     })
     const idx = drawerSubtasks.value.findIndex((s: any) => s.id === sub.id)
     if (idx !== -1) drawerSubtasks.value[idx] = res.subtask
+    if (res.subtask?.is_done) {
+      await checkAndCascadeTaskCompletion()
+    }
   } catch (err) {
     console.error('Toggle subtask failed', err)
   }

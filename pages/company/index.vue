@@ -124,6 +124,76 @@
 
       <!-- TAB: MITARBEITER & CO-ADMINS -->
       <div v-if="activeTab === 'members'" class="space-y-6">
+        <!-- Live-Kalkulation & Lizenzen Übersicht -->
+        <div class="liquid_glass rounded-3xl p-6 shadow-xl border border-slate-200/80 bg-gradient-to-br from-white/95 to-slate-50/90">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">💳</span>
+                <h3 class="text-sm font-bold text-slate-900">Lizenzen &amp; Monatliche Gesamtkosten</h3>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">Live-Kalkulation</span>
+              </div>
+              <p class="text-xs text-slate-600 font-medium mt-0.5">
+                Übersicht der aktiven Arbeitsplatzlizenzen deines Unternehmens.
+              </p>
+            </div>
+            <div class="text-right">
+              <div class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Monatlicher Gesamtbetrag</div>
+              <div class="text-2xl font-black text-cyan-700">
+                {{ Number(calculatedBreakdown.monthly_total || 0).toFixed(2) }} €
+                <span class="text-xs font-normal text-slate-500">/ Monat</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <!-- Admin Seat -->
+            <div class="p-3.5 rounded-2xl bg-white/80 border border-purple-200/70 shadow-xs flex items-center justify-between">
+              <div>
+                <div class="text-[11px] font-bold text-purple-900 flex items-center space-x-1.5">
+                  <span>Firmen-Admin</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Enterprise</span>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">19 € / Monat pro Sitz</div>
+              </div>
+              <div class="text-right">
+                <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.admin_count }}×</div>
+                <div class="text-[11px] font-semibold text-purple-700">{{ (calculatedBreakdown.admin_count * calculatedBreakdown.admin_price).toFixed(2) }} €</div>
+              </div>
+            </div>
+
+            <!-- Pro Seats -->
+            <div class="p-3.5 rounded-2xl bg-white/80 border border-cyan-200/70 shadow-xs flex items-center justify-between">
+              <div>
+                <div class="text-[11px] font-bold text-cyan-900 flex items-center space-x-1.5">
+                  <span>Mitarbeiter Pro</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">Pro</span>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">8 € / Monat pro Sitz</div>
+              </div>
+              <div class="text-right">
+                <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.pro_count }}×</div>
+                <div class="text-[11px] font-semibold text-cyan-700">{{ (calculatedBreakdown.pro_count * calculatedBreakdown.pro_price).toFixed(2) }} €</div>
+              </div>
+            </div>
+
+            <!-- Enterprise Seats -->
+            <div class="p-3.5 rounded-2xl bg-white/80 border border-purple-200/70 shadow-xs flex items-center justify-between">
+              <div>
+                <div class="text-[11px] font-bold text-purple-900 flex items-center space-x-1.5">
+                  <span>Mitarbeiter Enterprise</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Enterprise</span>
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">15 € / Monat pro Sitz</div>
+              </div>
+              <div class="text-right">
+                <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.enterprise_count }}×</div>
+                <div class="text-[11px] font-semibold text-purple-700">{{ (calculatedBreakdown.enterprise_count * calculatedBreakdown.enterprise_price).toFixed(2) }} €</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
           <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -145,7 +215,7 @@
               <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
                 <tr>
                   <th class="py-3.5 px-4">Name &amp; E-Mail</th>
-                  <th class="py-3.5 px-4">Rolle</th>
+                  <th class="py-3.5 px-4">Rolle &amp; Lizenz</th>
                   <th class="py-3.5 px-4">Seit</th>
                   <th class="py-3.5 px-4 text-right">Aktionen</th>
                 </tr>
@@ -167,14 +237,34 @@
                     </div>
                   </td>
                   <td class="py-3.5 px-4">
-                    <span
-                      class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
-                      :class="m.company_role === 'admin'
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                        : 'bg-slate-200 text-slate-700 border-slate-300'"
-                    >
-                      {{ m.company_role === 'admin' ? 'Co-Admin' : 'Mitarbeiter' }}
-                    </span>
+                    <div class="flex flex-col gap-1 items-start">
+                      <span
+                        class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+                        :class="m.company_role === 'admin'
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : 'bg-slate-200 text-slate-700 border-slate-300'"
+                      >
+                        {{ m.company_role === 'admin' ? 'Co-Admin' : 'Mitarbeiter' }}
+                      </span>
+                      <span
+                        v-if="m.company_role === 'admin'"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                      >
+                        Enterprise (19 € / Mt.)
+                      </span>
+                      <span
+                        v-else-if="m.license_type === 'enterprise'"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                      >
+                        Enterprise (15 € / Mt.)
+                      </span>
+                      <span
+                        v-else
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200"
+                      >
+                        Pro (8 € / Mt.)
+                      </span>
+                    </div>
                   </td>
                   <td class="py-3.5 px-4 text-slate-600 font-medium">
                     {{ formatDate(m.created_at) }}
@@ -231,7 +321,9 @@
               <div class="min-w-0">
                 <div class="text-xs font-bold text-slate-900 font-mono truncate">{{ inv.email }}</div>
                 <div class="text-[11px] text-slate-500 font-medium">
-                  Rolle: {{ inv.role === 'admin' ? 'Co-Admin' : 'Mitarbeiter' }} · eingeladen am {{ formatDate(inv.created_at) }}
+                  Rolle: {{ inv.role === 'admin' ? 'Co-Admin' : 'Mitarbeiter' }} ·
+                  Lizenz: {{ inv.license_type === 'enterprise' ? 'Enterprise (15 € / Mt.)' : 'Pro (8 € / Mt.)' }} ·
+                  eingeladen am {{ formatDate(inv.created_at) }}
                 </div>
               </div>
               <button
@@ -891,6 +983,19 @@
               <option value="member">Mitarbeiter</option>
               <option value="admin">Co-Admin (Vollzugriff auf Firmenverwaltung)</option>
             </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Lizenz-Stufe</label>
+            <select
+              v-model="inviteForm.license_type"
+              class="w-full px-3.5 py-2.5 bg-white/70 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-cyan-600"
+            >
+              <option value="pro">Pro-Lizenz (8 € / Monat · Unbegrenzte Aufgaben &amp; Zeiterfassung)</option>
+              <option value="enterprise">Enterprise-Lizenz (15 € / Monat · Inkl. Projekt-Export)</option>
+            </select>
+            <p class="text-[11px] text-slate-500 mt-1 font-medium">
+              Firmen-Admin belegt Enterprise (19 € / Monat).
+            </p>
           </div>
 
           <div v-if="generatedInviteLink" class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
@@ -1642,7 +1747,7 @@ const loadCompanyData = async () => {
   try {
     const [details, memberRes] = await Promise.all([
       $fetch<any>('/api/company/details', { headers: authHeaders() }),
-      $fetch<any>('/api/companies/members', { headers: authHeaders() }).catch(() => ({ members: [] }))
+      $fetch<any>('/api/companies/members', { headers: authHeaders() }).catch(() => ({ members: [], seats_breakdown: null }))
     ])
 
     company.value = details.company
@@ -1650,6 +1755,7 @@ const loadCompanyData = async () => {
     upgradeRequests.value = details.upgrade_requests || []
     supportTickets.value = details.support_tickets || []
     members.value = memberRes.members || []
+    seatsBreakdown.value = memberRes.seats_breakdown || null
 
     settingsForm.value.name = details.company?.name || ''
     settingsForm.value.allow_document_upload = details.company?.settings?.allow_document_upload !== false
@@ -1666,15 +1772,50 @@ const loadCompanyData = async () => {
   }
 }
 
+const seatsBreakdown = ref<any>(null)
+
+const calculatedBreakdown = computed(() => {
+  if (seatsBreakdown.value) return seatsBreakdown.value
+  let adminCount = 0
+  let proCount = 0
+  let entCount = 0
+  for (const m of (members.value || [])) {
+    if (m.company_role === 'admin' || m.role === 'admin') {
+      adminCount++
+    } else if (m.license_type === 'enterprise') {
+      entCount++
+    } else {
+      proCount++
+    }
+  }
+  if (adminCount === 0) adminCount = 1
+  return {
+    admin_count: adminCount,
+    admin_price: 19.0,
+    pro_count: proCount,
+    pro_price: 8.0,
+    enterprise_count: entCount,
+    enterprise_price: 15.0,
+    monthly_total: (adminCount * 19.0) + (proCount * 8.0) + (entCount * 15.0),
+    currency: 'EUR'
+  }
+})
+
+// ---------------------------------------------------------------
+// Vorlagen (Company Templates)
+// ---------------------------------------------------------------
 const loadTemplates = async () => {
   try {
     const res = await $fetch<any>('/api/company/templates', { headers: authHeaders() })
     templates.value = res.templates || []
   } catch (err: any) {
-    console.warn('Templates fetch error:', err)
+    console.error('Failed to load templates', err)
   }
 }
 
+// ---------------------------------------------------------------
+// Einladungen (Pending Invitations)
+// ---------------------------------------------------------------
 const loadInvitations = async () => {
   try {
     const res = await $fetch<any>('/api/companies/invitations', { headers: authHeaders() })
@@ -1690,10 +1831,10 @@ const loadInvitations = async () => {
 const showInviteModal = ref(false)
 const sendingInvite = ref(false)
 const generatedInviteLink = ref('')
-const inviteForm = ref({ email: '', role: 'member' })
+const inviteForm = ref({ email: '', role: 'member', license_type: 'pro' })
 
 const openInviteModal = () => {
-  inviteForm.value = { email: '', role: 'member' }
+  inviteForm.value = { email: '', role: 'member', license_type: 'pro' }
   generatedInviteLink.value = ''
   showInviteModal.value = true
 }
@@ -1705,7 +1846,11 @@ const sendInvite = async () => {
     const res = await $fetch<any>('/api/companies/members', {
       method: 'POST',
       headers: authHeaders(),
-      body: { email: inviteForm.value.email, role: inviteForm.value.role }
+      body: {
+        email: inviteForm.value.email,
+        role: inviteForm.value.role,
+        license_type: inviteForm.value.license_type || 'pro'
+      }
     })
 
     if (res.action === 'added') {

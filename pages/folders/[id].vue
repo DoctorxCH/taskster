@@ -157,7 +157,7 @@
           <!-- Collapsible Breakdown per Project -->
           <div v-if="showControllingDetails" class="mt-3 pt-3 border-t border-slate-200 space-y-3">
             <div
-              v-for="p in projects"
+              v-for="p in sortedProjects"
               :key="p.id"
               class="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs"
             >
@@ -236,13 +236,19 @@
         <!-- VIEW MODE 1: GRID / KACHELN -->
         <div v-else-if="projectViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div
-            v-for="project in projects"
+            v-for="project in sortedProjects"
             :key="project.id"
-            class="bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
+            class="border rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
+            :class="project.status === 'completed'
+              ? 'bg-emerald-500/10 border-emerald-300 ring-1 ring-emerald-400/20'
+              : 'bg-white border-slate-200 hover:border-[#0891B2]'"
           >
             <div>
               <div class="flex items-start justify-between mb-3">
-                <div class="w-9 h-9 rounded bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2]">
+                <div
+                  class="w-9 h-9 rounded flex items-center justify-center border"
+                  :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                >
                   <ClipboardList class="w-5 h-5" />
                 </div>
                 <div class="flex items-center space-x-1 flex-wrap gap-1">
@@ -264,9 +270,9 @@
                   </span>
                   <span
                     class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase"
-                    :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
+                    :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
                   >
-                    {{ project.status }}
+                    {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                   </span>
                 </div>
               </div>
@@ -344,7 +350,12 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
-                <tr v-for="project in projects" :key="project.id" class="hover:bg-slate-50/50 transition">
+                <tr
+                  v-for="project in sortedProjects"
+                  :key="project.id"
+                  class="transition"
+                  :class="project.status === 'completed' ? 'bg-emerald-50/50 hover:bg-emerald-100/50' : 'hover:bg-slate-50/50'"
+                >
                   <td class="py-3 px-4">
                     <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition text-sm">
                       {{ project.title }}
@@ -362,9 +373,9 @@
                       </span>
                       <span
                         class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase"
-                        :class="project.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'"
+                        :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
                       >
-                        {{ project.status }}
+                        {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                       </span>
                     </div>
                   </td>
@@ -750,9 +761,12 @@
                           <select
                             v-model="importColumnMapping[hIdx]"
                             class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#0891B2]"
-                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#0891B2] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : '')"
+                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#0891B2] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx] === 'action:create_task' ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : ''))"
                           >
                             <option value="">-- Nicht importieren --</option>
+                            <optgroup label="Aktionen & Aufgaben">
+                              <option value="action:create_task">✅ [Aktion] Neue Aufgabe erstellen</option>
+                            </optgroup>
                             <optgroup label="Standard Projekt-Felder">
                               <option value="title">📌 Projekttitel (Pflicht)</option>
                               <option value="status">🔄 Status (active/archived/completed)</option>
@@ -1522,6 +1536,16 @@ const folderId = route.params.id as string
 
 const folder = ref<any>(null)
 const projects = ref<any[]>([])
+const sortedProjects = computed(() => {
+  return [...projects.value].sort((a, b) => {
+    const aComp = a.status === 'completed' ? 1 : 0
+    const bComp = b.status === 'completed' ? 1 : 0
+    if (aComp !== bComp) return aComp - bComp
+    if (a.is_default && !b.is_default) return -1
+    if (!a.is_default && b.is_default) return 1
+    return 0
+  })
+})
 const fields = ref<any[]>([])
 const loading = ref(true)
 const projectViewMode = ref<'grid' | 'list'>('grid')
@@ -2168,6 +2192,8 @@ const processImportFile = async (file: File) => {
         mapping[idx] = 'budget_hours'
       } else if (!Object.values(mapping).includes('budget_amount') && (lower.includes('betrag') || lower.includes('amount') || lower.includes('budget') || lower.includes('kosten'))) {
         mapping[idx] = 'budget_amount'
+      } else if (!Object.values(mapping).includes('action:create_task') && (lower.includes('aufgabe') || lower.includes('aufgaben') || lower.includes('task') || lower.includes('tasks') || lower.includes('todo'))) {
+        mapping[idx] = 'action:create_task'
       } else {
         // 1. Benutzerdefinierte Felder dieses Ordners erkennen
         const matchField = fields.value.find((f: any) => {
@@ -2272,6 +2298,10 @@ const createProject = async () => {
       const baColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'budget_amount')?.[0]
       const baColIdx = baColIdxStr !== undefined ? parseInt(baColIdxStr) : null
 
+      const taskColIndices = Object.entries(importColumnMapping.value)
+        .filter(([_, f]) => f === 'action:create_task')
+        .map(([idx]) => parseInt(idx))
+
       const projectsToImport: any[] = []
       for (const row of importParsedRows.value) {
         const pTitle = String(row[titleColIdx] || '').trim()
@@ -2323,6 +2353,15 @@ const createProject = async () => {
           pCustomData[key] = cellVal
         }
 
+        const projectTasks: string[] = []
+        for (const tColIdx of taskColIndices) {
+          const rawTaskVal = String(row[tColIdx] || '').trim()
+          if (rawTaskVal) {
+            const splitLines = rawTaskVal.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+            projectTasks.push(...splitLines)
+          }
+        }
+
         projectsToImport.push({
           folder_id: folderId,
           title: pTitle,
@@ -2331,7 +2370,8 @@ const createProject = async () => {
           currency: pCurr,
           budget_hours: pBh,
           budget_amount: pBa,
-          custom_data: pCustomData
+          custom_data: pCustomData,
+          tasks: projectTasks
         })
       }
 

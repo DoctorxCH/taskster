@@ -95,10 +95,56 @@ function ensureTables($pdo) {
             "ALTER TABLE project_journals ADD COLUMN allowed_group_id VARCHAR(64) NULL",
             "ALTER TABLE project_journals ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
             "UPDATE project_journals SET user_id = author_id WHERE user_id IS NULL AND author_id IS NOT NULL",
+            "ALTER TABLE lists ADD COLUMN is_completed_target TINYINT(1) NOT NULL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN trial_ends_at DATETIME NULL",
+            "ALTER TABLE companies ADD COLUMN billing_email VARCHAR(255) NULL",
+            "ALTER TABLE companies ADD COLUMN stripe_customer_id VARCHAR(128) NULL",
+            "ALTER TABLE company_invitations ADD COLUMN license_type VARCHAR(32) NOT NULL DEFAULT 'pro'",
         ];
         foreach ($colMigrations as $sql) {
             try { $pdo->exec($sql); } catch (Exception $e) {}
         }
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS company_memberships (
+                id VARCHAR(64) PRIMARY KEY,
+                company_id VARCHAR(64) NOT NULL,
+                user_id VARCHAR(64) NOT NULL,
+                role VARCHAR(32) NOT NULL DEFAULT 'member',
+                license_type VARCHAR(32) NOT NULL DEFAULT 'pro',
+                status VARCHAR(32) NOT NULL DEFAULT 'active',
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_comp_user (company_id, user_id),
+                INDEX idx_cm_company (company_id),
+                INDEX idx_cm_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Idempotente Fallback-Migration für bestehende Waisen-Projekte
+        try {
+            $orphans = $pdo->query("
+                SELECT p.id, p.title, pm.user_id, u.company_id
+                FROM projects p
+                LEFT JOIN project_folders pf ON pf.id = p.folder_id
+                LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.role = 'owner'
+                LEFT JOIN users u ON u.id = pm.user_id
+                WHERE p.folder_id IS NULL OR p.folder_id = '' OR pf.id IS NULL
+            ")->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($orphans as $orphan) {
+                $ownerId = $orphan['user_id'] ?: 'user-superadmin-01';
+                $companyId = $orphan['company_id'] ?: null;
+                $chkFold = $pdo->prepare("SELECT id FROM project_folders WHERE owner_id = ? AND name = 'Allgemein' LIMIT 1");
+                $chkFold->execute([$ownerId]);
+                $fallbackFolderId = $chkFold->fetchColumn();
+                if (!$fallbackFolderId) {
+                    $fallbackFolderId = 'fld_allgemein_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $pdo->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, 'Allgemein', '📁', 'private')")
+                        ->execute([$fallbackFolderId, $ownerId, $companyId]);
+                }
+                $pdo->prepare("UPDATE projects SET folder_id = ? WHERE id = ?")->execute([$fallbackFolderId, $orphan['id']]);
+            }
+        } catch (Exception $e) {}
 
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS project_journal_attachments (
@@ -2267,6 +2313,123 @@ function deleteProjectCascade($db, $projectId) {
     $db->prepare("DELETE FROM projects WHERE id = ?")->execute([$projectId]);
 }
 
+function getUserPlanDetails($db, $user) {
+    if (!empty($user['is_superadmin'])) {
+        return [
+            'plan' => 'enterprise',
+            'license_type' => 'enterprise',
+            'is_trial' => false,
+            'trial_days_left' => 0,
+            'max_folders' => PHP_INT_MAX,
+            'max_projects' => PHP_INT_MAX,
+            'max_tasks_per_project' => PHP_INT_MAX,
+            'custom_fields' => true,
+            'time_tracking' => true,
+            'section_automation' => true,
+            'export' => true
+        ];
+    }
+
+    if (!empty($user['company_id'])) {
+        $cmStmt = $db->prepare("SELECT * FROM company_memberships WHERE user_id = ? AND company_id = ?");
+        $cmStmt->execute([$user['id'], $user['company_id']]);
+        $cm = $cmStmt->fetch(PDO::FETCH_ASSOC);
+
+        $role = $user['company_role'] ?? ($cm['role'] ?? 'member');
+        if ($role === 'admin') {
+            $lic = 'enterprise';
+            if (!$cm) {
+                try {
+                    $cmId = 'cm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $db->prepare("INSERT INTO company_memberships (id, company_id, user_id, role, license_type, status) VALUES (?, ?, ?, 'admin', 'enterprise', 'active')")
+                       ->execute([$cmId, $user['company_id'], $user['id']]);
+                } catch (Exception $e) {}
+            }
+        } else {
+            $lic = $cm['license_type'] ?? 'pro';
+        }
+
+        $plan = ($lic === 'enterprise') ? 'enterprise' : 'pro';
+        return [
+            'plan' => $plan,
+            'license_type' => $lic,
+            'is_trial' => false,
+            'trial_days_left' => 0,
+            'max_folders' => PHP_INT_MAX,
+            'max_projects' => ($plan === 'enterprise') ? PHP_INT_MAX : 30,
+            'max_tasks_per_project' => PHP_INT_MAX,
+            'custom_fields' => true,
+            'time_tracking' => true,
+            'section_automation' => true,
+            'export' => ($plan === 'enterprise')
+        ];
+    }
+
+    $isTrial = false;
+    $daysLeft = 0;
+    $uStmt = $db->prepare("SELECT trial_ends_at, is_pro FROM users WHERE id = ?");
+    $uStmt->execute([$user['id']]);
+    $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+
+    $trialEndsAt = $uRow['trial_ends_at'] ?? ($user['trial_ends_at'] ?? null);
+    $isPro = !empty($uRow['is_pro']) || !empty($user['is_pro']);
+
+    if (!empty($trialEndsAt)) {
+        $now = time();
+        $trialEnd = strtotime($trialEndsAt);
+        if ($trialEnd > $now) {
+            $isTrial = true;
+            $daysLeft = (int)ceil(($trialEnd - $now) / 86400);
+        }
+    }
+
+    if ($isTrial || $isPro) {
+        return [
+            'plan' => 'pro',
+            'license_type' => 'pro',
+            'is_trial' => $isTrial,
+            'trial_days_left' => $daysLeft,
+            'max_folders' => PHP_INT_MAX,
+            'max_projects' => 30,
+            'max_tasks_per_project' => PHP_INT_MAX,
+            'custom_fields' => true,
+            'time_tracking' => true,
+            'section_automation' => true,
+            'export' => false
+        ];
+    }
+
+    return [
+        'plan' => 'basic',
+        'license_type' => 'basic',
+        'is_trial' => false,
+        'trial_days_left' => 0,
+        'max_folders' => 1,
+        'max_projects' => 3,
+        'max_tasks_per_project' => 30,
+        'custom_fields' => false,
+        'time_tracking' => false,
+        'section_automation' => false,
+        'export' => false
+    ];
+}
+
+function getOrCreateDefaultFolder($db, $user) {
+    $ownerId = $user['id'];
+    $companyId = $user['company_id'] ?? null;
+    $stmt = $db->prepare("SELECT * FROM project_folders WHERE owner_id = ? ORDER BY created_at ASC LIMIT 1");
+    $stmt->execute([$ownerId]);
+    $folder = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$folder) {
+        $fldId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, 'Allgemein', '📁', 'private')")
+           ->execute([$fldId, $ownerId, $companyId]);
+        $stmt->execute([$ownerId]);
+        $folder = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    return $folder;
+}
+
 // ROUTER
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
@@ -2307,6 +2470,17 @@ try {
                 ]);
                 $db->prepare("UPDATE company_invitations SET status = 'accepted' WHERE id = ?")->execute([$inv['id']]);
 
+                // Create or update company membership
+                try {
+                    $cmId = 'cm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $lic = !empty($inv['license_type']) ? $inv['license_type'] : ($inv['role'] === 'admin' ? 'enterprise' : 'pro');
+                    $db->prepare("
+                        INSERT INTO company_memberships (id, company_id, user_id, role, license_type, status)
+                        VALUES (?, ?, ?, ?, ?, 'active')
+                        ON DUPLICATE KEY UPDATE role = VALUES(role), license_type = VALUES(license_type), status = 'active'
+                    ")->execute([$cmId, $inv['company_id'], $u['id'], $inv['role'], $lic]);
+                } catch (Exception $e) {}
+
                 // Re-fetch user
                 $stmt->execute([$email]);
                 $u = $stmt->fetch();
@@ -2322,6 +2496,8 @@ try {
             $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
         }
 
+        $planDetails = getUserPlanDetails($db, $u);
+
         $token = jwtEncode([
             'id' => $u['id'],
             'email' => $u['email'],
@@ -2330,7 +2506,9 @@ try {
             'company_role' => $u['company_role'],
             'is_superadmin' => (int)$u['is_superadmin'],
             'is_pro' => (int)$u['is_pro'],
-            'admin_permissions' => $perms
+            'admin_permissions' => $perms,
+            'plan' => $planDetails['plan'],
+            'license_type' => $planDetails['license_type']
         ], $jwtSecret);
 
         jsonResponse([
@@ -2347,7 +2525,12 @@ try {
                 'is_pro' => (bool)$u['is_pro'],
                 'settings' => normalizeUserSettings($u['settings'] ?? null),
                 'avatar' => $u['avatar'] ?? null,
-                'admin_permissions' => $perms
+                'admin_permissions' => $perms,
+                'plan' => $planDetails['plan'],
+                'license_type' => $planDetails['license_type'],
+                'is_trial' => $planDetails['is_trial'],
+                'trial_days_left' => $planDetails['trial_days_left'],
+                'trial_ends_at' => $u['trial_ends_at'] ?? null
             ]
         ]);
     }
@@ -2369,7 +2552,9 @@ try {
         $pwHash = password_hash($password, PASSWORD_BCRYPT);
         $companyId = null;
         $companyRole = null;
-        $isPro = 0;
+        $isPro = 1; // 14-Tage Pro Trial für jeden neuen Nutzer
+        $trialEndsAt = date('Y-m-d H:i:s', strtotime('+14 days'));
+        $invLicenseType = 'pro';
 
         // Check invitation token
         if ($invitationToken) {
@@ -2379,13 +2564,23 @@ try {
             if ($inv) {
                 $companyId = $inv['company_id'];
                 $companyRole = $inv['role'];
+                $invLicenseType = !empty($inv['license_type']) ? $inv['license_type'] : ($inv['role'] === 'admin' ? 'enterprise' : 'pro');
                 $isPro = 1;
+                $trialEndsAt = null; // Company members have company plan
                 $db->prepare("UPDATE company_invitations SET status = 'accepted' WHERE id = ?")->execute([$inv['id']]);
             }
         }
 
-        $uStmt = $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, name, email, password_hash) VALUES (?, ?, ?, 0, ?, ?, ?, ?)");
-        $uStmt->execute([$userId, $companyId, $companyRole, $isPro, $name, $email, $pwHash]);
+        $uStmt = $db->prepare("INSERT INTO users (id, company_id, company_role, is_superadmin, is_pro, trial_ends_at, name, email, password_hash) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)");
+        $uStmt->execute([$userId, $companyId, $companyRole, $isPro, $trialEndsAt, $name, $email, $pwHash]);
+
+        if ($companyId) {
+            try {
+                $cmId = 'cm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $db->prepare("INSERT INTO company_memberships (id, company_id, user_id, role, license_type, status) VALUES (?, ?, ?, ?, ?, 'active')")
+                   ->execute([$cmId, $companyId, $userId, $companyRole, $invLicenseType]);
+            } catch (Exception $e) {}
+        }
 
         // Default folder & project only if not joining an existing company
         if (!$companyId) {
@@ -2413,6 +2608,18 @@ try {
             }
         }
 
+        $regUser = [
+            'id' => $userId,
+            'email' => $email,
+            'name' => $name,
+            'company_id' => $companyId,
+            'company_role' => $companyRole,
+            'is_superadmin' => 0,
+            'is_pro' => $isPro,
+            'trial_ends_at' => $trialEndsAt
+        ];
+        $planDetails = getUserPlanDetails($db, $regUser);
+
         $token = jwtEncode([
             'id' => $userId,
             'email' => $email,
@@ -2420,7 +2627,9 @@ try {
             'company_id' => $companyId,
             'company_role' => $companyRole,
             'is_superadmin' => 0,
-            'is_pro' => $isPro
+            'is_pro' => $isPro,
+            'plan' => $planDetails['plan'],
+            'license_type' => $planDetails['license_type']
         ], $jwtSecret);
 
         jsonResponse([
@@ -2435,7 +2644,12 @@ try {
                 'company_plan' => $compPlan,
                 'is_superadmin' => false,
                 'is_pro' => (bool)$isPro,
-                'avatar' => null
+                'avatar' => null,
+                'plan' => $planDetails['plan'],
+                'license_type' => $planDetails['license_type'],
+                'is_trial' => $planDetails['is_trial'],
+                'trial_days_left' => $planDetails['trial_days_left'],
+                'trial_ends_at' => $trialEndsAt
             ]
         ]);
     }
@@ -2462,6 +2676,7 @@ try {
             $perms = ['manage_users', 'finance', 'company_settings', 'manage_templates', 'audit_logs', 'all'];
         }
 
+        $planDetails = getUserPlanDetails($db, $u);
 
         jsonResponse([
             'user' => [
@@ -2479,7 +2694,12 @@ try {
                 'currency' => $u['currency'] ?? 'CHF',
                 'settings' => normalizeUserSettings($u['settings'] ?? null),
                 'avatar' => $u['avatar'] ?? null,
-                'admin_permissions' => $perms
+                'admin_permissions' => $perms,
+                'plan' => $planDetails['plan'],
+                'license_type' => $planDetails['license_type'],
+                'is_trial' => $planDetails['is_trial'],
+                'trial_days_left' => $planDetails['trial_days_left'],
+                'trial_ends_at' => $u['trial_ends_at'] ?? null
             ]
         ]);
     }
@@ -2730,12 +2950,13 @@ try {
         $name = trim($body['name'] ?? '');
         if (!$name) errorResponse('Name erforderlich', 400);
 
-        if (empty($user['is_pro']) && empty($user['company_id']) && empty($user['is_superadmin'])) {
+        $planDetails = getUserPlanDetails($db, $user);
+        if ($planDetails['plan'] === 'basic') {
             $stmt = $db->prepare("SELECT COUNT(*) as count FROM project_folders WHERE owner_id = ?");
             $stmt->execute([$user['id']]);
             $row = $stmt->fetch();
-            if ($row['count'] >= 1) {
-                errorResponse('Free-Plan Limit: Maximal 1 Projektordner erlaubt.', 403);
+            if ((int)($row['count'] ?? 0) >= 1) {
+                errorResponse('Limit erreicht: Im Free-Tarif ist maximal 1 Projektordner erlaubt. Bitte auf Pro upgraden.', 403);
             }
         }
 
@@ -3084,6 +3305,10 @@ try {
     // 7. POST folders/:id/fields
     if (preg_match('#^folders/([^/]+)/fields$#', $path, $m) && $method === 'POST') {
         $user = requireAuth();
+        $planDetails = getUserPlanDetails($db, $user);
+        if ($planDetails['plan'] === 'basic') {
+            errorResponse('Benutzerdefinierte Zusatzfelder sind erst ab dem Pro-Tarif verfügbar.', 403);
+        }
         $fldId = $m[1];
         $label = trim($body['label'] ?? '');
         if ($label === '') errorResponse('Feld-Bezeichnung erforderlich', 400);
@@ -3228,21 +3453,12 @@ try {
         $budgetAmount = array_key_exists('budget_amount', $body) && $body['budget_amount'] !== null && $body['budget_amount'] !== '' ? floatval($body['budget_amount']) : 0.0;
         $visibility = (!empty($user['company_id']) && ($body['visibility'] ?? '') === 'company') ? 'company' : 'private';
 
-        // Free-/Single-User (ohne Company) sehen die Ordner-Ebene nicht.
-        // Ohne folder_id wird der implizite Standard-Ordner verwendet/angelegt.
-        $isFreeUser = empty($user['is_pro']) && empty($user['company_id']) && empty($user['is_superadmin']);
-        if (!$folderId) {
-            if (!$isFreeUser) errorResponse('Ordner erforderlich', 400);
-            $defStmt = $db->prepare("SELECT * FROM project_folders WHERE owner_id = ? ORDER BY created_at ASC LIMIT 1");
-            $defStmt->execute([$user['id']]);
-            $defFolder = $defStmt->fetch();
-            if (!$defFolder) {
-                $defFolderId = 'fld_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                $db->prepare("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, ?, ?, 'private')")
-                   ->execute([$defFolderId, $user['id'], $user['company_id'] ?? null, 'Meine Projekte', '📁']);
-                $defStmt->execute([$user['id']]);
-                $defFolder = $defStmt->fetch();
-            }
+        $planDetails = getUserPlanDetails($db, $user);
+
+        // Ordner-Zuweisung mit automatischem Fallback: Wenn folder_id fehlt oder leer ist,
+        // ermittle oder erstelle automatisch das Standard-Projektverzeichnis ("Allgemein").
+        if (empty($folderId)) {
+            $defFolder = getOrCreateDefaultFolder($db, $user);
             $folderId = $defFolder['id'];
         }
 
@@ -3250,7 +3466,11 @@ try {
         $fCheckStmt = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
         $fCheckStmt->execute([$folderId]);
         $folder = $fCheckStmt->fetch();
-        if (!$folder) errorResponse('Ordner nicht gefunden', 404);
+        if (!$folder) {
+            $defFolder = getOrCreateDefaultFolder($db, $user);
+            $folderId = $defFolder['id'];
+            $folder = $defFolder;
+        }
 
         if ($folder['owner_id'] !== $user['id']) {
             if ($folder['visibility'] !== 'company' || empty($user['company_id']) || $user['company_id'] !== $folder['company_id']) {
@@ -3260,21 +3480,29 @@ try {
 
         // --- BATCH PROJECT IMPORT (z. B. aus CSV-/Excel-Import im Ordner) ---
         $batchProjects = $body['projects'] ?? null;
-        if (!empty($batchProjects) && is_array($batchProjects)) {
-            if ($isFreeUser) {
-                $countStmt = $db->prepare("
-                    SELECT COUNT(*) as count FROM projects p
-                    JOIN project_folders pf ON pf.id = p.folder_id
-                    LEFT JOIN project_members pm ON pm.project_id = p.id
-                    WHERE (pf.owner_id = ? OR pm.user_id = ?) AND p.status = 'active'
-                ");
-                $countStmt->execute([$user['id'], $user['id']]);
-                $activeCount = (int)($countStmt->fetch()['count'] ?? 0);
-                if ($activeCount + count($batchProjects) > 3) {
-                    errorResponse('Free-Plan Limit erreicht: Im kostenlosen Plan darfst du maximal in 3 Projekten gleichzeitig mitarbeiten. Bitte auf Pro upgraden oder einer Company beitreten.', 403);
-                }
-            }
 
+        // Limit-Prüfung Projekte
+        $countStmt = $db->prepare("
+            SELECT COUNT(*) as count FROM projects p
+            JOIN project_folders pf ON pf.id = p.folder_id
+            LEFT JOIN project_members pm ON pm.project_id = p.id
+            WHERE (pf.owner_id = ? OR pm.user_id = ?) AND p.status = 'active'
+        ");
+        $countStmt->execute([$user['id'], $user['id']]);
+        $currentProjectCount = (int)($countStmt->fetch()['count'] ?? 0);
+
+        $incomingCount = (!empty($batchProjects) && is_array($batchProjects)) ? count($batchProjects) : 1;
+        if ($planDetails['plan'] === 'basic') {
+            if ($currentProjectCount + $incomingCount > 3) {
+                errorResponse('Limit erreicht: Im Free-Tarif darfst du maximal in 3 Projekten gleichzeitig mitarbeiten. Bitte auf Pro upgraden oder einer Company beitreten.', 403);
+            }
+        } else if ($planDetails['plan'] === 'pro') {
+            if ($currentProjectCount + $incomingCount > 30) {
+                errorResponse('Limit erreicht: Im Pro-Tarif sind maximal 30 Projekte erlaubt. Bitte auf Enterprise upgraden.', 403);
+            }
+        }
+
+        if (!empty($batchProjects) && is_array($batchProjects)) {
             // Custom Field Definitions anlegen, falls uebergeben
             $cfDefs = $body['custom_field_definitions'] ?? [];
             if (is_array($cfDefs) && count($cfDefs) > 0) {
@@ -3338,8 +3566,31 @@ try {
                 $insPrjStmt->execute([$pId, $folderId, $pTitle, $pStatus, $pVis, $pCurr, $pBh, $pBa, $pCd]);
                 $pmId = 'pm_' . substr(bin2hex(random_bytes(6)), 0, 8);
                 $insPmStmt->execute([$pmId, $pId, $user['id']]);
-                $lstId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                $insLstStmt->execute([$lstId, $pId]);
+
+                // Erste Liste dynamisch ermitteln oder anlegen (Gefahr 4 Absicherung)
+                $lstStmt = $db->prepare("SELECT id FROM lists WHERE project_id = ? ORDER BY sort_order ASC LIMIT 1");
+                $lstStmt->execute([$pId]);
+                $firstListId = $lstStmt->fetchColumn();
+                if (!$firstListId) {
+                    $firstListId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                    $insLstStmt->execute([$firstListId, $pId]);
+                }
+
+                // Dynamische Aufgaben-Erstellung aus CSV-Spalte
+                $tasksToCreate = $p['tasks'] ?? [];
+                if (!empty($tasksToCreate) && is_array($tasksToCreate)) {
+                    $insTskStmt = $db->prepare("
+                        INSERT INTO tasks (id, list_id, title, status, sort_order)
+                        VALUES (?, ?, ?, 'todo', ?)
+                    ");
+                    $tOrder = 1;
+                    foreach ($tasksToCreate as $taskItem) {
+                        $taskTitle = is_array($taskItem) ? trim($taskItem['title'] ?? '') : trim((string)$taskItem);
+                        if (!$taskTitle) continue;
+                        $tId = 'tsk_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                        $insTskStmt->execute([$tId, $firstListId, $taskTitle, $tOrder++]);
+                    }
+                }
 
                 $created[] = ['id' => $pId, 'folder_id' => $folderId, 'title' => $pTitle, 'status' => $pStatus];
             }
@@ -3692,6 +3943,75 @@ try {
         }
     }
 
+    // 9d. GET projects/:id/export (Exklusiv im Enterprise-Tarif)
+    if (preg_match('#^projects/([^/]+)/export$#', $path, $m) && $method === 'GET') {
+        $user = requireAuth();
+        $projectId = $m[1];
+        evaluateProjectAccess($user, $projectId, 'read');
+
+        $planDetails = getUserPlanDetails($db, $user);
+        if ($planDetails['plan'] !== 'enterprise' && empty($user['is_superadmin'])) {
+            errorResponse('Projekt-Export ist exklusiv im Enterprise-Tarif verfügbar.', 403);
+        }
+
+        $format = strtolower($_GET['format'] ?? 'json');
+
+        $pStmt = $db->prepare("SELECT p.*, pf.name as folder_name FROM projects p JOIN project_folders pf ON pf.id = p.folder_id WHERE p.id = ?");
+        $pStmt->execute([$projectId]);
+        $project = $pStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$project) errorResponse('Projekt nicht gefunden', 404);
+
+        $lStmt = $db->prepare("SELECT * FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
+        $lStmt->execute([$projectId]);
+        $lists = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $tStmt = $db->prepare("
+            SELECT t.*, l.title as list_title 
+            FROM tasks t 
+            JOIN lists l ON l.id = t.list_id 
+            WHERE l.project_id = ? 
+            ORDER BY l.sort_order ASC, t.sort_order ASC
+        ");
+        $tStmt->execute([$projectId]);
+        $tasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($format === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="projekt_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $project['title']) . '_' . date('Ymd_His') . '.csv"');
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['Projekt', 'Ordner', 'Status', 'Abschnitt', 'Aufgabe', 'Beschreibung', 'Aufgabenstatus', 'Faelligkeit', 'Prioritaet', 'Budget Stunden', 'Budget Betrag'], ';');
+            foreach ($tasks as $t) {
+                fputcsv($out, [
+                    $project['title'],
+                    $project['folder_name'],
+                    $project['status'],
+                    $t['list_title'],
+                    $t['title'],
+                    $t['description'] ?? '',
+                    $t['status'],
+                    $t['due_date'] ?? '',
+                    $t['priority'] ?? 'normal',
+                    $t['budget_hours'] ?? 0,
+                    $t['budget_amount'] ?? 0
+                ], ';');
+            }
+            if (empty($tasks)) {
+                fputcsv($out, [$project['title'], $project['folder_name'], $project['status'], '', '', '', '', '', '', '', ''], ';');
+            }
+            fclose($out);
+            exit;
+        }
+
+        jsonResponse([
+            'project' => $project,
+            'lists' => $lists,
+            'tasks' => $tasks,
+            'exported_at' => date('c'),
+            'exported_by' => $user['email']
+        ]);
+    }
+
     // 10. POST projects/:id/members
     if (preg_match('#^projects/([^/]+)/members$#', $path, $m) && $method === 'POST') {
         $user = requireAuth();
@@ -3725,16 +4045,21 @@ try {
         $projectId = $body['project_id'] ?? '';
         $title = trim($body['title'] ?? '');
         $accessMode = $body['access_mode'] ?? 'inherit';
+        $isCompletedTarget = !empty($body['is_completed_target']) ? 1 : 0;
         evaluateProjectAccess($user, $projectId, 'write');
+
+        if ($isCompletedTarget) {
+            $db->prepare("UPDATE lists SET is_completed_target = 0 WHERE project_id = ?")->execute([$projectId]);
+        }
 
         $listId = 'lst_' . substr(bin2hex(random_bytes(6)), 0, 8);
         $countStmt = $db->prepare("SELECT COUNT(*) FROM lists WHERE project_id = ?");
         $countStmt->execute([$projectId]);
         $nextSort = (int)$countStmt->fetchColumn() + 1;
 
-        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order) VALUES (?, ?, ?, ?, ?)")->execute([$listId, $projectId, $title, $accessMode, $nextSort]);
+        $db->prepare("INSERT INTO lists (id, project_id, title, access_mode, sort_order, is_completed_target) VALUES (?, ?, ?, ?, ?, ?)")->execute([$listId, $projectId, $title, $accessMode, $nextSort, $isCompletedTarget]);
 
-        jsonResponse(['success' => true, 'list' => ['id' => $listId, 'title' => $title, 'access_mode' => $accessMode, 'sort_order' => $nextSort]]);
+        jsonResponse(['success' => true, 'list' => ['id' => $listId, 'title' => $title, 'access_mode' => $accessMode, 'sort_order' => $nextSort, 'is_completed_target' => $isCompletedTarget]]);
     }
 
     // 11b. PUT lists/:id
@@ -3747,8 +4072,16 @@ try {
         $title = isset($body['title']) ? trim($body['title']) : $list['title'];
         $accessMode = $body['access_mode'] ?? $list['access_mode'];
         $sortOrder = isset($body['sort_order']) ? (int)$body['sort_order'] : (int)$list['sort_order'];
+        $isCompletedTarget = isset($body['is_completed_target']) ? (!empty($body['is_completed_target']) ? 1 : 0) : (int)($list['is_completed_target'] ?? 0);
 
-        $db->prepare("UPDATE lists SET title = ?, access_mode = ?, sort_order = ? WHERE id = ?")->execute([$title, $accessMode, $sortOrder, $listId]);
+        if ($isCompletedTarget) {
+            $pId = $list['project_id'] ?? $db->query("SELECT project_id FROM lists WHERE id = " . $db->quote($listId))->fetchColumn();
+            if ($pId) {
+                $db->prepare("UPDATE lists SET is_completed_target = 0 WHERE project_id = ?")->execute([$pId]);
+            }
+        }
+
+        $db->prepare("UPDATE lists SET title = ?, access_mode = ?, sort_order = ?, is_completed_target = ? WHERE id = ?")->execute([$title, $accessMode, $sortOrder, $isCompletedTarget, $listId]);
         jsonResponse(['success' => true]);
     }
 
@@ -3771,14 +4104,15 @@ try {
 
         $lists = $body['lists'] ?? [];
         if (is_array($lists)) {
-            $upStmt = $db->prepare("UPDATE lists SET sort_order = ?, title = COALESCE(?, title), color = ? WHERE id = ? AND project_id = ?");
+            $upStmt = $db->prepare("UPDATE lists SET sort_order = ?, title = COALESCE(?, title), color = ?, is_completed_target = ? WHERE id = ? AND project_id = ?");
             foreach ($lists as $idx => $item) {
                 $lid = is_string($item) ? $item : ($item['id'] ?? '');
                 $title = (is_array($item) && !empty($item['title'])) ? trim($item['title']) : null;
                 $sort = (is_array($item) && isset($item['sort_order'])) ? (int)$item['sort_order'] : ($idx + 1);
                 $color = (is_array($item) && array_key_exists('color', $item)) ? ($item['color'] ?: null) : null;
+                $target = (is_array($item) && !empty($item['is_completed_target'])) ? 1 : 0;
                 if ($lid) {
-                    $upStmt->execute([$sort, $title, $color, $lid, $projectId]);
+                    $upStmt->execute([$sort, $title, $color, $target, $lid, $projectId]);
                 }
             }
         }
@@ -3824,6 +4158,25 @@ try {
         $checklist = isset($body['checklist']) ? json_encode($body['checklist']) : '[]';
 
         evaluateListAccess($user, $listId, 'write');
+
+        $planDetails = getUserPlanDetails($db, $user);
+        if ($planDetails['plan'] === 'basic') {
+            $prjStmt = $db->prepare("SELECT project_id FROM lists WHERE id = ?");
+            $prjStmt->execute([$listId]);
+            $projectId = $prjStmt->fetchColumn();
+            if ($projectId) {
+                $tCountStmt = $db->prepare("
+                    SELECT COUNT(*) FROM tasks t 
+                    JOIN lists l ON l.id = t.list_id 
+                    WHERE l.project_id = ?
+                ");
+                $tCountStmt->execute([$projectId]);
+                $taskCount = (int)$tCountStmt->fetchColumn();
+                if ($taskCount >= 30) {
+                    errorResponse('Limit erreicht: Im Free-Tarif sind maximal 30 Aufgaben pro Projekt erlaubt. Bitte auf Pro upgraden.', 403);
+                }
+            }
+        }
 
         $assignedTo = null;
         if (!empty($body['assigned_to'])) {
@@ -4876,6 +5229,10 @@ try {
         $user = requireAuth();
         $email = strtolower(trim($body['email'] ?? ''));
         $role = $body['role'] ?? 'member';
+        $licenseType = in_array($body['license_type'] ?? '', ['pro', 'enterprise']) ? $body['license_type'] : 'pro';
+        if ($role === 'admin') {
+            $licenseType = 'enterprise';
+        }
 
         if (!$email) errorResponse('E-Mail erforderlich', 400);
 
@@ -4900,10 +5257,20 @@ try {
             $db->prepare("UPDATE users SET company_id = ?, company_role = ?, is_pro = 1 WHERE id = ?")->execute([
                 $companyId, $role, $existing['id']
             ]);
+
+            try {
+                $cmId = 'cm_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $db->prepare("
+                    INSERT INTO company_memberships (id, company_id, user_id, role, license_type, status)
+                    VALUES (?, ?, ?, ?, ?, 'active')
+                    ON DUPLICATE KEY UPDATE role = VALUES(role), license_type = VALUES(license_type), status = 'active'
+                ")->execute([$cmId, $companyId, $existing['id'], $role, $licenseType]);
+            } catch (Exception $e) {}
+
             jsonResponse([
                 'success' => true,
                 'action' => 'added',
-                'user' => ['id' => $existing['id'], 'email' => $existing['email'], 'name' => $existing['name']]
+                'user' => ['id' => $existing['id'], 'email' => $existing['email'], 'name' => $existing['name'], 'license_type' => $licenseType]
             ]);
         } else {
             // Not registered -> create pending invitation with token
@@ -4913,15 +5280,16 @@ try {
             // Invalidate existing pending invites for this email & company
             $db->prepare("DELETE FROM company_invitations WHERE company_id = ? AND LOWER(email) = ?")->execute([$companyId, $email]);
 
-            $db->prepare("INSERT INTO company_invitations (id, company_id, email, role, token, invited_by, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')")->execute([
-                $invId, $companyId, $email, $role, $token, $user['id']
+            $db->prepare("INSERT INTO company_invitations (id, company_id, email, role, license_type, token, invited_by, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')")->execute([
+                $invId, $companyId, $email, $role, $licenseType, $token, $user['id']
             ]);
 
             jsonResponse([
                 'success' => true,
                 'action' => 'invited',
                 'token' => $token,
-                'email' => $email
+                'email' => $email,
+                'license_type' => $licenseType
             ]);
         }
     }
@@ -4934,11 +5302,52 @@ try {
             $companyId = $_GET['company_id'] ?? null;
         }
         if (!$companyId) {
-            jsonResponse(['members' => []]);
+            jsonResponse(['members' => [], 'calculation' => null]);
         }
-        $stmt = $db->prepare("SELECT id, name, email, company_role, is_pro, created_at FROM users WHERE company_id = ? ORDER BY (company_role = 'admin') DESC, name ASC");
+
+        $stmt = $db->prepare("
+            SELECT u.id, u.name, u.email, u.company_role, u.is_pro, u.created_at,
+                   COALESCE(cm.license_type, CASE WHEN u.company_role = 'admin' THEN 'enterprise' ELSE 'pro' END) as license_type
+            FROM users u
+            LEFT JOIN company_memberships cm ON cm.user_id = u.id AND cm.company_id = u.company_id
+            WHERE u.company_id = ?
+            ORDER BY (u.company_role = 'admin') DESC, u.name ASC
+        ");
         $stmt->execute([$companyId]);
-        jsonResponse(['members' => $stmt->fetchAll()]);
+        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $adminCount = 0;
+        $proCount = 0;
+        $enterpriseCount = 0;
+        foreach ($members as $m) {
+            if ($m['company_role'] === 'admin') {
+                $adminCount++;
+            } else {
+                if (($m['license_type'] ?? 'pro') === 'enterprise') {
+                    $enterpriseCount++;
+                } else {
+                    $proCount++;
+                }
+            }
+        }
+        $monthlyTotal = ($adminCount * 19) + ($proCount * 8) + ($enterpriseCount * 15);
+
+        jsonResponse([
+            'members' => $members,
+            'calculation' => [
+                'admin_seats' => $adminCount,
+                'admin_rate' => 19,
+                'admin_total' => $adminCount * 19,
+                'pro_seats' => $proCount,
+                'pro_rate' => 8,
+                'pro_total' => $proCount * 8,
+                'enterprise_seats' => $enterpriseCount,
+                'enterprise_rate' => 15,
+                'enterprise_total' => $enterpriseCount * 15,
+                'monthly_total' => $monthlyTotal,
+                'currency' => 'EUR'
+            ]
+        ]);
     }
 
     // 16b. GET companies/invitations (List pending invitations for current company)
@@ -7922,6 +8331,10 @@ try {
     // 29. POST time-entries
     if ($path === 'time-entries' && $method === 'POST') {
         $user = requireAuth();
+        $planDetails = getUserPlanDetails($db, $user);
+        if (empty($planDetails['time_tracking'])) {
+            errorResponse('Zeiterfassung ist erst ab dem Pro-Tarif verfügbar.', 403);
+        }
         $projectId = trim($body['project_id'] ?? '');
         $taskId = !empty($body['task_id']) ? trim($body['task_id']) : null;
         $durationMinutes = (int)($body['duration_minutes'] ?? 0);

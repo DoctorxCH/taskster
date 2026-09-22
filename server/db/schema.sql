@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS companies (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   subscription_plan TEXT NOT NULL DEFAULT 'starter',
+  billing_email TEXT,
+  stripe_customer_id TEXT,
   settings TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -17,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   hourly_rate REAL DEFAULT NULL,
   currency TEXT DEFAULT 'CHF',
+  trial_ends_at TEXT,
   admin_permissions TEXT DEFAULT '[]',
   settings TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -102,6 +105,7 @@ CREATE TABLE IF NOT EXISTS lists (
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   access_mode TEXT NOT NULL DEFAULT 'inherit',
+  is_completed_target INTEGER NOT NULL DEFAULT 0,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -389,4 +393,28 @@ CREATE TABLE IF NOT EXISTS folder_group_access (
   role TEXT NOT NULL DEFAULT 'editor',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(folder_id, group_id)
+);
+
+CREATE TABLE IF NOT EXISTS company_memberships (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member',
+  license_type TEXT NOT NULL DEFAULT 'pro',
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(company_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS company_invitations (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',
+  license_type TEXT NOT NULL DEFAULT 'pro',
+  token TEXT NOT NULL,
+  invited_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT
 );

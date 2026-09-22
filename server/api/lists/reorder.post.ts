@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   if (Array.isArray(lists)) {
     const updateStmt = db.prepare(`
       UPDATE lists
-      SET sort_order = ?, title = COALESCE(?, title), color = ?
+      SET sort_order = ?, title = COALESCE(?, title), color = ?, is_completed_target = ?
       WHERE id = ? AND project_id = ?
     `)
 
@@ -27,7 +27,8 @@ export default defineEventHandler(async (event) => {
         const title = typeof item === 'object' && item.title ? item.title.trim() : null
         const sort = typeof item === 'object' && typeof item.sort_order === 'number' ? item.sort_order : index + 1
         const color = typeof item === 'object' && 'color' in item ? (item.color || null) : null
-        updateStmt.run(sort, title, color, listId, project_id)
+        const target = typeof item === 'object' && item.is_completed_target ? 1 : 0
+        updateStmt.run(sort, title, color, target, listId, project_id)
       })
     })
 

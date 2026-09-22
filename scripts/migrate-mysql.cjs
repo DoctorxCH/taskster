@@ -398,10 +398,26 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS company_memberships (
+      id VARCHAR(64) PRIMARY KEY,
+      company_id VARCHAR(64) NOT NULL,
+      user_id VARCHAR(64) NOT NULL,
+      role VARCHAR(32) NOT NULL DEFAULT 'member',
+      license_type VARCHAR(32) NOT NULL DEFAULT 'pro',
+      status VARCHAR(32) NOT NULL DEFAULT 'active',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_comp_user (company_id, user_id),
+      INDEX idx_cm_company (company_id),
+      INDEX idx_cm_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   // Column migrations for MySQL
   const colMigrations = [
     "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",
     "ALTER TABLE users ADD COLUMN currency VARCHAR(8) NOT NULL DEFAULT 'CHF'",
+    "ALTER TABLE users ADD COLUMN trial_ends_at DATETIME NULL",
     "ALTER TABLE projects ADD COLUMN currency VARCHAR(8) NOT NULL DEFAULT 'CHF'",
     "ALTER TABLE projects ADD COLUMN budget_hours DECIMAL(10,2) NOT NULL DEFAULT 0.00",
     "ALTER TABLE projects ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
@@ -409,6 +425,10 @@ async function migrate() {
     "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
     "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
+    "ALTER TABLE lists ADD COLUMN is_completed_target TINYINT(1) NOT NULL DEFAULT 0",
+    "ALTER TABLE companies ADD COLUMN billing_email VARCHAR(255) NULL",
+    "ALTER TABLE companies ADD COLUMN stripe_customer_id VARCHAR(128) NULL",
+    "ALTER TABLE company_invitations ADD COLUMN license_type VARCHAR(32) NOT NULL DEFAULT 'pro'",
     "ALTER TABLE users ADD COLUMN admin_permissions JSON NULL",
     "ALTER TABLE tasks MODIFY COLUMN assigned_to TEXT NULL",
     "ALTER TABLE contacts ADD COLUMN address VARCHAR(500) NULL",
@@ -430,6 +450,34 @@ async function migrate() {
   ]
   for (const sql of colMigrations) {
     try { await conn.query(sql) } catch (_) { }
+  }
+
+  // Fallback migration: Jedes Projekt gehört zwingend zu einem Ordner (folder_id NOT NULL)
+  try {
+    const [orphanProjects] = await conn.query(`
+      SELECT p.id, p.title, pm.user_id, u.company_id
+      FROM projects p
+      LEFT JOIN project_folders pf ON pf.id = p.folder_id
+      LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.role = 'owner'
+      LEFT JOIN users u ON u.id = pm.user_id
+      WHERE p.folder_id IS NULL OR p.folder_id = '' OR pf.id IS NULL
+    `)
+    for (const orphan of orphanProjects) {
+      const ownerId = orphan.user_id || 'user-superadmin-01'
+      const companyId = orphan.company_id || null
+      // Check or create default folder 'Allgemein'
+      let [defFolds] = await conn.query("SELECT id FROM project_folders WHERE owner_id = ? AND name = 'Allgemein' LIMIT 1", [ownerId])
+      let fallbackFolderId = defFolds[0]?.id
+      if (!fallbackFolderId) {
+        fallbackFolderId = 'fld_allgemein_' + Math.random().toString(36).substring(2, 8)
+        await conn.query("INSERT INTO project_folders (id, owner_id, company_id, name, icon, visibility) VALUES (?, ?, ?, 'Allgemein', '📁', 'private')", [
+          fallbackFolderId, ownerId, companyId
+        ])
+      }
+      await conn.query("UPDATE projects SET folder_id = ? WHERE id = ?", [fallbackFolderId, orphan.id])
+    }
+  } catch (err) {
+    console.warn('Orphan project migration note:', err.message)
   }
 
   console.log('Tables created. Seeding initial data...')
