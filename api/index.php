@@ -1467,6 +1467,38 @@ function errorResponse($message, $status = 400) {
     exit;
 }
 
+/**
+ * Datums-Parsing & Normalisierung für CSV-/Excel-Importe
+ * Konvertiert u. a. serielle Excel-Tageswerte (z. B. 46272 -> 2026-09-07) sowie DD.MM.YYYY in YYYY-MM-DD.
+ */
+function parseImportDate($value): ?string {
+    if ($value === null || $value === '') return null;
+    $strVal = trim((string)$value);
+    if ($strVal === '') return null;
+
+    if (is_numeric($strVal) && (int)$strVal > 25569 && (int)$strVal < 60000) {
+        $baseDate = new DateTime('1899-12-30');
+        $baseDate->modify('+' . (int)$strVal . ' days');
+        return $baseDate->format('Y-m-d');
+    }
+
+    // DD.MM.YYYY -> YYYY-MM-DD
+    if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $strVal, $matches)) {
+        return sprintf('%04d-%02d-%02d', (int)$matches[3], (int)$matches[2], (int)$matches[1]);
+    }
+
+    // DD/MM/YYYY -> YYYY-MM-DD
+    if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $strVal, $matches)) {
+        return sprintf('%04d-%02d-%02d', (int)$matches[3], (int)$matches[2], (int)$matches[1]);
+    }
+
+    if (preg_match('/^\d{4}-\d{2}-\d{2}/', $strVal)) {
+        return substr($strVal, 0, 10);
+    }
+
+    return $strVal;
+}
+
 // ---------------------------------------------------------------------------
 // AI (OpenRouter / DeepSeek V4 Flash) — serverseitig, Key bleibt in .env
 // ---------------------------------------------------------------------------
@@ -3375,7 +3407,7 @@ try {
                 $tDesc = (string)($taskItem['description'] ?? '');
                 $tStatus = (string)($taskItem['status'] ?? 'todo');
                 $tPriority = (string)($taskItem['priority'] ?? 'normal');
-                $tDueDate = !empty($taskItem['due_date']) ? (string)$taskItem['due_date'] : null;
+                $tDueDate = !empty($taskItem['due_date']) ? parseImportDate($taskItem['due_date']) : null;
                 $tTags = !empty($taskItem['tags']) ? (is_array($taskItem['tags']) ? json_encode($taskItem['tags']) : json_encode([$taskItem['tags']])) : '[]';
                 $tCustomData = !empty($taskItem['custom_data']) && is_array($taskItem['custom_data']) ? json_encode($taskItem['custom_data']) : '{}';
 
@@ -3691,7 +3723,7 @@ try {
         $title = trim($body['title'] ?? '');
         $desc = $body['description'] ?? '';
         $status = $body['status'] ?? 'todo';
-        $dueDate = $body['due_date'] ?? null;
+        $dueDate = !empty($body['due_date']) ? parseImportDate($body['due_date']) : null;
         $customData = $body['custom_data'] ?? [];
         $assignedTo = !empty($body['assigned_to']) ? $body['assigned_to'] : null;
         $priority = !empty($body['priority']) ? $body['priority'] : 'normal';
@@ -3764,7 +3796,7 @@ try {
         $title = $body['title'] ?? $task['title'];
         $desc = $body['description'] ?? $task['description'];
         $status = $body['status'] ?? $task['status'];
-        $dueDate = $body['due_date'] ?? $task['due_date'];
+        $dueDate = array_key_exists('due_date', $body) ? parseImportDate($body['due_date']) : $task['due_date'];
         $customData = isset($body['custom_data']) ? json_encode($body['custom_data']) : $task['custom_data'];
         $listId = $body['list_id'] ?? $task['list_id'];
         $sortOrder = isset($body['sort_order']) ? (int)$body['sort_order'] : (int)($task['sort_order'] ?? 0);

@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const taskId = 'tsk_' + randomUUID().substring(0, 8)
   const count = (db.prepare('SELECT COUNT(*) as c FROM tasks WHERE list_id = ?').get(list_id) as any).c
+  const parsedDueDate = due_date ? parseImportDate(due_date) : null
 
   db.prepare(`
     INSERT INTO tasks (id, list_id, title, description, status, custom_data, due_date, sort_order, assigned_to, priority, color, tags, checklist)
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
     description || '',
     status || 'todo',
     JSON.stringify(custom_data || {}),
-    due_date || null,
+    parsedDueDate,
     count + 1,
     assigned_to || null,
     priority || 'normal',
@@ -45,7 +46,7 @@ export default defineEventHandler(async (event) => {
       description: description || '',
       status: status || 'todo',
       custom_data: custom_data || {},
-      due_date: due_date || null,
+      due_date: parsedDueDate,
       sort_order: count + 1,
       assigned_to: assigned_to || null,
       priority: priority || 'normal',

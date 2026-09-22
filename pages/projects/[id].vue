@@ -3404,6 +3404,9 @@
                     <td class="py-2.5 px-4 font-bold text-slate-900">{{ header }}</td>
                     <td class="py-2.5 px-4 text-slate-500 font-mono text-[11px] truncate max-w-xs">
                       {{ importParsedRows[0]?.[hIdx] || '-' }}
+                      <span v-if="importColumnMapping[hIdx] === 'due_date' && parseImportDate(importParsedRows[0]?.[hIdx]) && parseImportDate(importParsedRows[0]?.[hIdx]) !== String(importParsedRows[0]?.[hIdx]).trim()" class="ml-1.5 text-[11px] font-sans text-cyan-600 font-semibold">
+                        → {{ parseImportDate(importParsedRows[0]?.[hIdx]) }}
+                      </span>
                     </td>
                     <td class="py-2.5 px-4">
                       <select
@@ -6970,18 +6973,15 @@ const executeImport = async () => {
           else if (p.includes('niedrig') || p.includes('low')) taskPayload.priority = 'niedrig'
           else taskPayload.priority = 'normal'
         } else if (targetField === 'due_date') {
-          // Normalise Date DD.MM.YYYY to YYYY-MM-DD if applicable
-          if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(cellVal)) {
-            const parts = cellVal.split('.')
-            taskPayload.due_date = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
-          } else {
-            taskPayload.due_date = cellVal
-          }
+          taskPayload.due_date = parseImportDate(cellVal)
         } else if (targetField === 'tags') {
           taskPayload.tags = cellVal.split(/[,;|]/).map((t: string) => t.trim()).filter(Boolean)
         } else if (targetField.startsWith('custom:')) {
           const key = targetField.replace('custom:', '')
-          taskPayload.custom_data[key] = cellVal
+          const def = fields.value.find((f: any) => f.field_key === key)
+          const matchedTpl = commonCustomFieldTemplates.find((t: any) => t.key === key)
+          const isDateField = def?.field_type === 'date' || matchedTpl?.type === 'date'
+          taskPayload.custom_data[key] = isDateField ? (parseImportDate(cellVal) || cellVal) : cellVal
         }
       }
 

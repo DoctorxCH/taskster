@@ -215,7 +215,7 @@ export default defineEventHandler(async (event) => {
       const tDesc = String(taskItem.description || '')
       const tStatus = String(taskItem.status || 'todo')
       const tPriority = String(taskItem.priority || 'normal')
-      const tDueDate = taskItem.due_date ? String(taskItem.due_date) : null
+      const tDueDate = taskItem.due_date ? parseImportDate(taskItem.due_date) : null
       const tTags = taskItem.tags ? (Array.isArray(taskItem.tags) ? JSON.stringify(taskItem.tags) : JSON.stringify([taskItem.tags])) : '[]'
       const tCustomData = taskItem.custom_data && typeof taskItem.custom_data === 'object' ? JSON.stringify(taskItem.custom_data) : '{}'
 

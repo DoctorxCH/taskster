@@ -762,6 +762,9 @@
                         <td class="py-2.5 px-4 font-bold text-slate-900">{{ header }}</td>
                         <td class="py-2.5 px-4 text-slate-500 font-mono text-[11px] truncate max-w-xs">
                           {{ importParsedRows[0]?.[hIdx] || '-' }}
+                          <span v-if="importColumnMapping[hIdx] === 'due_date' && parseImportDate(importParsedRows[0]?.[hIdx]) && parseImportDate(importParsedRows[0]?.[hIdx]) !== String(importParsedRows[0]?.[hIdx]).trim()" class="ml-1.5 text-[11px] font-sans text-[#0891B2] font-semibold">
+                            → {{ parseImportDate(importParsedRows[0]?.[hIdx]) }}
+                          </span>
                         </td>
                         <td class="py-2.5 px-4">
                           <select
@@ -2245,11 +2248,7 @@ const createProject = async () => {
 
         const secTitle = phaseColIdx !== null ? String(row[phaseColIdx] || '').trim() : ''
         const desc = descColIdx !== null ? String(row[descColIdx] || '').trim() : ''
-        let rawDate = dueColIdx !== null ? String(row[dueColIdx] || '').trim() : ''
-        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(rawDate)) {
-          const parts = rawDate.split('.')
-          rawDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
-        }
+        const rawDate = dueColIdx !== null ? parseImportDate(row[dueColIdx]) : null
         let prio = 'normal'
         if (prioColIdx !== null) {
           const p = String(row[prioColIdx] || '').toLowerCase()
@@ -2274,7 +2273,11 @@ const createProject = async () => {
           if (!targetField || !targetField.startsWith('custom:')) continue
           const cellVal = String(row[parseInt(colIdxStr)] || '').trim()
           if (!cellVal) continue
-          customData[targetField.replace('custom:', '')] = cellVal
+          const key = targetField.replace('custom:', '')
+          const matchedField = fields.value.find((f: any) => f.field_key === key)
+          const matchedTpl = commonCustomFieldTemplates.find(t => t.key === key)
+          const isDateField = matchedField?.field_type === 'date' || matchedTpl?.type === 'date'
+          customData[key] = isDateField ? (parseImportDate(cellVal) || cellVal) : cellVal
         }
 
         tasksToImport.push({

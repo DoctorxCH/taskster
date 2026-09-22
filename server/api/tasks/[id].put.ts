@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   const updatedDesc = description !== undefined ? description : task.description
   const updatedStatus = status !== undefined ? status : task.status
   const updatedCustom = custom_data !== undefined ? JSON.stringify(custom_data) : task.custom_data
-  const updatedDueDate = due_date !== undefined ? due_date : task.due_date
+  const updatedDueDate = due_date !== undefined ? parseImportDate(due_date) : task.due_date
   const updatedSort = sort_order !== undefined ? sort_order : task.sort_order
   const updatedAssignedTo = assigned_to !== undefined ? (assigned_to || null) : task.assigned_to
   const updatedPriority = priority !== undefined ? priority : (task.priority || 'normal')
