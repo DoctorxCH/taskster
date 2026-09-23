@@ -1,10 +1,10 @@
 <template>
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     <!-- Header -->
-    <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-sm border border-cyan-200 mb-2">
-          <BookUser class="w-3.5 h-3.5 text-[#0891B2]" />
+          <BookUser class="w-3.5 h-3.5 text-[#00A3C4]" />
           <span>Baustellen- & Projektverzeichnis</span>
         </div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
@@ -20,7 +20,7 @@
         <button
           @click="openCreateModal()"
           type="button"
-          class="taskster_button"
+          class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
         >
           <Plus class="w-4 h-4" />
           <span>Neuer Kontakt</span>
@@ -30,7 +30,7 @@
 
     <!-- Quick Stats Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
         <div class="w-9 h-9 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
           <Users class="w-4 h-4" />
         </div>
@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
         <div class="w-9 h-9 rounded-md bg-cyan-50 text-cyan-800 flex items-center justify-center shrink-0">
           <Building2 class="w-4 h-4" />
         </div>
@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
         <div class="w-9 h-9 rounded-md bg-blue-50 text-blue-800 flex items-center justify-center shrink-0">
           <HardHat class="w-4 h-4" />
         </div>
@@ -60,7 +60,7 @@
         </div>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-3">
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
         <div class="w-9 h-9 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
           <Lock class="w-4 h-4" />
         </div>
@@ -72,7 +72,7 @@
     </div>
 
     <!-- Filter & Search Toolbar -->
-    <div class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
+    <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 mb-6 shadow-sm">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <!-- Search Input -->
         <div class="relative flex-1 min-w-[240px]">
@@ -81,7 +81,7 @@
             v-model="searchFilter"
             type="text"
             placeholder="Nach Name, Firma, Funktion, Telefon oder E-Mail suchen..."
-            class="w-full pl-9 pr-3 h-9 text-sm rounded-md bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 transition-shadow"
+            class="w-full pl-9 pr-3 h-9 text-sm rounded-md bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-[#00A3C4]/15 transition-shadow"
           />
         </div>
 
@@ -91,7 +91,7 @@
           <div class="relative">
             <select
               v-model="selectedGroup"
-              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 cursor-pointer"
+              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-[#00A3C4]/15 cursor-pointer"
             >
               <option value="">Alle Gruppen</option>
               <option v-for="g in groupOptions" :key="g" :value="g">{{ g }}</option>
@@ -102,7 +102,7 @@
           <div class="relative max-w-[200px]">
             <select
               v-model="selectedProjectId"
-              class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 truncate cursor-pointer"
+              class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-[#00A3C4]/15 truncate cursor-pointer"
             >
               <option value="">Alle Projekte</option>
               <option v-for="p in availableProjects" :key="p.id" :value="p.id">{{ p.title }}</option>
@@ -113,7 +113,7 @@
           <div class="relative">
             <select
               v-model="selectedScope"
-              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 cursor-pointer"
+              class="h-9 px-3 text-sm rounded-md bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-[#00A3C4]/15 cursor-pointer"
             >
               <option value="">Alle Freigaben</option>
               <option value="company">Im Unternehmen geteilt</option>
@@ -177,13 +177,13 @@
       <div
         v-for="c in filteredContacts"
         :key="c.id"
-        class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-sm transition-all"
+        class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 flex flex-col justify-between hover:border-[#00A3C4] hover:shadow-md transition-all"
       >
         <div>
           <!-- Card Top: Avatar, Name, Company, Function -->
           <div class="flex items-start justify-between gap-3 mb-3">
             <div class="flex items-start gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
+              <div class="w-10 h-10 rounded-xl bg-[#00A3C4] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
                 {{ getInitials(c) }}
               </div>
               <div class="min-w-0">
@@ -241,7 +241,7 @@
           <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
             <div v-if="c.mobile" class="flex items-center gap-2">
               <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
+              <a :href="`tel:${c.mobile}`" class="font-medium text-[#00A3C4] hover:underline truncate">
                 {{ c.mobile }}
               </a>
               <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold ml-auto" title="WhatsApp Chat öffnen">
@@ -258,7 +258,7 @@
 
             <div v-if="c.email" class="flex items-center gap-2">
               <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <a :href="`mailto:${c.email}`" class="font-medium text-[#0891B2] hover:underline truncate">
+              <a :href="`mailto:${c.email}`" class="font-medium text-[#00A3C4] hover:underline truncate">
                 {{ c.email }}
               </a>
             </div>
@@ -277,7 +277,7 @@
                 :href="formatUrl(c.website)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="font-medium text-[#0891B2] hover:underline truncate"
+                class="font-medium text-[#00A3C4] hover:underline truncate"
                 title="Webseite im neuen Tab öffnen"
               >
                 {{ displayWebsite(c.website) }}
@@ -297,7 +297,7 @@
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 pl-5.5">
                 <button
                   type="button"
-                  class="text-[11px] font-semibold text-[#0891B2] hover:underline"
+                  class="text-[11px] font-semibold text-[#00A3C4] hover:underline"
                   @click="toggleMap(c)"
                 >
                   {{ openMaps[c.id] ? 'Karte einklappen' : 'Karte anzeigen' }}
@@ -350,7 +350,7 @@
                     :href="getOsmSearchUrl(c.address)"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="block font-semibold text-[#0891B2] hover:underline mt-1"
+                    class="block font-semibold text-[#00A3C4] hover:underline mt-1"
                   >
                     Auf OpenStreetMap suchen →
                   </a>
@@ -371,7 +371,7 @@
           <button
             @click="exportSingleVCard(c)"
             type="button"
-            class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-100 transition-colors"
+            class="text-xs font-semibold text-slate-600 hover:text-[#00A3C4] flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-100 transition-colors"
             title="Als digitale Visitenkarte (.vcf) herunterladen"
           >
             <Download class="w-3.5 h-3.5" />
@@ -384,7 +384,7 @@
               v-if="c.can_edit"
               @click="openEditModal(c)"
               type="button"
-              class="p-1.5 text-slate-500 hover:text-[#0891B2] hover:bg-slate-100 rounded transition-colors"
+              class="p-1.5 text-slate-500 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition-colors"
               title="Kontakt bearbeiten"
             >
               <Pencil class="w-3.5 h-3.5" />
@@ -872,12 +872,78 @@
         </form>
       </div>
     </div>
+    <!-- UNIVERSAL IN-APP CONFIRMATION MODAL (Zero Native Popups) -->
+    <div v-if="confirmModal.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            :class="confirmModal.danger ? 'bg-rose-100 border border-rose-200 text-rose-600' : 'bg-cyan-100 border border-cyan-200 text-[#00A3C4]'"
+          >
+            <AlertTriangle v-if="confirmModal.danger" class="w-5 h-5" />
+            <Info v-else class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ confirmModal.title }}</h3>
+            <p v-if="confirmModal.subtitle" class="text-xs text-slate-500 mt-0.5">{{ confirmModal.subtitle }}</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600 leading-relaxed">{{ confirmModal.message }}</p>
+
+        <div v-if="confirmModal.error" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
+          {{ confirmModal.error }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-2">
+          <button
+            type="button"
+            @click="confirmModal.show = false"
+            :disabled="confirmModal.loading"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            @click="executeConfirmModalAction"
+            :disabled="confirmModal.loading"
+            :class="confirmModal.danger ? 'taskster_button_accent' : 'taskster_button'"
+            class="px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-2"
+          >
+            <span>{{ confirmModal.loading ? 'Wird ausgeführt...' : confirmModal.confirmText }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIVERSAL IN-APP TOAST FEEDBACK (Zero Native Popups) -->
+    <div v-if="pageToast.show" class="fixed bottom-6 right-6 z-50 max-w-sm w-full transition-all duration-300">
+      <div
+        class="flex items-start gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md"
+        :class="pageToast.type === 'error' ? 'bg-rose-50/95 border-rose-200 text-rose-900' : pageToast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900' : 'bg-slate-900/90 border-slate-700 text-white'"
+      >
+        <CheckCircle2 v-if="pageToast.type === 'success'" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <AlertTriangle v-else-if="pageToast.type === 'error'" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <Info v-else class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+        <div class="flex-1 text-xs">
+          <div class="font-bold">{{ pageToast.title || (pageToast.type === 'error' ? 'Hinweis' : pageToast.type === 'success' ? 'Erfolg' : 'Info') }}</div>
+          <div class="mt-0.5 leading-relaxed">{{ pageToast.message }}</div>
+        </div>
+        <button @click="pageToast.show = false" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
   BookUser,
   Users,
   Building2,
@@ -901,6 +967,86 @@ import {
 } from 'lucide-vue-next'
 
 const { user, token } = useAuth()
+
+// ---------------------------------------------------------------------------
+// In-App Confirm & Toast System (Zero Native Browser Popups)
+// ---------------------------------------------------------------------------
+const confirmModal = ref<{
+  show: boolean
+  title: string
+  subtitle?: string
+  message: string
+  confirmText: string
+  danger: boolean
+  loading: boolean
+  error?: string
+  action?: () => Promise<void> | void
+}>({
+  show: false,
+  title: '',
+  subtitle: '',
+  message: '',
+  confirmText: 'Bestätigen',
+  danger: true,
+  loading: false
+})
+
+const pageToast = ref<{
+  show: boolean
+  title?: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}>({
+  show: false,
+  title: '',
+  message: '',
+  type: 'info'
+})
+let pageToastTimer: any = null
+
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', title?: string) => {
+  pageToast.value = { show: true, message, type, title }
+  if (pageToastTimer) clearTimeout(pageToastTimer)
+  pageToastTimer = setTimeout(() => {
+    pageToast.value.show = false
+  }, 4000)
+}
+
+const triggerConfirmModal = (opts: {
+  title: string
+  subtitle?: string
+  message: string
+  confirmText?: string
+  danger?: boolean
+  action: () => Promise<void> | void
+}) => {
+  confirmModal.value = {
+    show: true,
+    title: opts.title,
+    subtitle: opts.subtitle,
+    message: opts.message,
+    confirmText: opts.confirmText || 'Löschen',
+    danger: opts.danger !== false,
+    loading: false,
+    error: '',
+    action: opts.action
+  }
+}
+
+const executeConfirmModalAction = async () => {
+  if (!confirmModal.value.action) return
+  confirmModal.value.loading = true
+  confirmModal.value.error = ''
+  try {
+    await confirmModal.value.action()
+    confirmModal.value.show = false
+  } catch (err: any) {
+    confirmModal.value.error = err?.data?.statusMessage || err?.message || 'Fehler beim Ausführen der Aktion'
+  } finally {
+    confirmModal.value.loading = false
+  }
+}
+
 
 const authHeaders = () => ({
   'Authorization': `Bearer ${token.value || ''}`
@@ -1154,6 +1300,7 @@ const mergeIntoExistingContact = async (target: any) => {
     })
     showModal.value = false
     await loadContacts()
+    showToast(isEditing.value ? 'Kontakt erfolgreich aktualisiert' : 'Kontakt erfolgreich angelegt', 'success')
   } catch (err: any) {
     modalError.value = err.data?.statusMessage || 'Fehler beim Zusammenführen des Kontakts'
   } finally {
@@ -1373,6 +1520,7 @@ const saveContact = async () => {
 
     showModal.value = false
     await loadContacts()
+    showToast(isEditing.value ? 'Kontakt erfolgreich aktualisiert' : 'Kontakt erfolgreich angelegt', 'success')
   } catch (err: any) {
     if (err.statusCode === 409 || err.status === 409) {
       modalError.value = err.data?.message || 'Duplikat erkannt: Ein ähnlicher Kontakt existiert bereits.'
@@ -1386,16 +1534,21 @@ const saveContact = async () => {
 
 const deleteContact = async (c: any) => {
   const name = formatFullName(c)
-  if (!confirm(`Möchtest du den Kontakt "${name}" wirklich löschen?`)) return
-  try {
-    await $fetch(`/api/contacts/${c.id}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    contacts.value = contacts.value.filter(item => item.id !== c.id)
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
-  }
+  triggerConfirmModal({
+    title: 'Kontakt löschen',
+    subtitle: name,
+    message: `Möchtest du den Kontakt "${name}" wirklich unwiderruflich löschen?`,
+    confirmText: 'Kontakt löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/contacts/${c.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      contacts.value = contacts.value.filter(item => item.id !== c.id)
+      showToast('Kontakt erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 // vCard (.vcf) Export
