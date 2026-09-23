@@ -138,6 +138,54 @@
                 <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
                 <span>{{ $t('admin.email_versand') }}</span>
               </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('manage_users')"
+                to="/admin?tab=invites"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Einladungen"
+              >
+                <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Einladungen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=website"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Webseiten-Verwaltung"
+              >
+                <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Webseite & CMS</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=ai"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="KI & AI-Pläne"
+              >
+                <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>KI & AI-Pläne</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('any_admin')"
+                to="/admin?tab=audit"
+                @click="mobileMenuOpen = false"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Security & Audit Logs"
+              >
+                <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Audit Logs</span>
+              </NuxtLink>
             </div>
 
             <NuxtLink
@@ -290,6 +338,50 @@
                 <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
                 <span>{{ $t('admin.email_versand') }}</span>
               </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('manage_users')"
+                to="/admin?tab=invites"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Einladungen"
+              >
+                <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Einladungen</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=website"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Webseiten-Verwaltung"
+              >
+                <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Webseite & CMS</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('company_settings')"
+                to="/admin?tab=ai"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="KI & AI-Pläne"
+              >
+                <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>KI & AI-Pläne</span>
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="hasAdminPermission('any_admin')"
+                to="/admin?tab=audit"
+                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                title="Security & Audit Logs"
+              >
+                <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                <span>Audit Logs</span>
+              </NuxtLink>
             </div>
 
             <NuxtLink
@@ -431,7 +523,10 @@ import {
   Users,
   CreditCard,
   ClipboardList,
-  Mail
+  Mail,
+  Send,
+  Globe,
+  Sparkles
 } from 'lucide-vue-next'
 
 const route = useRoute()

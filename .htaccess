@@ -2,6 +2,10 @@
   RewriteEngine On
   RewriteBase /
 
+  # Pass Authorization header to PHP
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
   # Direct API requests to api/index.php
   RewriteRule ^api/(.*)$ api/index.php [QSA,L]
   RewriteRule ^api$ api/index.php [QSA,L]

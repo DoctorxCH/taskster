@@ -63,6 +63,14 @@ export const usePlanLimits = () => {
     return effectivePlan.value !== 'basic'
   })
 
+  const canUseAi = computed<boolean>(() => {
+    return effectivePlan.value !== 'basic'
+  })
+
+  const canUseAiAudio = computed<boolean>(() => {
+    return effectivePlan.value !== 'basic'
+  })
+
   const checkFolderLimit = (currentCount: number): boolean => {
     if (currentCount >= maxFolders.value) {
       promptUpgrade('folders', 'Im Free-Tarif ist maximal 1 Projektordner erlaubt. Bitte auf Pro upgraden.')
@@ -106,6 +114,8 @@ export const usePlanLimits = () => {
     canTrackTime,
     canExportProject,
     canUseSectionAutomation,
+    canUseAi,
+    canUseAiAudio,
     showUpgradeModal,
     upgradeReason,
     checkFolderLimit,

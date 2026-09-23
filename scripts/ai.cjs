@@ -226,7 +226,6 @@ async function streamChat({ apiKey, model, messages, config, onDelta }) {
         stream: true,
         temperature: config.temperature ?? 0.3,
         max_tokens: config.max_tokens ?? 4096,
-        // Endpoint-Pinning: nur Baidu Qianfan (fp8), kein Fallback
         provider: config.provider
       })
     })
@@ -242,7 +241,7 @@ async function streamChat({ apiKey, model, messages, config, onDelta }) {
     let hint = ''
     if (response.status === 401) hint = '\n  → API-Key ungueltig oder abgelaufen.'
     if (response.status === 402) hint = '\n  → Kein Guthaben auf dem OpenRouter-Konto.'
-    if (response.status === 404) hint = '\n  → Modell/Endpoint nicht verfuegbar (baidu/fp8 gepinnt, allow_fallbacks=false).'
+    if (response.status === 404) hint = '\n  → Modell/Endpoint nicht verfuegbar.'
     if (response.status === 429) hint = '\n  → Rate-Limit erreicht. Kurz warten.'
     fail(`OpenRouter ${response.status} ${response.statusText}${hint}\n${body.slice(0, 600)}`)
   }

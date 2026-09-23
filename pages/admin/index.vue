@@ -2,93 +2,8 @@
   <div class="w-full min-h-screen bg-slate-50/50">
     <div v-if="isAnyAdmin" class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       
-      <!-- Layout: Left Sidepanel + Right Content Area -->
-      <div class="flex flex-col lg:flex-row gap-6">
-        
-        <!-- Left Sidepanel (Admin Sub-Menu Navigation) -->
-        <aside class="w-full lg:w-64 shrink-0">
-          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-1.5 sticky top-6">
-            <div class="px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-2 flex items-center justify-between">
-              <span>Admin Menü</span>
-              <ShieldCheck class="w-3.5 h-3.5 text-purple-600" />
-            </div>
-
-            <button
-              @click="setTab('users')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'users' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <Users class="w-4 h-4 shrink-0" />
-              <span>Benutzer & Kunden</span>
-            </button>
-
-            <button
-              @click="setTab('companies')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'companies' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <Building2 class="w-4 h-4 shrink-0" />
-              <span>Unternehmen & B2B</span>
-            </button>
-
-            <button
-              @click="setTab('finance')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'finance' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <CreditCard class="w-4 h-4 shrink-0" />
-              <span>Finanzen & MRR</span>
-            </button>
-
-            <button
-              @click="setTab('templates')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'templates' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <ClipboardList class="w-4 h-4 shrink-0" />
-              <span>Projekt-Vorlagen</span>
-            </button>
-
-            <button
-              @click="setTab('email')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'email' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <Mail class="w-4 h-4 shrink-0" />
-              <span>E-Mail System</span>
-            </button>
-
-            <button
-              @click="setTab('invites')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'invites' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <Send class="w-4 h-4 shrink-0" />
-              <span>Einladungen</span>
-            </button>
-
-            <button
-              @click="setTab('website')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'website' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <Globe class="w-4 h-4 shrink-0 text-cyan-300" />
-              <span>Webseiten-Verwaltung</span>
-            </button>
-
-            <button
-              @click="setTab('audit')"
-              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
-              :class="activeTab === 'audit' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
-            >
-              <ShieldCheck class="w-4 h-4 shrink-0 text-purple-300" />
-              <span>Security & Audit Logs</span>
-            </button>
-          </div>
-        </aside>
-
-        <!-- Right Main Content Area -->
-        <main class="flex-1 min-w-0">
+      <!-- Main Content Area (Navigation is located exclusively in the global left sidebar) -->
+      <main class="w-full min-w-0">
           <!-- Header with Integrated Stat Pills -->
           <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-xs">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -342,67 +257,26 @@
                 <div class="text-[10px] text-slate-400">Revisionssicher geloggt</div>
               </div>
             </div>
-          </div>
 
-    <!-- Admin Navigation Tabs Bar -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-slate-200/80">
-      <button
-        @click="setTab('users')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'users' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <Users class="w-3.5 h-3.5" />
-        <span>Benutzer & Kunden</span>
-      </button>
-      <button
-        @click="setTab('companies')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'companies' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <Building2 class="w-3.5 h-3.5" />
-        <span>Unternehmen & B2B</span>
-      </button>
-      <button
-        @click="setTab('finance')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'finance' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <CreditCard class="w-3.5 h-3.5" />
-        <span>Finanzen & MRR</span>
-      </button>
-      <button
-        @click="setTab('templates')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'templates' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <ClipboardList class="w-3.5 h-3.5" />
-        <span>Projekt-Vorlagen</span>
-      </button>
-      <button
-        @click="setTab('email')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'email' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <Mail class="w-3.5 h-3.5" />
-        <span>E-Mail System</span>
-      </button>
-      <button
-        @click="setTab('invites')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'invites' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
-      >
-        <Send class="w-3.5 h-3.5" />
-        <span>Einladungen</span>
-      </button>
-      <button
-        @click="setTab('audit')"
-        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
-        :class="activeTab === 'audit' ? 'bg-purple-900 text-white shadow-xs' : 'bg-white border border-purple-200 text-purple-900 hover:bg-purple-50'"
-      >
-        <ShieldCheck class="w-3.5 h-3.5 text-purple-400" />
-        <span>Security & Audit Logs</span>
-      </button>
-    </div>
+            <!-- AI PILLS -->
+            <div v-else-if="activeTab === 'ai'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Standard-Modell</div>
+                <div class="text-sm font-bold text-purple-900 mt-0.5 truncate">{{ aiSettings.ai_model }}</div>
+                <div class="text-[10px] text-slate-400">OpenRouter LLM</div>
+              </div>
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Audio Transkriptor</div>
+                <div class="text-sm font-bold text-[#0891B2] mt-0.5 truncate">{{ aiSettings.ai_audio_model }}</div>
+                <div class="text-[10px] text-slate-400">Whisper Voice Engine</div>
+              </div>
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Pro & Enterprise</div>
+                <div class="text-sm font-bold text-emerald-900 mt-0.5">Vollzugriff aktiv</div>
+                <div class="text-[10px] text-slate-400">Tarif-Gating aktiv</div>
+              </div>
+            </div>
+          </div>
 
     <!-- TAB 1: USERS & CUSTOMERS (Liquid Glass Table Card) -->
     <div v-if="activeTab === 'users'" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
@@ -1794,6 +1668,234 @@
       </div>
     </div>
 
+    <!-- TAB: KI & AI-PLÄNE (Steuerung von Modellen & Tarif-Freischaltungen) -->
+    <div v-if="activeTab === 'ai'" class="space-y-6">
+      <div class="liquid_glass rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl border border-white/80">
+        
+        <!-- Header Info Card -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-transparent border border-purple-200/60">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shrink-0">
+              <Sparkles class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-900">Taskster AI-Engine & Tarif-Berechtigungen</h3>
+              <p class="text-xs text-slate-600 mt-0.5 font-medium">
+                Steuere hier die KI-Funktionen für Bautagebuch, Aufgaben-Generierung, Sprachnotizen und welche Features für welche Tarife freigeschaltet sind.
+              </p>
+            </div>
+          </div>
+          <button
+            @click="saveAiSettings"
+            :disabled="savingAiSettings"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg shrink-0 shadow-md flex items-center gap-2"
+          >
+            <Save class="w-4 h-4" />
+            <span>{{ savingAiSettings ? 'Speichere...' : 'Einstellungen speichern' }}</span>
+          </button>
+        </div>
+
+        <!-- Section 1: Tarif-Freischaltungs-Matrix (Plan Entitlements) -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+              <ShieldCheck class="w-4 h-4 text-purple-600" />
+              <span>Tarif-Freischaltung & Quotas (Was ist in welchem Plan freigeschaltet?)</span>
+            </h4>
+            <span class="text-[11px] font-semibold text-slate-500">Zero-Trust serverseitig erzwungen</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Free / Basic Plan -->
+            <div class="p-4 rounded-2xl border transition-all" :class="aiSettings.ai_plan_basic_enabled ? 'border-purple-300 bg-purple-50/30' : 'border-slate-200 bg-slate-50/50'">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-slate-200 text-slate-700">Free / Basic</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" v-model="aiSettings.ai_plan_basic_enabled" class="sr-only peer" />
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+              <p class="text-xs text-slate-600 font-medium mb-3">Kostenlose Accounts & Probe-Nutzer</p>
+              
+              <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <input
+                    v-model.number="aiSettings.ai_plan_basic_monthly_limit"
+                    type="number"
+                    min="0"
+                    max="10000"
+                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none font-medium"
+                  />
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <input type="checkbox" v-model="aiSettings.ai_plan_basic_audio_enabled" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="p-4 rounded-2xl border-2 transition-all border-[#00A3C4]/60 bg-cyan-50/20">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#00A3C4] text-white">Pro Plan</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" v-model="aiSettings.ai_plan_pro_enabled" class="sr-only peer" />
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00A3C4]"></div>
+                </label>
+              </div>
+              <p class="text-xs text-slate-600 font-medium mb-3">Handwerker, Bauleiter & Einzelfirmen</p>
+              
+              <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <input
+                    v-model.number="aiSettings.ai_plan_pro_monthly_limit"
+                    type="number"
+                    min="10"
+                    max="100000"
+                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none font-medium"
+                  />
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <input type="checkbox" v-model="aiSettings.ai_plan_pro_audio_enabled" class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-4 h-4 cursor-pointer" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="p-4 rounded-2xl border-2 transition-all border-purple-400 bg-purple-50/20">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-900 text-white">Enterprise Plan</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_enabled" class="sr-only peer" />
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-900"></div>
+                </label>
+              </div>
+              <p class="text-xs text-slate-600 font-medium mb-3">Großunternehmen & Generalunternehmer</p>
+              
+              <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <input
+                    v-model.number="aiSettings.ai_plan_enterprise_monthly_limit"
+                    type="number"
+                    min="100"
+                    max="1000000"
+                    class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-purple-600 focus:outline-none font-medium"
+                  />
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_audio_enabled" class="rounded text-purple-700 focus:ring-purple-700 w-4 h-4 cursor-pointer" />
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                  <span class="font-bold text-slate-700">Eigene API-Keys erlauben (BYOK)</span>
+                  <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_custom_key_allowed" class="rounded text-purple-700 focus:ring-purple-700 w-4 h-4 cursor-pointer" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Globale Modell- und Provider-Konfiguration -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <Bot class="w-4 h-4 text-[#00A3C4]" />
+            <span>Globale KI-Modelle & Parameter</span>
+          </h4>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Standard LLM Modell (OpenRouter Identifier)</label>
+              <input
+                v-model="aiSettings.ai_model"
+                type="text"
+                placeholder="z.B. google/gemini-2.5-flash oder deepseek/deepseek-chat"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-mono"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: <code>google/gemini-2.5-flash</code> oder <code>deepseek/deepseek-chat</code></p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Audio Transkriptions-Modell</label>
+              <input
+                v-model="aiSettings.ai_audio_model"
+                type="text"
+                placeholder="openai/whisper-large-v3-turbo"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-mono"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: <code>openai/whisper-large-v3-turbo</code></p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Max. Tokens pro Antwort: {{ aiSettings.ai_max_tokens }}</label>
+              <input
+                v-model.number="aiSettings.ai_max_tokens"
+                type="range"
+                min="512"
+                max="8192"
+                step="256"
+                class="w-full accent-[#00A3C4] cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Kreativität / Temperatur: {{ aiSettings.ai_temperature }}</label>
+              <input
+                v-model.number="aiSettings.ai_temperature"
+                type="range"
+                min="0.0"
+                max="1.0"
+                step="0.05"
+                class="w-full accent-[#00A3C4] cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-800 mb-1">Globaler System-Prompt (Rolle für Bau- & Projektassistenten)</label>
+            <textarea
+              v-model="aiSettings.ai_system_prompt"
+              rows="3"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium leading-relaxed resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Section 3: Live KI-Testkonsole -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <Cpu class="w-4 h-4 text-purple-600" />
+            <span>Live KI-Testkonsole</span>
+          </h4>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input
+              v-model="testPrompt"
+              type="text"
+              placeholder="Test-Prompt eingeben..."
+              class="flex-1 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              @keydown.enter.prevent="runAiTest"
+            />
+            <button
+              @click="runAiTest"
+              :disabled="testingAi || !testPrompt.trim()"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg shrink-0 flex items-center gap-2"
+            >
+              <RefreshCw v-if="testingAi" class="w-4 h-4 animate-spin" />
+              <Sparkles v-else class="w-4 h-4" />
+              <span>{{ testingAi ? 'Generiere...' : 'Testen' }}</span>
+            </button>
+          </div>
+          <div v-if="testPromptResult" class="p-4 rounded-xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap leading-relaxed border border-slate-800">
+            {{ testPromptResult }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Modal: Create / Edit Template -->
     <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-8 border border-white/80">
@@ -2762,8 +2864,7 @@
         </form>
       </div>
     </div>
-        </main>
-      </div>
+      </main>
     </div>
     <div v-else class="max-w-md mx-auto py-24 text-center">
       <div class="liquid_glass rounded-3xl p-8 shadow-xl">
@@ -2775,6 +2876,72 @@
         </NuxtLink>
       </div>
     </div>
+
+    <!-- In-App Toast Container (Zero native browser popups) -->
+    <teleport to="body">
+      <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none max-w-md w-full px-4">
+        <transition-group
+          enter-active-class="transition duration-300 ease-out transform"
+          enter-from-class="opacity-0 translate-y-4 scale-95"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition duration-200 ease-in transform"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-2 scale-95"
+        >
+          <div
+            v-for="toast in toasts"
+            :key="toast.id"
+            class="pointer-events-auto p-4 rounded-xl shadow-2xl border flex items-center gap-3 bg-white"
+            :class="toast.type === 'error' ? 'border-rose-200 text-rose-900 bg-rose-50/95' : toast.type === 'info' ? 'border-cyan-200 text-cyan-900 bg-cyan-50/95' : 'border-emerald-200 text-emerald-900 bg-emerald-50/95'"
+          >
+            <CheckCircle2 v-if="toast.type === 'success'" class="w-5 h-5 text-emerald-600 shrink-0" />
+            <AlertCircle v-else-if="toast.type === 'error'" class="w-5 h-5 text-rose-600 shrink-0" />
+            <Info v-else class="w-5 h-5 text-cyan-600 shrink-0" />
+            <span class="text-xs font-semibold leading-relaxed flex-1">{{ toast.message }}</span>
+            <button @click="toasts = toasts.filter(t => t.id !== toast.id)" class="text-slate-400 hover:text-slate-700 p-1">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+        </transition-group>
+      </div>
+    </teleport>
+
+    <!-- In-App Confirmation Dialog (Zero Native confirm()) -->
+    <teleport to="body">
+      <div
+        v-if="confirmDialog.isOpen"
+        class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all p-6">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+              <AlertCircle class="w-5 h-5" />
+            </div>
+            <div class="flex-1">
+              <h3 class="text-sm font-bold text-slate-900">{{ confirmDialog.title }}</h3>
+              <p class="text-xs text-slate-600 mt-2 leading-relaxed">{{ confirmDialog.message }}</p>
+            </div>
+          </div>
+          <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              @click="closeConfirmDialog(false)"
+              class="taskster_button_light px-4 py-2 text-xs font-semibold rounded-lg"
+            >
+              {{ confirmDialog.cancelText }}
+            </button>
+            <button
+              type="button"
+              @click="closeConfirmDialog(true)"
+              :class="confirmDialog.isDestructive ? 'taskster_button_accent' : 'taskster_button'"
+              class="px-4 py-2 text-xs font-semibold rounded-lg text-white"
+            >
+              {{ confirmDialog.confirmText }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -2804,7 +2971,11 @@ import {
   Server,
   Inbox,
   Globe,
-  Save
+  Save,
+  Sparkles,
+  Info,
+  Bot,
+  Cpu
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -2841,7 +3012,76 @@ const { user, authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'audit'>('users')
+// In-App Toast System (Zero native alerts)
+interface AdminToast {
+  id: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}
+const toasts = ref<AdminToast[]>([])
+
+function showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
+  const id = 'toast_' + Math.random().toString(36).substring(2, 9)
+  toasts.value.push({ id, message, type })
+  setTimeout(() => {
+    toasts.value = toasts.value.filter(t => t.id !== id)
+  }, 4500)
+}
+
+// In-App Confirmation Modal System (Zero native confirm/prompt)
+interface ConfirmDialogOptions {
+  title?: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  isDestructive?: boolean
+}
+
+const confirmDialog = ref({
+  isOpen: false,
+  title: 'Bestätigung erforderlich',
+  message: '',
+  confirmText: 'Bestätigen',
+  cancelText: 'Abbrechen',
+  isDestructive: true,
+  resolve: null as ((val: boolean) => void) | null
+})
+
+function showConfirm(options: ConfirmDialogOptions | string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof options === 'string') {
+      confirmDialog.value = {
+        isOpen: true,
+        title: 'Bestätigung erforderlich',
+        message: options,
+        confirmText: 'Fortfahren',
+        cancelText: 'Abbrechen',
+        isDestructive: true,
+        resolve
+      }
+    } else {
+      confirmDialog.value = {
+        isOpen: true,
+        title: options.title || 'Bestätigung erforderlich',
+        message: options.message,
+        confirmText: options.confirmText || 'Fortfahren',
+        cancelText: options.cancelText || 'Abbrechen',
+        isDestructive: options.isDestructive !== false,
+        resolve
+      }
+    }
+  })
+}
+
+function closeConfirmDialog(result: boolean) {
+  if (confirmDialog.value.resolve) {
+    confirmDialog.value.resolve(result)
+  }
+  confirmDialog.value.isOpen = false
+  confirmDialog.value.resolve = null
+}
+
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'ai' | 'audit'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
@@ -2856,6 +3096,7 @@ const activeSectionBadge = computed(() => {
     case 'email': return 'E-Mail & Versand'
     case 'invites': return 'Mitarbeiter-Einladungen'
     case 'website': return 'Webseiten-Verwaltung'
+    case 'ai': return 'Künstliche Intelligenz & Tarife'
     case 'audit': return 'Security & Audit Logs'
     default: return 'Zentrale Administration'
   }
@@ -2870,6 +3111,7 @@ const activeSectionTitle = computed(() => {
     case 'email': return 'Zentrale E-Mail-Konfiguration'
     case 'invites': return 'Mitarbeiter & Einladungen'
     case 'website': return 'Webseiten- & CMS-Steuerung'
+    case 'ai': return 'KI-Modelle & Tarif-Freischaltungen'
     case 'audit': return 'Sicherheits- & Revisions-Protokolle'
     default: return 'Taskster Plattform-Administration'
   }
@@ -2884,6 +3126,7 @@ const activeSectionDescription = computed(() => {
     case 'email': return 'Resend & SMTP Einstellungen, E-Mail-Vorlagen und Versandprotokolle.'
     case 'invites': return 'Lade neue Mitarbeiter in dein Unternehmen ein und verwalte Einladungen.'
     case 'website': return 'Steuere Landingpage-Texte, Tarife auf der Webseite, Ankündigungsbanner, SEO & Wartungsmodus.'
+    case 'ai': return 'Konfiguriere LLM Sprachmodelle, Whisper Audio-Transkription und welche KI-Features in welchen Plänen freigeschaltet sind.'
     case 'audit': return 'Revisionssichere Protokollierung aller Sicherheits-Events, Benutzeraktionen und Datenänderungen.'
     default: return 'Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.'
   }
@@ -2933,11 +3176,11 @@ async function loadWebsiteSettings() {
   loadingWebsiteSettings.value = true
   try {
     const res: any = await $fetch('/api/admin/website-settings', {
-      headers: authHeaders.value
+      headers: authHeaders()
     })
     websiteSettings.value = { ...websiteSettings.value, ...res }
-  } catch (err) {
-    console.error('Failed to load website settings', err)
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.data?.error || 'Fehler beim Laden der Webseiten-Einstellungen', 'error')
   } finally {
     loadingWebsiteSettings.value = false
   }
@@ -2949,15 +3192,92 @@ async function saveWebsiteSettings() {
   try {
     await $fetch('/api/admin/website-settings', {
       method: 'POST',
-      headers: authHeaders.value,
+      headers: authHeaders(),
       body: websiteSettings.value
     })
     websiteSettingsSavedNotice.value = true
+    showToast('Webseiten-Einstellungen erfolgreich gespeichert!', 'success')
     setTimeout(() => { websiteSettingsSavedNotice.value = false }, 4000)
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Webseiten-Einstellungen')
+    showToast(err.data?.statusMessage || err.data?.error || err.data?.message || 'Fehler beim Speichern der Webseiten-Einstellungen', 'error')
   } finally {
     savingWebsiteSettings.value = false
+  }
+}
+
+// AI Settings State & Methods
+const aiSettings = ref({
+  ai_enabled: true,
+  ai_model: 'google/gemini-2.5-flash',
+  ai_audio_model: 'openai/whisper-large-v3-turbo',
+  ai_temperature: 0.3,
+  ai_max_tokens: 2048,
+  ai_system_prompt: 'Du bist ein präziser technischer Assistent für das Taskster-Projekt (Nuxt 3, Vue, PHP, MySQL, Zero-Trust-SaaS). Antworte kurz, konkret und auf Deutsch. Gib bei Code immer vollständige, lauffähige Ausschnitte.',
+  ai_plan_basic_enabled: false,
+  ai_plan_basic_monthly_limit: 10,
+  ai_plan_basic_audio_enabled: false,
+  ai_plan_pro_enabled: true,
+  ai_plan_pro_monthly_limit: 500,
+  ai_plan_pro_audio_enabled: true,
+  ai_plan_enterprise_enabled: true,
+  ai_plan_enterprise_monthly_limit: 5000,
+  ai_plan_enterprise_audio_enabled: true,
+  ai_plan_enterprise_custom_key_allowed: true
+})
+const loadingAiSettings = ref(false)
+const savingAiSettings = ref(false)
+const testPrompt = ref('Fasse die heutigen Vorkommnisse auf der Baustelle zusammen: Betonlieferung mit 30 Minuten Verspätung, Bewehrungsabnahme erfolgreich.')
+const testPromptResult = ref('')
+const testingAi = ref(false)
+
+async function loadAiSettings() {
+  loadingAiSettings.value = true
+  try {
+    const res: any = await $fetch('/api/admin/ai-settings', {
+      headers: authHeaders()
+    })
+    aiSettings.value = { ...aiSettings.value, ...res }
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.data?.error || 'Fehler beim Laden der AI-Einstellungen', 'error')
+  } finally {
+    loadingAiSettings.value = false
+  }
+}
+
+async function saveAiSettings() {
+  savingAiSettings.value = true
+  try {
+    await $fetch('/api/admin/ai-settings', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: aiSettings.value
+    })
+    showToast('KI- und Tarif-Einstellungen erfolgreich gespeichert!', 'success')
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.data?.error || 'Fehler beim Speichern der AI-Einstellungen', 'error')
+  } finally {
+    savingAiSettings.value = false
+  }
+}
+
+async function runAiTest() {
+  if (!testPrompt.value.trim()) return
+  testingAi.value = true
+  testPromptResult.value = ''
+  try {
+    const res: any = await $fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { prompt: testPrompt.value }
+    })
+    testPromptResult.value = res.text || res.response || JSON.stringify(res)
+    showToast('KI-Antwort erfolgreich empfangen!', 'success')
+  } catch (err: any) {
+    const msg = err.data?.statusMessage || err.data?.error || err.message || 'KI-Test fehlgeschlagen'
+    testPromptResult.value = `Fehler: ${msg}`
+    showToast(msg, 'error')
+  } finally {
+    testingAi.value = false
   }
 }
 
@@ -2975,7 +3295,7 @@ async function fetchAuditLogs() {
   loadingAuditLogs.value = true
   try {
     const res: any = await $fetch('/api/admin/audit-logs', {
-      headers: authHeaders.value,
+      headers: authHeaders(),
       query: {
         limit: 50,
         offset: (auditPage.value - 1) * 50,
@@ -2986,26 +3306,28 @@ async function fetchAuditLogs() {
     auditLogs.value = res.logs || []
     auditLogsTotal.value = res.total || 0
     auditLogsActions.value = res.actions || []
-  } catch (err) {
-    console.error('Failed to fetch audit logs', err)
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.data?.error || 'Fehler beim Laden der Audit-Logs', 'error')
   } finally {
     loadingAuditLogs.value = false
   }
 }
 
-const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'audit') => {
+const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'ai' | 'audit') => {
   activeTab.value = tab
   router.replace({ query: { ...route.query, tab } })
   if (tab === 'audit') {
     fetchAuditLogs()
   } else if (tab === 'website') {
     loadWebsiteSettings()
+  } else if (tab === 'ai') {
+    loadAiSettings()
   }
 }
 
 function syncTabFromRoute() {
   const qTab = route.query.tab as any
-  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites', 'website', 'audit']
+  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites', 'website', 'ai', 'audit']
   if (qTab && validTabs.includes(qTab)) {
     if (
       (qTab === 'users' && hasPermission('manage_users')) ||
@@ -3015,9 +3337,13 @@ function syncTabFromRoute() {
       (qTab === 'email' && hasPermission('company_settings')) ||
       qTab === 'invites' ||
       qTab === 'website' ||
+      (qTab === 'ai' && hasPermission('company_settings')) ||
       qTab === 'audit'
     ) {
       activeTab.value = qTab
+      if (qTab === 'audit') fetchAuditLogs()
+      else if (qTab === 'website') loadWebsiteSettings()
+      else if (qTab === 'ai') loadAiSettings()
       return
     }
   }
@@ -3187,9 +3513,9 @@ const createUser = async () => {
     })
     showCreateUserModal.value = false
     await loadAdminData()
-    alert(`Benutzer "${newUserForm.value.name}" erfolgreich angelegt!`)
+    showToast(`Benutzer "${newUserForm.value.name}" erfolgreich angelegt!`, 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Anlegen des Benutzers')
+    showToast(err.data?.statusMessage || 'Fehler beim Anlegen des Benutzers', 'error')
   } finally {
     creatingUser.value = false
   }
@@ -3255,9 +3581,9 @@ const saveUserChanges = async () => {
     })
     showEditUserModal.value = false
     await loadAdminData()
-    alert('Benutzer-Einstellungen erfolgreich gespeichert!')
+    showToast('Benutzer-Einstellungen erfolgreich gespeichert!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Benutzer-Einstellungen')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der Benutzer-Einstellungen', 'error')
   } finally {
     savingUser.value = false
   }
@@ -3283,9 +3609,7 @@ const loadOrdersData = async () => {
 }
 
 const generateInvoice = (customerName: string) => {
-  if (import.meta.client) {
-    window.alert(`Rechnung für ${customerName} wird generiert...`)
-  }
+  showToast(`Rechnung für ${customerName} wird generiert...`, 'info')
 }
 
 const templates = ref<any[]>([])
@@ -3389,7 +3713,10 @@ const addTmplList = () => {
 
 const addFieldToTemplate = () => {
   const lbl = newField.value.label.trim()
-  if (!lbl) return alert('Bitte Feldbezeichnung eingeben')
+  if (!lbl) {
+    showToast('Bitte Feldbezeichnung eingeben', 'error')
+    return
+  }
   const key = lbl.toLowerCase().replace(/[^a-z0-9_]/g, '_')
 
   let options: string[] = []
@@ -3426,32 +3753,33 @@ const saveTemplate = async () => {
         headers: authHeaders(),
         body: tmplForm.value
       })
-      alert('Vorlage erfolgreich aktualisiert!')
+      showToast('Vorlage erfolgreich aktualisiert!', 'success')
     } else {
       await $fetch('/api/templates', {
         method: 'POST',
         headers: authHeaders(),
         body: tmplForm.value
       })
-      alert('Vorlage erfolgreich erstellt!')
+      showToast('Vorlage erfolgreich erstellt!', 'success')
     }
     showTemplateModal.value = false
     await loadAdminData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage', 'error')
   }
 }
 
 const deleteTemplate = async (id: string) => {
-  if (!confirm('Möchtest du diese Vorlage wirklich löschen?')) return
+  if (!(await showConfirm('Möchtest du diese Vorlage wirklich löschen?'))) return
   try {
     await $fetch(`/api/templates/${id}`, {
       method: 'DELETE',
       headers: authHeaders()
     })
     await loadAdminData()
+    showToast('Vorlage erfolgreich gelöscht!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen der Vorlage')
+    showToast(err.data?.statusMessage || 'Fehler beim Löschen der Vorlage', 'error')
   }
 }
 
@@ -3523,7 +3851,7 @@ const loadAdminData = async () => {
     }
   } catch (err: any) {
     if (err.statusCode === 403 || err.statusCode === 401) {
-      alert('Zugriff nur für autorisierte Administratoren gestattet.')
+      showToast('Zugriff nur für autorisierte Administratoren gestattet.', 'error')
       navigateTo('/dashboard')
     }
   } finally {
@@ -3544,14 +3872,15 @@ const sendCompanyInvite = async () => {
       }
     })
     if (res.action === 'added') {
-      alert(`Benutzer ${inviteEmail.value} war bereits registriert und wurde dem Unternehmen sofort hinzugefügt!`)
+      showToast(`Benutzer ${inviteEmail.value} war bereits registriert und wurde dem Unternehmen sofort hinzugefügt!`, 'success')
     } else if (res.action === 'invited') {
       lastInviteLink.value = `${window.location.origin}/login?token=${res.token}`
+      showToast('Einladung erfolgreich erstellt!', 'success')
     }
     inviteEmail.value = ''
     await loadAdminData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Senden der Einladung')
+    showToast(err.data?.statusMessage || 'Fehler beim Senden der Einladung', 'error')
   } finally {
     sendingInvite.value = false
   }
@@ -3560,7 +3889,7 @@ const sendCompanyInvite = async () => {
 const copyInviteLink = () => {
   if (lastInviteLink.value && navigator.clipboard) {
     navigator.clipboard.writeText(lastInviteLink.value)
-    alert('Einladungslink in die Zwischenablage kopiert!')
+    showToast('Einladungslink in die Zwischenablage kopiert!', 'success')
   }
 }
 
@@ -3572,8 +3901,9 @@ const toggleUserPro = async (targetUser: any) => {
       body: { is_pro: !targetUser.is_pro }
     })
     targetUser.is_pro = !targetUser.is_pro
+    showToast(`Pro-Status für ${targetUser.name || 'Benutzer'} aktualisiert!`, 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Ändern des Pro-Status')
+    showToast(err.data?.statusMessage || 'Fehler beim Ändern des Pro-Status', 'error')
   }
 }
 
@@ -3584,8 +3914,9 @@ const updateCompanyPlan = async (c: any) => {
       headers: authHeaders(),
       body: { subscription_plan: c.subscription_plan }
     })
+    showToast(`Tarif für ${c.name} erfolgreich auf ${c.subscription_plan} aktualisiert!`, 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren des Plans')
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren des Plans', 'error')
   }
 }
 
@@ -3602,8 +3933,9 @@ const toggleCompanyUploads = async (c: any) => {
     })
 
     c.settings = updatedSettings
+    showToast(`Upload-Berechtigung für ${c.name} ${newAllowed ? 'aktiviert' : 'deaktiviert'}!`, 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren der Upload-Policy')
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren der Upload-Policy', 'error')
   }
 }
 
@@ -3624,9 +3956,9 @@ const createCompany = async () => {
     newCompanyAdminName.value = ''
     newCompanyAdminEmail.value = ''
     await loadAdminData()
-    alert('Unternehmen und Admin erfolgreich erstellt!')
+    showToast('Unternehmen und Admin erfolgreich erstellt!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen des Unternehmens')
+    showToast(err.data?.statusMessage || 'Fehler beim Erstellen des Unternehmens', 'error')
   }
 }
 
@@ -3657,9 +3989,10 @@ const saveEmailSettings = async () => {
       smtpConfig.value = { ...smtpConfig.value, ...res.settings }
     }
     smtpSavedMessage.value = 'E-Mail-Einstellungen erfolgreich gespeichert!'
+    showToast('E-Mail-Einstellungen erfolgreich gespeichert!', 'success')
     setTimeout(() => { smtpSavedMessage.value = '' }, 4000)
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der SMTP-Einstellungen')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der SMTP-Einstellungen', 'error')
   } finally {
     savingSmtp.value = false
   }
@@ -3743,9 +4076,9 @@ const saveEmailTemplate = async () => {
     })
     showEmailTemplateModal.value = false
     await loadEmailTemplates()
-    alert('E-Mail-Vorlage erfolgreich gespeichert!')
+    showToast('E-Mail-Vorlage erfolgreich gespeichert!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der Vorlage', 'error')
   }
 }
 
@@ -3758,13 +4091,14 @@ const toggleEmailTemplateActive = async (tmpl: any) => {
       body: { is_active: nextState }
     })
     tmpl.is_active = nextState
+    showToast(`Vorlage "${tmpl.name}" ${nextState ? 'aktiviert' : 'deaktiviert'}!`, 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Umschalten der Vorlage')
+    showToast(err.data?.statusMessage || 'Fehler beim Umschalten der Vorlage', 'error')
   }
 }
 
 const resetSingleEmailTemplate = async (tmplId: string) => {
-  if (!confirm('Möchtest du diese Vorlage wirklich auf den Systemstandard zurücksetzen?')) return
+  if (!(await showConfirm('Möchtest du diese Vorlage wirklich auf den Systemstandard zurücksetzen?'))) return
   try {
     await $fetch<any>('/api/admin/email-templates/reset', {
       method: 'POST',
@@ -3772,23 +4106,23 @@ const resetSingleEmailTemplate = async (tmplId: string) => {
       body: { id: tmplId }
     })
     await loadEmailTemplates()
-    alert('Vorlage zurückgesetzt!')
+    showToast('Vorlage erfolgreich auf Systemstandard zurückgesetzt!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Zurücksetzen der Vorlage')
+    showToast(err.data?.statusMessage || 'Fehler beim Zurücksetzen der Vorlage', 'error')
   }
 }
 
 const resetAllEmailTemplates = async () => {
-  if (!confirm('Möchtest du wirklich ALLE Vorlagen auf den Systemstandard zurücksetzen?')) return
+  if (!(await showConfirm('Möchtest du wirklich ALLE Vorlagen unwiderruflich auf den Systemstandard zurücksetzen?'))) return
   try {
     await $fetch<any>('/api/admin/email-templates/reset', {
       method: 'POST',
       headers: authHeaders()
     })
     await loadEmailTemplates()
-    alert('Alle Vorlagen erfolgreich zurückgesetzt!')
+    showToast('Alle Vorlagen erfolgreich zurückgesetzt!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Zurücksetzen aller Vorlagen')
+    showToast(err.data?.statusMessage || 'Fehler beim Zurücksetzen aller Vorlagen', 'error')
   }
 }
 
@@ -3880,6 +4214,8 @@ watch(activeTab, (tab: string) => {
     fetchAuditLogs()
   } else if (tab === 'website') {
     loadWebsiteSettings()
+  } else if (tab === 'ai') {
+    loadAiSettings()
   }
 })
 
@@ -3902,6 +4238,8 @@ onMounted(async () => {
     await fetchAuditLogs()
   } else if (activeTab.value === 'website') {
     await loadWebsiteSettings()
+  } else if (activeTab.value === 'ai') {
+    await loadAiSettings()
   }
   if (hasPermission('company_settings')) {
     loadEmailSettings()

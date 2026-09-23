@@ -42,4 +42,6 @@ Thumbs.db
 sftp.json
 sftp-config.json
 bilder gemini/
+__pycache__/
+*.pyc
 

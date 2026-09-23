@@ -1711,7 +1711,7 @@ function callOpenRouter($messages, $overrides = []) {
         $hint = '';
         if ($httpCode === 401) $hint = ' (API-Key ungueltig)';
         if ($httpCode === 402) $hint = ' (kein Guthaben)';
-        if ($httpCode === 404) $hint = ' (Modell/Endpoint nicht verfuegbar - baidu/fp8 gepinnt)';
+        if ($httpCode === 404) $hint = ' (Modell/Endpoint nicht verfuegbar)';
         if ($httpCode === 429) $hint = ' (Rate-Limit)';
         throw new Exception('OpenRouter ' . $httpCode . $hint . ': ' . $upstream, 502);
     }
@@ -2143,9 +2143,14 @@ function normalizeUserSettings($raw) {
     ];
 }
 
-function getAuthUser() {    global $jwtSecret;
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+function getAuthUser() {
+    global $jwtSecret;
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authHeader = $headers['Authorization'] 
+        ?? $headers['authorization'] 
+        ?? $_SERVER['HTTP_AUTHORIZATION'] 
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
+        ?? '';
     if (!preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
         return null;
     }
@@ -6348,6 +6353,29 @@ try {
     if ($path === 'ai/chat' && $method === 'POST') {
         $user = requireAuth();
 
+        // Plan-Pruefung fuer AI
+        $userPlan = 'basic';
+        if (!empty($user['is_superadmin']) || (!empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin')) {
+            $userPlan = 'enterprise';
+        } elseif (!empty($user['is_pro'])) {
+            $userPlan = 'pro';
+        }
+        if (!empty($user['settings'])) {
+            $s = is_string($user['settings']) ? json_decode($user['settings'], true) : $user['settings'];
+            if (!empty($s['plan'])) $userPlan = $s['plan'];
+        }
+
+        $db = getDb();
+        $aiPlanStmt = $db->prepare("SELECT `value` FROM system_settings WHERE `key` = ?");
+        $aiPlanStmt->execute(['ai_plan_' . $userPlan . '_enabled']);
+        $planVal = $aiPlanStmt->fetchColumn();
+        if ($planVal !== false) {
+            $isPlanAllowed = json_decode($planVal, true) ?? (bool)$planVal;
+            if (!$isPlanAllowed && empty($user['is_superadmin'])) {
+                errorResponse('AI-Funktionen sind in Ihrem Tarif (' . strtoupper($userPlan) . ') nicht freigeschaltet. Bitte auf Pro oder Enterprise upgraden.', 403);
+            }
+        }
+
         $prompt = trim($body['prompt'] ?? '');
         $history = is_array($body['messages'] ?? null) ? $body['messages'] : [];
         $systemOverride = !empty($body['system']) ? trim($body['system']) : null;
@@ -6420,7 +6448,31 @@ try {
 
     // AI-3. POST ai/transcribe (Sprachtranskription mit OpenRouter / openai/whisper-large-v3-turbo)
     if ($path === 'ai/transcribe' && $method === 'POST') {
-        requireAuth();
+        $user = requireAuth();
+
+        // Plan-Pruefung fuer Audio-Transkription
+        $userPlan = 'basic';
+        if (!empty($user['is_superadmin']) || (!empty($user['company_id']) && ($user['company_role'] ?? '') === 'admin')) {
+            $userPlan = 'enterprise';
+        } elseif (!empty($user['is_pro'])) {
+            $userPlan = 'pro';
+        }
+        if (!empty($user['settings'])) {
+            $s = is_string($user['settings']) ? json_decode($user['settings'], true) : $user['settings'];
+            if (!empty($s['plan'])) $userPlan = $s['plan'];
+        }
+
+        $db = getDb();
+        $aiAudioStmt = $db->prepare("SELECT `value` FROM system_settings WHERE `key` = ?");
+        $aiAudioStmt->execute(['ai_plan_' . $userPlan . '_audio_enabled']);
+        $audioVal = $aiAudioStmt->fetchColumn();
+        if ($audioVal !== false) {
+            $isAudioAllowed = json_decode($audioVal, true) ?? (bool)$audioVal;
+            if (!$isAudioAllowed && empty($user['is_superadmin'])) {
+                errorResponse('Audio-Transkription ist in Ihrem aktuellen Tarif (' . strtoupper($userPlan) . ') nicht enthalten.', 403);
+            }
+        }
+
         $config = getAiConfig();
         $apiKey = getEnvValue('OPENROUTER_API_KEY');
         if (!$apiKey) {
@@ -9430,6 +9482,70 @@ try {
             'logs' => $formattedLogs,
             'actions' => $actions
         ]);
+    }
+
+    // 45. admin/ai-settings (GET and POST)
+    if ($path === 'admin/ai-settings') {
+        if ($method === 'GET') {
+            requireAdminPermission('any_admin');
+            $stmt = $db->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'ai_%'");
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            $settings = [
+                'ai_enabled' => true,
+                'ai_model' => 'google/gemini-2.5-flash',
+                'ai_audio_model' => 'openai/whisper-large-v3-turbo',
+                'ai_temperature' => 0.3,
+                'ai_max_tokens' => 2048,
+                'ai_system_prompt' => 'Du bist ein präziser technischer Assistent für das Taskster-Projekt (Nuxt 3, Vue, PHP, MySQL, Zero-Trust-SaaS). Antworte kurz, konkret und auf Deutsch. Gib bei Code immer vollständige, lauffähige Ausschnitte.',
+                'ai_plan_basic_enabled' => false,
+                'ai_plan_basic_monthly_limit' => 10,
+                'ai_plan_basic_audio_enabled' => false,
+                'ai_plan_pro_enabled' => true,
+                'ai_plan_pro_monthly_limit' => 500,
+                'ai_plan_pro_audio_enabled' => true,
+                'ai_plan_enterprise_enabled' => true,
+                'ai_plan_enterprise_monthly_limit' => 5000,
+                'ai_plan_enterprise_audio_enabled' => true,
+                'ai_plan_enterprise_custom_key_allowed' => true
+            ];
+
+            foreach ($rows as $r) {
+                $val = $r['value'];
+                $decoded = json_decode($val, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $settings[$r['key']] = $decoded;
+                } else {
+                    $settings[$r['key']] = $val;
+                }
+            }
+
+            jsonResponse($settings);
+        } elseif ($method === 'POST') {
+            $user = requireAdminPermission('company_settings');
+            if (!is_array($body)) {
+                errorResponse('Ungültige Anfragedaten', 400);
+            }
+
+            $stmt = $db->prepare("
+                INSERT INTO system_settings (`key`, `value`, `updated_at`)
+                VALUES (?, ?, NOW())
+                ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = NOW()
+            ");
+
+            $updatedKeys = [];
+            foreach ($body as $k => $v) {
+                if (strpos($k, 'ai_') === 0) {
+                    $valStr = is_string($v) ? $v : json_encode($v);
+                    $stmt->execute([$k, $valStr]);
+                    $updatedKeys[] = $k;
+                }
+            }
+
+            logAuditEventNative('ai.settings_update', 'system_settings', null, ['keys_updated' => $updatedKeys], $user['id'], $user['company_id'] ?? null);
+
+            jsonResponse(['success' => true, 'message' => 'AI- und Plan-Einstellungen erfolgreich gespeichert']);
+        }
     }
 
     // Not found

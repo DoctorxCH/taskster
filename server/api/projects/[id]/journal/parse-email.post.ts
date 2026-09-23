@@ -13,8 +13,8 @@ function getAiConfig() {
     } catch (_) {}
   }
   return {
-    model: 'deepseek/deepseek-v4-flash-0731',
-    provider: { only: ['baidu/fp8'], allow_fallbacks: false },
+    model: 'google/gemini-2.5-flash',
+    provider: { allow_fallbacks: true },
     temperature: 0.2,
     max_tokens: 4096,
     timeout_seconds: 120
