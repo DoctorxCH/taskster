@@ -90,7 +90,12 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Passwort</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-slate-700">Passwort</label>
+              <NuxtLink to="/forgot-password" class="text-xs font-medium text-[#00A3C4] hover:underline cursor-pointer">
+                Passwort vergessen?
+              </NuxtLink>
+            </div>
             <input
               v-model="loginPassword"
               type="password"
