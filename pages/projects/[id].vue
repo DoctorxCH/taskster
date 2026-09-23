@@ -8,30 +8,30 @@
     <div v-else-if="project" class="space-y-6">
       <!-- Project Header -->
       <div
-        class="border rounded-lg p-5 shadow-xs space-y-4 transition-all"
+        class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4 transition-all"
         :class="project.status === 'completed' ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20' : 'bg-white border-slate-200'"
       >
         <!-- Breadcrumb inside white card -->
         <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
-          <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+          <NuxtLink to="/dashboard" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1">
             <LayoutDashboard class="w-3.5 h-3.5" />
             <span>Dashboard</span>
           </NuxtLink>
           <span>/</span>
           <template v-if="!isFreeUser">
-            <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
+            <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1">
               <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
-              <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
+              <Folder v-else class="w-3.5 h-3.5 text-[#00A3C4]" />
               <span class="text-slate-800 font-semibold flex items-center gap-1">
             <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
-            <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
+            <Folder v-else class="w-3.5 h-3.5 text-[#00A3C4]" />
             <span>{{ folder?.name || 'Ordner' }}</span>
           </span>
             </NuxtLink>
             <span>/</span>
           </template>
           <span class="text-slate-800 font-semibold flex items-center gap-1">
-            <ClipboardList class="w-3.5 h-3.5 text-[#0891B2]" />
+            <ClipboardList class="w-3.5 h-3.5 text-[#00A3C4]" />
             <span>{{ project?.title || 'Projekt' }}</span>
           </span>
         </div>
@@ -73,7 +73,7 @@
 
               <span
                 class="px-2 py-0.5 rounded text-xs font-semibold border capitalize"
-                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-[#0891B2] border-cyan-200'"
+                :class="userRole === 'viewer' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-[#00A3C4] border-cyan-200'"
               >
                 {{ userRole }}
               </span>
@@ -98,10 +98,10 @@
                 {{ project.currency || 'CHF' }}
               </span>
               <span
-                class="px-2.5 py-0.5 rounded text-xs font-semibold bg-cyan-50 text-[#0891B2] border border-cyan-200 flex items-center space-x-1"
+                class="px-2.5 py-0.5 rounded text-xs font-semibold bg-cyan-50 text-[#00A3C4] border border-cyan-200 flex items-center space-x-1"
                 :title="`Erfasste Zeit: ${project.tracked_hours || 0} Std. ${project.budget_hours ? `/ Budget: ${project.budget_hours} Std.` : ''}`"
               >
-                <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+                <Clock class="w-3.5 h-3.5 text-[#00A3C4]" />
                 <span>{{ project.tracked_hours || 0 }}h</span>
                 <span v-if="project.budget_hours" class="text-slate-500 font-normal">/ {{ project.budget_hours }}h</span>
                 <span v-if="project.budget_hours > 0" class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-1"
@@ -124,7 +124,7 @@
             </div>
 
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span v-if="!isFreeUser">Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#0891B2] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="!isFreeUser">Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#00A3C4] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
               <span v-if="project.company_name" class="text-slate-700 font-medium">• {{ project.company_name }}</span>
             </p>
 
@@ -135,7 +135,7 @@
                 :key="item.key"
                 class="inline-flex items-center text-xs px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs"
               >
-                <span class="text-[#0891B2] font-semibold mr-1.5">{{ item.label }}:</span>
+                <span class="text-[#00A3C4] font-semibold mr-1.5">{{ item.label }}:</span>
                 <span class="text-slate-900 font-semibold">{{ item.value }}</span>
               </span>
             </div>
@@ -190,7 +190,7 @@
             <button
               type="button"
               @click="showQuickJournalDrawer = true; loadJournals()"
-              class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
+              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
               title="Projektjournal Seitenleiste öffnen"
             >
               <BookOpen class="w-4 h-4 text-slate-600" />
@@ -204,7 +204,7 @@
             <div v-if="userRole !== 'viewer'" class="relative">
               <button
                 @click="showActionsMenu = !showActionsMenu"
-                class="taskster_button_light px-3 text-xs h-9 rounded-md flex items-center space-x-1.5 cursor-pointer"
+                class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
                 :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
                 title="Weitere Aktionen"
               >
@@ -218,7 +218,7 @@
                 <button
                   @click="taskViewMode = 'board'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
-                  :class="taskViewMode === 'board' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                  :class="taskViewMode === 'board' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <LayoutGrid class="w-4 h-4" />
                   <span>Kacheln</span>
@@ -227,7 +227,7 @@
                 <button
                   @click="taskViewMode = 'table'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
-                  :class="taskViewMode === 'table' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                  :class="taskViewMode === 'table' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <List class="w-4 h-4" />
                   <span>Liste</span>
@@ -309,7 +309,7 @@
               v-if="userRole !== 'viewer'"
               @click="openNewTaskModal(lists[0]?.id)"
               :disabled="lists.length === 0"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>Aufgabe erfassen</span>
@@ -322,7 +322,7 @@
           <button
             @click="currentView = 'tasks'"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'tasks' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'tasks' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <ClipboardList class="w-4 h-4" />
             <span>{{ $t('journal.tab_kanban') }} ({{ totalTasks }})</span>
@@ -331,7 +331,7 @@
           <button
             @click="currentView = 'journal'; loadJournals()"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'journal' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'journal' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <BookOpen class="w-4 h-4" />
             <span>{{ $t('journal.tab_journal') }} ({{ journalEntries.length }})</span>
@@ -340,7 +340,7 @@
           <button
             @click="currentView = 'time'; loadProjectTimeEntries()"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'time' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'time' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Clock class="w-4 h-4" />
             <span>Zeiterfassung ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
@@ -349,7 +349,7 @@
           <button
             @click="currentView = 'team'"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'team' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Users class="w-4 h-4" />
             <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
@@ -358,7 +358,7 @@
           <button
             @click="currentView = 'contacts'; loadProjectContacts()"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'contacts' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'contacts' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Contact class="w-4 h-4" />
             <span>Kontakte ({{ projectContacts.length }})</span>
@@ -368,7 +368,7 @@
             v-if="userRole === 'owner' || userRole === 'admin'"
             @click="currentView = 'settings'; initSettingsTab()"
             class="py-2.5 text-xs border-b-2 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
-            :class="currentView === 'settings' ? 'border-[#0891B2] text-[#0891B2] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
+            :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Settings class="w-4 h-4" />
             <span>Projekt-Einstellungen</span>
@@ -403,7 +403,7 @@
 
         <template v-else>
           <!-- Task Search & Filter Toolbar -->
-          <div class="mb-4 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div class="mb-4 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
             <!-- Search Input -->
             <div class="relative flex-1 min-w-[180px] max-w-sm">
@@ -412,7 +412,7 @@
                 v-model="taskSearchQuery"
                 type="text"
                 placeholder="Aufgaben durchsuchen (Titel, Notizen, Tags)..."
-                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
               <button
                 v-if="taskSearchQuery"
@@ -426,7 +426,7 @@
             <!-- Priority Filter -->
             <select
               v-model="taskPriorityFilter"
-              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
               <option value="">Alle Prioritäten</option>
               <option value="urgent">🔴 Dringend</option>
@@ -438,7 +438,7 @@
             <!-- Assignee Filter -->
             <select
               v-model="taskAssigneeFilter"
-              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
               <option value="">Alle Zuständigen</option>
               <option value="unassigned">Nicht zugewiesen</option>
@@ -464,7 +464,7 @@
               type="button"
               @click="taskViewMode = 'board'"
               class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
-              :class="taskViewMode === 'board' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+              :class="taskViewMode === 'board' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
               title="Kanban Board"
             >
               <LayoutGrid class="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@
               type="button"
               @click="taskViewMode = 'table'"
               class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
-              :class="taskViewMode === 'table' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+              :class="taskViewMode === 'table' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
               title="Tabellen-Ansicht"
             >
               <List class="w-3.5 h-3.5" />
@@ -1329,7 +1329,7 @@
                     <button
                       type="button"
                       @click="openTaskDetailById(entry.task_id)"
-                      class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#0891b2] hover:underline transition cursor-pointer"
+                      class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#00A3C4] hover:underline transition cursor-pointer"
                     >
                       <ExternalLink class="w-3 h-3" />
                       <span>Aufgabe öffnen</span>
@@ -1373,7 +1373,7 @@
                         v-if="userRole !== 'viewer'"
                         :disabled="updatingJournalTaskId === entry.id"
                         @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
-                        class="w-full py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#0891b2] text-white text-xs font-bold transition flex items-center justify-center space-x-1 shadow-xs cursor-pointer"
+                        class="w-full py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#00A3C4] text-white text-xs font-bold transition flex items-center justify-center space-x-1 shadow-xs cursor-pointer"
                       >
                         <span>✓ Ja, zuweisen</span>
                       </button>
@@ -1676,7 +1676,7 @@
                     <input
                       type="checkbox"
                       v-model="settingsForm.custom_data[f.field_key]"
-                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                      class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
                     />
                     <span class="text-xs font-medium text-slate-700">
                       {{ settingsForm.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
@@ -2197,7 +2197,7 @@
               <!-- Card Top: Avatar, Name, Company, Function -->
               <div class="flex items-start justify-between gap-3 mb-3">
                 <div class="flex items-start gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  <div class="w-10 h-10 rounded-md bg-[#00A3C4] text-white flex items-center justify-center font-bold text-sm shrink-0">
                     {{ (c.first_name?.charAt(0) || '') + (c.last_name?.charAt(0) || '') }}
                   </div>
                   <div class="min-w-0">
@@ -2242,7 +2242,7 @@
               <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
                 <div v-if="c.mobile" class="flex items-center gap-2">
                   <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
+                  <a :href="`tel:${c.mobile}`" class="font-medium text-[#00A3C4] hover:underline truncate">
                     {{ c.mobile }}
                   </a>
                   <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold ml-auto" title="WhatsApp Chat öffnen">
@@ -2273,7 +2273,7 @@
               <div v-if="c.website || c.address" class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
                 <div v-if="c.website" class="flex items-center gap-2">
                   <Globe class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-medium text-[#0891B2] hover:underline truncate">
+                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-medium text-[#00A3C4] hover:underline truncate">
                     {{ c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') }}
                   </a>
                 </div>
@@ -2304,7 +2304,7 @@
               <button
                 @click="exportContactVCard(c)"
                 type="button"
-                class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
+                class="text-xs font-semibold text-slate-600 hover:text-[#00A3C4] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
                 title="vCard herunterladen"
               >
                 <Download class="w-3.5 h-3.5" />
@@ -2314,7 +2314,7 @@
                 <button
                   @click="openEditProjectContactModal(c)"
                   type="button"
-                  class="p-1.5 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition cursor-pointer"
+                  class="p-1.5 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
                   title="Bearbeiten"
                 >
                   <Pencil class="w-3.5 h-3.5" />
@@ -2668,7 +2668,7 @@
                     type="checkbox"
                     v-model="taskForm.custom_data[f.field_key]"
                     :disabled="userRole === 'viewer'"
-                    class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                    class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
                   />
                   <span class="text-xs font-semibold" :class="taskForm.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
                     {{ taskForm.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
@@ -2960,7 +2960,7 @@
                         v-model="drawerTask.custom_data[f.field_key]"
                         @change="autoSaveDrawer"
                         :disabled="userRole === 'viewer'"
-                        class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                        class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
                       />
                       <span class="text-xs font-semibold" :class="drawerTask.custom_data[f.field_key] ? 'text-emerald-700' : 'text-slate-500'">
                         {{ drawerTask.custom_data[f.field_key] ? ('✓ ' + ($te('common.yes') ? $t('common.yes') : 'Ja')) : ($te('common.no') ? $t('common.no') : 'Nein') }}
@@ -3005,7 +3005,7 @@
                       :href="drawerTask.custom_data[f.field_key]"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#00A3C4] hover:bg-cyan-100 transition shrink-0"
                       title="Link öffnen"
                     >
                       <ExternalLink class="w-3.5 h-3.5" />
@@ -3025,7 +3025,7 @@
                     <a
                       v-if="drawerTask.custom_data[f.field_key]"
                       :href="'mailto:' + drawerTask.custom_data[f.field_key]"
-                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#00A3C4] hover:bg-cyan-100 transition shrink-0"
                       title="E-Mail senden"
                     >
                       <Mail class="w-3.5 h-3.5" />
@@ -3045,7 +3045,7 @@
                     <a
                       v-if="drawerTask.custom_data[f.field_key]"
                       :href="'tel:' + drawerTask.custom_data[f.field_key]"
-                      class="p-1.5 rounded-lg bg-cyan-50 text-[#0891B2] hover:bg-cyan-100 transition shrink-0"
+                      class="p-1.5 rounded-lg bg-cyan-50 text-[#00A3C4] hover:bg-cyan-100 transition shrink-0"
                       title="Anrufen"
                     >
                       <Phone class="w-3.5 h-3.5" />
@@ -3821,7 +3821,7 @@
                 <button
                   type="button"
                   @click="openNewFieldModal"
-                  class="text-[11px] font-bold text-[#0891B2] hover:underline"
+                  class="text-[11px] font-bold text-[#00A3C4] hover:underline"
                 >
                   + Eigenes Feld anlegen
                 </button>
@@ -5329,7 +5329,7 @@
                 <button
                   type="button"
                   @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
-                  class="px-2.5 py-1 rounded bg-[#00A3C4] hover:bg-[#0891b2] text-white text-[10px] font-bold transition cursor-pointer"
+                  class="px-2.5 py-1 rounded bg-[#00A3C4] hover:bg-[#00A3C4] text-white text-[10px] font-bold transition cursor-pointer"
                 >
                   ✓ Ja, zuweisen
                 </button>
@@ -5366,11 +5366,75 @@
           </NuxtLink>
         </div>
       </div>
+      <!-- UNIVERSAL IN-APP CONFIRMATION MODAL (Zero Native Popups) -->
+    <div v-if="confirmModal.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            :class="confirmModal.danger ? 'bg-rose-100 border border-rose-200 text-rose-600' : 'bg-cyan-100 border border-cyan-200 text-[#00A3C4]'"
+          >
+            <AlertTriangle v-if="confirmModal.danger" class="w-5 h-5" />
+            <Info v-else class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ confirmModal.title }}</h3>
+            <p v-if="confirmModal.subtitle" class="text-xs text-slate-500 mt-0.5">{{ confirmModal.subtitle }}</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600 leading-relaxed">{{ confirmModal.message }}</p>
+
+        <div v-if="confirmModal.error" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
+          {{ confirmModal.error }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-2">
+          <button
+            type="button"
+            @click="confirmModal.show = false"
+            :disabled="confirmModal.loading"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            {{ $t('common.abbrechen') }}
+          </button>
+          <button
+            type="button"
+            @click="executeConfirmModalAction"
+            :disabled="confirmModal.loading"
+            :class="confirmModal.danger ? 'taskster_button_accent' : 'taskster_button'"
+            class="px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-2"
+          >
+            <span>{{ confirmModal.loading ? 'Wird ausgeführt...' : confirmModal.confirmText }}</span>
+          </button>
+        </div>
+      </div>
     </div>
+
+    <!-- UNIVERSAL IN-APP TOAST FEEDBACK (Zero Native Popups) -->
+    <div v-if="pageToast.show" class="fixed bottom-6 right-6 z-50 max-w-sm w-full transition-all duration-300">
+      <div
+        class="flex items-start gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md"
+        :class="pageToast.type === 'error' ? 'bg-rose-50/95 border-rose-200 text-rose-900' : pageToast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900' : 'bg-slate-900/90 border-slate-700 text-white'"
+      >
+        <CheckCircle2 v-if="pageToast.type === 'success'" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <AlertTriangle v-else-if="pageToast.type === 'error'" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <Info v-else class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+        <div class="flex-1 text-xs">
+          <div class="font-bold">{{ pageToast.title || (pageToast.type === 'error' ? 'Hinweis' : pageToast.type === 'success' ? 'Erfolg' : 'Info') }}</div>
+          <div class="mt-0.5 leading-relaxed">{{ pageToast.message }}</div>
+        </div>
+        <button @click="pageToast.show = false" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import {
+  Info,
   LayoutDashboard,
   Folder,
   ClipboardList,
@@ -5418,6 +5482,86 @@ const { t, te } = useI18n()
 const route = useRoute()
 const { user, authHeaders } = useAuth()
 const projectId = route.params.id as string
+
+// ---------------------------------------------------------------------------
+// In-App Confirm & Toast System (Zero Native Browser Popups)
+// ---------------------------------------------------------------------------
+const confirmModal = ref<{
+  show: boolean
+  title: string
+  subtitle?: string
+  message: string
+  confirmText: string
+  danger: boolean
+  loading: boolean
+  error?: string
+  action?: () => Promise<void> | void
+}>({
+  show: false,
+  title: '',
+  subtitle: '',
+  message: '',
+  confirmText: 'Bestätigen',
+  danger: true,
+  loading: false
+})
+
+const pageToast = ref<{
+  show: boolean
+  title?: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}>({
+  show: false,
+  title: '',
+  message: '',
+  type: 'info'
+})
+let pageToastTimer: any = null
+
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', title?: string) => {
+  pageToast.value = { show: true, message, type, title }
+  if (pageToastTimer) clearTimeout(pageToastTimer)
+  pageToastTimer = setTimeout(() => {
+    pageToast.value.show = false
+  }, 4000)
+}
+
+const triggerConfirmModal = (opts: {
+  title: string
+  subtitle?: string
+  message: string
+  confirmText?: string
+  danger?: boolean
+  action: () => Promise<void> | void
+}) => {
+  confirmModal.value = {
+    show: true,
+    title: opts.title,
+    subtitle: opts.subtitle,
+    message: opts.message,
+    confirmText: opts.confirmText || 'Löschen',
+    danger: opts.danger !== false,
+    loading: false,
+    error: '',
+    action: opts.action
+  }
+}
+
+const executeConfirmModalAction = async () => {
+  if (!confirmModal.value.action) return
+  confirmModal.value.loading = true
+  confirmModal.value.error = ''
+  try {
+    await confirmModal.value.action()
+    confirmModal.value.show = false
+  } catch (err: any) {
+    confirmModal.value.error = err?.data?.statusMessage || err?.message || 'Fehler beim Ausführen der Aktion'
+  } finally {
+    confirmModal.value.loading = false
+  }
+}
+
 const showVoiceModal = ref(false)
 
 const onVoiceNoteSaved = (payload: any) => {
@@ -5495,7 +5639,7 @@ const triggerProjectExport = async (format: 'csv' | 'json') => {
     if (err.statusCode === 403) {
       promptUpgrade('export', 'Projekt-Export ist exklusiv für den Enterprise-Tarif verfügbar.')
     } else {
-      alert(err.data?.statusMessage || 'Fehler beim Exportieren des Projekts')
+      showToast(err.data?.statusMessage || 'Fehler beim Exportieren des Projekts', 'error')
     }
   }
 }
@@ -5860,7 +6004,7 @@ const saveCustomField = async () => {
     showNewFieldModal.value = false
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern des Zusatzfeldes')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern des Zusatzfeldes', 'error')
   }
 }
 
@@ -5873,22 +6017,26 @@ const deleteCustomField = async (fieldId: string) => {
   const isUsedInProject = project.value?.custom_data && project.value.custom_data[f.field_key] !== undefined && project.value.custom_data[f.field_key] !== '' && project.value.custom_data[f.field_key] !== null
 
   if (isUsedInTasks || isUsedInProject) {
-    alert(`Das Zusatzfeld "${f.label}" ist in aktiven Aufgaben oder im Projekt ausgefüllt und kann solange nicht gelöscht werden.`)
+    showToast(`Das Zusatzfeld "${f.label}" ist in aktiven Aufgaben oder im Projekt ausgefüllt und kann solange nicht gelöscht werden.`, 'info')
     return
   }
 
-  if (!confirm(`Möchtest du das Zusatzfeld "${f.label}" wirklich löschen?`)) return
-
-  try {
-    await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    showNewFieldModal.value = false
-    await loadProjectData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Zusatzfeldes')
-  }
+  triggerConfirmModal({
+    title: 'Zusatzfeld löschen',
+    subtitle: f.label,
+    message: `Möchtest du das Zusatzfeld "${f.label}" wirklich löschen?`,
+    confirmText: 'Feld löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      showNewFieldModal.value = false
+      await loadProjectData()
+      showToast('Zusatzfeld erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 // Project Settings form
@@ -6012,7 +6160,7 @@ const updateJournalTaskLink = async (entry: any, newTaskId: string | null) => {
       entry.task_title = null
     }
   } catch (err: any) {
-    alert(err.data?.statusMessage || err.message || 'Fehler beim Aktualisieren der Aufgabenverknüpfung')
+    showToast(err.data?.statusMessage || err.message || 'Fehler beim Aktualisieren der Aufgabenverknüpfung', 'error')
   } finally {
     updatingJournalTaskId.value = null
   }
@@ -6528,7 +6676,7 @@ const onDropToList = async (targetListId: string) => {
       }
     })
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben')
+    showToast(err.data?.statusMessage || 'Konnte Aufgabe nicht verschieben', 'error')
     await loadProjectData()
   }
 }
@@ -6609,7 +6757,7 @@ const loadProjectData = async () => {
     loadAvailableContacts()
   } catch (err: any) {
     if (err.statusCode === 404) {
-      alert('Zugriff verweigert oder Projekt nicht gefunden.')
+      showToast('Zugriff verweigert oder Projekt nicht gefunden.', 'error')
       navigateTo('/dashboard')
     }
   } finally {
@@ -6807,16 +6955,21 @@ const saveProjectContact = async () => {
 
 const deleteProjectContact = async (c: any) => {
   const name = (c.first_name ? c.first_name + ' ' : '') + c.last_name
-  if (!confirm(`Möchtest du den Kontakt "${name}" wirklich löschen?`)) return
-  try {
-    await $fetch(`/api/contacts/${c.id}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    projectContacts.value = projectContacts.value.filter((item: any) => item.id !== c.id)
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
-  }
+  triggerConfirmModal({
+    title: 'Kontakt entfernen',
+    subtitle: name,
+    message: `Möchtest du den Kontakt "${name}" wirklich löschen?`,
+    confirmText: 'Kontakt löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/contacts/${c.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      projectContacts.value = projectContacts.value.filter((item: any) => item.id !== c.id)
+      showToast('Kontakt erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 const exportContactVCard = (c: any) => {
@@ -6877,7 +7030,7 @@ const saveProjectTime = async () => {
   try {
     const durationMinutes = Math.round(Number(projectTimeForm.value.duration_hours || 0) * 60)
     if (durationMinutes <= 0) {
-      alert('Bitte eine Dauer grösser als 0 angeben.')
+      showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
       return
     }
     await $fetch('/api/time-entries', {
@@ -6896,7 +7049,7 @@ const saveProjectTime = async () => {
     await loadProjectTimeEntries()
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit')
+    showToast(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit', 'error')
   }
 }
 
@@ -6916,7 +7069,7 @@ const saveEditTime = async () => {
   try {
     const durationMinutes = Math.round(Number(editTimeForm.value.duration_hours || 0) * 60)
     if (durationMinutes <= 0) {
-      alert('Bitte eine Dauer grösser als 0 angeben.')
+      showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
       return
     }
     await $fetch(`/api/time-entries/${editTimeForm.value.id}`, {
@@ -6938,34 +7091,39 @@ const saveEditTime = async () => {
     await loadProjectTimeEntries()
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren der Zeit')
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren der Zeit', 'error')
   }
 }
 
 const deleteTimeEntry = async (id: string) => {
-  if (!confirm('Möchtest du diesen Zeiteintrag wirklich löschen?')) return
-  try {
-    await $fetch(`/api/time-entries/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    if (showTaskDrawer.value && drawerTask.value?.id) {
-      const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
-      drawerTimeEntries.value = res.timeEntries || []
-      drawerTask.value.tracked_hours = res.task.tracked_hours
+  triggerConfirmModal({
+    title: 'Zeiteintrag löschen',
+    subtitle: 'Dieser Vorgang kann nicht rückgängig gemacht werden',
+    message: 'Möchtest du diesen Zeiteintrag wirklich löschen?',
+    confirmText: 'Zeiteintrag löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/time-entries/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      if (showTaskDrawer.value && drawerTask.value?.id) {
+        const res = await $fetch<any>(`/api/tasks/${drawerTask.value.id}`, { headers: authHeaders() })
+        drawerTimeEntries.value = res.timeEntries || []
+        drawerTask.value.tracked_hours = res.task.tracked_hours
+      }
+      await loadProjectTimeEntries()
+      await loadProjectData()
+      showToast('Zeiteintrag gelöscht', 'success')
     }
-    await loadProjectTimeEntries()
-    await loadProjectData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Zeiteintrags')
-  }
+  })
 }
 
 const addTaskTimeEntry = async () => {
   if (!drawerTask.value?.id) return
   const durationMinutes = Math.round(Number(drawerTimeForm.value.duration_hours || 0) * 60)
   if (durationMinutes <= 0) {
-    alert('Bitte eine Dauer grösser als 0 angeben.')
+    showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
     return
   }
   try {
@@ -6989,7 +7147,7 @@ const addTaskTimeEntry = async () => {
     await loadProjectTimeEntries()
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit')
+    showToast(err.data?.statusMessage || 'Fehler beim Erfassen der Zeit', 'error')
   }
 }
 
@@ -7026,9 +7184,9 @@ const saveProjectSettings = async () => {
       }
     })
     await loadProjectData()
-    alert('Projekt-Einstellungen erfolgreich gespeichert!')
+    showToast('Projekt-Einstellungen erfolgreich gespeichert!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Einstellungen')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der Einstellungen', 'error')
   } finally {
     savingProjectSettings.value = false
   }
@@ -7123,21 +7281,25 @@ const saveField = async () => {
     isStandardFieldModal.value = false
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern des Feldes')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern des Feldes', 'error')
   }
 }
 
 const deleteField = async (fieldId: string) => {
-  if (!confirm('Möchtest du dieses benutzerdefinierte Feld wirklich löschen?')) return
-  try {
-    await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    await loadProjectData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Feldes')
-  }
+  triggerConfirmModal({
+    title: 'Feld löschen',
+    message: 'Möchtest du dieses benutzerdefinierte Feld wirklich löschen?',
+    confirmText: 'Feld löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      await loadProjectData()
+      showToast('Feld gelöscht', 'success')
+    }
+  })
 }
 
 const loadJournals = async () => {
@@ -7171,7 +7333,7 @@ const createList = async () => {
     newListTitle.value = ''
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen des Abschnitts')
+    showToast(err.data?.statusMessage || 'Fehler beim Erstellen des Abschnitts', 'error')
   }
 }
 
@@ -7254,20 +7416,24 @@ const deleteSectionInModal = async (idx: number) => {
   const msg = count > 0
     ? `Abschnitt "${sec.title}" enthält ${count} Aufgabe(n). Möchtest du diesen Abschnitt und alle darin enthaltenen Aufgaben wirklich unwiderruflich löschen?`
     : `Möchtest du den Abschnitt "${sec.title}" wirklich löschen?`
-  if (!confirm(msg)) return
-
-  try {
-    if (sec.id) {
-      await $fetch(`/api/lists/${sec.id}`, {
-        method: 'DELETE',
-        headers: authHeaders()
-      })
+  triggerConfirmModal({
+    title: 'Abschnitt löschen',
+    subtitle: sec.title,
+    message: msg,
+    confirmText: 'Abschnitt löschen',
+    danger: true,
+    action: async () => {
+      if (sec.id) {
+        await $fetch(`/api/lists/${sec.id}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        })
+      }
+      managingSections.value.splice(idx, 1)
+      await loadProjectData()
+      showToast('Abschnitt gelöscht', 'success')
     }
-    managingSections.value.splice(idx, 1)
-    await loadProjectData()
-  } catch (err: any) {
-    manageSectionsError.value = err.data?.statusMessage || 'Fehler beim Löschen des Abschnitts'
-  }
+  })
 }
 
 const toggleCompletedTargetSection = (idx: number) => {
@@ -7377,9 +7543,13 @@ const checkAndCascadeProjectCompletion = async () => {
   }
 
   if (openCount === 0) {
-    const confirmProj = confirm('Alle Aufgaben in diesem Projekt sind erledigt! Möchtest du das gesamte Projekt abschließen?')
-    if (confirmProj) {
-      try {
+    triggerConfirmModal({
+      title: 'Projekt abschließen',
+      subtitle: 'Alle Aufgaben erledigt!',
+      message: 'Alle Aufgaben in diesem Projekt sind erledigt! Möchtest du das gesamte Projekt abschließen?',
+      confirmText: 'Projekt abschließen',
+      danger: false,
+      action: async () => {
         await $fetch(`/api/projects/${projectId}`, {
           method: 'PUT',
           headers: authHeaders(),
@@ -7387,10 +7557,9 @@ const checkAndCascadeProjectCompletion = async () => {
         })
         project.value.status = 'completed'
         await loadProjectData()
-      } catch (err: any) {
-        console.error('Failed to complete project', err)
+        showToast('Projekt erfolgreich als abgeschlossen markiert!', 'success')
       }
-    }
+    })
   }
 }
 
@@ -7418,7 +7587,7 @@ const toggleTaskCompleted = async (task: any) => {
     }
   } catch (err: any) {
     task.status = previousStatus
-    alert(err.data?.statusMessage || 'Fehler beim Ändern des Aufgabenstatus')
+    showToast(err.data?.statusMessage || 'Fehler beim Ändern des Aufgabenstatus', 'error')
   }
 }
 
@@ -7451,7 +7620,7 @@ const openNewTaskModal = (listId: string) => {
 
 const saveNewTaskFromDrawer = async () => {
   if (!drawerTask.value?.title?.trim()) {
-    alert('Bitte gib mindestens einen Aufgabentitel ein.')
+    showToast('Bitte gib mindestens einen Aufgabentitel ein.', 'info')
     return
   }
   try {
@@ -7484,7 +7653,7 @@ const saveNewTaskFromDrawer = async () => {
       }
     }, 3000)
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Aufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Erstellen der Aufgabe', 'error')
   }
 }
 
@@ -7674,17 +7843,24 @@ const checkAndCascadeTaskCompletion = async () => {
   const allSubtasksDone = !hasSubtasks || drawerSubtasks.value.every((s: any) => Boolean(s.is_done))
 
   if (allChecklistDone && allSubtasksDone) {
-    const confirmComplete = confirm('Alle Unterpunkte und Checklistenpunkte sind erledigt. Möchtest du diese Aufgabe als erledigt markieren?')
-    if (confirmComplete) {
-      drawerTask.value.status = 'done'
-      const targetList = lists.value.find((l: any) => l.is_completed_target == 1)
-      if (targetList && targetList.id !== drawerTask.value.list_id) {
-        drawerTask.value.list_id = targetList.id
+    triggerConfirmModal({
+      title: 'Aufgabe abschließen',
+      subtitle: 'Alle Unterpunkte erledigt',
+      message: 'Alle Unterpunkte und Checklistenpunkte sind erledigt. Möchtest du diese Aufgabe als erledigt markieren?',
+      confirmText: 'Aufgabe abschließen',
+      danger: false,
+      action: async () => {
+        drawerTask.value.status = 'done'
+        const targetList = lists.value.find((l: any) => l.is_completed_target == 1)
+        if (targetList && targetList.id !== drawerTask.value.list_id) {
+          drawerTask.value.list_id = targetList.id
+        }
+        await autoSaveDrawer()
+        await loadProjectData()
+        await checkAndCascadeProjectCompletion()
+        showToast('Aufgabe als erledigt markiert', 'success')
       }
-      await autoSaveDrawer()
-      await loadProjectData()
-      await checkAndCascadeProjectCompletion()
-    }
+    })
   }
 }
 
@@ -7708,7 +7884,7 @@ const addSubtask = async () => {
     drawerSubtasks.value.push(res.subtask)
     newSubtaskInput.value = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe', 'error')
   }
 }
 
@@ -7725,7 +7901,7 @@ const addSubtaskToItem = async (item: any) => {
     drawerSubtasks.value.push(res.subtask)
     itemSubtaskInputs.value[key] = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Erstellen der Unteraufgabe', 'error')
   }
 }
 
@@ -7772,23 +7948,28 @@ const addComment = async () => {
     }
     newCommentInput.value = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || err.message || 'Fehler beim Senden des Kommentars')
+    showToast(err.data?.statusMessage || err.message || 'Fehler beim Senden des Kommentars', 'error')
   }
 }
 
 const deleteTaskFromDrawer = async () => {
   if (userRole.value === 'editor' || userRole.value === 'viewer') {
-    alert('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.')
+    showToast('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.', 'error')
     return
   }
-  if (!confirm('Möchtest du diese Aufgabe wirklich löschen?')) return
-  try {
-    await $fetch(`/api/tasks/${drawerTask.value.id}`, { method: 'DELETE', headers: authHeaders() })
-    closeTaskDrawer()
-    await loadProjectData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen')
-  }
+  triggerConfirmModal({
+    title: 'Aufgabe löschen',
+    subtitle: drawerTask.value?.title,
+    message: 'Möchtest du diese Aufgabe wirklich unwiderruflich löschen?',
+    confirmText: 'Aufgabe löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/tasks/${drawerTask.value.id}`, { method: 'DELETE', headers: authHeaders() })
+      closeTaskDrawer()
+      await loadProjectData()
+      showToast('Aufgabe erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 // File Attachment Upload & Management
@@ -7826,7 +8007,7 @@ const handleFiles = async (files: File[]) => {
 
   for (const file of files) {
     if (file.size > 10 * 1024 * 1024) {
-      alert(`Die Datei "${file.name}" ist größer als 10 MB.`)
+      showToast(`Die Datei "${file.name}" ist größer als 10 MB.`, 'info')
       continue
     }
 
@@ -7856,7 +8037,7 @@ const handleFiles = async (files: File[]) => {
       uploadItem.progress = 100
       drawerDocuments.value.unshift(res.document)
     } catch (err: any) {
-      alert(err.data?.statusMessage || `Fehler beim Hochladen von "${file.name}"`)
+      showToast(err.data?.statusMessage || `Fehler beim Hochladen von "${file.name}"`, 'error')
     } finally {
       uploadingFiles.value = uploadingFiles.value.filter((u: any) => u.id !== uploadItem.id)
     }
@@ -7873,16 +8054,20 @@ const readFileAsDataUrl = (file: File): Promise<string> => {
 }
 
 const deleteDocument = async (docId: string) => {
-  if (!confirm('Möchtest du diese Datei wirklich entfernen?')) return
-  try {
-    await $fetch(`/api/tasks/${drawerTask.value.id}/documents/${docId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    drawerDocuments.value = drawerDocuments.value.filter((d: any) => d.id !== docId)
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen der Datei')
-  }
+  triggerConfirmModal({
+    title: 'Datei entfernen',
+    message: 'Möchtest du diese Datei wirklich entfernen?',
+    confirmText: 'Datei entfernen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/tasks/${drawerTask.value.id}/documents/${docId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      drawerDocuments.value = drawerDocuments.value.filter((d: any) => d.id !== docId)
+      showToast('Datei erfolgreich entfernt', 'success')
+    }
+  })
 }
 
 const formatFileSize = (bytes: number) => {
@@ -8251,26 +8436,30 @@ const saveTask = async () => {
     showTaskModal.value = false
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Speichern der Aufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Speichern der Aufgabe', 'error')
   }
 }
 
 const deleteTask = async () => {
   if (userRole.value === 'editor' || userRole.value === 'viewer') {
-    alert('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.')
+    showToast('Als ' + (userRole.value === 'editor' ? 'Editor' : 'Viewer') + ' hast du keine Berechtigung, Aufgaben zu löschen.', 'error')
     return
   }
-  if (!confirm('Möchtest du diese Aufgabe wirklich löschen?')) return
-  try {
-    await $fetch(`/api/tasks/${currentEditingTaskId.value}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    showTaskModal.value = false
-    await loadProjectData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen der Aufgabe')
-  }
+  triggerConfirmModal({
+    title: 'Aufgabe löschen',
+    message: 'Möchtest du diese Aufgabe wirklich löschen?',
+    confirmText: 'Aufgabe löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/tasks/${currentEditingTaskId.value}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      showTaskModal.value = false
+      await loadProjectData()
+      showToast('Aufgabe erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 const loadUserGroups = async () => {
@@ -8757,21 +8946,26 @@ const saveNewNote = async () => {
 const createJournalEntry = saveNewEntry
 
 const deleteJournalEntry = async (entry: any) => {
-  if (!confirm(t('journal.delete_entry_confirm') || 'Möchtest du diesen Journaleintrag wirklich löschen?')) return
-  try {
-    await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Eintrags')
-  }
+  triggerConfirmModal({
+    title: 'Journaleintrag löschen',
+    subtitle: entry.title,
+    message: t('journal.delete_entry_confirm') || 'Möchtest du diesen Journaleintrag wirklich löschen?',
+    confirmText: 'Eintrag löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
+      showToast('Journaleintrag erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 const triggerAiAnalysis = async (entry: any, autoApply = false) => {
   if (!entry.content?.trim() && !entry.title?.trim()) {
-    alert('Eintrag hat keinen Text zum Analysieren.')
+    showToast('Eintrag hat keinen Text zum Analysieren.', 'info')
     return
   }
   analyzingEntryId.value = entry.id
@@ -8798,7 +8992,7 @@ const triggerAiAnalysis = async (entry: any, autoApply = false) => {
       await applyAllTaskActions(entry)
     }
   } catch (err: any) {
-    alert(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse')
+    showToast(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse', 'error')
   } finally {
     analyzingEntryId.value = null
   }
@@ -8831,7 +9025,7 @@ const applyCreateTaskAction = async (entry: any, item: any, idx: number) => {
   try {
     const listId = item.section_id || (lists.value.length > 0 ? lists.value[0].id : null)
     if (!listId) {
-      alert('Kein Abschnitt im Projekt vorhanden, um eine Aufgabe anzulegen.')
+      showToast('Kein Abschnitt im Projekt vorhanden, um eine Aufgabe anzulegen.', 'info')
       return
     }
 
@@ -8860,7 +9054,7 @@ const applyCreateTaskAction = async (entry: any, item: any, idx: number) => {
 
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Anlegen der Aufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Anlegen der Aufgabe', 'error')
   } finally {
     item.applying = false
   }
@@ -8899,7 +9093,7 @@ const applyUpdateTaskAction = async (entry: any, item: any, idx: number) => {
 
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Aktualisieren der Aufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren der Aufgabe', 'error')
   } finally {
     item.applying = false
   }
@@ -8926,7 +9120,7 @@ const applyCompleteTaskAction = async (entry: any, item: any, idx: number) => {
 
     await loadProjectData()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Abschliessen der Aufgabe')
+    showToast(err.data?.statusMessage || 'Fehler beim Abschliessen der Aufgabe', 'error')
   } finally {
     item.applying = false
   }
@@ -9000,9 +9194,9 @@ const inviteMember = async () => {
     showInviteMemberModal.value = false
     inviteEmail.value = ''
     await loadProjectData()
-    alert('Mitglied erfolgreich hinzugefügt!')
+    showToast('Mitglied erfolgreich hinzugefügt!', 'success')
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Einladen des Mitglieds')
+    showToast(err.data?.statusMessage || 'Fehler beim Einladen des Mitglieds', 'error')
   }
 }
 
