@@ -1397,9 +1397,32 @@
           </div>
 
           <!-- SECTION IMPORT: EXCEL / CSV IMPORT -->
-          <div v-else-if="projectCreationMode === 'import'" class="space-y-5">
-            <!-- Step 1: Upload or sample download -->
+          <div v-else-if="projectCreationMode === 'import'" class="space-y-5" @paste="onImportPaste">
+            <!-- Mode Toggle in Import: File Upload vs Direct Text/CSV Paste -->
+            <div class="flex items-center justify-between p-1 bg-slate-100 rounded-xl max-w-md mx-auto">
+              <button
+                type="button"
+                @click="importInputMode = 'file'"
+                class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                :class="importInputMode === 'file' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>📁</span>
+                <span>Datei hochladen / ablegen</span>
+              </button>
+              <button
+                type="button"
+                @click="importInputMode = 'text'"
+                class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                :class="importInputMode === 'text' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              >
+                <span>📋</span>
+                <span>Text / CSV einfügen (Strg+V)</span>
+              </button>
+            </div>
+
+            <!-- Option A: File Upload Dropzone -->
             <div
+              v-if="importInputMode === 'file'"
               class="p-7 border-2 border-dashed rounded-3xl transition text-center cursor-pointer flex flex-col items-center justify-center"
               :class="isImportDragging ? 'border-[#00A3C4] bg-cyan-50/50' : 'border-slate-300 hover:border-[#00A3C4] bg-slate-50 hover:bg-cyan-50/20'"
               @click="importFileInput?.click()"
@@ -1434,6 +1457,44 @@
               </div>
             </div>
 
+            <!-- Option B: Direct Text / CSV Paste -->
+            <div v-else class="space-y-3 bg-slate-50 border border-slate-200 rounded-3xl p-5">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>📋</span>
+                  <span>CSV- oder aus Excel kopierte Tabellendaten hier einfügen:</span>
+                </label>
+                <button
+                  type="button"
+                  @click="insertSampleCSVText"
+                  class="text-xs font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                >
+                  + Muster-Daten einfügen
+                </button>
+              </div>
+              <textarea
+                v-model="importRawText"
+                rows="6"
+                placeholder="Spalte1;Spalte2;Spalte3&#10;Wert1;Wert2;Wert3&#10;(Oder einfach Zeilen aus Excel kopieren und Strg+V drücken)"
+                class="w-full p-3 font-mono text-xs bg-white border border-slate-300 rounded-2xl focus:outline-none focus:border-[#00A3C4] focus:ring-1 focus:ring-[#00A3C4]"
+                @input="onImportRawTextInput"
+              ></textarea>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                <span class="text-[11px] text-slate-500">
+                  Unterstützt Semikolon (;), Komma (,), Tabulatoren (Excel-Kopien) und Pipe (|).
+                </span>
+                <button
+                  type="button"
+                  @click="parsePastedCSV"
+                  class="taskster_button px-4 text-xs h-[36px] rounded-lg flex items-center gap-1.5 font-bold cursor-pointer"
+                  :disabled="!importRawText.trim()"
+                >
+                  <span>⚡</span>
+                  <span>Daten jetzt analysieren</span>
+                </button>
+              </div>
+            </div>
+
             <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
               {{ importError }}
             </div>
@@ -1441,12 +1502,26 @@
             <!-- Step 2: Mapping & Preview -->
             <div v-if="importHeaders.length > 0" class="space-y-4 pt-2 border-t border-slate-100">
               <div class="p-3 bg-cyan-50/80 border border-cyan-200 rounded-2xl flex items-center justify-between text-xs">
-                <span class="text-cyan-950 font-bold">
-                  📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Projekt(e) gefunden, {{ importHeaders.length }} Spalten)
+                <span class="text-cyan-950 font-bold flex items-center gap-1.5">
+                  <span>📄</span>
+                  <span>Datenquelle: <strong>{{ importFileName || 'Direkt eingefügter Text' }}</strong> ({{ importParsedRows.length }} Projekt(e) gefunden, {{ importHeaders.length }} Spalten)</span>
                 </span>
-                <span class="text-cyan-800 font-semibold">
-                  Ordner: {{ folder?.name }}
-                </span>
+                <button
+                  type="button"
+                  @click="resetImportData"
+                  class="text-cyan-800 hover:text-cyan-950 font-semibold underline cursor-pointer text-xs"
+                >
+                  ↺ Neu einfügen / wechseln
+                </button>
+              </div>
+
+              <!-- Warning if no title column is mapped -->
+              <div
+                v-if="!Object.values(importColumnMapping).includes('title')"
+                class="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-amber-900 text-xs font-semibold flex items-center gap-2"
+              >
+                <span>⚠️</span>
+                <span>Bitte weise mindestens einer Spalte das Feld <strong>«📌 Projekttitel (Pflicht)»</strong> zu, um den Import durchzuführen.</span>
               </div>
 
               <!-- Optionale Vorlage für Phasen & Felder im Import -->
@@ -4285,6 +4360,8 @@ const newTemplateFieldInput = ref('')
 const newTemplateFieldType = ref('text')
 
 // Excel / CSV Project Import State
+const importInputMode = ref<'file' | 'text'>('file')
+const importRawText = ref('')
 const importFileInput = ref<HTMLInputElement | null>(null)
 const importFileName = ref('')
 const importHeaders = ref<string[]>([])
@@ -4645,9 +4722,33 @@ const onImportFileSelected = (e: Event) => {
   }
 }
 
-const parseCSVString = (text: string, delimiter: string): string[][] => {
-  const lines = text.split(/\r\n|\n|\r/)
-  const result: string[][] = []
+const detectDelimiter = (text: string): string => {
+  const clean = text.replace(/^\uFEFF/, '')
+  const lines = clean.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0).slice(0, 5)
+  if (lines.length === 0) return ';'
+
+  const counts: Record<string, number> = { ';': 0, '\t': 0, ',': 0, '|': 0 }
+  for (const line of lines) {
+    counts[';'] += (line.match(/;/g) || []).length
+    counts['\t'] += (line.match(/\t/g) || []).length
+    counts[','] += (line.match(/,/g) || []).length
+    counts['|'] += (line.match(/\|/g) || []).length
+  }
+  let best = ';'
+  let max = 0
+  for (const [d, count] of Object.entries(counts)) {
+    if (count > max) {
+      max = count
+      best = d
+    }
+  }
+  return max > 0 ? best : ';'
+}
+
+const parseCSVLines = (text: string, delimiter: string): string[][] => {
+  const clean = text.replace(/^\uFEFF/, '')
+  const lines = clean.split(/\r\n|\n|\r/)
+  const rows: string[][] = []
 
   for (const line of lines) {
     if (!line.trim()) continue
@@ -4656,20 +4757,131 @@ const parseCSVString = (text: string, delimiter: string): string[][] => {
     let currentCell = ''
 
     for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      if (char === '"' || char === "'") {
-        inQuotes = !inQuotes
-      } else if (char === delimiter && !inQuotes) {
+      const c = line[i]
+      if (c === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          currentCell += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (c === delimiter && !inQuotes) {
         row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
         currentCell = ''
       } else {
-        currentCell += char
+        currentCell += c
       }
     }
     row.push(currentCell.trim().replace(/^["']|["']$/g, ''))
-    result.push(row)
+    rows.push(row)
   }
-  return result
+  return rows
+}
+
+const applyAutoColumnMapping = (headers: string[]) => {
+  const mapping: Record<number, string> = {}
+  headers.forEach((h, idx) => {
+    const lower = h.toLowerCase().trim()
+    if (!Object.values(mapping).includes('title') && (
+      lower.includes('titel') || lower.includes('title') || lower.includes('projekt') ||
+      lower.includes('project') || lower.includes('name') || lower.includes('bezeichnung') ||
+      lower.includes('vorgang') || lower.includes('auftrag') || lower.includes('objekt')
+    )) {
+      mapping[idx] = 'title'
+    } else if (!Object.values(mapping).includes('status') && (lower.includes('status') || lower.includes('zustand') || lower.includes('state'))) {
+      mapping[idx] = 'status'
+    } else if (!Object.values(mapping).includes('visibility') && (lower.includes('sichtbar') || lower.includes('visibility') || lower.includes('zugriff'))) {
+      mapping[idx] = 'visibility'
+    } else if (!Object.values(mapping).includes('currency') && (lower.includes('währung') || lower.includes('waehrung') || lower.includes('currency') || lower.includes('valuta'))) {
+      mapping[idx] = 'currency'
+    } else if (!Object.values(mapping).includes('budget_hours') && (lower.includes('stunden') || lower.includes('hours') || lower.includes('zeitbudget') || lower.includes('aufwand'))) {
+      mapping[idx] = 'budget_hours'
+    } else if (!Object.values(mapping).includes('budget_amount') && (lower.includes('betrag') || lower.includes('amount') || lower.includes('budget') || lower.includes('kosten'))) {
+      mapping[idx] = 'budget_amount'
+    } else if (!Object.values(mapping).includes('action:create_task') && (lower.includes('aufgabe') || lower.includes('aufgaben') || lower.includes('task') || lower.includes('tasks') || lower.includes('todo'))) {
+      mapping[idx] = 'action:create_task'
+    } else {
+      // 1. Benutzerdefinierte Felder dieses Ordners erkennen
+      const matchField = fields.value.find((f: any) => {
+        const fLbl = f.label_key && typeof t === 'function' ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
+        return fLbl === lower || (f.label || '').toLowerCase() === lower || f.field_key?.toLowerCase() === lower
+      })
+      if (matchField) {
+        mapping[idx] = 'custom:' + matchField.field_key
+      } else {
+        // 2. Häufige Vorlagen-Felder erkennen
+        const matchTpl = commonCustomFieldTemplates.find((tpl: any) => {
+          const tLbl = tpl.label_key && typeof t === 'function' ? t(tpl.label_key).toLowerCase() : (tpl.label || '').toLowerCase()
+          return tpl.key.toLowerCase() === lower || tLbl === lower || (tpl.label || '').toLowerCase() === lower || lower.includes(tpl.key)
+        })
+        if (matchTpl) {
+          mapping[idx] = 'custom:' + matchTpl.key
+        } else {
+          // 3. Als neues Zusatzfeld mit Spaltennamen anbieten
+          const sanitizeFn = typeof getHeaderKey === 'function' ? getHeaderKey : (s: string) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+          mapping[idx] = 'custom:' + sanitizeFn(h)
+        }
+      }
+    }
+  })
+
+  // Falls noch kein Titel gemappt ist, mache die erste Spalte standardmäßig zum Titel
+  if (!Object.values(mapping).includes('title') && headers.length > 0) {
+    mapping[0] = 'title'
+  }
+
+  importColumnMapping.value = mapping
+}
+
+const processImportText = (text: string, sourceName: string = 'CSV / Text') => {
+  importError.value = ''
+  importFileName.value = sourceName
+  const cleanText = text.replace(/^\uFEFF/, '').trim()
+
+  if (!cleanText) {
+    importError.value = 'Der eingegebene Text ist leer.'
+    return
+  }
+
+  let headers: string[] = []
+  let rows: any[][] = []
+
+  // 1. Versuche XLSX String Parser
+  try {
+    if (XLSX && typeof XLSX.read === 'function') {
+      const wb = XLSX.read(cleanText, { type: 'string', raw: true })
+      const sheetName = wb.SheetNames?.[0]
+      if (sheetName) {
+        const sheet = wb.Sheets[sheetName]
+        const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+        if (rawRows && rawRows.length >= 2 && rawRows[0].length > 1) {
+          headers = rawRows[0].map((h: any) => String(h || '').trim())
+          rows = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+        }
+      }
+    }
+  } catch (e) {
+    // Fallback unten
+  }
+
+  // 2. Fallback Delimiter Parser, falls XLSX nur 1 Spalte geliefert hat oder fehlschlug
+  if (headers.length <= 1) {
+    const delimiter = detectDelimiter(cleanText)
+    const parsed = parseCSVLines(cleanText, delimiter)
+    if (parsed.length >= 2) {
+      headers = parsed[0].map(h => String(h || '').trim())
+      rows = parsed.slice(1).filter(r => r.some(cell => String(cell || '').trim().length > 0))
+    }
+  }
+
+  if (headers.length === 0 || rows.length === 0) {
+    importError.value = 'Konnte keine gültigen Tabellendaten erkennen. Bitte stelle sicher, dass eine Kopfzeile und mindestens eine Datenzeile vorhanden sind.'
+    return
+  }
+
+  importHeaders.value = headers
+  importParsedRows.value = rows
+  applyAutoColumnMapping(headers)
 }
 
 const processImportFile = async (file: File) => {
@@ -4678,9 +4890,6 @@ const processImportFile = async (file: File) => {
 
   try {
     const isExcel = /\.(xlsx|xls)$/i.test(file.name)
-    let headers: string[] = []
-    let rows: any[][] = []
-
     if (isExcel) {
       const data = await file.arrayBuffer()
       if (!XLSX || typeof XLSX.read !== 'function') {
@@ -4697,81 +4906,69 @@ const processImportFile = async (file: File) => {
       if (rawRows.length < 2) {
         throw new Error('Die Datei enthält keine Datenzeilen (mindestens 1 Kopfzeile und 1 Datenzeile erforderlich).')
       }
-      headers = rawRows[0].map((h: any) => String(h || '').trim())
-      rows = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+      const headers = rawRows[0].map((h: any) => String(h || '').trim())
+      const rows = rawRows.slice(1).filter((r: any[]) => r.some((c: any) => String(c || '').trim() !== ''))
+
+      importHeaders.value = headers
+      importParsedRows.value = rows
+      applyAutoColumnMapping(headers)
     } else {
       const text = await file.text()
-      if (!text || !text.trim()) {
-        importError.value = 'Die ausgewählte Datei ist leer.'
-        return
-      }
-
-      // Delimiter-Erkennung: Semikolon, Tab oder Komma
-      const firstLine = text.split(/\r\n|\n|\r/)[0] || ''
-      let delimiter = ','
-      if ((firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length) {
-        delimiter = ';'
-      } else if ((firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length) {
-        delimiter = '\t'
-      }
-
-      const parsed = parseCSVString(text, delimiter)
-      if (parsed.length < 2) {
-        importError.value = 'Die CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile enthalten.'
-        return
-      }
-      headers = parsed[0].map(h => String(h || '').trim())
-      rows = parsed.slice(1).filter(r => r.some(cell => String(cell || '').trim().length > 0))
+      importRawText.value = text
+      processImportText(text, file.name)
     }
-
-    importHeaders.value = headers
-    importParsedRows.value = rows
-
-    // Auto-detect project columns
-    const mapping: Record<number, string> = {}
-    importHeaders.value.forEach((h, idx) => {
-      const lower = h.toLowerCase().trim()
-      if (!Object.values(mapping).includes('title') && (lower.includes('titel') || lower.includes('title') || lower.includes('projekt') || lower.includes('project') || lower.includes('name'))) {
-        mapping[idx] = 'title'
-      } else if (!Object.values(mapping).includes('status') && (lower.includes('status') || lower.includes('zustand') || lower.includes('state'))) {
-        mapping[idx] = 'status'
-      } else if (!Object.values(mapping).includes('visibility') && (lower.includes('sichtbar') || lower.includes('visibility') || lower.includes('zugriff'))) {
-        mapping[idx] = 'visibility'
-      } else if (!Object.values(mapping).includes('currency') && (lower.includes('währung') || lower.includes('waehrung') || lower.includes('currency') || lower.includes('valuta'))) {
-        mapping[idx] = 'currency'
-      } else if (!Object.values(mapping).includes('budget_hours') && (lower.includes('stunden') || lower.includes('hours') || lower.includes('zeitbudget') || lower.includes('aufwand'))) {
-        mapping[idx] = 'budget_hours'
-      } else if (!Object.values(mapping).includes('budget_amount') && (lower.includes('betrag') || lower.includes('amount') || lower.includes('budget') || lower.includes('kosten'))) {
-        mapping[idx] = 'budget_amount'
-      } else if (!Object.values(mapping).includes('action:create_task') && (lower.includes('aufgabe') || lower.includes('aufgaben') || lower.includes('task') || lower.includes('tasks') || lower.includes('todo'))) {
-        mapping[idx] = 'action:create_task'
-      } else {
-        // 1. Benutzerdefinierte Felder dieses Ordners erkennen
-        const matchField = fields.value.find((f: any) => {
-          const fLbl = f.label_key && typeof t === 'function' ? t(f.label_key).toLowerCase() : (f.label || '').toLowerCase()
-          return fLbl === lower || (f.label || '').toLowerCase() === lower || f.field_key?.toLowerCase() === lower
-        })
-        if (matchField) {
-          mapping[idx] = 'custom:' + matchField.field_key
-        } else {
-          // 2. Häufige Vorlagen-Felder erkennen (Parameter tpl verhindert Shadowing der i18n t-Funktion)
-          const matchTpl = commonCustomFieldTemplates.find((tpl: any) => {
-            const tLbl = tpl.label_key && typeof t === 'function' ? t(tpl.label_key).toLowerCase() : (tpl.label || '').toLowerCase()
-            return tpl.key.toLowerCase() === lower || tLbl === lower || (tpl.label || '').toLowerCase() === lower || lower.includes(tpl.key)
-          })
-          if (matchTpl) {
-            mapping[idx] = 'custom:' + matchTpl.key
-          } else {
-            // 3. Als neues Zusatzfeld mit Spaltennamen anbieten
-            const sanitizeFn = typeof getHeaderKey === 'function' ? getHeaderKey : (s: string) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
-            mapping[idx] = 'custom:' + sanitizeFn(h)
-          }
-        }
-      }
-    })
-    importColumnMapping.value = mapping
   } catch (err: any) {
-    importError.value = 'Fehler beim Lesen der Excel/CSV-Datei: ' + (err.message || err)
+    importError.value = 'Fehler beim Lesen der Datei: ' + (err.message || err)
+  }
+}
+
+const resetImportData = () => {
+  importHeaders.value = []
+  importParsedRows.value = []
+  importColumnMapping.value = {}
+  importRawText.value = ''
+  importFileName.value = ''
+  importError.value = ''
+}
+
+const insertSampleCSVText = () => {
+  importRawText.value = 'Projekttitel;Sparte;Status;Soll-Inbetriebnahme;Budget Stunden\nGlasfaser-Ausbau Zürich Nord;FTTH;active;2026-11-30;120\n5G Antennenstandort Basel;Mobilfunk (5G);active;2026-12-15;80\nNetzverstärkung Bern;Strom;active;2026-10-31;45'
+  parsePastedCSV()
+}
+
+const parsePastedCSV = () => {
+  if (!importRawText.value.trim()) {
+    importError.value = 'Bitte gib zuerst CSV- oder Tabellendaten ein.'
+    return
+  }
+  processImportText(importRawText.value, 'Zwischenablage / Text')
+}
+
+const onImportRawTextInput = () => {
+  // Kein automatisches Parsen bei jedem Tastendruck, um Tippen nicht zu stören
+}
+
+const onImportPaste = (e: ClipboardEvent) => {
+  if (projectCreationMode.value !== 'import') return
+  const clipData = e.clipboardData
+  if (!clipData) return
+
+  if (clipData.files && clipData.files.length > 0) {
+    e.preventDefault()
+    processImportFile(clipData.files[0])
+    return
+  }
+
+  const activeEl = document.activeElement
+  const isOtherInput = activeEl && (activeEl.tagName === 'INPUT' || (activeEl.tagName === 'TEXTAREA' && activeEl.getAttribute('placeholder')?.includes('Neuer Abschnitt')) || activeEl.tagName === 'SELECT')
+  if (isOtherInput) return
+
+  const pastedText = clipData.getData('text')
+  if (pastedText && pastedText.trim().length > 0) {
+    e.preventDefault()
+    importInputMode.value = 'text'
+    importRawText.value = pastedText
+    processImportText(pastedText, 'Zwischenablage / Text')
   }
 }
 
@@ -4791,6 +4988,8 @@ const resetNewProjectForm = () => {
   newTemplateFieldInput.value = ''
   selectedImportTemplateId.value = ''
   importColumnLogic.value = {}
+  importInputMode.value = 'file'
+  importRawText.value = ''
   importFileName.value = ''
   importHeaders.value = []
   importParsedRows.value = []
