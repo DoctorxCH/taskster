@@ -23,6 +23,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const label = body.label !== undefined ? String(body.label).trim() : existingField.label
+  const fieldType = body.field_type !== undefined ? String(body.field_type).trim() : (existingField.field_type || 'text')
+  const entityType = body.entity_type !== undefined ? (body.entity_type === 'project' ? 'project' : 'task') : (existingField.entity_type || 'task')
+  const isRequired = body.is_required !== undefined ? (body.is_required ? 1 : 0) : (existingField.is_required || 0)
   const options = Array.isArray(body.options) ? JSON.stringify(body.options) : (typeof body.options === 'string' ? body.options : existingField.options)
   const logicRules = body.logic_rules !== undefined ? (typeof body.logic_rules === 'string' ? body.logic_rules : JSON.stringify(body.logic_rules || {})) : existingField.logic_rules
 
@@ -32,9 +35,9 @@ export default defineEventHandler(async (event) => {
 
   db.prepare(`
     UPDATE folder_field_definitions
-    SET label = ?, options = ?, logic_rules = ?
+    SET label = ?, field_type = ?, entity_type = ?, is_required = ?, options = ?, logic_rules = ?
     WHERE id = ? AND folder_id = ?
-  `).run(label, options, logicRules, fieldId, folderId)
+  `).run(label, fieldType, entityType, isRequired, options, logicRules, fieldId, folderId)
 
   return { success: true }
 })

@@ -222,36 +222,44 @@ export default defineEventHandler(async (event) => {
     listMap.set(listTitle.toLowerCase(), listId)
   }
 
-  if (tmpl) {
-    const fields = tmpl.fields ? JSON.parse(tmpl.fields) : []
-    if (fields && fields.length > 0) {
-      const existingKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
-      const count = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
-      let sortOrder = count + 1
+  const customFieldsFromPayload = Array.isArray(body.custom_fields) && body.custom_fields.length > 0 ? body.custom_fields : null
+  const fields = customFieldsFromPayload || (tmpl && tmpl.fields ? JSON.parse(tmpl.fields) : [])
+  if (fields && fields.length > 0) {
+    const existingKeys = (db.prepare('SELECT field_key FROM folder_field_definitions WHERE folder_id = ?').all(folder_id) as any[]).map((f) => f.field_key)
+    const count = (db.prepare('SELECT COUNT(*) as c FROM folder_field_definitions WHERE folder_id = ?').get(folder_id) as any).c
+    let sortOrder = count + 1
 
-      for (const f of fields) {
-        const fKey = f.field_key || f.label.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-        if (existingKeys.includes(fKey)) continue
-
-        const fId = 'fld_def_' + randomUUID().substring(0, 8)
-        db.prepare(`
-          INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          fId,
-          folder_id,
-          fKey,
-          f.label || fKey,
-          f.label_key || null,
-          f.field_type || 'text',
-          f.entity_type || 'task',
-          JSON.stringify(f.options || []),
-          f.logic_rules ? JSON.stringify(f.logic_rules) : null,
-          f.is_required ? 1 : 0,
-          sortOrder++
-        )
-        existingKeys.push(fKey)
+    for (const f of fields) {
+      const fKey = f.field_key || (f.label || 'field').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      if (existingKeys.includes(fKey)) {
+        if (f.logic_rules !== undefined) {
+          db.prepare('UPDATE folder_field_definitions SET logic_rules = ? WHERE folder_id = ? AND field_key = ?').run(
+            f.logic_rules ? JSON.stringify(f.logic_rules) : null,
+            folder_id,
+            fKey
+          )
+        }
+        continue
       }
+
+      const fId = 'fld_def_' + randomUUID().substring(0, 8)
+      db.prepare(`
+        INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        fId,
+        folder_id,
+        fKey,
+        f.label || fKey,
+        f.label_key || null,
+        f.field_type || 'text',
+        f.entity_type || 'task',
+        JSON.stringify(f.options || []),
+        f.logic_rules ? JSON.stringify(f.logic_rules) : null,
+        f.is_required ? 1 : 0,
+        sortOrder++
+      )
+      existingKeys.push(fKey)
     }
   }
 

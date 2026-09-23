@@ -196,8 +196,9 @@
                   <NuxtLink :to="`/projects/${p.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition hover:underline">
                     {{ p.title }}
                   </NuxtLink>
-                  <span class="text-[10px] px-2 py-0.2 rounded font-semibold uppercase" :class="p.status === 'completed' ? 'bg-slate-200 text-slate-700' : 'bg-cyan-100 text-[#0891B2] border border-cyan-200'">
-                    {{ p.status }}
+                  <span class="text-[10px] px-2 py-0.5 rounded font-semibold uppercase flex items-center gap-1" :class="p.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-100 text-[#0891B2] border border-cyan-200'">
+                    <span v-if="p.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {{ p.status === 'completed' ? '✓ Erledigt' : p.status }}
                   </span>
                 </div>
 
@@ -396,14 +397,14 @@
               :key="project.id"
               class="border rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
               :class="project.status === 'completed'
-                ? 'bg-emerald-500/10 border-emerald-300 ring-1 ring-emerald-400/20'
+                ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:border-emerald-500'
                 : 'bg-white border-slate-200 hover:border-[#0891B2]'"
             >
               <div>
                 <div class="flex items-start justify-between mb-3">
                   <div
                     class="w-9 h-9 rounded flex items-center justify-center border"
-                    :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                    :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
                   >
                     <ClipboardList class="w-5 h-5" />
                   </div>
@@ -425,9 +426,10 @@
                       <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
                     </span>
                     <span
-                      class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase"
-                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase flex items-center gap-1"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
                     >
+                      <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                     </span>
                   </div>
@@ -527,7 +529,7 @@
                     v-for="project in filteredProjects"
                     :key="project.id"
                     class="transition"
-                    :class="project.status === 'completed' ? 'bg-emerald-50/50 hover:bg-emerald-100/50' : 'hover:bg-slate-50/50'"
+                    :class="project.status === 'completed' ? 'bg-emerald-50 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50/50'"
                   >
                     <td class="py-3 px-4">
                       <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition text-sm">
@@ -545,9 +547,10 @@
                           <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
                         </span>
                         <span
-                          class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase"
-                          :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                          class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase flex items-center gap-1"
+                          :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
                         >
+                          <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                           {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                         </span>
                       </div>
@@ -729,12 +732,71 @@
             </button>
           </div>
 
-          <!-- Empty State Fields -->
-          <div v-if="fields.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+          <!-- Standard Task Fields Visibility & Logic Card -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚙️</span>
+                  <span>Standard-Aufgabenfelder &amp; Sichtbarkeits-Logik</span>
+                </h4>
+                <p class="text-[11px] text-slate-500 mt-0.5">
+                  Steuere die Sichtbarkeit und Abhängigkeiten der vorkonfektionierten Standardfelder für alle Aufgaben in diesem Ordner.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+              <div
+                v-for="sf in STANDARD_TASK_FIELDS"
+                :key="sf.field_key"
+                class="p-3 rounded-xl border transition-all flex flex-col justify-between"
+                :class="getStandardFieldRule(sf.field_key) ? 'bg-amber-50/60 border-amber-300 shadow-2xs' : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'"
+              >
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>{{ sf.icon }}</span>
+                      <span>{{ sf.label }}</span>
+                    </span>
+                    <span
+                      class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                      :class="getStandardFieldRule(sf.field_key) ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-200 text-slate-600'"
+                    >
+                      {{ getStandardFieldRule(sf.field_key) ? '⚡ Logik aktiv' : 'Standard' }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 line-clamp-1 mb-2">{{ sf.description }}</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                  <span
+                    v-if="getStandardFieldRule(sf.field_key)"
+                    class="text-[10px] font-semibold text-amber-800 truncate max-w-[130px]"
+                    :title="getLogicDescription(getStandardFieldRule(sf.field_key))"
+                  >
+                    ⚡ {{ getLogicDescription(getStandardFieldRule(sf.field_key)) }}
+                  </span>
+                  <span v-else class="text-[10px] text-slate-400">Immer sichtbar</span>
+
+                  <button
+                    type="button"
+                    @click="openStandardFieldLogicModal(sf.field_key, sf.label)"
+                    class="text-[11px] font-bold text-[#0891B2] hover:underline cursor-pointer ml-auto"
+                  >
+                    Logik anpassen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State Custom Fields -->
+          <div v-if="folderCustomFields.length === 0" class="text-center py-12 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
             <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
               <SlidersHorizontal class="w-6 h-6" />
             </div>
-            <h3 class="text-base font-bold text-slate-900">Noch keine Zusatzfelder definiert</h3>
+            <h3 class="text-base font-bold text-slate-900">Noch keine benutzerdefinierten Felder</h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
               Erstelle strukturierte Attribute wie Bauleiter, Vorgangsnummer, Fertigstellungstermin oder mehrzeilige Notizfelder.
             </p>
@@ -747,7 +809,7 @@
             </button>
           </div>
 
-          <!-- Fields Table -->
+          <!-- Custom Fields Table -->
           <div v-else class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
@@ -756,12 +818,13 @@
                   <th class="py-3 px-4">Bereich</th>
                   <th class="py-3 px-4">Feldtyp</th>
                   <th class="py-3 px-4">Pflichtfeld</th>
+                  <th class="py-3 px-4">Bedingte Logik</th>
                   <th class="py-3 px-4">Details / Optionen</th>
                   <th class="py-3 px-4 text-right">Aktionen</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
-                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50/50 transition">
+                <tr v-for="f in folderCustomFields" :key="f.id" class="hover:bg-slate-50/50 transition">
                   <td class="py-3 px-4">
                     <div class="font-bold text-slate-900">{{ getFieldLabel(f) }}</div>
                     <div class="text-[10px] text-slate-400 font-mono">{{ f.field_key }}</div>
@@ -783,6 +846,16 @@
                     <span class="text-xs" :class="f.is_required ? 'text-rose-600 font-bold' : 'text-slate-400'">
                       {{ f.is_required ? '✓ Ja' : 'Nein' }}
                     </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span
+                      v-if="f.logic_rules && f.logic_rules.depends_on_field"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200"
+                    >
+                      <span>⚡</span>
+                      <span>{{ getLogicDescription(f.logic_rules) }}</span>
+                    </span>
+                    <span v-else class="text-slate-400 text-xs">-</span>
                   </td>
                   <td class="py-3 px-4 text-slate-500 text-xs">
                     <span v-if="f.options && (Array.isArray(f.options) ? f.options.length : true)" class="text-cyan-700">
@@ -1213,27 +1286,111 @@
                 </div>
               </div>
 
-              <!-- Included Custom Fields -->
-              <div v-if="(selectedTemplate.fields || []).length > 0" class="space-y-2">
-                <span class="text-xs font-bold text-slate-800 block">Zusatzfelder dieser Vorlage:</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Included Custom Fields with Interactive Logic Editing -->
+              <div class="space-y-2 pt-2 border-t border-cyan-200/60">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-800 block">
+                    Zusatzfelder dieser Vorlage ({{ selectedTemplateFields.length }}):
+                  </span>
+                  <span class="text-[10px] text-slate-500">Felder und Logikregeln können vor Projektstart angepasst werden</span>
+                </div>
+
+                <div v-if="selectedTemplateFields.length === 0" class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-slate-200 text-center">
+                  Keine Zusatzfelder für diese Vorlage definiert.
+                </div>
+
+                <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div
-                    v-for="cf in selectedTemplate.fields"
-                    :key="cf.field_key"
-                    class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs"
+                    v-for="(cf, fIdx) in selectedTemplateFields"
+                    :key="cf.field_key || fIdx"
+                    class="p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs flex flex-col justify-between"
                   >
-                    <div class="flex items-center justify-between">
-                      <span class="font-bold text-slate-800">{{ cf.label_key ? $t(cf.label_key) : cf.label }}</span>
-                      <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
-                        {{ getFieldTypeLabel(cf.field_type) }}
-                      </span>
-                    </div>
-                    <!-- Conditional Logic Badge -->
-                    <div v-if="cf.logic_rules && cf.logic_rules.depends_on_value" class="mt-1 text-[10px] text-amber-800 flex items-center space-x-1 font-medium bg-amber-50/80 px-2 py-0.5 rounded border border-amber-200/60">
-                      <span>⚡</span>
-                      <span>Sichtbar bei: <strong>{{ cf.logic_rules.depends_on_value }}</strong></span>
+                    <div>
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-slate-800">{{ cf.label_key && te(cf.label_key) ? t(cf.label_key) : (cf.label || cf.field_key) }}</span>
+                        <div class="flex items-center gap-1">
+                          <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                            {{ getFieldTypeLabel(cf.field_type) }}
+                          </span>
+                          <button
+                            type="button"
+                            @click="removeTemplateField(fIdx)"
+                            class="text-slate-400 hover:text-rose-600 p-0.5 rounded font-bold cursor-pointer"
+                            title="Feld entfernen"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Conditional Logic Badge / Edit Trigger -->
+                      <div v-if="cf.logic_rules && cf.logic_rules.depends_on_field" class="mt-1.5 text-[10px] text-amber-900 flex items-center justify-between bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                        <div class="flex items-center gap-1 font-semibold truncate mr-1">
+                          <span>⚡</span>
+                          <span>Sichtbar wenn: {{ getLogicDescription(cf.logic_rules) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            @click="openEditTemplateFieldLogic(fIdx)"
+                            class="text-[10px] text-[#0891B2] font-bold hover:underline cursor-pointer"
+                          >
+                            Ändern
+                          </button>
+                          <button
+                            type="button"
+                            @click="removeTemplateFieldLogic(fIdx)"
+                            class="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
+                            title="Logik entfernen"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <div v-else class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                        <span>Immer sichtbar</span>
+                        <button
+                          type="button"
+                          @click="openEditTemplateFieldLogic(fIdx)"
+                          class="text-[10px] text-amber-700 hover:text-amber-800 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                        >
+                          <span>⚡</span>
+                          <span>+ Logik hinzufügen</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                <!-- Inline Quick Add Field to Template -->
+                <div class="flex items-center gap-2 pt-1">
+                  <input
+                    v-model="newTemplateFieldInput"
+                    type="text"
+                    placeholder="+ Weiteres Zusatzfeld zur Vorlage..."
+                    class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2]"
+                    @keydown.enter.prevent="addTemplateField"
+                  />
+                  <select
+                    v-model="newTemplateFieldType"
+                    class="px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2]"
+                  >
+                    <option value="text">Text</option>
+                    <option value="textarea">Notiz</option>
+                    <option value="select">Auswahl</option>
+                    <option value="number">Zahl</option>
+                    <option value="date">Datum</option>
+                    <option value="checkbox">Ja/Nein</option>
+                  </select>
+                  <button
+                    v-if="newTemplateFieldInput.trim()"
+                    type="button"
+                    @click="addTemplateField"
+                    class="taskster_button px-3 text-xs h-7 rounded-lg"
+                  >
+                    + Feld anlegen
+                  </button>
                 </div>
               </div>
             </div>
@@ -1290,6 +1447,27 @@
                 <span class="text-cyan-800 font-semibold">
                   Ordner: {{ folder?.name }}
                 </span>
+              </div>
+
+              <!-- Optionale Vorlage für Phasen & Felder im Import -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-1.5 shadow-2xs">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>📋</span>
+                    <span>Workflow-Vorlage anwenden (optional):</span>
+                  </label>
+                  <span class="text-[10px] text-slate-500">Übernimmt Phasen &amp; Vorlagen-Zusatzfelder inkl. Logik</span>
+                </div>
+                <select
+                  v-model="selectedImportTemplateId"
+                  @change="onImportTemplateChange"
+                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                >
+                  <option value="">-- Keine Vorlage (Eigene Phasen &amp; Standard nutzen) --</option>
+                  <option v-for="t in templates" :key="t.id" :value="t.id">
+                    {{ t.name_key && te(t.name_key) ? t(t.name_key) : t.name }} ({{ (t.lists || []).length }} Phasen, {{ (t.fields || []).length }} Zusatzfelder)
+                  </option>
+                </select>
               </div>
 
               <!-- Column Mapping -->
@@ -1364,6 +1542,18 @@
                               </option>
                             </optgroup>
                           </select>
+
+                          <!-- Optional Logic trigger for custom field -->
+                          <div v-if="importColumnMapping[hIdx]?.startsWith('custom:')" class="mt-1">
+                            <button
+                              type="button"
+                              @click="openImportColumnLogic(importColumnMapping[hIdx])"
+                              class="text-[10px] font-bold text-amber-700 hover:text-amber-800 inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>⚡</span>
+                              <span>{{ importColumnLogic[importColumnMapping[hIdx].replace('custom:', '')] ? 'Logik: ' + getLogicDescription(importColumnLogic[importColumnMapping[hIdx].replace('custom:', '')]) : '+ Bedingungs-Logik festlegen' }}</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -2367,16 +2557,22 @@
       </div>
     </div>
 
-    <!-- Modal: Add / Edit Custom Field (Unlocked) -->
-    <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4">
+    <!-- Modal: Add / Edit Custom Field & Standard Field Logic (Unlocked) -->
+    <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 my-8">
         <div class="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-bold text-slate-900">
-              {{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+              <span v-if="isStandardFieldModal">⚙️ Logik-Regel: {{ newFieldLabel }}</span>
+              <span v-else>{{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
-              Definiere ein Attribut für Aufgaben oder Projekte in «{{ folder?.name }}».
+              <span v-if="isStandardFieldModal">
+                Definiere, unter welcher Bedingung das Standardfeld «{{ newFieldLabel }}» für Aufgaben in «{{ folder?.name }}» sichtbar sein soll.
+              </span>
+              <span v-else>
+                Definiere ein Attribut für Aufgaben oder Projekte in «{{ folder?.name }}».
+              </span>
             </p>
           </div>
           <button @click="showFieldModal = false" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
@@ -2387,8 +2583,8 @@
         </div>
 
         <form @submit.prevent="saveFolderField" class="space-y-4">
-          <!-- Gültigkeitsbereich: Projekt vs Aufgabe (Always Enabled) -->
-          <div>
+          <!-- Gültigkeitsbereich: Projekt vs Aufgabe (Nur bei Custom Fields) -->
+          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Gültigkeitsbereich</label>
             <div class="grid grid-cols-2 gap-2">
               <button
@@ -2410,8 +2606,8 @@
             </div>
           </div>
 
-          <!-- Label -->
-          <div>
+          <!-- Label (Nur bei Custom Fields) -->
+          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1">
               Feld-Bezeichnung (Label) <span class="text-rose-500">*</span>
             </label>
@@ -2424,8 +2620,8 @@
             />
           </div>
 
-          <!-- Field Type (Always Enabled, Unlocked!) -->
-          <div>
+          <!-- Field Type (Nur bei Custom Fields) -->
+          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
@@ -2444,7 +2640,7 @@
           </div>
 
           <!-- Select Options if select -->
-          <div v-if="newFieldType === 'select'" class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <div v-if="!isStandardFieldModal && newFieldType === 'select'" class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
             <label class="block text-xs font-bold text-slate-700">Optionen für Auswahlliste</label>
             <div class="flex flex-wrap gap-1.5 mb-2">
               <span
@@ -2475,7 +2671,7 @@
           </div>
 
           <!-- Required Checkbox -->
-          <div class="pt-1">
+          <div v-if="!isStandardFieldModal" class="pt-1">
             <label class="flex items-center gap-2 cursor-pointer">
               <input
                 v-model="newFieldIsRequired"
@@ -2484,6 +2680,158 @@
               />
               <span class="text-xs font-semibold text-slate-700">Pflichtfeld (Eingabe erforderlich)</span>
             </label>
+          </div>
+
+          <!-- Conditional Logic Section -->
+          <div class="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-2xl space-y-3">
+            <label class="flex items-center justify-between cursor-pointer">
+              <div class="flex items-center space-x-2">
+                <span class="text-amber-600">⚡</span>
+                <div>
+                  <span class="text-xs font-bold text-slate-800">Bedingte Sichtbarkeit (Logik)</span>
+                  <p class="text-[11px] text-slate-500">Dieses Feld nur anzeigen, wenn eine Bedingung erfüllt ist.</p>
+                </div>
+              </div>
+              <input
+                v-model="enableFieldLogic"
+                type="checkbox"
+                class="w-4 h-4 rounded text-amber-500 border-amber-300 focus:ring-0 cursor-pointer"
+              />
+            </label>
+
+            <div v-if="enableFieldLogic" class="space-y-2 pt-2 border-t border-amber-200/60">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nur anzeigen wenn dieses Feld:
+                </label>
+                <select
+                  v-model="logicDependsOnField"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="">-- Feld auswählen --</option>
+                  <optgroup label="Standard Aufgabenfelder">
+                    <option value="status">🔄 Status</option>
+                    <option value="priority">⚡ Priorität</option>
+                    <option value="assigned_to">👥 Zuweisung</option>
+                    <option value="due_date">📅 Fälligkeitsdatum</option>
+                    <option value="color">🎨 Farbmarkierung</option>
+                    <option value="tags">🏷️ Tags</option>
+                  </optgroup>
+                  <optgroup v-if="availableDependencyFields.length > 0" label="Benutzerdefinierte Felder">
+                    <option
+                      v-for="df in availableDependencyFields"
+                      :key="df.field_key"
+                      :value="df.field_key"
+                    >
+                      {{ df.label }} ({{ df.field_key }})
+                    </option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div v-if="logicDependsOnField">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                  Diesen Wert hat:
+                </label>
+                <!-- Status Options -->
+                <select
+                  v-if="logicDependsOnField === 'status'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="todo">Zu erledigen (todo)</option>
+                  <option value="in_progress">In Bearbeitung (in_progress)</option>
+                  <option value="review">In Prüfung (review)</option>
+                  <option value="done">Abgeschlossen (done)</option>
+                </select>
+
+                <!-- Priority Options -->
+                <select
+                  v-else-if="logicDependsOnField === 'priority'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="dringend">Dringend</option>
+                  <option value="hoch">Hoch</option>
+                  <option value="normal">Normal</option>
+                  <option value="niedrig">Niedrig</option>
+                </select>
+
+                <!-- Assignee Options -->
+                <select
+                  v-else-if="logicDependsOnField === 'assigned_to'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="assigned">Jemand zugewiesen</option>
+                  <option value="unassigned">Niemand zugewiesen (Offen)</option>
+                </select>
+
+                <!-- Due Date Options -->
+                <select
+                  v-else-if="logicDependsOnField === 'due_date'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="set">Datum ist gesetzt</option>
+                  <option value="not_set">Kein Datum gesetzt</option>
+                  <option value="today">Heute fällig</option>
+                  <option value="overdue">Überfällig</option>
+                </select>
+
+                <!-- Color Options -->
+                <select
+                  v-else-if="logicDependsOnField === 'color'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="set">Farbe ist gesetzt</option>
+                  <option value="not_set">Keine Farbe gesetzt</option>
+                </select>
+
+                <!-- Tags Options -->
+                <select
+                  v-else-if="logicDependsOnField === 'tags'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="set">Mindestens ein Tag vorhanden</option>
+                  <option value="not_set">Keine Tags vorhanden</option>
+                </select>
+
+                <!-- Custom Select Field Options -->
+                <select
+                  v-else-if="selectedDepCustomField?.options?.length"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
+                >
+                  <option value="">-- Option wählen --</option>
+                  <option v-for="opt in selectedDepCustomField.options" :key="opt" :value="opt">
+                    {{ opt }}
+                  </option>
+                </select>
+
+                <!-- Fallback Text Input -->
+                <input
+                  v-else
+                  v-model="logicDependsOnValue"
+                  type="text"
+                  placeholder="Erwarteter Wert..."
+                  class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
+                />
+              </div>
+
+              <!-- Clear Condition Button for Standard Field Modal -->
+              <div v-if="isStandardFieldModal" class="pt-2">
+                <button
+                  type="button"
+                  @click="enableFieldLogic = false; logicDependsOnField = ''; logicDependsOnValue = ''"
+                  class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                >
+                  ✕ Bedingung entfernen (Feld immer anzeigen)
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -2496,13 +2844,162 @@
             </button>
             <button
               type="submit"
-              :disabled="savingField || !newFieldLabel.trim()"
+              :disabled="savingField || (!isStandardFieldModal && !newFieldLabel.trim())"
               class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
             >
-              <span>{{ savingField ? 'Wird gespeichert...' : 'Feld speichern' }}</span>
+              <span>{{ savingField ? 'Wird gespeichert...' : 'Speichern' }}</span>
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Quick Edit Logic Rule (for Template Fields or CSV Import) -->
+    <div v-if="editingTemplateFieldLogicIdx !== null || editingImportLogicFieldKey" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full shadow-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+              <span>⚡</span>
+              <span>Bedingte Logik festlegen</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Feld nur anzeigen, wenn eine Bedingung erfüllt ist.
+            </p>
+          </div>
+          <button @click="closeQuickLogicModal" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Abhängig von Feld:</label>
+            <select
+              v-model="templateLogicField"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <optgroup label="Standard Aufgabenfelder">
+                <option value="status">🔄 Status</option>
+                <option value="priority">⚡ Priorität</option>
+                <option value="assigned_to">👥 Zuweisung</option>
+                <option value="due_date">📅 Fälligkeitsdatum</option>
+                <option value="color">🎨 Farbmarkierung</option>
+                <option value="tags">🏷️ Tags</option>
+              </optgroup>
+              <optgroup label="Weitere Felder">
+                <option
+                  v-for="df in (folderCustomFields.length ? folderCustomFields : selectedTemplateFields)"
+                  :key="df.field_key"
+                  :value="df.field_key"
+                >
+                  {{ df.label || df.field_key }}
+                </option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Bedingungswert (Muss übereinstimmen):</label>
+            <!-- Status Options -->
+            <select
+              v-if="templateLogicField === 'status'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="todo">Zu erledigen (todo)</option>
+              <option value="in_progress">In Bearbeitung (in_progress)</option>
+              <option value="review">In Prüfung (review)</option>
+              <option value="done">Abgeschlossen (done)</option>
+            </select>
+
+            <!-- Priority Options -->
+            <select
+              v-else-if="templateLogicField === 'priority'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="dringend">Dringend</option>
+              <option value="hoch">Hoch</option>
+              <option value="normal">Normal</option>
+              <option value="niedrig">Niedrig</option>
+            </select>
+
+            <!-- Assignee Options -->
+            <select
+              v-else-if="templateLogicField === 'assigned_to'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="assigned">Jemand zugewiesen</option>
+              <option value="unassigned">Niemand zugewiesen</option>
+            </select>
+
+            <!-- Due Date Options -->
+            <select
+              v-else-if="templateLogicField === 'due_date'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="set">Datum gesetzt</option>
+              <option value="not_set">Kein Datum gesetzt</option>
+              <option value="today">Heute fällig</option>
+              <option value="overdue">Überfällig</option>
+            </select>
+
+            <!-- Color Options -->
+            <select
+              v-else-if="templateLogicField === 'color'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="set">Farbe gesetzt</option>
+              <option value="not_set">Keine Farbe gesetzt</option>
+            </select>
+
+            <!-- Tags Options -->
+            <select
+              v-else-if="templateLogicField === 'tags'"
+              v-model="templateLogicValue"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            >
+              <option value="set">Tags vorhanden</option>
+              <option value="not_set">Keine Tags</option>
+            </select>
+
+            <input
+              v-else
+              v-model="templateLogicValue"
+              type="text"
+              placeholder="Erwarteter Wert..."
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            @click="clearQuickLogic"
+            class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+          >
+            Logik entfernen
+          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="closeQuickLogicModal"
+              class="taskster_button_light px-4 text-xs h-[36px] rounded-lg cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              @click="saveQuickLogicModal"
+              class="taskster_button px-4 text-xs h-[36px] rounded-lg cursor-pointer"
+            >
+              Übernehmen
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2862,7 +3359,7 @@ const deleteFolderJournal = async (journalId: string) => {
   }
 }
 
-// Custom Fields Management in Folder
+// Custom Fields & Standard Fields Logic Management in Folder
 const showFieldModal = ref(false)
 const editingFieldId = ref<string | null>(null)
 const newFieldLabel = ref('')
@@ -2874,9 +3371,90 @@ const newFieldOptions = ref<string[]>([])
 const newFieldOptionInput = ref('')
 const savingField = ref(false)
 const fieldModalError = ref('')
+const newFieldForcedKey = ref('')
+const isStandardFieldModal = ref(false)
+const enableFieldLogic = ref(false)
+const logicDependsOnField = ref('')
+const logicDependsOnValue = ref('')
+
+const STANDARD_TASK_FIELD_KEYS = ['status', 'priority', 'assigned_to', 'due_date', 'color', 'tags']
+const STANDARD_TASK_FIELDS = [
+  { field_key: 'status', label: 'Status', icon: '🔄', description: 'Zu erledigen, In Bearbeitung, In Prüfung, Abgeschlossen' },
+  { field_key: 'priority', label: 'Priorität', icon: '⚡', description: 'Dringend, Hoch, Normal, Niedrig' },
+  { field_key: 'assigned_to', label: 'Zuweisung', icon: '👥', description: 'Zugewiesen oder Nicht zugewiesen' },
+  { field_key: 'due_date', label: 'Fälligkeitsdatum', icon: '📅', description: 'Gesetzt, Nicht gesetzt, Heute fällig, Überfällig' },
+  { field_key: 'color', label: 'Farbmarkierung', icon: '🎨', description: 'Farbe gesetzt oder Keine' },
+  { field_key: 'tags', label: 'Tags', icon: '🏷️', description: 'Tags vorhanden oder Keine' },
+]
+
+const folderCustomFields = computed(() => {
+  return (fields.value || []).filter((f: any) => !STANDARD_TASK_FIELD_KEYS.includes(f.field_key))
+})
+
+const availableDependencyFields = computed(() => {
+  return (fields.value || []).filter((f: any) => {
+    if (editingFieldId.value && f.id === editingFieldId.value) return false
+    if (newFieldForcedKey.value && f.field_key === newFieldForcedKey.value) return false
+    if (STANDARD_TASK_FIELD_KEYS.includes(f.field_key)) return false
+    return true
+  })
+})
+
+const selectedDepCustomField = computed(() => {
+  if (!logicDependsOnField.value) return null
+  return (fields.value || []).find((f: any) => f.field_key === logicDependsOnField.value) || null
+})
+
+const getLogicDescription = (rule: any) => {
+  if (!rule || !rule.depends_on_field) return ''
+  const fieldNames: Record<string, string> = {
+    status: 'Status',
+    priority: 'Priorität',
+    assigned_to: 'Zuweisung',
+    due_date: 'Fälligkeitsdatum',
+    color: 'Farbmarkierung',
+    tags: 'Tags'
+  }
+  const fName = fieldNames[rule.depends_on_field] || (fields.value || []).find((f: any) => f.field_key === rule.depends_on_field)?.label || rule.depends_on_field
+  return `${fName} = ${rule.depends_on_value}`
+}
+
+const getStandardFieldRule = (fieldKey: string) => {
+  const f = (fields.value || []).find((x: any) => x.field_key === fieldKey)
+  if (!f || !f.logic_rules) return null
+  return typeof f.logic_rules === 'string' ? JSON.parse(f.logic_rules) : f.logic_rules
+}
+
+const openStandardFieldLogicModal = (fieldKey: string, label: string) => {
+  const existing = (fields.value || []).find((f: any) => f.field_key === fieldKey)
+  editingFieldId.value = existing ? existing.id : null
+  newFieldForcedKey.value = fieldKey
+  newFieldLabel.value = label
+  isStandardFieldModal.value = true
+  newFieldType.value = 'text'
+  newFieldEntityType.value = 'task'
+  newFieldIsRequired.value = false
+  newFieldOptions.value = []
+  newFieldOptionInput.value = ''
+  fieldModalError.value = ''
+
+  const rules = existing?.logic_rules ? (typeof existing.logic_rules === 'string' ? JSON.parse(existing.logic_rules) : existing.logic_rules) : null
+  if (rules && rules.depends_on_field) {
+    enableFieldLogic.value = true
+    logicDependsOnField.value = rules.depends_on_field
+    logicDependsOnValue.value = rules.depends_on_value || ''
+  } else {
+    enableFieldLogic.value = true
+    logicDependsOnField.value = ''
+    logicDependsOnValue.value = ''
+  }
+  showFieldModal.value = true
+}
 
 const openCreateFieldModal = () => {
   editingFieldId.value = null
+  newFieldForcedKey.value = ''
+  isStandardFieldModal.value = false
   newFieldLabel.value = ''
   newFieldKey.value = ''
   newFieldType.value = 'text'
@@ -2884,20 +3462,36 @@ const openCreateFieldModal = () => {
   newFieldIsRequired.value = false
   newFieldOptions.value = []
   newFieldOptionInput.value = ''
+  enableFieldLogic.value = false
+  logicDependsOnField.value = ''
+  logicDependsOnValue.value = ''
   fieldModalError.value = ''
   showFieldModal.value = true
 }
 
 const openEditFieldModal = (f: any) => {
   editingFieldId.value = f.id
+  newFieldForcedKey.value = ''
+  isStandardFieldModal.value = false
   newFieldLabel.value = f.label_key && te(f.label_key) ? t(f.label_key) : (f.label || '')
   newFieldKey.value = f.field_key
   newFieldType.value = f.field_type || 'text'
   newFieldEntityType.value = f.entity_type === 'task' ? 'task' : 'project'
   newFieldIsRequired.value = !!f.is_required
-  newFieldOptions.value = Array.isArray(f.options) ? [...f.options] : []
+  newFieldOptions.value = Array.isArray(f.options) ? [...f.options] : (typeof f.options === 'string' ? JSON.parse(f.options || '[]') : [])
   newFieldOptionInput.value = ''
   fieldModalError.value = ''
+
+  const rules = f.logic_rules ? (typeof f.logic_rules === 'string' ? JSON.parse(f.logic_rules) : f.logic_rules) : null
+  if (rules && rules.depends_on_field) {
+    enableFieldLogic.value = true
+    logicDependsOnField.value = rules.depends_on_field
+    logicDependsOnValue.value = rules.depends_on_value || ''
+  } else {
+    enableFieldLogic.value = false
+    logicDependsOnField.value = ''
+    logicDependsOnValue.value = ''
+  }
   showFieldModal.value = true
 }
 
@@ -2914,34 +3508,47 @@ const saveFolderField = async () => {
   savingField.value = true
   fieldModalError.value = ''
   try {
+    const logicRules = enableFieldLogic.value && logicDependsOnField.value
+      ? { depends_on_field: logicDependsOnField.value, depends_on_value: logicDependsOnValue.value }
+      : null
+
+    const payload: any = {
+      label: newFieldLabel.value.trim(),
+      field_type: newFieldType.value,
+      entity_type: newFieldEntityType.value,
+      is_required: newFieldIsRequired.value ? 1 : 0,
+      options: newFieldOptions.value,
+      logic_rules: logicRules
+    }
+
     if (editingFieldId.value) {
       await $fetch(`/api/folders/${folderId}/fields/${editingFieldId.value}`, {
         method: 'PUT',
         headers: authHeaders(),
-        body: {
-          label: newFieldLabel.value.trim(),
-          field_type: newFieldType.value,
-          entity_type: newFieldEntityType.value,
-          is_required: newFieldIsRequired.value ? 1 : 0,
-          options: newFieldOptions.value
-        }
+        body: payload
       })
     } else {
-      const generatedKey = newFieldKey.value.trim() || newFieldLabel.value.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
-      await $fetch(`/api/folders/${folderId}/fields`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: {
-          label: newFieldLabel.value.trim(),
-          field_key: generatedKey,
-          field_type: newFieldType.value,
-          entity_type: newFieldEntityType.value,
-          is_required: newFieldIsRequired.value ? 1 : 0,
-          options: newFieldOptions.value
-        }
-      })
+      const forcedKey = newFieldForcedKey.value
+      const existingByKey = forcedKey ? (fields.value || []).find((f: any) => f.field_key === forcedKey) : null
+      if (existingByKey) {
+        await $fetch(`/api/folders/${folderId}/fields/${existingByKey.id}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: payload
+        })
+      } else {
+        const generatedKey = forcedKey || newFieldKey.value.trim() || newFieldLabel.value.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'feld'
+        payload.field_key = generatedKey
+        await $fetch(`/api/folders/${folderId}/fields`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: payload
+        })
+      }
     }
     showFieldModal.value = false
+    isStandardFieldModal.value = false
+    newFieldForcedKey.value = ''
     await loadFolderData()
   } catch (err: any) {
     fieldModalError.value = err.data?.statusMessage || err.message || 'Feld konnte nicht gespeichert werden'
@@ -3664,9 +4271,18 @@ const loadingTemplates = ref(false)
 const projectCreationMode = ref<'template' | 'import' | 'blank'>('template')
 const selectedTemplateId = ref<string | null>(null)
 const selectedTemplateLists = ref<string[]>([])
+const selectedTemplateFields = ref<any[]>([])
 const newTemplatePhaseInput = ref('')
 const templateFilterCategory = ref<'all' | 'job' | 'private'>('all')
 const templateSearchQuery = ref('')
+
+const editingTemplateFieldLogicIdx = ref<number | null>(null)
+const editingImportLogicFieldKey = ref<string | null>(null)
+const templateLogicField = ref('status')
+const templateLogicValue = ref('done')
+
+const newTemplateFieldInput = ref('')
+const newTemplateFieldType = ref('text')
 
 // Excel / CSV Project Import State
 const importFileInput = ref<HTMLInputElement | null>(null)
@@ -3676,6 +4292,113 @@ const importParsedRows = ref<any[][]>([])
 const importColumnMapping = ref<Record<number, string>>({})
 const importError = ref('')
 const isImportDragging = ref(false)
+
+const selectedImportTemplateId = ref<string>('')
+const importColumnLogic = ref<Record<string, { depends_on_field: string; depends_on_value: string }>>({})
+
+const onImportTemplateChange = () => {
+  if (!selectedImportTemplateId.value) return
+  const tmpl = templates.value.find((t: any) => t.id === selectedImportTemplateId.value)
+  if (!tmpl) return
+  if (tmpl.lists && tmpl.lists.length > 0) {
+    importWorkflowSections.value = [...tmpl.lists]
+  }
+}
+
+const openImportColumnLogic = (mappedTarget: string) => {
+  if (!mappedTarget || !mappedTarget.startsWith('custom:')) return
+  const key = mappedTarget.replace('custom:', '')
+  editingImportLogicFieldKey.value = key
+  editingTemplateFieldLogicIdx.value = null
+  const existing = importColumnLogic.value[key]
+  if (existing) {
+    templateLogicField.value = existing.depends_on_field
+    templateLogicValue.value = existing.depends_on_value
+  } else {
+    templateLogicField.value = 'status'
+    templateLogicValue.value = 'done'
+  }
+}
+
+const openEditTemplateFieldLogic = (idx: number) => {
+  editingTemplateFieldLogicIdx.value = idx
+  editingImportLogicFieldKey.value = null
+  const rule = selectedTemplateFields.value[idx]?.logic_rules
+  if (rule && rule.depends_on_field) {
+    templateLogicField.value = rule.depends_on_field
+    templateLogicValue.value = rule.depends_on_value || ''
+  } else {
+    templateLogicField.value = 'status'
+    templateLogicValue.value = 'done'
+  }
+}
+
+const closeQuickLogicModal = () => {
+  editingTemplateFieldLogicIdx.value = null
+  editingImportLogicFieldKey.value = null
+}
+
+const clearQuickLogic = () => {
+  if (editingTemplateFieldLogicIdx.value !== null && selectedTemplateFields.value[editingTemplateFieldLogicIdx.value]) {
+    selectedTemplateFields.value[editingTemplateFieldLogicIdx.value].logic_rules = null
+  }
+  if (editingImportLogicFieldKey.value) {
+    delete importColumnLogic.value[editingImportLogicFieldKey.value]
+  }
+  closeQuickLogicModal()
+}
+
+const saveQuickLogicModal = () => {
+  if (editingTemplateFieldLogicIdx.value !== null && selectedTemplateFields.value[editingTemplateFieldLogicIdx.value]) {
+    if (templateLogicField.value) {
+      selectedTemplateFields.value[editingTemplateFieldLogicIdx.value].logic_rules = {
+        depends_on_field: templateLogicField.value,
+        depends_on_value: templateLogicValue.value
+      }
+    } else {
+      selectedTemplateFields.value[editingTemplateFieldLogicIdx.value].logic_rules = null
+    }
+  }
+  if (editingImportLogicFieldKey.value) {
+    if (templateLogicField.value) {
+      importColumnLogic.value[editingImportLogicFieldKey.value] = {
+        depends_on_field: templateLogicField.value,
+        depends_on_value: templateLogicValue.value
+      }
+    } else {
+      delete importColumnLogic.value[editingImportLogicFieldKey.value]
+    }
+  }
+  closeQuickLogicModal()
+}
+
+const removeTemplateFieldLogic = (idx: number) => {
+  if (selectedTemplateFields.value[idx]) {
+    selectedTemplateFields.value[idx].logic_rules = null
+  }
+}
+
+const removeTemplateField = (idx: number) => {
+  selectedTemplateFields.value.splice(idx, 1)
+  if (editingTemplateFieldLogicIdx.value === idx) {
+    editingTemplateFieldLogicIdx.value = null
+  }
+}
+
+const addTemplateField = () => {
+  const lbl = newTemplateFieldInput.value.trim()
+  if (!lbl) return
+  const fKey = lbl.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  selectedTemplateFields.value.push({
+    label: lbl,
+    field_key: fKey,
+    field_type: newTemplateFieldType.value,
+    entity_type: 'task',
+    logic_rules: null
+  })
+  newTemplateFieldInput.value = ''
+  newTemplateFieldType.value = 'text'
+}
 
 const getFieldTypeLabel = (type: string) => {
   switch (type) {
@@ -3858,6 +4581,10 @@ const fetchTemplates = async () => {
 const selectTemplate = (tmpl: any) => {
   selectedTemplateId.value = tmpl.id
   selectedTemplateLists.value = [...(tmpl.lists || [])]
+  selectedTemplateFields.value = (tmpl.fields || []).map((f: any) => ({
+    ...f,
+    logic_rules: f.logic_rules ? (typeof f.logic_rules === 'string' ? JSON.parse(f.logic_rules) : { ...f.logic_rules }) : null
+  }))
   const currentTitle = newProjectTitle.value
   const isDefaultOrTemplateTitle = !currentTitle || templates.value.some((t: any) =>
     t.name === currentTitle || (t.name_key && t(t.name_key) === currentTitle)
@@ -4054,7 +4781,16 @@ const resetNewProjectForm = () => {
   newProjectCustomData.value = {}
   selectedTemplateId.value = currentFolderTemplate.value ? currentFolderTemplate.value.id : null
   selectedTemplateLists.value = currentFolderTemplate.value ? [...currentFolderTemplate.value.lists] : []
+  selectedTemplateFields.value = currentFolderTemplate.value?.fields
+    ? currentFolderTemplate.value.fields.map((f: any) => ({
+        ...f,
+        logic_rules: f.logic_rules ? (typeof f.logic_rules === 'string' ? JSON.parse(f.logic_rules) : { ...f.logic_rules }) : null
+      }))
+    : []
   newTemplatePhaseInput.value = ''
+  newTemplateFieldInput.value = ''
+  selectedImportTemplateId.value = ''
+  importColumnLogic.value = {}
   importFileName.value = ''
   importHeaders.value = []
   importParsedRows.value = []
@@ -4207,7 +4943,7 @@ const createProject = async () => {
         throw new Error('Keine gültigen Projekte in der Datei gefunden.')
       }
 
-      // Felddefinitionen für neu gemappte Zusatzfelder an Server übermitteln (entity_type: 'project')
+      // Felddefinitionen für neu gemappte Zusatzfelder an Server übermitteln (entity_type: 'task')
       const customFieldDefsToCreate: any[] = []
       for (const [colIdxStr, targetField] of Object.entries(importColumnMapping.value)) {
         if (!targetField || !targetField.startsWith('custom:')) continue
@@ -4217,14 +4953,38 @@ const createProject = async () => {
         const alreadyExists = fields.value.some((f: any) => f.field_key === key)
         if (!alreadyExists && !customFieldDefsToCreate.some(f => f.field_key === key)) {
           const matchedTpl = commonCustomFieldTemplates.find((tpl: any) => tpl.key === key)
+          const colLogic = importColumnLogic.value[key] || (matchedTpl as any)?.logic_rules || null
           customFieldDefsToCreate.push({
             field_key: key,
             label: matchedTpl?.label || headerName,
             label_key: matchedTpl?.label_key || null,
             field_type: matchedTpl?.type || 'text',
-            entity_type: 'project',
+            entity_type: 'task',
+            logic_rules: colLogic,
             options: (matchedTpl as any)?.options || []
           })
+        }
+      }
+
+      // Falls eine Vorlage im Import gewählt wurde: Deren Felder mit Logik ebenfalls registrieren
+      if (selectedImportTemplateId.value) {
+        const impTmpl = templates.value.find((t: any) => t.id === selectedImportTemplateId.value)
+        if (impTmpl && Array.isArray(impTmpl.fields)) {
+          for (const tf of impTmpl.fields) {
+            const tfKey = tf.field_key || (tf.label || 'field').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+            const alreadyExists = fields.value.some((f: any) => f.field_key === tfKey)
+            if (!alreadyExists && !customFieldDefsToCreate.some(f => f.field_key === tfKey)) {
+              customFieldDefsToCreate.push({
+                field_key: tfKey,
+                label: tf.label_key && te(tf.label_key) ? t(tf.label_key) : tf.label,
+                label_key: tf.label_key || null,
+                field_type: tf.field_type || 'text',
+                entity_type: tf.entity_type || 'task',
+                logic_rules: tf.logic_rules || null,
+                options: tf.options || []
+              })
+            }
+          }
         }
       }
 
@@ -4260,6 +5020,9 @@ const createProject = async () => {
       }
       if (selectedTemplateLists.value.length > 0) {
         payload.custom_lists = selectedTemplateLists.value
+      }
+      if (selectedTemplateFields.value.length > 0) {
+        payload.custom_fields = selectedTemplateFields.value
       }
     } else if (projectCreationMode.value === 'blank' && folder.value?.settings?.default_sections?.length) {
       payload.custom_lists = folder.value.settings.default_sections

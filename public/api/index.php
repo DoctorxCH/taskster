@@ -3776,26 +3776,30 @@ try {
         $countStmt->execute([$folderId]);
         $sortOrder = (int)$countStmt->fetchColumn() + 1;
 
-        if ($tmpl) {
-            $fields = !empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : [];
-            if (!empty($fields) && is_array($fields)) {
-                foreach ($fields as $f) {
-                    $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
-                    if (in_array($fKey, $existingKeys)) continue;
-
-                    $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
-                    $fLabel = $f['label'] ?? $fKey;
-                    $fType = $f['field_type'] ?? 'text';
-                    $fEntity = $f['entity_type'] ?? 'task';
-                    $fOpts = $f['options'] ?? [];
-                    $fRules = $f['logic_rules'] ?? null;
-                    $fReq = !empty($f['is_required']) ? 1 : 0;
-
-                    $fLabelKey = $f['label_key'] ?? null;
-                    $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                       ->execute([$fId, $folderId, $fKey, $fLabel, $fLabelKey, $fType, $fEntity, json_encode($fOpts), $fRules ? json_encode($fRules) : null, $fReq, $sortOrder++]);
-                    $existingKeys[] = $fKey;
+        $customFieldsFromPayload = (!empty($body['custom_fields']) && is_array($body['custom_fields'])) ? $body['custom_fields'] : null;
+        $fields = $customFieldsFromPayload ?: (!empty($tmpl['fields']) ? (is_string($tmpl['fields']) ? json_decode($tmpl['fields'], true) : $tmpl['fields']) : []);
+        if (!empty($fields) && is_array($fields)) {
+            foreach ($fields as $f) {
+                $fKey = $f['field_key'] ?? strtolower(preg_replace('/[^a-z0-9_]/', '_', $f['label'] ?? 'field'));
+                $fRules = array_key_exists('logic_rules', $f) ? ($f['logic_rules'] ? (is_string($f['logic_rules']) ? $f['logic_rules'] : json_encode($f['logic_rules'])) : null) : null;
+                if (in_array($fKey, $existingKeys)) {
+                    if (array_key_exists('logic_rules', $f)) {
+                        $db->prepare("UPDATE folder_field_definitions SET logic_rules = ? WHERE folder_id = ? AND field_key = ?")->execute([$fRules, $folderId, $fKey]);
+                    }
+                    continue;
                 }
+
+                $fId = 'fld_def_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $fLabel = $f['label'] ?? $fKey;
+                $fType = $f['field_type'] ?? 'text';
+                $fEntity = $f['entity_type'] ?? 'task';
+                $fOpts = $f['options'] ?? [];
+                $fReq = !empty($f['is_required']) ? 1 : 0;
+
+                $fLabelKey = $f['label_key'] ?? null;
+                $db->prepare("INSERT INTO folder_field_definitions (id, folder_id, field_key, label, label_key, field_type, entity_type, options, logic_rules, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                   ->execute([$fId, $folderId, $fKey, $fLabel, $fLabelKey, $fType, $fEntity, json_encode($fOpts), $fRules, $fReq, $sortOrder++]);
+                $existingKeys[] = $fKey;
             }
         }
 

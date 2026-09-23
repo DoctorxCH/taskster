@@ -476,15 +476,25 @@
               <div
                 v-for="project in filteredProjects"
                 :key="project.id"
-                class="group/card bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+                class="group/card rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+                :class="project.status === 'completed'
+                  ? 'bg-emerald-50 border border-emerald-400 ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:border-emerald-500'
+                  : 'bg-white border border-slate-200 hover:border-[#0891B2]'"
               >
                 <div>
                   <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
+                    <div
+                      class="w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold group-hover/card:scale-105 transition-transform border"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                    >
                       <ClipboardList class="w-5 h-5" />
                     </div>
-                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 capitalize">
-                      {{ project.status }}
+                    <span
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded border capitalize flex items-center gap-1"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold shadow-xs' : 'bg-slate-100 border-slate-200 text-slate-700'"
+                    >
+                      <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                     </span>
                   </div>
 
