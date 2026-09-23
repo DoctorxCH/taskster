@@ -4412,11 +4412,14 @@ const selectedImportTemplateId = ref<string>('')
 const importColumnLogic = ref<Record<string, { depends_on_field: string; depends_on_value: string }>>({})
 
 const onImportTemplateChange = () => {
-  if (!selectedImportTemplateId.value) return
-  const tmpl = templates.value.find((t: any) => t.id === selectedImportTemplateId.value)
-  if (!tmpl) return
-  if (tmpl.lists && tmpl.lists.length > 0) {
-    importWorkflowSections.value = [...tmpl.lists]
+  if (selectedImportTemplateId.value) {
+    const selectedTemplate = templates.value.find((t: any) => t.id === selectedImportTemplateId.value)
+    importWorkflowSections.value = selectedTemplate?.lists?.map((list: any) => ({
+      title: list.title,
+      is_completed_target: list.is_completed_target || 0
+    })) || []
+  } else {
+    importWorkflowSections.value = []
   }
 }
 
@@ -5243,7 +5246,8 @@ const createProject = async () => {
           folder_id: folderId,
           projects: projectsToImport,
           custom_field_definitions: customFieldDefsToCreate,
-          sections: importWorkflowSections.value
+          sections: importWorkflowSections.value,
+          template_id: selectedImportTemplateId.value || 'folder_workflow'
         }
       })
 

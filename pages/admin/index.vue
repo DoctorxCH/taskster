@@ -2500,7 +2500,9 @@ import {
   EyeOff,
   FileText,
   Server,
-  Inbox
+  Inbox,
+  Globe,
+  Save
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -2537,7 +2539,7 @@ const { user, authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'audit'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'audit'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
@@ -2551,6 +2553,7 @@ const activeSectionBadge = computed(() => {
     case 'templates': return 'Projekt-Vorlagen'
     case 'email': return 'E-Mail & Versand'
     case 'invites': return 'Mitarbeiter-Einladungen'
+    case 'website': return 'Webseiten-Verwaltung'
     case 'audit': return 'Security & Audit Logs'
     default: return 'Zentrale Administration'
   }
@@ -2564,6 +2567,7 @@ const activeSectionTitle = computed(() => {
     case 'templates': return 'Projekt- & Aufgaben-Vorlagen'
     case 'email': return 'Zentrale E-Mail-Konfiguration'
     case 'invites': return 'Mitarbeiter & Einladungen'
+    case 'website': return 'Webseiten- & CMS-Steuerung'
     case 'audit': return 'Sicherheits- & Revisions-Protokolle'
     default: return 'Taskster Plattform-Administration'
   }
@@ -2577,6 +2581,7 @@ const activeSectionDescription = computed(() => {
     case 'templates': return 'Vordefinierte Vorlagen für geschäftliche und private Bau- & Projektorganisation.'
     case 'email': return 'Resend & SMTP Einstellungen, E-Mail-Vorlagen und Versandprotokolle.'
     case 'invites': return 'Lade neue Mitarbeiter in dein Unternehmen ein und verwalte Einladungen.'
+    case 'website': return 'Steuere Landingpage-Texte, Tarife auf der Webseite, Ankündigungsbanner, SEO & Wartungsmodus.'
     case 'audit': return 'Revisionssichere Protokollierung aller Sicherheits-Events, Benutzeraktionen und Datenänderungen.'
     default: return 'Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.'
   }
@@ -2601,6 +2606,58 @@ const privateTemplatesCount = computed(() => {
 const activeEmailTemplatesCount = computed(() => {
   return emailTemplates.value.filter((t: any) => t.is_active).length
 })
+
+// Website Settings State
+const websiteSettings = ref<Record<string, any>>({
+  website_hero_title: '',
+  website_hero_subtitle: '',
+  website_contact_email: '',
+  website_contact_phone: '',
+  website_pricing_basic_price: '',
+  website_pricing_pro_price: '',
+  website_pricing_enterprise_price: '',
+  website_announcement_active: false,
+  website_announcement_text: '',
+  website_announcement_type: 'info',
+  website_seo_title: '',
+  website_seo_description: '',
+  website_maintenance_mode: false
+})
+const loadingWebsiteSettings = ref(false)
+const savingWebsiteSettings = ref(false)
+const websiteSettingsSavedNotice = ref(false)
+
+async function loadWebsiteSettings() {
+  loadingWebsiteSettings.value = true
+  try {
+    const res: any = await $fetch('/api/admin/website-settings', {
+      headers: authHeaders.value
+    })
+    websiteSettings.value = { ...websiteSettings.value, ...res }
+  } catch (err) {
+    console.error('Failed to load website settings', err)
+  } finally {
+    loadingWebsiteSettings.value = false
+  }
+}
+
+async function saveWebsiteSettings() {
+  savingWebsiteSettings.value = true
+  websiteSettingsSavedNotice.value = false
+  try {
+    await $fetch('/api/admin/website-settings', {
+      method: 'POST',
+      headers: authHeaders.value,
+      body: websiteSettings.value
+    })
+    websiteSettingsSavedNotice.value = true
+    setTimeout(() => { websiteSettingsSavedNotice.value = false }, 4000)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Fehler beim Speichern der Webseiten-Einstellungen')
+  } finally {
+    savingWebsiteSettings.value = false
+  }
+}
 
 // Audit Logs State
 const auditLogs = ref<any[]>([])
@@ -2634,18 +2691,34 @@ async function fetchAuditLogs() {
   }
 }
 
-const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'audit') => {
+const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'website' | 'audit') => {
   activeTab.value = tab
   router.replace({ query: { ...route.query, tab } })
   if (tab === 'audit') {
     fetchAuditLogs()
+  } else if (tab === 'website') {
+    loadWebsiteSettings()
   }
 }
 
 function syncTabFromRoute() {
   const qTab = route.query.tab as any
-  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites', 'audit']
+  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites', 'website', 'audit']
   if (qTab && validTabs.includes(qTab)) {
+    if (
+      (qTab === 'users' && hasPermission('manage_users')) ||
+      (qTab === 'companies' && hasPermission('company_settings')) ||
+      (qTab === 'finance' && hasPermission('finance')) ||
+      (qTab === 'templates' && hasPermission('manage_templates')) ||
+      (qTab === 'email' && hasPermission('company_settings')) ||
+      qTab === 'invites' ||
+      qTab === 'website' ||
+      qTab === 'audit'
+    ) {
+      activeTab.value = qTab
+      return
+    }
+  }
     if (
       (qTab === 'users' && hasPermission('manage_users')) ||
       (qTab === 'companies' && hasPermission('company_settings')) ||
