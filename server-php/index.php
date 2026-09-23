@@ -355,6 +355,25 @@ function ensureTables($pdo) {
         ");
 
         $pdo->exec("
+            CREATE TABLE IF NOT EXISTS audit_logs (
+              id VARCHAR(64) PRIMARY KEY,
+              user_id VARCHAR(64) NULL,
+              company_id VARCHAR(64) NULL,
+              action VARCHAR(128) NOT NULL,
+              entity_type VARCHAR(64) NULL,
+              entity_id VARCHAR(64) NULL,
+              ip_address VARCHAR(45) NULL,
+              user_agent TEXT NULL,
+              details JSON NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_al_user (user_id),
+              INDEX idx_al_company (company_id),
+              INDEX idx_al_action (action),
+              INDEX idx_al_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
             CREATE TABLE IF NOT EXISTS email_templates (
               id VARCHAR(64) PRIMARY KEY,
               trigger_event VARCHAR(64) NOT NULL UNIQUE,
@@ -2196,6 +2215,24 @@ function createNotification($userId, $type, $title, $message, $refType = null, $
         $stmt->execute([$id, $userId, $type, $title, $message, $refType, $refId, $projectId]);
     } catch (Exception $e) {
         // Notification creation should not block primary action
+    }
+}
+
+function logAuditEventNative($action, $entityType = null, $entityId = null, $details = null, $userId = null, $companyId = null) {
+    try {
+        $db = getDb();
+        $id = 'aud_' . substr(bin2hex(random_bytes(8)), 0, 16);
+        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        $detailsJson = $details !== null ? (is_string($details) ? $details : json_encode($details)) : null;
+
+        $stmt = $db->prepare("
+            INSERT INTO audit_logs (id, user_id, company_id, action, entity_type, entity_id, ip_address, user_agent, details, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([$id, $userId, $companyId, $action, $entityType, $entityId, $ip, $ua, $detailsJson]);
+    } catch (Exception $e) {
+        // Audit log failure should not break main flow
     }
 }
 
@@ -7711,10 +7748,26 @@ try {
         $fields = [];
         $params = [];
 
-        if (isset($body['is_pro'])) {
+        if (isset($body['plan'])) {
+            $plan = strtolower(trim((string)$body['plan']));
+            if (in_array($plan, ['basic', 'pro', 'enterprise'])) {
+                $fields[] = "is_pro = ?";
+                $params[] = ($plan === 'basic') ? 0 : 1;
+
+                $existingSettings = [];
+                if (!empty($targetUser['settings'])) {
+                    $existingSettings = is_string($targetUser['settings']) ? json_decode($targetUser['settings'], true) : $targetUser['settings'];
+                    if (!is_array($existingSettings)) $existingSettings = [];
+                }
+                $existingSettings['plan'] = $plan;
+                $fields[] = "settings = ?";
+                $params[] = json_encode($existingSettings);
+            }
+        } elseif (isset($body['is_pro'])) {
             $fields[] = "is_pro = ?";
             $params[] = $body['is_pro'] ? 1 : 0;
         }
+
         if (isset($body['is_superadmin']) && !empty($authUser['is_superadmin'])) {
             $fields[] = "is_superadmin = ?";
             $params[] = $body['is_superadmin'] ? 1 : 0;
@@ -7732,6 +7785,10 @@ try {
             $perms = is_array($body['admin_permissions']) ? $body['admin_permissions'] : [];
             $params[] = json_encode($perms);
         }
+        if (array_key_exists('settings', $body) && is_array($body['settings']) && !isset($body['plan'])) {
+            $fields[] = "settings = ?";
+            $params[] = json_encode($body['settings']);
+        }
         if (!empty($body['name'])) {
             $fields[] = "name = ?";
             $params[] = trim($body['name']);
@@ -7748,6 +7805,7 @@ try {
         if (!empty($fields)) {
             $params[] = $targetId;
             $db->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?")->execute($params);
+            logAuditEventNative('user.updated', 'users', $targetId, ['fields_updated' => $fields], $authUser['id'], $authUser['company_id'] ?? null);
         }
 
         jsonResponse(['success' => true]);
@@ -9231,6 +9289,147 @@ try {
         $stmt->execute();
         $outbox = $stmt->fetchAll(PDO::FETCH_ASSOC);
         jsonResponse(['outbox' => $outbox]);
+    }
+
+    // 43. admin/website-settings (GET and POST)
+    if ($path === 'admin/website-settings') {
+        if ($method === 'GET') {
+            requireAdminPermission('any_admin');
+            $stmt = $db->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'website_%'");
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            $settings = [
+                'website_hero_title' => 'Taskster – Das intelligente Bautagebuch & Projekt-Management',
+                'website_hero_subtitle' => 'Verwalte Baustellen, Aufgaben, Zeiterfassung und Berichte nahtlos in einer Plattform.',
+                'website_contact_email' => 'support@taskster.ch',
+                'website_contact_phone' => '+41 44 123 45 67',
+                'website_pricing_basic_price' => '0 CHF',
+                'website_pricing_pro_price' => '29 CHF',
+                'website_pricing_enterprise_price' => 'Auf Anfrage',
+                'website_announcement_active' => false,
+                'website_announcement_text' => 'Willkommen bei Taskster! Neue Version v2.4 ist live.',
+                'website_announcement_type' => 'info',
+                'website_seo_title' => 'Taskster – Bautagebuch & Handwerker Software Schweiz',
+                'website_seo_description' => 'Software für Bauleiter, Handwerker und Projektteams. Digitalisiere dein Bautagebuch, Aufgaben und Zeiterfassung.',
+                'website_maintenance_mode' => false
+            ];
+
+            foreach ($rows as $r) {
+                $val = $r['value'];
+                $decoded = json_decode($val, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $settings[$r['key']] = $decoded;
+                } else {
+                    $settings[$r['key']] = $val;
+                }
+            }
+
+            jsonResponse($settings);
+        } elseif ($method === 'POST') {
+            $user = requireAdminPermission('company_settings');
+            if (!is_array($body)) {
+                errorResponse('Ungültige Anfragedaten', 400);
+            }
+
+            $stmt = $db->prepare("
+                INSERT INTO system_settings (`key`, `value`, `updated_at`)
+                VALUES (?, ?, NOW())
+                ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = NOW()
+            ");
+
+            $updatedKeys = [];
+            foreach ($body as $k => $v) {
+                if (strpos($k, 'website_') === 0) {
+                    $valStr = is_string($v) ? $v : json_encode($v);
+                    $stmt->execute([$k, $valStr]);
+                    $updatedKeys[] = $k;
+                }
+            }
+
+            logAuditEventNative('website.settings_update', 'system_settings', null, ['keys_updated' => $updatedKeys], $user['id'], $user['company_id'] ?? null);
+
+            jsonResponse(['success' => true, 'message' => 'Webseiten-Einstellungen erfolgreich gespeichert']);
+        }
+    }
+
+    // 44. GET admin/audit-logs
+    if ($path === 'admin/audit-logs' && $method === 'GET') {
+        requireAdminPermission('any_admin');
+        $limit = isset($_GET['limit']) ? min(max((int)$_GET['limit'], 1), 200) : 50;
+        $offset = isset($_GET['offset']) ? max((int)$_GET['offset'], 0) : 0;
+        $search = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
+        $actionFilter = isset($_GET['action']) ? trim((string)$_GET['action']) : '';
+
+        $whereClauses = [];
+        $params = [];
+
+        if ($actionFilter !== '') {
+            $whereClauses[] = 'a.action = ?';
+            $params[] = $actionFilter;
+        }
+
+        if ($search !== '') {
+            $whereClauses[] = '(a.action LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR c.name LIKE ? OR a.ip_address LIKE ?)';
+            $s = "%{$search}%";
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $whereSql = !empty($whereClauses) ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+
+        $countStmt = $db->prepare("
+            SELECT COUNT(*) FROM audit_logs a
+            LEFT JOIN users u ON u.id = a.user_id
+            LEFT JOIN companies c ON c.id = a.company_id
+            {$whereSql}
+        ");
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+
+        $queryStmt = $db->prepare("
+            SELECT a.id, a.user_id, a.company_id, a.action, a.entity_type, a.entity_id,
+                   a.ip_address, a.user_agent, a.details, a.created_at,
+                   u.name as user_name, u.email as user_email,
+                   c.name as company_name
+            FROM audit_logs a
+            LEFT JOIN users u ON u.id = a.user_id
+            LEFT JOIN companies c ON c.id = a.company_id
+            {$whereSql}
+            ORDER BY a.created_at DESC
+            LIMIT ? OFFSET ?
+        ");
+        $paramIdx = 1;
+        foreach ($params as $p) {
+            $queryStmt->bindValue($paramIdx++, $p, PDO::PARAM_STR);
+        }
+        $queryStmt->bindValue($paramIdx++, $limit, PDO::PARAM_INT);
+        $queryStmt->bindValue($paramIdx++, $offset, PDO::PARAM_INT);
+        $queryStmt->execute();
+
+        $rawLogs = $queryStmt->fetchAll(PDO::FETCH_ASSOC);
+        $formattedLogs = [];
+        foreach ($rawLogs as $l) {
+            $details = null;
+            if (!empty($l['details'])) {
+                $details = is_string($l['details']) ? json_decode($l['details'], true) : $l['details'];
+            }
+            $l['details'] = $details;
+            $formattedLogs[] = $l;
+        }
+
+        $actionsStmt = $db->query("SELECT DISTINCT action FROM audit_logs ORDER BY action ASC");
+        $actions = $actionsStmt ? $actionsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+        jsonResponse([
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
+            'logs' => $formattedLogs,
+            'actions' => $actions
+        ]);
     }
 
     // Not found
