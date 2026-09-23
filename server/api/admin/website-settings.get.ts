@@ -7,6 +7,7 @@ export default defineEventHandler((event) => {
   const rows = db.prepare('SELECT key, value FROM system_settings WHERE key LIKE "website_%"').all() as any[]
   
   const settings: Record<string, any> = {
+    website_title: 'Taskster - Professionelles Projekt- & Bauleitermanagement',
     website_hero_title: 'Taskster – Das intelligente Bautagebuch & Projekt-Management',
     website_hero_subtitle: 'Verwalte Baustellen, Aufgaben, Zeiterfassung und Berichte nahtlos in einer Plattform.',
     website_contact_email: 'support@taskster.ch',

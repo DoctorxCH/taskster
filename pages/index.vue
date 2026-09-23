@@ -11,14 +11,11 @@
         </div>
 
         <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
-          Modernes Projekt- & Team-<br />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
-            Management für jedes Vorhaben
-          </span>
+          {{ settings.website_hero_title || 'Modernes Projekt- & Team-Management für jedes Vorhaben' }}
         </h1>
 
         <p class="mt-6 text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Strukturierte Aufgabenverwaltung, tiefe Projekthierarchien, nahtlose Teamkollaboration und granulares Rechtemanagement – von Einzelprojekten bis hin zu unternehmensweiten Teams.
+          {{ settings.website_hero_subtitle || 'Strukturierte Aufgabenverwaltung, tiefe Projekthierarchien, nahtlose Teamkollaboration und granulares Rechtemanagement – von Einzelprojekten bis hin zu unternehmensweiten Teams.' }}
         </p>
 
         <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -77,8 +74,10 @@
 import { Folder, Shield, Building2 } from 'lucide-vue-next'
 
 const { user } = useAuth()
+const { settings, fetchSettings } = useWebsiteSettings()
 
-onMounted(() => {
+onMounted(async () => {
+  fetchSettings()
   if (user.value) {
     navigateTo('/dashboard')
   }

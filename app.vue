@@ -532,6 +532,7 @@ import {
 const route = useRoute()
 const { user, initAuth } = useAuth()
 const { wallpapers, currentWallpaper, initWallpaper, setWallpaper } = useWallpaper()
+const { fetchSettings } = useWebsiteSettings()
 const { setLocale } = useI18n()
 
 const showWallpaperPicker = ref(false)
@@ -584,6 +585,7 @@ function syncUserLanguage() {
 
 onMounted(async () => {
   initWallpaper()
+  fetchSettings()
   await initAuth()
   syncUserLanguage()
   startNotificationPolling()

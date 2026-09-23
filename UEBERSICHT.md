@@ -47,7 +47,7 @@ Ein zentrales Konzept ist die **Ressourcenverschleierung**: Objekte, auf die ein
 - **M6:** Mobile & Offline (Capacitor, lokaler SQLite Cache)
 
 ## 6. Multi-Agenten-System & KI
-Die Entwicklung wird durch spezialisierte KI-Agenten (z.B. `@agent-orchestrator`, `@agent-designer`, `@agent-security`) unterstützt.
+Die Entwicklung wird durch spezialisierte Antigravity-Subagents (z.B. `@orchestrator`, `@architect`, `@designer`, `@backend`, `@security`) unterstützt.
 - **Wissensbasis:** Gespeichert im Ordner `99_anweisungen/` (Verbindlich).
 - **Code-Index:** Ein fortlaufend aktualisierter Index der Codebase (`.agent_index.json`), der mit `python generate_index.py` neu generiert wird.
 - **Provider:** OpenRouter / DeepSeek V4 Flash über das Skript `scripts/ai.cjs`.

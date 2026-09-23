@@ -30,12 +30,13 @@
 - **VS Code Tasks:** `AI: Frage stellen`, `AI: Aktuelle Datei analysieren`, `AI: Letzte Git-Änderungen erklären`.
 - **Doku:** [97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md](97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md)
 
-## 2. Kernrollen- **Architekt:** [.agents/rules/martin_persona.md](.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)
-- **Delegation Runtime:** [.agents/rules/delegation_runtime.md](.agents/rules/delegation_runtime.md)
+## 2. Antigravity Subagents & Kernrollen
+- **Architekt:** [.agents/agents/architect.md](.agents/agents/architect.md) / [.agents/rules/martin_persona.md](.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)
+- **Delegation Runtime:** [.agents/rules/delegation_runtime.md](.agents/rules/delegation_runtime.md) (Aufruf via `invoke_subagent` oder `/agents` Panel)
 - **Spezialisten (`.agents/agents/`):**
-  `@agent-orchestrator` (Koordination), `@agent-designer` (UI/Nuxt), `@agent-backend` (API/DB),
-  `@agent-security` (Zero-Trust), `@agent-mobile-sync` (Capacitor/Offline), `@agent-ingestion` (.msg/Audio),
-  `@agent-export` (PDF/Excel), `@agent-billing` (Quotas), `@agent-qa` (Tests), `@agent-devops` (CI/CD).
+  `@orchestrator` (Koordination & Review), `@architect` (SaaS/B2B-Architektur), `@designer` (UI/Nuxt),
+  `@backend` (API/DB), `@security` (Zero-Trust), `@mobile-sync` (Capacitor/Offline),
+  `@ingestion` (.msg/Audio), `@export` (PDF/Excel), `@billing` (Quotas), `@qa` (Tests), `@devops` (CI/CD).
 
 ## 3. Tech-Stack & Design-System
 - **Stack:** Vue.js/Nuxt 3, Tailwind CSS, API-First (PHP/TypeScript), MariaDB/PostgreSQL (JSONB), Capacitor.

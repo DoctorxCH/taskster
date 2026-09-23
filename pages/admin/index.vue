@@ -1519,9 +1519,24 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Globe class="w-4 h-4 text-cyan-600" />
-            <span>Landingpage & Kontakt-Informationen</span>
+            <span>Landingpage & Allgemeine Webseiten-Informationen</span>
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- Webseiten- & Browser-Titel (<title>) -->
+            <div class="md:col-span-2">
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-slate-800">Webseiten- & Browser-Titel (&lt;title&gt;)</label>
+                <span class="text-[11px] text-cyan-700 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">Browser-Tab & HTML &lt;title&gt;</span>
+              </div>
+              <input
+                v-model="websiteSettings.website_title"
+                type="text"
+                placeholder="z. B. Taskster – Professionelles Projekt- & Bauleitermanagement"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">Dieser globale Titel erscheint oben im Browser-Tab, in Bookmarks sowie als Haupttitel bei Google / Social Media.</p>
+            </div>
+
             <div>
               <label class="block font-bold text-slate-800 mb-1">Hero Hauptüberschrift</label>
               <input
@@ -1553,6 +1568,18 @@
                 type="text"
                 class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium font-mono"
               />
+            </div>
+          </div>
+
+          <!-- Live Browser-Tab Vorschau -->
+          <div class="mt-3 p-3.5 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <span>Live-Vorschau: Browser-Tab</span>
+            </div>
+            <div class="inline-flex items-center gap-2 bg-slate-800/90 px-3.5 py-1.5 rounded-lg border border-slate-700/80 max-w-full">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#00A3C4] text-[9px] font-black text-slate-950 flex items-center justify-center shrink-0">T</span>
+              <span class="text-xs font-medium text-slate-200 truncate">{{ websiteSettings.website_title || websiteSettings.website_seo_title || 'Taskster - Professionelles Projekt- & Bauleitermanagement' }}</span>
+              <span class="text-slate-500 text-xs ml-1 font-bold">×</span>
             </div>
           </div>
         </div>
@@ -1662,6 +1689,18 @@
                 rows="2"
                 class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium resize-none"
               ></textarea>
+            </div>
+          </div>
+
+          <!-- Google SERP Vorschau -->
+          <div class="mt-2 p-3.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Google Suchergebnis-Vorschau</div>
+            <div class="text-[11px] text-emerald-700 font-mono">https://taskster.ch</div>
+            <div class="text-sm font-bold text-blue-700 hover:underline cursor-pointer">
+              {{ websiteSettings.website_title || websiteSettings.website_seo_title || 'Taskster - Professionelles Projekt- & Bauleitermanagement' }}
+            </div>
+            <div class="text-xs text-slate-600 line-clamp-2">
+              {{ websiteSettings.website_seo_description || 'Taskster - Enterprise Projekt- und Bauleitermanagement Plattform' }}
             </div>
           </div>
         </div>
@@ -3153,7 +3192,9 @@ const activeEmailTemplatesCount = computed(() => {
 })
 
 // Website Settings State
+const { fetchSettings: refreshGlobalWebsiteSettings } = useWebsiteSettings()
 const websiteSettings = ref<Record<string, any>>({
+  website_title: 'Taskster - Professionelles Projekt- & Bauleitermanagement',
   website_hero_title: '',
   website_hero_subtitle: '',
   website_contact_email: '',
@@ -3196,6 +3237,7 @@ async function saveWebsiteSettings() {
       body: websiteSettings.value
     })
     websiteSettingsSavedNotice.value = true
+    refreshGlobalWebsiteSettings()
     showToast('Webseiten-Einstellungen erfolgreich gespeichert!', 'success')
     setTimeout(() => { websiteSettingsSavedNotice.value = false }, 4000)
   } catch (err: any) {
