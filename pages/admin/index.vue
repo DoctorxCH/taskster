@@ -3589,6 +3589,8 @@ watch(activeTab, (tab: string) => {
     loadOrdersData()
   } else if (tab === 'audit') {
     fetchAuditLogs()
+  } else if (tab === 'website') {
+    loadWebsiteSettings()
   }
 })
 
@@ -3609,6 +3611,8 @@ onMounted(async () => {
     await loadOrdersData()
   } else if (activeTab.value === 'audit') {
     await fetchAuditLogs()
+  } else if (activeTab.value === 'website') {
+    await loadWebsiteSettings()
   }
   if (hasPermission('company_settings')) {
     loadEmailSettings()
