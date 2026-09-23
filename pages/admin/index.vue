@@ -197,6 +197,87 @@
           <div class="text-[10px] text-slate-400">Protokollierte Einträge</div>
         </div>
       </div>
+
+      <!-- AUDIT PILLS -->
+      <div v-else-if="activeTab === 'audit'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Audit Log-Einträge</div>
+          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ auditLogsTotal }}</div>
+          <div class="text-[10px] text-slate-400">Systemweit protokolliert</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aktivitäts-Typen</div>
+          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ auditLogsActions.length }}</div>
+          <div class="text-[10px] text-slate-400">Verschiedene Event-Klassen</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Security Standard</div>
+          <div class="text-xl font-bold text-emerald-900 mt-0.5">Zero-Trust Audit</div>
+          <div class="text-[10px] text-slate-400">Revisionssicher geloggt</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Navigation Tabs Bar -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-slate-200/80">
+      <button
+        @click="setTab('users')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'users' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <Users class="w-3.5 h-3.5" />
+        <span>Benutzer & Kunden</span>
+      </button>
+      <button
+        @click="setTab('companies')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'companies' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <Building2 class="w-3.5 h-3.5" />
+        <span>Unternehmen & B2B</span>
+      </button>
+      <button
+        @click="setTab('finance')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'finance' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <CreditCard class="w-3.5 h-3.5" />
+        <span>Finanzen & MRR</span>
+      </button>
+      <button
+        @click="setTab('templates')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'templates' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <ClipboardList class="w-3.5 h-3.5" />
+        <span>Projekt-Vorlagen</span>
+      </button>
+      <button
+        @click="setTab('email')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'email' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <Mail class="w-3.5 h-3.5" />
+        <span>E-Mail System</span>
+      </button>
+      <button
+        @click="setTab('invites')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'invites' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'"
+      >
+        <Send class="w-3.5 h-3.5" />
+        <span>Einladungen</span>
+      </button>
+      <button
+        @click="setTab('audit')"
+        class="px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2"
+        :class="activeTab === 'audit' ? 'bg-purple-900 text-white shadow-xs' : 'bg-white border border-purple-200 text-purple-900 hover:bg-purple-50'"
+      >
+        <ShieldCheck class="w-3.5 h-3.5 text-purple-400" />
+        <span>Security & Audit Logs</span>
+      </button>
     </div>
 
     <!-- TAB 1: USERS & CUSTOMERS (Liquid Glass Table Card) -->
@@ -240,10 +321,14 @@
               </td>
               <td class="py-3.5 px-4">
                 <span
-                  class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                  :class="u.is_pro || u.company_name ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-200 text-slate-700'"
+                  class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+                  :class="{
+                    'bg-purple-100 text-purple-900 border-purple-300': (u.plan || u.company_plan) === 'enterprise',
+                    'bg-cyan-100 text-cyan-900 border-cyan-300': (u.plan || u.company_plan) === 'pro' || (!u.plan && !u.company_plan && u.is_pro),
+                    'bg-slate-100 text-slate-700 border-slate-300': (u.plan || u.company_plan) === 'basic' || (!u.plan && !u.company_plan && !u.is_pro)
+                  }"
                 >
-                  {{ u.company_plan || (u.is_pro ? 'PRO' : 'FREE PLAN') }}
+                  {{ (u.plan || u.company_plan || (u.is_pro ? 'pro' : 'basic')).toUpperCase() }}
                 </span>
               </td>
               <td class="py-3.5 px-4">
@@ -1255,6 +1340,160 @@
       </div>
     </div>
 
+    <!-- TAB 7: SECURITY & AUDIT LOGS -->
+    <div v-if="activeTab === 'audit'" class="space-y-6">
+      <div class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
+        <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Sicherheits- & Revisionsprotokoll (Audit Trail)</h3>
+            <p class="text-xs text-slate-600 font-medium">Vollständige Aufzeichnung aller Benutzeraktionen, Berechtigungsänderungen und System-Events.</p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="relative w-full sm:w-64">
+              <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                v-model="auditSearch"
+                @input="fetchAuditLogs"
+                type="text"
+                placeholder="Suche (Aktion, User, IP...)"
+                class="w-full pl-9 pr-3 py-2 bg-white/80 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+              />
+            </div>
+
+            <select
+              v-model="auditActionFilter"
+              @change="fetchAuditLogs"
+              class="w-full sm:w-48 py-2 px-3 bg-white/80 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+            >
+              <option value="">Alle Aktionen</option>
+              <option v-for="act in auditLogsActions" :key="act" :value="act">{{ act }}</option>
+            </select>
+
+            <button
+              @click="fetchAuditLogs"
+              class="taskster_button_light px-4 text-xs h-[38px] rounded-lg shadow-xs flex items-center gap-1.5 shrink-0"
+            >
+              <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loadingAuditLogs }" />
+              <span>Neu laden</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
+              <tr>
+                <th class="py-3.5 px-4">Zeitstempel</th>
+                <th class="py-3.5 px-4">Aktion</th>
+                <th class="py-3.5 px-4">Benutzer & Organisation</th>
+                <th class="py-3.5 px-4">Entität</th>
+                <th class="py-3.5 px-4">IP-Adresse & Client</th>
+                <th class="py-3.5 px-4 text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200/60 text-slate-800">
+              <tr v-if="loadingAuditLogs && auditLogs.length === 0">
+                <td colspan="6" class="py-8 text-center text-slate-500 text-xs">
+                  Protokolle werden geladen...
+                </td>
+              </tr>
+              <tr v-else-if="auditLogs.length === 0">
+                <td colspan="6" class="py-8 text-center text-slate-500 text-xs italic">
+                  Keine Audit-Logs gefunden.
+                </td>
+              </tr>
+              <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-white/60 transition">
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <div class="font-bold text-slate-900">{{ new Date(log.created_at).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">{{ log.id }}</div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                    {{ log.action }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div v-if="log.user_name" class="font-bold text-slate-900">{{ log.user_name }}</div>
+                  <div v-if="log.user_email" class="text-[10px] text-slate-500 font-mono">{{ log.user_email }}</div>
+                  <div v-if="log.company_name" class="text-[10px] text-emerald-700 font-semibold">{{ log.company_name }}</div>
+                  <div v-if="!log.user_name && !log.user_email" class="text-slate-400 italic">System / Anonym</div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div v-if="log.entity_type" class="font-semibold text-slate-700">
+                    {{ log.entity_type }}
+                    <span v-if="log.entity_id" class="text-[10px] text-slate-400 font-mono">({{ log.entity_id }})</span>
+                  </div>
+                  <div v-else class="text-slate-400 italic">-</div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-mono text-xs text-slate-800">{{ log.ip_address || '127.0.0.1' }}</div>
+                  <div class="text-[10px] text-slate-400 truncate max-w-[180px]" :title="log.user_agent">{{ log.user_agent || 'Client' }}</div>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <button
+                    @click="selectedAuditLog = log"
+                    class="taskster_button_light px-3 py-1 text-[11px] rounded-lg shadow-xs"
+                  >
+                    <span>🔍 Details</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG DETAIL MODAL -->
+    <div v-if="selectedAuditLog" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+              {{ selectedAuditLog.action }}
+            </span>
+            <h3 class="text-base font-bold text-slate-900 mt-1">Audit Log Details</h3>
+          </div>
+          <button @click="selectedAuditLog = null" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="py-4 space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+            <div>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">Log-ID:</span>
+              <span class="font-mono font-bold text-slate-900">{{ selectedAuditLog.id }}</span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">Zeitstempel:</span>
+              <span class="font-bold text-slate-900">{{ new Date(selectedAuditLog.created_at).toLocaleString('de-CH') }}</span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">Benutzer:</span>
+              <span class="font-bold text-slate-900">{{ selectedAuditLog.user_name || 'System' }} ({{ selectedAuditLog.user_email || '-' }})</span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">IP-Adresse:</span>
+              <span class="font-mono font-bold text-slate-900">{{ selectedAuditLog.ip_address || 'Unbekannt' }}</span>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-slate-700 font-bold block mb-1">Details & Payload:</span>
+            <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg text-[11px] font-mono overflow-x-auto max-h-60">{{ JSON.stringify(selectedAuditLog.details, null, 2) }}</pre>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 text-right">
+          <button @click="selectedAuditLog = null" class="taskster_button px-6 text-xs h-[38px] rounded-lg">
+            Schliessen
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Create / Edit Template -->
     <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-8 border border-white/80">
@@ -1672,11 +1911,12 @@
           <div>
             <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
             <select
-              v-model="newUserForm.is_pro"
+              v-model="newUserForm.plan"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option :value="false">Taskster Free Plan (Basis)</option>
-              <option :value="true">Taskster PRO Plan (Unbegrenzt)</option>
+              <option value="basic">Taskster Free / Basic Plan (Basis: max. 1 Ordner, 3 Projekte)</option>
+              <option value="pro">Taskster PRO Plan (30 Projekte, Zeitersparnis & Vorlagen)</option>
+              <option value="enterprise">Taskster ENTERPRISE Plan (Unbegrenzte Projekte & Export)</option>
             </select>
           </div>
 
@@ -1877,11 +2117,12 @@
           <div>
             <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
             <select
-              v-model="editUserForm.is_pro"
+              v-model="editUserForm.plan"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option :value="false">Taskster Free Plan (Basis: max. 1 Ordner, 3 Projekte)</option>
-              <option :value="true">Taskster PRO Plan (Unbegrenzte Ordner & Projekte)</option>
+              <option value="basic">Taskster Free / Basic Plan (Basis: max. 1 Ordner, 3 Projekte)</option>
+              <option value="pro">Taskster PRO Plan (30 Projekte, Zeitersparnis & Vorlagen)</option>
+              <option value="enterprise">Taskster ENTERPRISE Plan (Unbegrenzte Projekte & Export)</option>
             </select>
           </div>
 
@@ -2296,7 +2537,7 @@ const { user, authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites'>('users')
+const activeTab = ref<'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'audit'>('users')
 const overview = ref<any>(null)
 const users = ref<any[]>([])
 const companies = ref<any[]>([])
@@ -2310,6 +2551,7 @@ const activeSectionBadge = computed(() => {
     case 'templates': return 'Projekt-Vorlagen'
     case 'email': return 'E-Mail & Versand'
     case 'invites': return 'Mitarbeiter-Einladungen'
+    case 'audit': return 'Security & Audit Logs'
     default: return 'Zentrale Administration'
   }
 })
@@ -2322,6 +2564,7 @@ const activeSectionTitle = computed(() => {
     case 'templates': return 'Projekt- & Aufgaben-Vorlagen'
     case 'email': return 'Zentrale E-Mail-Konfiguration'
     case 'invites': return 'Mitarbeiter & Einladungen'
+    case 'audit': return 'Sicherheits- & Revisions-Protokolle'
     default: return 'Taskster Plattform-Administration'
   }
 })
@@ -2334,6 +2577,7 @@ const activeSectionDescription = computed(() => {
     case 'templates': return 'Vordefinierte Vorlagen für geschäftliche und private Bau- & Projektorganisation.'
     case 'email': return 'Resend & SMTP Einstellungen, E-Mail-Vorlagen und Versandprotokolle.'
     case 'invites': return 'Lade neue Mitarbeiter in dein Unternehmen ein und verwalte Einladungen.'
+    case 'audit': return 'Revisionssichere Protokollierung aller Sicherheits-Events, Benutzeraktionen und Datenänderungen.'
     default: return 'Kundenübersicht, Benutzerverwaltung, Company-Pläne, Zugriffsregeln und Systemgrenzen.'
   }
 })
@@ -2358,14 +2602,49 @@ const activeEmailTemplatesCount = computed(() => {
   return emailTemplates.value.filter((t: any) => t.is_active).length
 })
 
-const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites') => {
+// Audit Logs State
+const auditLogs = ref<any[]>([])
+const auditLogsTotal = ref(0)
+const auditLogsActions = ref<string[]>([])
+const loadingAuditLogs = ref(false)
+const auditSearch = ref('')
+const auditActionFilter = ref('')
+const auditPage = ref(1)
+const selectedAuditLog = ref<any>(null)
+
+async function fetchAuditLogs() {
+  loadingAuditLogs.value = true
+  try {
+    const res: any = await $fetch('/api/admin/audit-logs', {
+      headers: authHeaders.value,
+      query: {
+        limit: 50,
+        offset: (auditPage.value - 1) * 50,
+        search: auditSearch.value,
+        action: auditActionFilter.value
+      }
+    })
+    auditLogs.value = res.logs || []
+    auditLogsTotal.value = res.total || 0
+    auditLogsActions.value = res.actions || []
+  } catch (err) {
+    console.error('Failed to fetch audit logs', err)
+  } finally {
+    loadingAuditLogs.value = false
+  }
+}
+
+const setTab = (tab: 'users' | 'companies' | 'finance' | 'templates' | 'email' | 'invites' | 'audit') => {
   activeTab.value = tab
   router.replace({ query: { ...route.query, tab } })
+  if (tab === 'audit') {
+    fetchAuditLogs()
+  }
 }
 
 function syncTabFromRoute() {
   const qTab = route.query.tab as any
-  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites']
+  const validTabs = ['users', 'companies', 'finance', 'templates', 'email', 'invites', 'audit']
   if (qTab && validTabs.includes(qTab)) {
     if (
       (qTab === 'users' && hasPermission('manage_users')) ||
@@ -2373,7 +2652,8 @@ function syncTabFromRoute() {
       (qTab === 'finance' && hasPermission('finance')) ||
       (qTab === 'templates' && hasPermission('manage_templates')) ||
       (qTab === 'email' && hasPermission('company_settings')) ||
-      qTab === 'invites'
+      qTab === 'invites' ||
+      qTab === 'audit'
     ) {
       activeTab.value = qTab
       return
@@ -2501,7 +2781,8 @@ const newUserForm = ref({
   name: '',
   email: '',
   password: '',
-  is_pro: false,
+  plan: 'pro',
+  is_pro: true,
   is_superadmin: false,
   company_id: '',
   company_role: 'member',
@@ -2513,7 +2794,8 @@ const openCreateUserModal = () => {
     name: '',
     email: '',
     password: '',
-    is_pro: false,
+    plan: 'pro',
+    is_pro: true,
     is_superadmin: false,
     company_id: user.value?.company_id || '',
     company_role: 'member',
@@ -2533,7 +2815,8 @@ const createUser = async () => {
         name: newUserForm.value.name,
         email: newUserForm.value.email,
         password: newUserForm.value.password,
-        is_pro: newUserForm.value.is_pro,
+        plan: newUserForm.value.plan,
+        is_pro: newUserForm.value.plan !== 'basic',
         is_superadmin: user.value?.is_superadmin ? newUserForm.value.is_superadmin : false,
         company_id: newUserForm.value.company_id || null,
         company_role: newUserForm.value.company_role,
@@ -2557,7 +2840,8 @@ const editUserForm = ref({
   name: '',
   email: '',
   new_password: '',
-  is_pro: false,
+  plan: 'pro',
+  is_pro: true,
   is_superadmin: false,
   company_id: '',
   company_role: 'member',
@@ -2570,12 +2854,14 @@ const openEditUserModal = (u: any) => {
   if (typeof perms === 'string') {
     try { perms = JSON.parse(perms) } catch { perms = [] }
   }
+  const computedPlan = u.plan || u.license_type || (u.is_pro ? 'pro' : 'basic')
   editUserForm.value = {
     id: u.id,
     name: u.name || '',
     email: u.email || '',
     new_password: '',
-    is_pro: Boolean(u.is_pro),
+    plan: computedPlan,
+    is_pro: computedPlan !== 'basic',
     is_superadmin: Boolean(u.is_superadmin),
     company_id: u.company_id || '',
     company_role: u.company_role || 'member',
@@ -2590,7 +2876,8 @@ const saveUserChanges = async () => {
     const payload: any = {
       name: editUserForm.value.name,
       email: editUserForm.value.email,
-      is_pro: editUserForm.value.is_pro,
+      plan: editUserForm.value.plan,
+      is_pro: editUserForm.value.plan !== 'basic',
       is_superadmin: user.value?.is_superadmin ? editUserForm.value.is_superadmin : false,
       company_id: editUserForm.value.company_id || null,
       company_role: editUserForm.value.company_role,
@@ -3227,6 +3514,8 @@ watch(activeTab, (tab: string) => {
     loadEmailOutbox()
   } else if (tab === 'finance') {
     loadOrdersData()
+  } else if (tab === 'audit') {
+    fetchAuditLogs()
   }
 })
 
@@ -3245,6 +3534,8 @@ onMounted(async () => {
   await loadAdminData()
   if (activeTab.value === 'finance') {
     await loadOrdersData()
+  } else if (activeTab.value === 'audit') {
+    await fetchAuditLogs()
   }
   if (hasPermission('company_settings')) {
     loadEmailSettings()

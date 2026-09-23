@@ -1,5 +1,6 @@
 import { db } from '~/server/db'
 import { requireAdminPermission } from '~/server/utils/auth'
+import { logAuditEvent } from '~/server/utils/audit'
 
 export default defineEventHandler(async (event) => {
   requireAdminPermission(event, 'manage_users')
@@ -23,6 +24,19 @@ export default defineEventHandler(async (event) => {
     SET is_pro = ?, is_superadmin = ?, company_id = ?, company_role = ?
     WHERE id = ?
   `).run(newIsPro, newIsSuper, newCompId, newCompRole, userId)
+
+  logAuditEvent(event, {
+    action: 'user.update',
+    entityType: 'user',
+    entityId: userId,
+    details: {
+      target_user: user.email,
+      is_pro: newIsPro,
+      is_superadmin: newIsSuper,
+      company_id: newCompId,
+      company_role: newCompRole
+    }
+  })
 
   return { success: true }
 })

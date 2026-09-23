@@ -423,3 +423,21 @@ CREATE TABLE IF NOT EXISTS company_invitations (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   expires_at TEXT
 );
+
+-- ===========================================================================
+-- AUDIT & SECURITY LOGS
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  company_id TEXT REFERENCES companies(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  details TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+

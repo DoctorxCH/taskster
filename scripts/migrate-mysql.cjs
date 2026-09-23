@@ -417,6 +417,25 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NULL,
+      company_id VARCHAR(64) NULL,
+      action VARCHAR(128) NOT NULL,
+      entity_type VARCHAR(64) NULL,
+      entity_id VARCHAR(64) NULL,
+      ip_address VARCHAR(45) NULL,
+      user_agent TEXT NULL,
+      details JSON NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_al_user (user_id),
+      INDEX idx_al_company (company_id),
+      INDEX idx_al_action (action),
+      INDEX idx_al_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `)
+
   // Column migrations for MySQL
   const colMigrations = [
     "ALTER TABLE users ADD COLUMN hourly_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00",
