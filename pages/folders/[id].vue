@@ -1307,7 +1307,7 @@
                   >
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-800">{{ cf.label_key && te(cf.label_key) ? t(cf.label_key) : (cf.label || cf.field_key) }}</span>
+                        <span class="font-bold text-slate-800">{{ cf.label_key && $te(cf.label_key) ? $t(cf.label_key) : (cf.label || cf.field_key) }}</span>
                         <div class="flex items-center gap-1">
                           <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
                             {{ getFieldTypeLabel(cf.field_type) }}
@@ -1539,8 +1539,8 @@
                   class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:border-[#0891B2]"
                 >
                   <option value="">-- Keine Vorlage (Eigene Phasen &amp; Standard nutzen) --</option>
-                  <option v-for="t in templates" :key="t.id" :value="t.id">
-                    {{ t.name_key && te(t.name_key) ? t(t.name_key) : t.name }} ({{ (t.lists || []).length }} Phasen, {{ (t.fields || []).length }} Zusatzfelder)
+                  <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">
+                    {{ tpl.name_key && $te(tpl.name_key) ? $t(tpl.name_key) : tpl.name }} ({{ (tpl.lists || []).length }} Phasen, {{ (tpl.fields || []).length }} Zusatzfelder)
                   </option>
                 </select>
               </div>
