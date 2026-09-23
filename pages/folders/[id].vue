@@ -7,17 +7,17 @@
 
     <div v-else-if="folder" class="space-y-6">
       <!-- Single Unified Header & Folder Dashboard Card -->
-      <div class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4">
         <!-- Breadcrumb inside white card -->
         <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
-          <NuxtLink to="/dashboard" class="hover:text-[#0891B2] transition-colors flex items-center gap-1 font-medium">
+          <NuxtLink to="/dashboard" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1 font-medium">
             <LayoutDashboard class="w-3.5 h-3.5" />
             <span>Dashboard</span>
           </NuxtLink>
           <span>/</span>
           <span class="text-slate-800 font-semibold flex items-center gap-1">
             <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
-            <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
+            <Folder v-else class="w-3.5 h-3.5 text-[#00A3C4]" />
             <span>{{ folder?.name || 'Ordner' }}</span>
           </span>
         </div>
@@ -37,7 +37,7 @@
             </div>
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>Owner: <strong class="text-slate-900 font-semibold">{{ folder.owner_name }}</strong></span>
-              <span v-if="user?.id === folder.owner_id" class="px-2 py-0.5 rounded bg-cyan-50 text-[#0891B2] border border-cyan-200 text-xs font-semibold">
+              <span v-if="user?.id === folder.owner_id" class="px-2 py-0.5 rounded bg-cyan-50 text-[#00A3C4] border border-cyan-200 text-xs font-semibold">
                 Du (Owner)
               </span>
               <span
@@ -52,17 +52,17 @@
               <span>• {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
               <span
                 v-if="currentFolderTemplate"
-                class="px-2.5 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-[#0891B2] text-xs font-semibold flex items-center gap-1 cursor-pointer hover:bg-cyan-100 transition"
+                class="px-2.5 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-[#00A3C4] text-xs font-semibold flex items-center gap-1 cursor-pointer hover:bg-cyan-100 transition"
                 @click="openEditFolderModal"
                 :title="`Projektordner-Vorlage: ${currentFolderTemplate.name}. Klicken zum Anpassen.`"
               >
-                <BookOpen class="w-3.5 h-3.5 text-[#0891B2]" />
+                <BookOpen class="w-3.5 h-3.5 text-[#00A3C4]" />
                 <span>Vorlage: <strong>{{ currentFolderTemplate.name }}</strong></span>
               </span>
               <button
                 v-else-if="user?.id === folder.owner_id"
                 @click="openEditFolderModal"
-                class="px-2.5 py-0.5 rounded-full border border-dashed border-slate-300 text-slate-500 hover:text-[#0891B2] hover:border-cyan-300 text-xs font-medium flex items-center gap-1 cursor-pointer transition"
+                class="px-2.5 py-0.5 rounded-full border border-dashed border-slate-300 text-slate-500 hover:text-[#00A3C4] hover:border-cyan-300 text-xs font-medium flex items-center gap-1 cursor-pointer transition"
                 title="Branchen-Vorlage für diesen Projektordner zuweisen"
               >
                 <Plus class="w-3 h-3" />
@@ -75,10 +75,10 @@
             <!-- Quick Journal Entry Button -->
             <button
               @click="openQuickFolderJournalModal"
-              class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
+              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
               title="Projektjournal-Eintrag erfassen"
             >
-              <BookOpen class="w-3.5 h-3.5 text-[#0891B2]" />
+              <BookOpen class="w-3.5 h-3.5 text-[#00A3C4]" />
               <span class="font-semibold">+ PJ erfassen</span>
             </button>
 
@@ -86,7 +86,7 @@
             <div class="relative">
               <button
                 @click="showActionsMenu = !showActionsMenu"
-                class="taskster_button_light px-3.5 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1.5"
+                class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
                 :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
                 title="Weitere Aktionen"
               >
@@ -100,7 +100,7 @@
                 <button
                   @click="projectViewMode = 'grid'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
-                  :class="projectViewMode === 'grid' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                  :class="projectViewMode === 'grid' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <LayoutGrid class="w-4 h-4" />
                   <span>Kacheln</span>
@@ -109,7 +109,7 @@
                 <button
                   @click="projectViewMode = 'list'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
-                  :class="projectViewMode === 'list' ? 'text-[#0891B2] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
+                  :class="projectViewMode === 'list' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <List class="w-4 h-4" />
                   <span>Liste</span>
@@ -155,7 +155,7 @@
             </div>
             <button
               @click="openNewProjectModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md cursor-pointer flex items-center space-x-1"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>Neues Projekt</span>
@@ -167,9 +167,9 @@
         <div v-if="projects.length > 0" class="pt-3 border-t border-slate-200">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2 text-xs text-slate-700">
-              <BarChart3 class="w-4 h-4 text-[#0891B2] shrink-0" />
+              <BarChart3 class="w-4 h-4 text-[#00A3C4] shrink-0" />
               <span class="font-semibold text-slate-900">Controlling:</span>
-              <span class="text-[#0891B2] font-bold">{{ timeSummary?.total_hours || 0 }} Std. Gesamtaufwand</span>
+              <span class="text-[#00A3C4] font-bold">{{ timeSummary?.total_hours || 0 }} Std. Gesamtaufwand</span>
               <span v-if="timeSummary?.total_cost > 0" class="text-slate-600 hidden sm:inline">• {{ Number(timeSummary.total_cost).toLocaleString('de-CH') }} CHF</span>
             </div>
 
@@ -193,10 +193,10 @@
             >
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
                 <div class="flex items-center space-x-2">
-                  <NuxtLink :to="`/projects/${p.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition hover:underline">
+                  <NuxtLink :to="`/projects/${p.id}`" class="font-bold text-slate-900 hover:text-[#00A3C4] transition hover:underline">
                     {{ p.title }}
                   </NuxtLink>
-                  <span class="text-[10px] px-2 py-0.5 rounded font-semibold uppercase flex items-center gap-1" :class="p.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-100 text-[#0891B2] border border-cyan-200'">
+                  <span class="text-[10px] px-2 py-0.5 rounded font-semibold uppercase flex items-center gap-1" :class="p.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-100 text-[#00A3C4] border border-cyan-200'">
                     <span v-if="p.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     {{ p.status === 'completed' ? '✓ Erledigt' : p.status }}
                   </span>
@@ -210,7 +210,7 @@
                   <span v-if="p.tracked_cost > 0" class="text-slate-600">
                     {{ Number(p.tracked_cost).toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}
                   </span>
-                  <NuxtLink :to="`/projects/${p.id}`" class="text-[#0891B2] hover:underline text-xs font-semibold flex items-center space-x-0.5">
+                  <NuxtLink :to="`/projects/${p.id}`" class="text-[#00A3C4] hover:underline text-xs font-semibold flex items-center space-x-0.5">
                     <span>Öffnen</span>
                     <ArrowRight class="w-3 h-3" />
                   </NuxtLink>
@@ -222,7 +222,7 @@
                 <div
                   v-if="p.budget_hours > 0"
                   class="h-1.5 rounded-full transition-all duration-300"
-                  :class="(p.tracked_hours || 0) > p.budget_hours ? 'bg-rose-500' : ((p.tracked_hours || 0) / p.budget_hours >= 0.8 ? 'bg-amber-500' : 'bg-[#0891B2]')"
+                  :class="(p.tracked_hours || 0) > p.budget_hours ? 'bg-rose-500' : ((p.tracked_hours || 0) / p.budget_hours >= 0.8 ? 'bg-amber-500' : 'bg-[#00A3C4]')"
                   :style="{ width: Math.min(100, Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100)) + '%' }"
                 ></div>
                 <div
@@ -251,7 +251,7 @@
             type="button"
             @click="currentFolderTab = 'projects'"
             class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
-            :class="currentFolderTab === 'projects' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+            :class="currentFolderTab === 'projects' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <LayoutGrid class="w-4 h-4" />
             <span>Projekte ({{ projects.length }})</span>
@@ -260,7 +260,7 @@
             type="button"
             @click="currentFolderTab = 'journal'"
             class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
-            :class="currentFolderTab === 'journal' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+            :class="currentFolderTab === 'journal' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <BookOpen class="w-4 h-4" />
             <span>Projektjournal ({{ folderJournals.length }})</span>
@@ -269,7 +269,7 @@
             type="button"
             @click="currentFolderTab = 'fields'"
             class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
-            :class="currentFolderTab === 'fields' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+            :class="currentFolderTab === 'fields' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <SlidersHorizontal class="w-4 h-4" />
             <span>Benutzerdefinierte Felder ({{ fields.length }})</span>
@@ -278,7 +278,7 @@
             type="button"
             @click="currentFolderTab = 'contacts'"
             class="py-2 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap"
-            :class="currentFolderTab === 'contacts' ? 'bg-[#0891B2] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+            :class="currentFolderTab === 'contacts' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <Contact class="w-4 h-4" />
             <span>Kontakte ({{ folderContacts.length }})</span>
@@ -289,7 +289,7 @@
         <!-- TAB 1: PROJEKTE -->
         <div v-if="currentFolderTab === 'projects'" class="space-y-4">
           <!-- Search & Filter Toolbar -->
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg p-3 shadow-2xs">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm">
             <div class="flex items-center gap-2 flex-1 max-w-md">
               <div class="relative w-full">
                 <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -297,7 +297,7 @@
                   v-model="projectSearchQuery"
                   type="text"
                   placeholder="Projekte durchsuchen (Titel, Adresse, Ref-Nr...)"
-                  class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                  class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 />
                 <button
                   v-if="projectSearchQuery"
@@ -324,7 +324,7 @@
                   type="button"
                   @click="projectStatusFilter = 'active'"
                   class="px-2.5 py-1 rounded-md transition cursor-pointer"
-                  :class="projectStatusFilter === 'active' ? 'bg-white text-[#0891B2] shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+                  :class="projectStatusFilter === 'active' ? 'bg-white text-[#00A3C4] shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
                 >
                   Aktiv ({{ activeProjectsCount }})
                 </button>
@@ -344,7 +344,7 @@
                   type="button"
                   @click="projectViewMode = 'grid'"
                   class="p-1.5 rounded text-xs transition cursor-pointer"
-                  :class="projectViewMode === 'grid' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
+                  :class="projectViewMode === 'grid' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
                   title="Kachelansicht"
                 >
                   <LayoutGrid class="w-4 h-4" />
@@ -353,7 +353,7 @@
                   type="button"
                   @click="projectViewMode = 'list'"
                   class="p-1.5 rounded text-xs transition cursor-pointer"
-                  :class="projectViewMode === 'list' ? 'bg-white text-[#0891B2] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
+                  :class="projectViewMode === 'list' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
                   title="Listenansicht"
                 >
                   <List class="w-4 h-4" />
@@ -364,7 +364,7 @@
 
           <!-- Empty State -->
           <div v-if="filteredProjects.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <Folder class="w-6 h-6" />
             </div>
             <h3 class="text-base font-bold text-slate-900">
@@ -395,16 +395,16 @@
             <div
               v-for="project in filteredProjects"
               :key="project.id"
-              class="border rounded-lg p-5 transition-all duration-200 flex flex-col justify-between group shadow-2xs hover:shadow-xs"
+              class="border rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between group shadow-sm hover:shadow-md backdrop-blur-md"
               :class="project.status === 'completed'
                 ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:border-emerald-500'
-                : 'bg-white border-slate-200 hover:border-[#0891B2]'"
+                : 'bg-white border-slate-200 hover:border-[#00A3C4]'"
             >
               <div>
                 <div class="flex items-start justify-between mb-3">
                   <div
                     class="w-9 h-9 rounded flex items-center justify-center border"
-                    :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                    :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#00A3C4]'"
                   >
                     <ClipboardList class="w-5 h-5" />
                   </div>
@@ -427,7 +427,7 @@
                     </span>
                     <span
                       class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase flex items-center gap-1"
-                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#00A3C4] border border-cyan-200'"
                     >
                       <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
@@ -444,7 +444,7 @@
                   </div>
                 </div>
 
-                <h3 class="text-base font-bold text-slate-900 group-hover:text-[#0891B2] transition mb-2">
+                <h3 class="text-base font-bold text-slate-900 group-hover:text-[#00A3C4] transition mb-2">
                   {{ project.title }}
                 </h3>
 
@@ -455,7 +455,7 @@
                     :key="f.key"
                     class="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium"
                   >
-                    <strong class="text-[#0891B2]">{{ f.label }}:</strong> {{ f.value }}
+                    <strong class="text-[#00A3C4]">{{ f.label }}:</strong> {{ f.value }}
                   </span>
                 </div>
 
@@ -490,7 +490,7 @@
                     <div class="text-xs font-bold text-slate-900">{{ project.member_count }}</div>
                   </div>
                   <div>
-                    <div class="text-[9px] text-[#0891B2] uppercase font-semibold">Aufwand</div>
+                    <div class="text-[9px] text-[#00A3C4] uppercase font-semibold">Aufwand</div>
                     <div class="text-xs font-bold" :class="(project.tracked_hours || 0) > (project.budget_hours || 0) && project.budget_hours > 0 ? 'text-rose-600' : 'text-slate-900'">
                       {{ project.tracked_hours || 0 }}h
                     </div>
@@ -501,7 +501,7 @@
               <div class="pt-2 flex items-center gap-2">
                 <NuxtLink
                   :to="`/projects/${project.id}`"
-                  class="taskster_button flex-1 px-4 text-xs h-8 rounded-md flex items-center justify-center space-x-1"
+                  class="taskster_button flex-1 px-4 text-xs h-[38px] rounded-lg flex items-center justify-center space-x-1.5 font-semibold"
                 >
                   <span>Projekt öffnen</span>
                   <ArrowRight class="w-3.5 h-3.5" />
@@ -541,7 +541,7 @@
                     :class="project.status === 'completed' ? 'bg-emerald-50 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50/50'"
                   >
                     <td class="py-3 px-4">
-                      <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#0891B2] transition text-sm">
+                      <NuxtLink :to="`/projects/${project.id}`" class="font-bold text-slate-900 hover:text-[#00A3C4] transition text-sm">
                         {{ project.title }}
                       </NuxtLink>
                     </td>
@@ -557,7 +557,7 @@
                         </span>
                         <span
                           class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase flex items-center gap-1"
-                          :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#0891B2] border border-cyan-200'"
+                          :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#00A3C4] border border-cyan-200'"
                         >
                           <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                           {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
@@ -579,7 +579,7 @@
                     </td>
                     <td class="py-3 px-4">
                       <div class="flex items-center space-x-1.5">
-                        <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+                        <Clock class="w-3.5 h-3.5 text-[#00A3C4]" />
                         <span class="font-bold text-slate-900">{{ project.tracked_hours || 0 }} Std.</span>
                         <span v-if="project.budget_hours" class="text-[10px] text-slate-500 font-normal">/ {{ project.budget_hours }} Std.</span>
                       </div>
@@ -641,7 +641,7 @@
           <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <BookOpen class="w-4 h-4 text-[#0891B2]" />
+                <BookOpen class="w-4 h-4 text-[#00A3C4]" />
                 <span>Projektjournal in diesem Ordner</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
@@ -659,7 +659,7 @@
 
           <!-- Empty State Journals -->
           <div v-if="folderJournals.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <BookOpen class="w-6 h-6" />
             </div>
             <h3 class="text-base font-bold text-slate-900">Noch keine Journal-Einträge vorhanden</h3>
@@ -699,7 +699,7 @@
                   <NuxtLink
                     v-if="entry.project_id"
                     :to="`/projects/${entry.project_id}`"
-                    class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[#0891B2] border border-slate-200 flex items-center gap-1 transition"
+                    class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[#00A3C4] border border-slate-200 flex items-center gap-1 transition"
                   >
                     <Folder class="w-3 h-3" />
                     <span>Projekt: {{ getProjectTitle(entry.project_id) }}</span>
@@ -734,7 +734,7 @@
           <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <SlidersHorizontal class="w-4 h-4 text-[#0891B2]" />
+                <SlidersHorizontal class="w-4 h-4 text-[#00A3C4]" />
                 <span>Benutzerdefinierte Felder für diesen Ordner</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
@@ -800,7 +800,7 @@
                   <button
                     type="button"
                     @click="openStandardFieldLogicModal(sf.field_key, sf.label)"
-                    class="text-[11px] font-bold text-[#0891B2] hover:underline cursor-pointer ml-auto"
+                    class="text-[11px] font-bold text-[#00A3C4] hover:underline cursor-pointer ml-auto"
                   >
                     Logik anpassen
                   </button>
@@ -811,7 +811,7 @@
 
           <!-- Empty State Custom Fields -->
           <div v-if="folderCustomFields.length === 0" class="text-center py-12 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <SlidersHorizontal class="w-6 h-6" />
             </div>
             <h3 class="text-base font-bold text-slate-900">Noch keine benutzerdefinierten Felder</h3>
@@ -892,7 +892,7 @@
                         class="taskster_button_light px-2.5 text-xs h-7 rounded-md inline-flex items-center space-x-1 cursor-pointer"
                         title="Feld bearbeiten"
                       >
-                        <Pencil class="w-3 h-3 text-[#0891B2]" />
+                        <Pencil class="w-3 h-3 text-[#00A3C4]" />
                         <span>Bearbeiten</span>
                       </button>
                       <button
@@ -916,7 +916,7 @@
           <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Contact class="w-4 h-4 text-[#0891B2]" />
+                <Contact class="w-4 h-4 text-[#00A3C4]" />
                 <span>Kontakte in diesem Ordner</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
@@ -934,7 +934,7 @@
 
           <!-- Empty State Contacts -->
           <div v-if="folderContacts.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <Contact class="w-6 h-6" />
             </div>
             <h3 class="text-base font-bold text-slate-900">Noch keine Kontakte in diesem Ordner</h3>
@@ -961,7 +961,7 @@
                 <!-- Card Top: Avatar, Name, Company, Function -->
                 <div class="flex items-start justify-between gap-3 mb-3">
                   <div class="flex items-start gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-md bg-[#0891B2] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    <div class="w-10 h-10 rounded-md bg-[#00A3C4] text-white flex items-center justify-center font-bold text-sm shrink-0">
                       {{ getContactInitials(c) }}
                     </div>
                     <div class="min-w-0">
@@ -1003,7 +1003,7 @@
                 <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
                   <div v-if="c.mobile" class="flex items-center gap-2">
                     <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`tel:${c.mobile}`" class="font-medium text-[#0891B2] hover:underline truncate">
+                    <a :href="`tel:${c.mobile}`" class="font-medium text-[#00A3C4] hover:underline truncate">
                       {{ c.mobile }}
                     </a>
                     <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold ml-auto" title="WhatsApp Chat öffnen">
@@ -1013,14 +1013,14 @@
 
                   <div v-if="c.phone && !c.mobile" class="flex items-center gap-2">
                     <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`tel:${c.phone}`" class="font-medium text-[#0891B2] hover:underline truncate">
+                    <a :href="`tel:${c.phone}`" class="font-medium text-[#00A3C4] hover:underline truncate">
                       {{ c.phone }}
                     </a>
                   </div>
 
                   <div v-if="c.email" class="flex items-center gap-2">
                     <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`mailto:${c.email}`" class="font-medium text-slate-800 hover:text-[#0891B2] hover:underline truncate">
+                    <a :href="`mailto:${c.email}`" class="font-medium text-slate-800 hover:text-[#00A3C4] hover:underline truncate">
                       {{ c.email }}
                     </a>
                   </div>
@@ -1031,7 +1031,7 @@
                       :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([c.address, c.zip_code, c.city].filter(Boolean).join(', '))}`"
                       target="_blank"
                       rel="noopener"
-                      class="text-slate-600 hover:text-[#0891B2] hover:underline truncate"
+                      class="text-slate-600 hover:text-[#00A3C4] hover:underline truncate"
                     >
                       {{ [c.address, [c.zip_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') }}
                     </a>
@@ -1049,7 +1049,7 @@
                 <button
                   @click="exportContactVCard(c)"
                   type="button"
-                  class="text-xs font-semibold text-slate-600 hover:text-[#0891B2] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
+                  class="text-xs font-semibold text-slate-600 hover:text-[#00A3C4] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
                   title="vCard herunterladen"
                 >
                   <Download class="w-3.5 h-3.5" />
@@ -1059,7 +1059,7 @@
                   <button
                     @click="openEditContactModal(c)"
                     type="button"
-                    class="p-1.5 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition cursor-pointer"
+                    class="p-1.5 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
                     title="Bearbeiten"
                   >
                     <Pencil class="w-3.5 h-3.5" />
@@ -1353,7 +1353,7 @@
                           <button
                             type="button"
                             @click="openEditTemplateFieldLogic(fIdx)"
-                            class="text-[10px] text-[#0891B2] font-bold hover:underline cursor-pointer"
+                            class="text-[10px] text-[#00A3C4] font-bold hover:underline cursor-pointer"
                           >
                             Ändern
                           </button>
@@ -1389,12 +1389,12 @@
                     v-model="newTemplateFieldInput"
                     type="text"
                     placeholder="+ Weiteres Zusatzfeld zur Vorlage..."
-                    class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2]"
+                    class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#00A3C4]"
                     @keydown.enter.prevent="addTemplateField"
                   />
                   <select
                     v-model="newTemplateFieldType"
-                    class="px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2]"
+                    class="px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#00A3C4]"
                   >
                     <option value="text">Text</option>
                     <option value="textarea">Notiz</option>
@@ -1487,7 +1487,7 @@
                 <button
                   type="button"
                   @click="insertSampleCSVText"
-                  class="text-xs font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                  class="text-xs font-semibold text-[#00A3C4] hover:underline cursor-pointer"
                 >
                   + Muster-Daten einfügen
                 </button>
@@ -1556,7 +1556,7 @@
                 <select
                   v-model="selectedImportTemplateId"
                   @change="onImportTemplateChange"
-                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                  class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 >
                   <option value="">-- Keine Vorlage (Eigene Phasen &amp; Standard nutzen) --</option>
                   <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">
@@ -1592,8 +1592,8 @@
                         <td class="py-2.5 px-4">
                           <select
                             v-model="importColumnMapping[hIdx]"
-                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#0891B2]"
-                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#0891B2] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx] === 'action:create_task' ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : ''))"
+                            class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#00A3C4]"
+                            :class="importColumnMapping[hIdx] === 'title' ? 'border-[#00A3C4] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx] === 'action:create_task' ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : ''))"
                           >
                             <option value="">-- Nicht importieren --</option>
                             <optgroup label="Aktionen & Aufgaben">
@@ -1684,7 +1684,7 @@
                   <button
                     type="button"
                     @click="resetImportSectionsToDefault"
-                    class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer text-left"
+                    class="text-[11px] font-semibold text-[#00A3C4] hover:underline cursor-pointer text-left"
                   >
                     ↺ Auf Standard (Offen, In Arbeit, Abgeschlossen)
                   </button>
@@ -1699,7 +1699,7 @@
                     :key="sIdx"
                     class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs bg-white border border-slate-300 text-slate-800 font-bold shadow-2xs"
                   >
-                    <span class="text-[#0891B2] text-[10px] font-mono">{{ sIdx + 1 }}.</span>
+                    <span class="text-[#00A3C4] text-[10px] font-mono">{{ sIdx + 1 }}.</span>
                     <input
                       v-model="importWorkflowSections[sIdx]"
                       type="text"
@@ -1723,13 +1723,13 @@
                       @keydown.enter.prevent="addImportSection"
                       type="text"
                       placeholder="+ Neuer Abschnitt..."
-                      class="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#0891B2] w-36"
+                      class="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#00A3C4] w-36"
                     />
                     <button
                       v-if="newImportSectionInput.trim()"
                       type="button"
                       @click="addImportSection"
-                      class="px-2 py-1 bg-[#0891B2] text-white text-[11px] font-bold rounded-lg hover:opacity-90 cursor-pointer"
+                      class="px-2 py-1 bg-[#00A3C4] text-white text-[11px] font-bold rounded-lg hover:opacity-90 cursor-pointer"
                     >
                       +
                     </button>
@@ -1834,7 +1834,7 @@
                     <input
                       type="checkbox"
                       v-model="newProjectCustomData[f.field_key]"
-                      class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                      class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
                     />
                     <span class="text-xs font-medium text-slate-700">
                       {{ newProjectCustomData[f.field_key] ? '✓ Ja / Aktiv' : 'Nein / Inaktiv' }}
@@ -1976,17 +1976,17 @@
           <div class="p-3.5 bg-cyan-50/50 border border-cyan-200/80 rounded-2xl space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <BookOpen class="w-4 h-4 text-[#0891B2]" />
+                <BookOpen class="w-4 h-4 text-[#00A3C4]" />
                 <span>Projektvorlage für diesen Ordner</span>
               </label>
-              <span v-if="editFolderTemplateId" class="text-[10px] font-bold text-[#0891B2] px-2 py-0.5 bg-white rounded-full border border-cyan-200 shadow-2xs">
+              <span v-if="editFolderTemplateId" class="text-[10px] font-bold text-[#00A3C4] px-2 py-0.5 bg-white rounded-full border border-cyan-200 shadow-2xs">
                 Aktiv
               </span>
             </div>
             <select
               v-model="editFolderTemplateId"
               @change="onEditFolderTemplateChange"
-              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#0891B2] font-medium cursor-pointer"
+              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] font-medium cursor-pointer"
             >
               <option value="">Keine Vorlage (Freie / Manuelle Abschnitte)</option>
               <option v-for="tpl in CONSTRUCTION_TEMPLATES" :key="tpl.id" :value="tpl.id">
@@ -2010,7 +2010,7 @@
                   type="button"
                   v-if="selectedEditTemplate"
                   @click="resetEditFolderSectionsFromTemplate"
-                  class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                  class="text-[11px] font-semibold text-[#00A3C4] hover:underline cursor-pointer"
                 >
                   ↺ Aus Vorlage neu laden
                 </button>
@@ -2018,7 +2018,7 @@
                   type="button"
                   v-else
                   @click="resetEditFolderSectionsToStandard"
-                  class="text-[11px] font-semibold text-[#0891B2] hover:underline cursor-pointer"
+                  class="text-[11px] font-semibold text-[#00A3C4] hover:underline cursor-pointer"
                 >
                   ↺ Standard-Phasen
                 </button>
@@ -2041,7 +2041,7 @@
                     type="text"
                     required
                     placeholder="Phasenname"
-                    class="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                    class="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                   />
 
                   <!-- Ziel für Erledigt Toggle -->
@@ -2097,7 +2097,7 @@
                   @keydown.enter.prevent="addEditFolderSection"
                   type="text"
                   placeholder="+ Neuer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
-                  class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#0891B2] font-medium"
+                  class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#00A3C4] font-medium"
                 />
                 <button
                   type="button"
@@ -2391,7 +2391,7 @@
               class="flex items-center justify-between p-2 rounded-lg bg-cyan-50/60 border border-cyan-200 text-xs"
             >
               <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: ag.color || '#0891B2' }"></span>
+                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: ag.color || '#00A3C4' }"></span>
                 <span class="font-bold text-slate-900">{{ ag.name }}</span>
                 <span class="text-[10px] text-slate-500">({{ ag.members?.length || 0 }} Mitglieder)</span>
               </div>
@@ -2571,7 +2571,7 @@
         <div class="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen class="w-4 h-4 text-[#0891B2]" />
+              <BookOpen class="w-4 h-4 text-[#00A3C4]" />
               <span>Journal-Eintrag erfassen</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
@@ -2593,7 +2593,7 @@
             </label>
             <select
               v-model="quickJournalProjectId"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="auto">✨ Automatisch zuweisen (anhand Text/Titel)</option>
               <optgroup v-if="projects.length > 0" label="Spezifisches Projekt auswählen">
@@ -2614,7 +2614,7 @@
               <label class="block text-xs font-bold text-slate-700 mb-1">Kategorie</label>
               <select
                 v-model="quickJournalCategory"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               >
                 <option value="notiz">Notiz</option>
                 <option value="baufortschritt">Baufortschritt</option>
@@ -2630,7 +2630,7 @@
                 v-model="quickJournalTitle"
                 type="text"
                 placeholder="z.B. Bauabnahme Keller"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
           </div>
@@ -2645,7 +2645,7 @@
               required
               rows="4"
               placeholder="Bericht, Feststellungen, Beschlüsse oder Notizen..."
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#0891B2] resize-y"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4] resize-y"
             ></textarea>
           </div>
 
@@ -2728,7 +2728,7 @@
               type="text"
               required
               placeholder="z.B. Info, Bauleiter, Vorgang, Fertigstellung..."
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             />
           </div>
 
@@ -2737,7 +2737,7 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2] cursor-pointer"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
               <option value="text">Textzeile (kurz)</option>
               <option value="textarea">Mehrzeiliger Text / Notizfeld</option>
@@ -2770,12 +2770,12 @@
                 @keydown.enter.prevent="addSelectOption"
                 type="text"
                 placeholder="+ Option eingeben und Enter drücken"
-                class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#0891B2]"
+                class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#00A3C4]"
               />
               <button
                 type="button"
                 @click="addSelectOption"
-                class="px-3 py-1.5 bg-[#0891B2] text-white text-xs font-bold rounded-lg cursor-pointer"
+                class="px-3 py-1.5 bg-[#00A3C4] text-white text-xs font-bold rounded-lg cursor-pointer"
               >
                 Hinzufügen
               </button>
@@ -2788,7 +2788,7 @@
               <input
                 v-model="newFieldIsRequired"
                 type="checkbox"
-                class="w-4 h-4 rounded border-slate-300 text-[#0891B2] focus:ring-0 cursor-pointer"
+                class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
               />
               <span class="text-xs font-semibold text-slate-700">Pflichtfeld (Eingabe erforderlich)</span>
             </label>
@@ -2987,7 +2987,7 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Abhängig von Feld:</label>
             <select
               v-model="templateLogicField"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <optgroup label="Standard Aufgabenfelder">
                 <option value="status">🔄 Status</option>
@@ -3015,7 +3015,7 @@
             <select
               v-if="templateLogicField === 'status'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="todo">Zu erledigen (todo)</option>
               <option value="in_progress">In Bearbeitung (in_progress)</option>
@@ -3027,7 +3027,7 @@
             <select
               v-else-if="templateLogicField === 'priority'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="dringend">Dringend</option>
               <option value="hoch">Hoch</option>
@@ -3039,7 +3039,7 @@
             <select
               v-else-if="templateLogicField === 'assigned_to'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="assigned">Jemand zugewiesen</option>
               <option value="unassigned">Niemand zugewiesen</option>
@@ -3049,7 +3049,7 @@
             <select
               v-else-if="templateLogicField === 'due_date'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="set">Datum gesetzt</option>
               <option value="not_set">Kein Datum gesetzt</option>
@@ -3061,7 +3061,7 @@
             <select
               v-else-if="templateLogicField === 'color'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="set">Farbe gesetzt</option>
               <option value="not_set">Keine Farbe gesetzt</option>
@@ -3071,7 +3071,7 @@
             <select
               v-else-if="templateLogicField === 'tags'"
               v-model="templateLogicValue"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <option value="set">Tags vorhanden</option>
               <option value="not_set">Keine Tags</option>
@@ -3082,7 +3082,7 @@
               v-model="templateLogicValue"
               type="text"
               placeholder="Erwarteter Wert..."
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             />
           </div>
         </div>
@@ -3144,7 +3144,7 @@
               type="text"
               required
               placeholder="z.B. Marco Rossi"
-              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             />
           </div>
 
@@ -3155,7 +3155,7 @@
                 v-model="contactForm.company_name"
                 type="text"
                 placeholder="z.B. Rossi Bau AG"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
             <div>
@@ -3164,7 +3164,7 @@
                 v-model="contactForm.role_function"
                 type="text"
                 placeholder="z.B. Bauleiter, Polier"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
           </div>
@@ -3176,7 +3176,7 @@
                 v-model="contactForm.mobile"
                 type="tel"
                 placeholder="+41 79 123 45 67"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
             <div>
@@ -3185,7 +3185,7 @@
                 v-model="contactForm.phone"
                 type="tel"
                 placeholder="+41 41 123 45 67"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
           </div>
@@ -3196,7 +3196,7 @@
               v-model="contactForm.email"
               type="email"
               placeholder="m.rossi@firma.ch"
-              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             />
           </div>
 
@@ -3207,7 +3207,7 @@
                 v-model="contactForm.address"
                 type="text"
                 placeholder="Hauptstrasse 12"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
             <div>
@@ -3216,7 +3216,7 @@
                 v-model="contactForm.city"
                 type="text"
                 placeholder="6000 Luzern"
-                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2]"
+                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
           </div>
@@ -3227,7 +3227,7 @@
               v-model="contactForm.notes"
               rows="2"
               placeholder="Wichtige Hinweise oder Erreichbarkeit..."
-              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#0891B2] resize-y"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] resize-y"
             ></textarea>
           </div>
 
@@ -3250,11 +3250,75 @@
         </form>
       </div>
     </div>
+    <!-- UNIVERSAL IN-APP CONFIRMATION MODAL (Zero Native Popups) -->
+    <div v-if="confirmModal.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            :class="confirmModal.danger ? 'bg-rose-100 border border-rose-200 text-rose-600' : 'bg-cyan-100 border border-cyan-200 text-[#00A3C4]'"
+          >
+            <AlertTriangle v-if="confirmModal.danger" class="w-5 h-5" />
+            <Info v-else class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ confirmModal.title }}</h3>
+            <p v-if="confirmModal.subtitle" class="text-xs text-slate-500 mt-0.5">{{ confirmModal.subtitle }}</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-600 leading-relaxed">{{ confirmModal.message }}</p>
+
+        <div v-if="confirmModal.error" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
+          {{ confirmModal.error }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-2">
+          <button
+            type="button"
+            @click="confirmModal.show = false"
+            :disabled="confirmModal.loading"
+            class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
+          >
+            {{ $t('common.abbrechen') }}
+          </button>
+          <button
+            type="button"
+            @click="executeConfirmModalAction"
+            :disabled="confirmModal.loading"
+            :class="confirmModal.danger ? 'taskster_button_accent' : 'taskster_button'"
+            class="px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-2"
+          >
+            <span>{{ confirmModal.loading ? 'Wird ausgeführt...' : confirmModal.confirmText }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIVERSAL IN-APP TOAST FEEDBACK (Zero Native Popups) -->
+    <div v-if="pageToast.show" class="fixed bottom-6 right-6 z-50 max-w-sm w-full transition-all duration-300">
+      <div
+        class="flex items-start gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md"
+        :class="pageToast.type === 'error' ? 'bg-rose-50/95 border-rose-200 text-rose-900' : pageToast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900' : 'bg-slate-900/90 border-slate-700 text-white'"
+      >
+        <CheckCircle2 v-if="pageToast.type === 'success'" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <AlertTriangle v-else-if="pageToast.type === 'error'" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <Info v-else class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+        <div class="flex-1 text-xs">
+          <div class="font-bold">{{ pageToast.title || (pageToast.type === 'error' ? 'Hinweis' : pageToast.type === 'success' ? 'Erfolg' : 'Info') }}</div>
+          <div class="mt-0.5 leading-relaxed">{{ pageToast.message }}</div>
+        </div>
+        <button @click="pageToast.show = false" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
+  Info,
   Folder,
   LayoutDashboard,
   Plus,
@@ -3299,6 +3363,86 @@ const { t, te } = useI18n()
 const route = useRoute()
 const { user, authHeaders } = useAuth()
 const folderId = route.params.id as string
+
+// ---------------------------------------------------------------------------
+// In-App Confirm & Toast System (Zero Native Browser Popups)
+// ---------------------------------------------------------------------------
+const confirmModal = ref<{
+  show: boolean
+  title: string
+  subtitle?: string
+  message: string
+  confirmText: string
+  danger: boolean
+  loading: boolean
+  error?: string
+  action?: () => Promise<void> | void
+}>({
+  show: false,
+  title: '',
+  subtitle: '',
+  message: '',
+  confirmText: 'Bestätigen',
+  danger: true,
+  loading: false
+})
+
+const pageToast = ref<{
+  show: boolean
+  title?: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}>({
+  show: false,
+  title: '',
+  message: '',
+  type: 'info'
+})
+let pageToastTimer: any = null
+
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', title?: string) => {
+  pageToast.value = { show: true, message, type, title }
+  if (pageToastTimer) clearTimeout(pageToastTimer)
+  pageToastTimer = setTimeout(() => {
+    pageToast.value.show = false
+  }, 4000)
+}
+
+const triggerConfirmModal = (opts: {
+  title: string
+  subtitle?: string
+  message: string
+  confirmText?: string
+  danger?: boolean
+  action: () => Promise<void> | void
+}) => {
+  confirmModal.value = {
+    show: true,
+    title: opts.title,
+    subtitle: opts.subtitle,
+    message: opts.message,
+    confirmText: opts.confirmText || 'Löschen',
+    danger: opts.danger !== false,
+    loading: false,
+    error: '',
+    action: opts.action
+  }
+}
+
+const executeConfirmModalAction = async () => {
+  if (!confirmModal.value.action) return
+  confirmModal.value.loading = true
+  confirmModal.value.error = ''
+  try {
+    await confirmModal.value.action()
+    confirmModal.value.show = false
+  } catch (err: any) {
+    confirmModal.value.error = err?.data?.statusMessage || err?.message || 'Fehler beim Ausführen der Aktion'
+  } finally {
+    confirmModal.value.loading = false
+  }
+}
+
 
 const folder = ref<any>(null)
 const projects = ref<any[]>([])
@@ -3459,16 +3603,21 @@ const saveQuickJournal = async () => {
 }
 
 const deleteFolderJournal = async (journalId: string) => {
-  if (!confirm('Diesen Journal-Eintrag wirklich löschen?')) return
-  try {
-    await $fetch(`/api/journals/${journalId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    await loadFolderJournals()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Eintrags')
-  }
+  triggerConfirmModal({
+    title: 'Journal-Eintrag löschen',
+    subtitle: 'Dieser Vorgang kann nicht rückgängig gemacht werden',
+    message: 'Möchtest du diesen Journal-Eintrag wirklich unwiderruflich löschen?',
+    confirmText: 'Eintrag löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/journals/${journalId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      await loadFolderJournals()
+      showToast('Journal-Eintrag erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 // Custom Fields & Standard Fields Logic Management in Folder
@@ -3670,16 +3819,21 @@ const saveFolderField = async () => {
 }
 
 const deleteFolderField = async (fieldId: string) => {
-  if (!confirm('Dieses benutzerdefinierte Feld wirklich löschen?')) return
-  try {
-    await $fetch(`/api/folders/${folderId}/fields/${fieldId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    await loadFolderData()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Felds')
-  }
+  triggerConfirmModal({
+    title: 'Benutzerdefiniertes Feld löschen',
+    subtitle: 'Auswirkung auf Projekte',
+    message: 'Dieses benutzerdefinierte Feld wirklich löschen? Alle zugewiesenen Werte in den Projekten dieses Ordners gehen dabei verloren.',
+    confirmText: 'Feld löschen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/folders/${folderId}/fields/${fieldId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      await loadFolderData()
+      showToast('Benutzerdefiniertes Feld gelöscht', 'success')
+    }
+  })
 }
 
 // Contacts Management in Folder
@@ -3799,16 +3953,21 @@ const saveFolderContact = async () => {
 }
 
 const deleteFolderContact = async (c: any) => {
-  if (!confirm(`Möchtest du den Kontakt "${formatContactFullName(c)}" wirklich löschen?`)) return
-  try {
-    await $fetch(`/api/contacts/${c.id}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    await loadFolderContacts()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Löschen des Kontakts')
-  }
+  triggerConfirmModal({
+    title: 'Kontakt entfernen',
+    subtitle: formatContactFullName(c),
+    message: `Möchtest du den Kontakt "${formatContactFullName(c)}" wirklich aus diesem Ordner entfernen?`,
+    confirmText: 'Kontakt entfernen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/contacts/${c.id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      await loadFolderContacts()
+      showToast('Kontakt erfolgreich gelöscht', 'success')
+    }
+  })
 }
 
 const formatContactFullName = (c: any) => {
@@ -4256,7 +4415,7 @@ const toggleFolderCompanyVisibility = async () => {
     }
     await loadFolderMembers()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Ändern der Sichtbarkeit')
+    showToast(err.data?.statusMessage || 'Fehler beim Ändern der Sichtbarkeit', 'error')
   } finally {
     savingFolderVisibility.value = false
   }
@@ -4279,23 +4438,28 @@ const addFolderMember = async () => {
     newMemberUserId.value = ''
     await loadFolderMembers()
   } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Hinzufügen des Mitglieds')
+    showToast(err.data?.statusMessage || 'Fehler beim Hinzufügen des Mitglieds', 'error')
   } finally {
     addingMember.value = false
   }
 }
 
 const removeFolderMember = async (userId: string) => {
-  if (!confirm('Möchtest du dieses Mitglied wirklich aus dem Projektordner entfernen?')) return
-  try {
-    await $fetch(`/api/folders/${folderId}/members/${userId}`, {
-      method: 'DELETE',
-      headers: authHeaders()
-    })
-    await loadFolderMembers()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Fehler beim Entfernen des Mitglieds')
-  }
+  triggerConfirmModal({
+    title: 'Mitglied entfernen',
+    subtitle: 'Zugriffsrechte entziehen',
+    message: 'Möchtest du dieses Mitglied wirklich aus dem Projektordner entfernen?',
+    confirmText: 'Mitglied entfernen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/folders/${folderId}/members/${userId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
+      await loadFolderMembers()
+      showToast('Mitglied erfolgreich entfernt', 'success')
+    }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -4346,28 +4510,33 @@ const assignGroupToFolder = async () => {
     selectedAssignGroupId.value = ''
     await loadGroupsForFolder()
   } catch (err: any) {
-    alert(err?.data?.statusMessage || 'Fehler beim Zuweisen der Gruppe')
+    showToast(err?.data?.statusMessage || 'Fehler beim Zuweisen der Gruppe', 'error')
   } finally {
     assigningGroup.value = false
   }
 }
 
 const removeGroupFromFolder = async (groupId: string) => {
-  if (!confirm('Gruppe wirklich von diesem Ordner entfernen?')) return
-  try {
-    await $fetch(`/api/groups/${groupId}/assign`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        type: 'folder',
-        target_id: folderId,
-        role: 'none'
-      }
-    })
-    await loadGroupsForFolder()
-  } catch (err: any) {
-    alert(err?.data?.statusMessage || 'Fehler beim Entfernen der Gruppe')
-  }
+  triggerConfirmModal({
+    title: 'Gruppe entfernen',
+    subtitle: 'Gruppenzuweisung aufheben',
+    message: 'Möchtest du diese Gruppe wirklich von diesem Ordner entfernen?',
+    confirmText: 'Gruppe entfernen',
+    danger: true,
+    action: async () => {
+      await $fetch(`/api/groups/${groupId}/assign`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: {
+          type: 'folder',
+          target_id: folderId,
+          role: 'none'
+        }
+      })
+      await loadGroupsForFolder()
+      showToast('Gruppe erfolgreich entfernt', 'success')
+    }
+  })
 }
 
 // Project creation & Template state
@@ -5256,7 +5425,7 @@ const createProject = async () => {
       showNewProjectModal.value = false
       resetNewProjectForm()
       await loadFolderData()
-      alert(`${projectsToImport.length} Projekt(e) erfolgreich importiert!`)
+      showToast(`${projectsToImport.length} Projekt(e) erfolgreich importiert!`, 'success')
       return
     }
 

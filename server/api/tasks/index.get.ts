@@ -16,9 +16,10 @@ export default defineEventHandler((event) => {
     JOIN lists l ON l.id = t.list_id
     JOIN projects p ON p.id = l.project_id
     JOIN project_folders pf ON pf.id = p.folder_id
-    WHERE pf.owner_id = ? OR p.id IN (
+    WHERE (pf.owner_id = ? OR p.id IN (
       SELECT pm.project_id FROM project_members pm WHERE pm.user_id = ?
-    )
+    ))
+      AND (t.status IS NULL OR t.status != 'done')
     ORDER BY t.created_at DESC
     LIMIT 20
   `).all(user.id, user.id)

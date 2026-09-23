@@ -3,19 +3,19 @@
     <!-- MeisterTask-Style Hero Section (Centered Date, Greeting, and Floating Search) -->
     <div class="flex flex-col items-center justify-center text-center select-none py-2">
       <!-- Formatted German Date Pill -->
-      <div class="inline-flex items-center space-x-2 text-xs sm:text-sm font-semibold text-slate-700 mb-3 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200/80 shadow-2xs">
-        <Calendar class="w-4 h-4 text-[#0891B2]" />
+      <div class="inline-flex items-center space-x-2 text-xs sm:text-sm font-semibold text-slate-700 mb-3 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-2xs">
+        <Calendar class="w-4 h-4 text-[#00A3C4]" />
         <span>{{ formattedDate }}</span>
       </div>
 
       <!-- Personalized MeisterTask Motivational Greeting -->
-      <div class="px-6 py-3 rounded-xl bg-white border border-slate-200/80 mb-2 shadow-xs max-w-2xl w-full">
+      <div class="px-6 py-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/80 mb-2 shadow-sm max-w-2xl w-full">
         <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center justify-center flex-wrap gap-2">
           <span>{{ greetingPrefix }}, {{ user?.name || 'Martin' }}</span>
           <Sparkles class="w-5 h-5 text-amber-500 inline-block animate-pulse" />
         </h1>
         <p class="text-xs sm:text-sm text-slate-600 font-medium mt-1">
-          <span v-if="user?.company_name" class="font-bold text-[#0891B2]">{{ user.company_name }}</span>
+          <span v-if="user?.company_name" class="font-bold text-[#00A3C4]">{{ user.company_name }}</span>
           <span v-else>{{ $t('dashboard.privater_workspace') }}</span>
           – {{ $t('dashboard.deine_aktuellen_aufgaben') }}
         </p>
@@ -26,7 +26,7 @@
         <button
           type="button"
           @click="openCommandPalette"
-          class="w-full flex items-center gap-3 pl-3.5 pr-3 py-2.5 rounded-lg bg-white text-left shadow-xs border border-slate-300 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0891B2]/30 focus:border-[#0891B2] transition-all cursor-pointer"
+          class="w-full flex items-center gap-3 pl-3.5 pr-3 py-2.5 rounded-xl bg-white/95 backdrop-blur-md text-left shadow-sm border border-slate-300 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]/30 focus:border-[#00A3C4] transition-all cursor-pointer"
         >
           <Search class="w-4 h-4 text-slate-400 shrink-0" />
           <span class="flex-1 text-xs sm:text-sm text-slate-400 truncate">
@@ -43,7 +43,7 @@
     <!-- Free-Plan Info Alert if applicable -->
     <div
       v-if="!user?.is_pro && !user?.company_id && !user?.is_superadmin"
-      class="p-4 rounded-lg bg-amber-50/80 border border-amber-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+      class="p-4 rounded-2xl bg-amber-50/90 backdrop-blur-md border border-amber-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
     >
       <div class="flex items-center space-x-3">
         <div class="w-9 h-9 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
@@ -58,7 +58,7 @@
       </div>
       <NuxtLink
         to="/settings"
-        class="taskster_button px-4 text-xs h-9 rounded-md shrink-0"
+        class="taskster_button px-6 text-xs h-[42px] rounded-lg shrink-0"
       >
         {{ $t('dashboard.auf_pro_upgraden') }}
       </NuxtLink>
@@ -69,21 +69,21 @@
       <!-- LEFT / CENTER COLUMN: Aufgaben & Projekte (8 Cols on LG) -->
       <div class="lg:col-span-8 space-y-6">
         <!-- WIDGET 1: Aufgaben & Tages-Todos (Daily Focus & MeisterTask Overview) -->
-        <section class="bg-white border border-slate-200 rounded-lg p-5 sm:p-6 shadow-xs">
+        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 mb-5 gap-3">
             <div class="flex items-center space-x-3 flex-wrap gap-y-2">
               <div class="flex items-center space-x-2">
-                <ClipboardList class="w-5 h-5 text-[#0891B2]" />
+                <ClipboardList class="w-5 h-5 text-[#00A3C4]" />
                 <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('dashboard.aufgaben') }}</h2>
               </div>
               
               <!-- Tab Switcher: Mein Tag vs. Projekt-Aufgaben -->
-              <div class="flex items-center p-1 bg-slate-100 border border-slate-200 rounded-md">
+              <div class="flex items-center p-1 bg-slate-100 border border-slate-200 rounded-lg">
                 <button
                   type="button"
                   @click="activeTaskTab = 'daily'"
-                  class="flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-semibold transition cursor-pointer"
-                  :class="activeTaskTab === 'daily' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                  class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer"
+                  :class="activeTaskTab === 'daily' ? 'bg-[#00A3C4] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                 >
                   <Sun class="w-3.5 h-3.5" />
                   <span>{{ $t('dashboard.mein_tag') }}</span>
@@ -98,8 +98,8 @@
                 <button
                   type="button"
                   @click="activeTaskTab = 'assigned'"
-                  class="flex items-center space-x-1.5 px-3 py-1 rounded text-xs font-semibold transition cursor-pointer"
-                  :class="activeTaskTab === 'assigned' ? 'bg-[#0891B2] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                  class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer"
+                  :class="activeTaskTab === 'assigned' ? 'bg-[#00A3C4] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
                 >
                   <Folder class="w-3.5 h-3.5" />
                   <span>{{ $t('dashboard.alle_projekte') }}</span>
@@ -117,25 +117,25 @@
               <button
                 type="button"
                 @click="showVoiceModal = true"
-                class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] border border-cyan-200 text-xs font-semibold transition shadow-2xs cursor-pointer"
+                class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 text-xs font-semibold transition shadow-2xs cursor-pointer"
                 :title="$t('dashboard.sprachaufnahme_via_openaiwhisperlar')"
               >
-                <Mic class="w-3.5 h-3.5 text-[#0891B2]" />
+                <Mic class="w-3.5 h-3.5 text-[#00A3C4]" />
                 <span>{{ $t('dashboard.neue_sprachnotiz') }}</span>
               </button>
 
               <NuxtLink
                 to="/time"
-                class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
+                class="hidden sm:inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-2xs"
                 :title="$t('dashboard.zur_globalen_zeitrapportierung')"
               >
-                <Clock class="w-3.5 h-3.5 text-[#0891B2]" />
+                <Clock class="w-3.5 h-3.5 text-[#00A3C4]" />
                 <span>{{ $t('dashboard.zeitrapporte') }}</span>
               </NuxtLink>
 
               <button
                 @click="activeTaskTab === 'daily' ? loadDailyTodos() : loadTasks()"
-                class="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer ml-auto border border-slate-200"
+                class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer ml-auto border border-slate-200"
                 :title="$t('common.aktualisieren')"
               >
                 <RotateCcw class="w-3.5 h-3.5" />
@@ -145,19 +145,25 @@
 
           <!-- TAB 1: MEIN TAG (Tages-Todos mit automatischem Rollover) -->
           <div v-if="activeTaskTab === 'daily'" class="space-y-4">
+            <!-- In-App Error Banner for Daily Todos -->
+            <div v-if="dailyTodoError" class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between">
+              <span>{{ dailyTodoError }}</span>
+              <button type="button" @click="dailyTodoError = ''" class="text-rose-500 hover:text-rose-700 font-bold ml-2">✕</button>
+            </div>
+
             <!-- Quick Add Bar for Today -->
-            <form @submit.prevent="createDailyTodo" class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <form @submit.prevent="createDailyTodo" class="p-2 rounded-xl bg-slate-50/80 border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 v-model="newDailyTodoTitle"
                 type="text"
                 :placeholder="$t('dashboard.todo_today')"
-                class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs"
+                class="flex-1 px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] shadow-2xs"
               />
 
               <div class="flex items-center space-x-2">
                 <select
                   v-model="newDailyTodoProjectId"
-                  class="px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-medium text-slate-700 focus:outline-none focus:border-[#0891B2] shadow-2xs shrink-0 max-w-[190px] truncate"
+                  class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-[#00A3C4] shadow-2xs shrink-0 max-w-[190px] truncate"
                 >
                   <option value="">{{ $t('dashboard.ohne_projekt_persönlich') }}</option>
                   <option v-for="p in availableProjects" :key="p.id" :value="p.id">
@@ -168,7 +174,7 @@
                 <button
                   type="submit"
                   :disabled="creatingDailyTodo || !newDailyTodoTitle.trim()"
-                  class="taskster_button px-3 text-xs h-[34px] rounded-md shrink-0 flex items-center space-x-1"
+                  class="taskster_button px-4 text-xs h-[38px] rounded-lg shrink-0 flex items-center space-x-1"
                 >
                   <Plus class="w-3.5 h-3.5" />
                   <span>{{ creatingDailyTodo ? '...' : ($t('company.hinzufügen') || 'Hinzufügen') }}</span>
@@ -177,16 +183,16 @@
             </form>
 
             <!-- Progress Bar for Today -->
-            <div v-if="dailyTodos.length > 0" class="px-3 py-2 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600 font-semibold gap-3">
+            <div v-if="dailyTodos.length > 0" class="px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600 font-semibold gap-3">
               <div class="flex items-center space-x-2 min-w-0">
-                <Target class="w-4 h-4 text-[#0891B2]" />
+                <Target class="w-4 h-4 text-[#00A3C4]" />
                 <span>{{ $t('dashboard.heute_erledigt') }}</span>
                 <span class="text-slate-900 font-bold">{{ completedDailyTodosCount }} {{ $t('dashboard.von') }} {{ dailyTodos.length }}</span>
                 <span class="text-slate-400 font-normal">({{ completionPercentage }}%)</span>
               </div>
               <div class="w-36 sm:w-48 bg-slate-200 rounded-full h-2 overflow-hidden shrink-0">
                 <div
-                  class="bg-[#0891B2] h-2 rounded-full transition-all duration-500"
+                  class="bg-[#00A3C4] h-2 rounded-full transition-all duration-500"
                   :style="{ width: completionPercentage + '%' }"
                 ></div>
               </div>
@@ -200,7 +206,7 @@
             <!-- Empty Daily Todos State -->
             <div
               v-else-if="dailyTodos.length === 0"
-              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-xl bg-slate-50/50"
             >
               <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-2 border border-amber-200">
                 <Sun class="w-5 h-5" />
@@ -217,7 +223,7 @@
                 v-for="todo in dailyTodos"
                 :key="todo.id"
                 class="group/todo flex items-center justify-between p-3 rounded-lg border transition-all duration-200"
-                :class="todo.is_completed ? 'bg-slate-50/80 border-slate-200 opacity-75' : 'bg-white hover:bg-slate-50/50 border-slate-200 hover:border-[#0891B2] shadow-2xs'"
+                :class="todo.is_completed ? 'bg-slate-50/80 border-slate-200 opacity-75' : 'bg-white hover:bg-slate-50/50 border-slate-200 hover:border-[#00A3C4] shadow-2xs'"
               >
                 <div class="flex items-center space-x-3 min-w-0">
                   <!-- Checkbox -->
@@ -225,7 +231,7 @@
                     type="button"
                     @click="toggleDailyTodo(todo)"
                     class="w-5 h-5 rounded border flex items-center justify-center transition shrink-0 cursor-pointer"
-                    :class="todo.is_completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white hover:border-[#0891B2]'"
+                    :class="todo.is_completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white hover:border-[#00A3C4]'"
                   >
                     <Check v-if="todo.is_completed" class="w-3.5 h-3.5 text-white stroke-[3]" />
                   </button>
@@ -254,7 +260,7 @@
                       <NuxtLink
                         v-if="todo.project_id"
                         :to="`/projects/${todo.project_id}`"
-                        class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-cyan-50 hover:bg-cyan-100 text-[#0891B2] font-semibold border border-cyan-200 transition text-[10px]"
+                        class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] font-semibold border border-cyan-200 transition text-[10px]"
                         :title="$t('dashboard.zum_projekt_öffnen')"
                       >
                         <Folder class="w-3 h-3" />
@@ -292,9 +298,9 @@
             <!-- Empty Tasks State -->
             <div
               v-else-if="filteredTasks.length === 0"
-              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-xl bg-slate-50/50"
             >
-              <div class="w-10 h-10 rounded-lg bg-cyan-100 text-[#0891B2] flex items-center justify-center mb-2 border border-cyan-200">
+              <div class="w-10 h-10 rounded-lg bg-cyan-100 text-[#00A3C4] flex items-center justify-center mb-2 border border-cyan-200">
                 <Sparkles class="w-5 h-5" />
               </div>
               <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.du_hast_keine_anstehenden_aufgaben') }}</h3>
@@ -304,21 +310,21 @@
               <NuxtLink
                 v-if="!isFreeUser && folders.length > 0"
                 :to="`/folders/${folders[0]?.id}`"
-                class="taskster_button px-4 text-xs h-9 rounded-md"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg"
               >
                 {{ $t('dashboard.aufgabe_in_projekten_anzeigen') }}
               </NuxtLink>
               <NuxtLink
                 v-else-if="isFreeUser && projects.length > 0"
                 :to="`/projects/${projects[0]?.id}`"
-                class="taskster_button px-4 text-xs h-9 rounded-md"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg"
               >
                 {{ $t('dashboard.aufgabe_in_projekten_anzeigen') }}
               </NuxtLink>
               <button
                 v-else-if="isFreeUser"
                 @click="openNewProjectModal"
-                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>{{ $t('dashboard.erstes_projekt_erstellen') }}</span>
@@ -326,7 +332,7 @@
               <button
                 v-else
                 @click="openNewFolderModal"
-                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>{{ $t('dashboard.ersten_ordner_erstellen') }}</span>
@@ -338,14 +344,14 @@
               <div
                 v-for="task in filteredTasks"
                 :key="task.id"
-                class="group/task flex items-center justify-between p-3.5 rounded-lg border border-slate-200 hover:border-[#0891B2] bg-white hover:bg-slate-50/50 shadow-2xs transition-all"
+                class="group/task flex items-center justify-between p-3.5 rounded-lg border border-slate-200 hover:border-[#00A3C4] bg-white hover:bg-slate-50/50 shadow-2xs transition-all"
               >
                 <div class="flex items-center space-x-3 min-w-0">
-                  <span class="w-2.5 h-2.5 rounded-full bg-[#0891B2] shrink-0"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#00A3C4] shrink-0"></span>
                   <div class="min-w-0">
                     <NuxtLink
                       :to="`/projects/${task.project_id}?task=${task.id}`"
-                      class="text-xs sm:text-sm font-bold text-slate-900 group-hover/task:text-[#0891B2] transition block truncate"
+                      class="text-xs sm:text-sm font-bold text-slate-900 group-hover/task:text-[#00A3C4] transition block truncate"
                     >
                       {{ task.title }}
                     </NuxtLink>
@@ -386,7 +392,7 @@
                     v-else
                     type="button"
                     @click.stop="startTaskTimer(task)"
-                    class="p-1.5 rounded text-slate-400 hover:text-[#0891B2] hover:bg-cyan-50 transition text-xs font-bold cursor-pointer"
+                    class="p-1.5 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition text-xs font-bold cursor-pointer"
                     :title="$t('dashboard.stoppuhr_auf_diese_aufgabe_starten')"
                   >
                     <Clock class="w-4 h-4" />
@@ -401,7 +407,7 @@
                   </span>
                   <NuxtLink
                     :to="`/projects/${task.project_id}?task=${task.id}`"
-                    class="p-1.5 rounded text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 transition text-xs"
+                    class="p-1.5 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 transition text-xs"
                     :title="$t('dashboard.aufgabe_öffnen')"
                   >
                     <ArrowRight class="w-4 h-4" />
@@ -413,10 +419,10 @@
         </section>
 
         <!-- WIDGET 2: Projekte & Projektordner (MeisterTask Style) -->
-        <section class="bg-white border border-slate-200 rounded-lg p-5 sm:p-6 shadow-xs">
+        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm">
           <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-5">
             <div class="flex items-center space-x-3">
-              <Folder class="w-5 h-5 text-[#0891B2]" />
+              <Folder class="w-5 h-5 text-[#00A3C4]" />
               <div>
                 <h2 class="text-base font-bold text-slate-900 tracking-tight">
                   {{ isFreeUser ? $t('dashboard.projekte') : $t('dashboard.projektordner_initiativen') }}
@@ -430,7 +436,7 @@
             <button
               v-if="isFreeUser"
               @click="openNewProjectModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>{{ $t('dashboard.neues_projekt') }}</span>
@@ -438,7 +444,7 @@
             <button
               v-else
               @click="openNewFolderModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
             >
               <Plus class="w-3.5 h-3.5" />
               <span>{{ $t('dashboard.neuer_ordner') }}</span>
@@ -454,9 +460,9 @@
           <template v-else-if="isFreeUser">
             <div
               v-if="filteredProjects.length === 0"
-              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-xl bg-slate-50/50"
             >
-              <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200 shadow-2xs">
                 <Folder class="w-6 h-6" />
               </div>
               <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projekte_gefunden') }}</h3>
@@ -465,7 +471,7 @@
               </p>
               <button
                 @click="openNewProjectModal"
-                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>{{ $t('dashboard.jetzt_projekt_anlegen') }}</span>
@@ -476,16 +482,16 @@
               <div
                 v-for="project in filteredProjects"
                 :key="project.id"
-                class="group/card rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+                class="group/card rounded-xl p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
                 :class="project.status === 'completed'
                   ? 'bg-emerald-50 border border-emerald-400 ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:border-emerald-500'
-                  : 'bg-white border border-slate-200 hover:border-[#0891B2]'"
+                  : 'bg-white border border-slate-200 hover:border-[#00A3C4]'"
               >
                 <div>
                   <div class="flex items-start justify-between mb-3">
                     <div
-                      class="w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold group-hover/card:scale-105 transition-transform border"
-                      :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#0891B2]'"
+                      class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold group-hover/card:scale-105 transition-transform border"
+                      :class="project.status === 'completed' ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs' : 'bg-cyan-50 border-cyan-200 text-[#00A3C4] shadow-2xs'"
                     >
                       <ClipboardList class="w-5 h-5" />
                     </div>
@@ -498,7 +504,7 @@
                     </span>
                   </div>
 
-                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
+                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#00A3C4] transition mb-1">
                     {{ project.title }}
                   </h3>
                   <div class="flex items-center space-x-2 flex-wrap gap-1 text-xs text-slate-500">
@@ -520,14 +526,14 @@
                     v-if="project.owner_id === user?.id || user?.is_superadmin"
                     type="button"
                     @click.stop="openDeleteProjectModal(project)"
-                    class="p-1.5 rounded bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition cursor-pointer text-xs"
+                    class="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition cursor-pointer text-xs"
                     :title="$t('dashboard.projekt_loeschen')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
                   <NuxtLink
                     :to="`/projects/${project.id}`"
-                    class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center"
+                    class="taskster_button px-4 text-xs h-8 rounded-lg inline-flex items-center space-x-1"
                   >
                     <span>{{ $t('dashboard.öffnen') }}</span>
                     <ArrowRight class="w-3.5 h-3.5 ml-1" />
@@ -542,9 +548,9 @@
             <!-- Empty Folders State -->
             <div
               v-if="filteredFolders.length === 0"
-              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg bg-slate-50/50"
+              class="py-10 px-4 text-center flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-xl bg-slate-50/50"
             >
-              <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-3 border border-cyan-200">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200 shadow-2xs">
                 <Folder class="w-6 h-6" />
               </div>
               <h3 class="text-sm font-bold text-slate-900">{{ $t('dashboard.keine_projektordner_gefunden') }}</h3>
@@ -553,7 +559,7 @@
               </p>
               <button
                 @click="openNewFolderModal"
-                class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>{{ $t('dashboard.jetzt_ordner_anlegen') }}</span>
@@ -565,13 +571,13 @@
               <div
                 v-for="folder in filteredFolders"
                 :key="folder.id"
-                class="group/card bg-white border border-slate-200 hover:border-[#0891B2] rounded-lg p-4 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
+                class="group/card bg-white border border-slate-200 hover:border-[#00A3C4] rounded-xl p-4 sm:p-5 transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs"
               >
                 <div>
                   <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10  flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center text-xl font-bold group-hover/card:scale-105 transition-transform shadow-2xs shrink-0">
                       <span v-if="folder.icon">{{ folder.icon }}</span>
-                      <Folder v-else class="w-5 h-5" />
+                      <Folder v-else class="w-5 h-5 text-[#00A3C4]" />
                     </div>
                     <div class="flex items-center space-x-1.5">
                       <span
@@ -588,13 +594,13 @@
                     </div>
                   </div>
 
-                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
+                  <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#00A3C4] transition mb-1">
                     {{ folder.name }}
                   </h3>
                   <p class="text-xs text-slate-500 flex items-center space-x-1">
                     <span>{{ $t('dashboard.inhaber') }}</span>
                     <span class="text-slate-800 font-semibold">{{ folder.owner_name }}</span>
-                    <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-[#0891B2] font-bold ml-1">
+                    <span v-if="user?.id === folder.owner_id" class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-50 border border-cyan-200 text-[#00A3C4] font-bold ml-1">
                       {{ $t('settings.du') }}
                     </span>
                   </p>
@@ -612,7 +618,7 @@
                     <button
                       v-if="user?.id === folder.owner_id"
                       @click="openEditFolderModal(folder)"
-                      class="p-1.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
+                      class="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition cursor-pointer text-xs"
                       :title="$t('dashboard.projektordner_anpassen_name')"
                     >
                       <Pencil class="w-3.5 h-3.5" />
@@ -620,14 +626,14 @@
                     <button
                       v-if="user?.id === folder.owner_id || user?.is_superadmin"
                       @click.stop="openDeleteFolderModal(folder)"
-                      class="p-1.5 rounded bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition cursor-pointer text-xs"
+                      class="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition cursor-pointer text-xs"
                       :title="$t('dashboard.ordner_loeschen')"
                     >
                       <Trash2 class="w-3.5 h-3.5" />
                     </button>
                     <NuxtLink
                       :to="`/folders/${folder.id}`"
-                      class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center"
+                      class="taskster_button px-4 text-xs h-8 rounded-lg inline-flex items-center space-x-1"
                     >
                       <span>{{ $t('dashboard.öffnen') }}</span>
                       <ArrowRight class="w-3.5 h-3.5 ml-1" />
@@ -643,23 +649,23 @@
       <!-- RIGHT COLUMN: Benachrichtigungen & Schnellzugriff (4 Cols on LG) -->
       <div class="lg:col-span-4 space-y-6">
         <!-- WIDGET 3: Benachrichtigungen / Activity Feed (5 Event-Typen) -->
-        <section class="bg-white border border-slate-200 rounded-lg p-5 sm:p-6 shadow-xs">
+        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm">
           <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
             <div class="flex items-center space-x-2.5">
-              <Bell class="w-5 h-5 text-[#0891B2]" />
+              <Bell class="w-5 h-5 text-[#00A3C4]" />
               <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('Navbar.benachrichtigungen') }}</h2>
             </div>
             <div class="flex items-center space-x-2">
               <span
                 class="text-xs font-bold px-2 py-0.5 rounded-full transition"
-                :class="unreadCount > 0 ? 'bg-[#0891B2] text-white shadow-2xs' : 'bg-slate-200 text-slate-700'"
+                :class="unreadCount > 0 ? 'bg-[#00A3C4] text-white shadow-2xs' : 'bg-slate-200 text-slate-700'"
               >
                 {{ unreadCount }}
               </span>
               <button
                 type="button"
                 @click="loadNotifications"
-                class="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer border border-slate-200"
+                class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition text-xs cursor-pointer border border-slate-200"
                 :title="$t('common.aktualisieren')"
               >
                 <RotateCcw class="w-3.5 h-3.5" />
@@ -672,21 +678,21 @@
             <button
               @click="activeNotificationTab = 'all'"
               class="pb-1 transition border-b-2 cursor-pointer"
-              :class="activeNotificationTab === 'all' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
+              :class="activeNotificationTab === 'all' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               {{ $t('dashboard.alle') }}
             </button>
             <button
               @click="activeNotificationTab = 'mentions'"
               class="pb-1 transition border-b-2 cursor-pointer"
-              :class="activeNotificationTab === 'mentions' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
+              :class="activeNotificationTab === 'mentions' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               {{ $t('dashboard.kommentare_einladungen') }}
             </button>
             <button
               @click="activeNotificationTab = 'projects'"
               class="pb-1 transition border-b-2 cursor-pointer"
-              :class="activeNotificationTab === 'projects' ? 'border-[#0891B2] text-[#0891B2]' : 'border-transparent hover:text-slate-800'"
+              :class="activeNotificationTab === 'projects' ? 'border-[#00A3C4] text-[#00A3C4]' : 'border-transparent hover:text-slate-800'"
             >
               {{ $t('dashboard.fälligkeiten_budget') }}
             </button>
@@ -699,7 +705,7 @@
 
           <!-- Empty State -->
           <div v-else-if="filteredNotifications.length === 0" class="py-8 text-center flex flex-col items-center">
-            <div class="w-10 h-10 rounded-lg bg-cyan-50 text-[#0891B2] flex items-center justify-center mb-2 border border-cyan-200">
+            <div class="w-10 h-10 rounded-xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-2 border border-cyan-200 shadow-2xs">
               <PartyPopper class="w-5 h-5" />
             </div>
             <p class="text-xs text-slate-900 font-bold mb-0.5">
@@ -715,23 +721,25 @@
             <div
               v-for="notif in filteredNotifications"
               :key="notif.id"
-              class="p-3 rounded-lg border transition-all text-xs flex items-start justify-between gap-2.5"
+              class="p-3 rounded-xl border transition-all text-xs flex items-start justify-between gap-2.5"
               :class="notif.is_read ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-white border-cyan-300 shadow-2xs text-slate-900 ring-1 ring-cyan-500/10'"
             >
               <div class="flex items-start space-x-2.5 min-w-0">
-                <span class="shrink-0 mt-0.5 text-[#0891B2]">
+                <span class="shrink-0 mt-0.5 text-[#00A3C4]">
                   <Clock v-if="notif.type === 'due_soon'" class="w-4 h-4 text-amber-600" />
                   <MessageSquare v-else-if="notif.type === 'new_comment'" class="w-4 h-4 text-blue-600" />
                   <Pencil v-else-if="notif.type === 'task_updated'" class="w-4 h-4 text-emerald-600" />
                   <Mail v-else-if="notif.type === 'invitation'" class="w-4 h-4 text-purple-600" />
-                  <CreditCard v-else class="w-4 h-4 text-rose-600" />
+                  <Calendar v-else-if="notif.type?.startsWith('calendar_') || notif.reference_type === 'event'" class="w-4 h-4 text-purple-600" />
+                  <CreditCard v-else-if="notif.type === 'budget_exceeded'" class="w-4 h-4 text-rose-600" />
+                  <Bell v-else class="w-4 h-4 text-cyan-600" />
                 </span>
                 <div class="min-w-0">
                   <div class="flex items-center space-x-2">
                     <p class="font-bold truncate" :class="notif.is_read ? 'text-slate-700' : 'text-slate-900'">
                       {{ notif.title }}
                     </p>
-                    <span v-if="!notif.is_read" class="w-2 h-2 rounded-full bg-[#0891B2] shrink-0"></span>
+                    <span v-if="!notif.is_read" class="w-2 h-2 rounded-full bg-[#00A3C4] shrink-0"></span>
                   </div>
                   <p class="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                     {{ notif.message }}
@@ -742,23 +750,30 @@
                     <NuxtLink
                       v-if="notif.reference_type === 'task' && notif.reference_id && notif.project_id"
                       :to="`/projects/${notif.project_id}?task=${notif.reference_id}`"
-                      class="text-[#0891B2] hover:underline font-semibold"
+                      class="text-[#00A3C4] hover:underline font-semibold"
                     >
                       {{ $t('dashboard.zur_aufgabe') }}
                     </NuxtLink>
                     <NuxtLink
                       v-else-if="notif.project_id"
                       :to="`/projects/${notif.project_id}`"
-                      class="text-[#0891B2] hover:underline font-semibold"
+                      class="text-[#00A3C4] hover:underline font-semibold"
                     >
                       {{ $t('dashboard.zum_projekt') }}
                     </NuxtLink>
                     <NuxtLink
                       v-else-if="notif.reference_type === 'folder' && notif.reference_id"
                       :to="`/folders/${notif.reference_id}`"
-                      class="text-[#0891B2] hover:underline font-semibold"
+                      class="text-[#00A3C4] hover:underline font-semibold"
                     >
                       {{ $t('dashboard.zum_ordner') }}
+                    </NuxtLink>
+                    <NuxtLink
+                      v-else-if="notif.reference_type === 'event' || notif.type?.startsWith('calendar_')"
+                      to="/calendar"
+                      class="text-[#00A3C4] hover:underline font-semibold"
+                    >
+                      {{ $t('dashboard.zum_termin') || 'Zum Kalender' }}
                     </NuxtLink>
                   </div>
                 </div>
@@ -768,7 +783,7 @@
                 v-if="!notif.is_read"
                 @click="markNotificationRead(notif)"
                 type="button"
-                class="shrink-0 p-1 text-slate-400 hover:text-[#0891B2] hover:bg-slate-100 rounded transition text-xs font-bold cursor-pointer"
+                class="shrink-0 p-1 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition text-xs font-bold cursor-pointer"
                 :title="$t('dashboard.als_gelesen_markieren')"
               >
                 <Check class="w-3.5 h-3.5" />
@@ -781,7 +796,7 @@
             <button
               type="button"
               @click="markAllNotificationsRead"
-              class="taskster_button_light px-4 text-xs h-8 rounded-md mx-auto"
+              class="taskster_button_light px-4 text-xs h-[34px] rounded-lg mx-auto"
             >
               {{ $t('dashboard.alle_als_gelesen') }}
             </button>
@@ -789,28 +804,28 @@
         </section>
 
         <!-- WIDGET 4: Quick Summary / Stats (MeisterTask Style Compact Card) -->
-        <section class="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
             {{ $t('dashboard.system_workspace_status') }}
           </h3>
 
           <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.projekt_ordner') }}</span>
               <span class="text-sm font-bold text-slate-900">{{ folders.length }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.aktive_projekte') }}</span>
-              <span class="text-sm font-bold text-[#0891B2]">{{ totalProjects }}</span>
+              <span class="text-sm font-bold text-[#00A3C4]">{{ totalProjects }}</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-md bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.offene_aufgaben') }}</span>
               <span class="text-sm font-bold text-slate-900">{{ tasks.length }}</span>
             </div>
 
-            <div class="p-3 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                 <span class="text-xs font-semibold text-emerald-950">{{ $t('dashboard.zerotrust_pipeline') }}</span>
@@ -823,75 +838,100 @@
     </div>
 
     <!-- Modal: New Folder -->
-    <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
-      <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neuen_projektordner_anlegen') }}</h3>
-          <button @click="showNewFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1">
+    <div v-if="showNewFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
+        <!-- Sticky Header -->
+        <div class="p-6 pb-4 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neuen_projektordner_anlegen') }}</h3>
+            <p class="text-xs text-slate-500 font-medium mt-1">
+              {{ $t('dashboard.projektordner_bilden_die_oberste_or') }}
+            </p>
+          </div>
+          <button @click="showNewFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer">
             <X class="w-4 h-4" />
           </button>
         </div>
-        <p class="text-xs text-slate-500 font-medium mb-4">
-          {{ $t('dashboard.projektordner_bilden_die_oberste_or') }}
-        </p>
 
-        <div v-if="folderModalError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-          {{ folderModalError }}
-        </div>
-
-        <form @submit.prevent="createFolder" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
-            <input
-              v-model="newFolderName"
-              type="text"
-              required
-              :placeholder="$t('dashboard.zb_ftth_glasfaserausbau_region_nord')"
-              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
-            />
-          </div>
-
-          <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
-          <div v-if="user?.company_id" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
-            <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
-            <div class="grid grid-cols-2 gap-2">
-              <label
-                class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                :class="newFolderVisibility === 'private' ? 'bg-white border-[#0891B2] text-[#0891B2] ring-1 ring-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
-              >
-                <input type="radio" value="private" v-model="newFolderVisibility" class="sr-only" />
-                <Lock class="w-3.5 h-3.5" />
-                <span>{{ $t('dashboard.privat_standard') }}</span>
-              </label>
-              <label
-                class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                :class="newFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2] ring-1 ring-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
-              >
-                <input type="radio" value="company" v-model="newFolderVisibility" class="sr-only" />
-                <Building2 class="w-3.5 h-3.5" />
-                <span>{{ $t('common.unternehmen') }}</span>
-              </label>
+        <form @submit.prevent="createFolder" class="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <div v-if="folderModalError" class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+              {{ folderModalError }}
             </div>
-            <p class="text-[11px] text-slate-500">
-              {{ newFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: user?.company_name || $t('common.firma') }) }}
-            </p>
-          </div>
-          <div v-else class="p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900">
-            <span class="font-bold">{{ $t('dashboard.hinweis') }}</span> {{ $t('dashboard.dieser_ordner_ist_standardmäßig_pri') }} <strong>{{ $t('dashboard.ordner_teilen') }}</strong> {{ $t('dashboard.für_kollegen_freigeben') }}
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
+              <input
+                v-model="newFolderName"
+                type="text"
+                required
+                :placeholder="$t('dashboard.zb_ftth_glasfaserausbau_region_nord')"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] shadow-2xs transition"
+              />
+            </div>
+
+            <!-- Icon Selector -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon auswählen</label>
+              <div class="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                <button
+                  v-for="item in availableFolderIcons"
+                  :key="item.icon"
+                  type="button"
+                  @click="newFolderIcon = item.icon"
+                  class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
+                  :class="newFolderIcon === item.icon ? 'bg-cyan-50 border-[#00A3C4] ring-2 ring-[#00A3C4]/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
+                  :title="item.label"
+                >
+                  {{ item.icon }}
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ newFolderIcon }}</span></p>
+            </div>
+
+            <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
+            <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="newFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="private" v-model="newFolderVisibility" class="sr-only" />
+                  <Lock class="w-3.5 h-3.5" />
+                  <span>{{ $t('dashboard.privat_standard') }}</span>
+                </label>
+                <label
+                  class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
+                  :class="newFolderVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="company" v-model="newFolderVisibility" class="sr-only" />
+                  <Building2 class="w-3.5 h-3.5" />
+                  <span>{{ $t('common.unternehmen') }}</span>
+                </label>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                {{ newFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: user?.company_name || $t('common.firma') }) }}
+              </p>
+            </div>
+            <div v-else class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+              <span class="font-bold">{{ $t('dashboard.hinweis') }}</span> {{ $t('dashboard.dieser_ordner_ist_standardmäßig_pri') }} <strong>{{ $t('dashboard.ordner_teilen') }}</strong> {{ $t('dashboard.für_kollegen_freigeben') }}
+            </div>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+          <!-- Sticky Footer -->
+          <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3 shrink-0 rounded-b-2xl">
             <button
               type="button"
               @click="showNewFolderModal = false; folderModalError = ''"
-              class="taskster_button_light px-4 text-xs h-9 rounded-md"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="creatingFolder || !newFolderName.trim()"
-              class="taskster_button px-4 text-xs h-9 rounded-md"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               <span>{{ creatingFolder ? $t('dashboard.erstelle') : $t('dashboard.ordner_erstellen') }}</span>
             </button>
@@ -930,7 +970,7 @@
                 type="text"
                 required
                 :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
-                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] shadow-2xs transition"
               />
             </div>
 
@@ -959,7 +999,7 @@
               <div class="grid grid-cols-2 gap-2">
                 <label
                   class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                  :class="editFolderVisibility === 'private' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
+                  :class="editFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4]' : 'bg-white border-slate-200 text-slate-700'"
                 >
                   <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
                   <Lock class="w-3.5 h-3.5" />
@@ -967,7 +1007,7 @@
                 </label>
                 <label
                   class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                  :class="editFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
+                  :class="editFolderVisibility === 'company' ? 'bg-white border-[#00A3C4] text-[#00A3C4]' : 'bg-white border-slate-200 text-slate-700'"
                 >
                   <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
                   <Building2 class="w-3.5 h-3.5" />
@@ -986,7 +1026,7 @@
               v-if="user?.id === editFolderOwnerId || user?.is_superadmin"
               type="button"
               @click="showEditFolderModal = false; openDeleteFolderModal({ id: editFolderId, name: editFolderName, project_count: editFolderProjectCount })"
-              class="taskster_button_accent px-3 text-xs h-9 rounded-md flex items-center space-x-1 cursor-pointer"
+              class="taskster_button_accent px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
             >
               <Trash2 class="w-3.5 h-3.5" />
               <span>{{ $t('dashboard.ordner_loeschen') }}</span>
@@ -995,14 +1035,14 @@
               <button
                 type="button"
                 @click="showEditFolderModal = false; editFolderError = ''"
-                class="taskster_button_light px-4 text-xs h-9 rounded-md cursor-pointer"
+                class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
               >
                 {{ $t('common.abbrechen') }}
               </button>
               <button
                 type="submit"
                 :disabled="savingFolder || !editFolderName.trim()"
-                class="taskster_button px-4 text-xs h-9 rounded-md cursor-pointer"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
               >
                 <span>{{ savingFolder ? $t('dashboard.speichern_dot') : $t('dashboard.änderungen_speichern') }}</span>
               </button>
@@ -1013,55 +1053,59 @@
     </div>
 
     <!-- Modal: New Project (nur Free-/Single-User, ohne Ordner-Ebene) -->
-    <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
-      <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neues_projekt') }}</h3>
-          <button @click="showNewProjectModal = false" class="text-slate-400 hover:text-slate-700 p-1">
+    <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto">
+        <div class="p-6 pb-4 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.neues_projekt') }}</h3>
+            <p class="text-xs text-slate-500 font-medium mt-1">
+              {{ $t('dashboard.erstelle_ein_neues_projekt') }}
+            </p>
+          </div>
+          <button @click="showNewProjectModal = false" class="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer">
             <X class="w-4 h-4" />
           </button>
         </div>
-        <p class="text-xs text-slate-500 font-medium mb-4">
-          {{ $t('dashboard.erstelle_ein_neues_projekt') }}
-        </p>
 
-        <div v-if="projectModalError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-          {{ projectModalError }}
-        </div>
+        <form @submit.prevent="createProject" class="flex flex-col flex-1">
+          <div class="p-6 space-y-4">
+            <div v-if="projectModalError" class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+              {{ projectModalError }}
+            </div>
 
-        <form @submit.prevent="createProject" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.projekttitel') }}</label>
-            <input
-              v-model="newProjectTitle"
-              type="text"
-              required
-              :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
-              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
-            />
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.projekttitel') }}</label>
+              <input
+                v-model="newProjectTitle"
+                type="text"
+                required
+                :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] shadow-2xs transition"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">📅 Fälligkeitsdatum</label>
+              <input
+                v-model="newProjectDueDate"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] shadow-2xs transition"
+              />
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">📅 Fälligkeitsdatum</label>
-            <input
-              v-model="newProjectDueDate"
-              type="date"
-              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
-            />
-          </div>
-
-          <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+          <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3 shrink-0 rounded-b-2xl">
             <button
               type="button"
               @click="showNewProjectModal = false; projectModalError = ''"
-              class="taskster_button_light px-4 text-xs h-9 rounded-md"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="creatingProject || !newProjectTitle.trim()"
-              class="taskster_button px-4 text-xs h-9 rounded-md"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
               <span>{{ creatingProject ? $t('dashboard.erstelle') : $t('dashboard.projekt_erstellen') }}</span>
             </button>
@@ -1243,6 +1287,7 @@ const newDailyTodoTitle = ref('')
 const newDailyTodoProjectId = ref('')
 const availableProjects = ref<any[]>([])
 const creatingDailyTodo = ref(false)
+const dailyTodoError = ref('')
 
 const completedDailyTodosCount = computed(() => dailyTodos.value.filter((t: any) => t.is_completed).length)
 const uncompletedDailyTodosCount = computed(() => dailyTodos.value.filter((t: any) => !t.is_completed).length)
@@ -1281,6 +1326,7 @@ const greetingPrefix = computed(() => {
 const showNewFolderModal = ref(false)
 const newFolderName = ref('')
 const newFolderVisibility = ref('private')
+const newFolderIcon = ref('📁')
 const creatingFolder = ref(false)
 const folderModalError = ref('')
 
@@ -1374,6 +1420,7 @@ const filteredTasks = computed(() => tasks.value)
 const openNewFolderModal = () => {
   newFolderName.value = ''
   newFolderVisibility.value = 'private'
+  newFolderIcon.value = '📁'
   folderModalError.value = ''
   showNewFolderModal.value = true
 }
@@ -1538,7 +1585,7 @@ const createDailyTodo = async () => {
     }
     newDailyTodoTitle.value = ''
   } catch (err: any) {
-    alert(err.data?.statusMessage || t('dashboard.tagestodo_konnte_nicht_erstellt_wer'))
+    dailyTodoError.value = err.data?.statusMessage || t('dashboard.tagestodo_konnte_nicht_erstellt_wer')
   } finally {
     creatingDailyTodo.value = false
   }
@@ -1623,7 +1670,15 @@ const markAllNotificationsRead = async () => {
 
 const filteredNotifications = computed(() => {
   if (activeNotificationTab.value === 'mentions') {
-    return notifications.value.filter((n: any) => n.type === 'new_comment' || n.type === 'invitation')
+    return notifications.value.filter((n: any) =>
+      n.type === 'new_comment' ||
+      n.type === 'invitation' ||
+      n.type === 'calendar_invite' ||
+      n.type === 'calendar_reschedule' ||
+      n.type === 'calendar_cancel' ||
+      n.type === 'calendar_response' ||
+      n.reference_type === 'event'
+    )
   }
   if (activeNotificationTab.value === 'projects') {
     return notifications.value.filter((n: any) => n.type === 'due_soon' || n.type === 'task_updated' || n.type === 'budget_exceeded')
@@ -1653,6 +1708,7 @@ const createFolder = async () => {
       headers: authHeaders(),
       body: {
         name: newFolderName.value,
+        icon: newFolderIcon.value,
         visibility: newFolderVisibility.value
       }
     })
