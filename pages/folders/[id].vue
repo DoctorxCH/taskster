@@ -4414,12 +4414,14 @@ const importColumnLogic = ref<Record<string, { depends_on_field: string; depends
 const onImportTemplateChange = () => {
   if (selectedImportTemplateId.value) {
     const selectedTemplate = templates.value.find((t: any) => t.id === selectedImportTemplateId.value)
-    importWorkflowSections.value = selectedTemplate?.lists?.map((list: any) => ({
-      title: list.title,
-      is_completed_target: list.is_completed_target || 0
-    })) || []
+    importWorkflowSections.value = selectedTemplate?.lists?.map((list: any) => list.title) || []
   } else {
-    importWorkflowSections.value = []
+    // Reset to default folder sections if no template is selected
+    if (folder.value?.settings?.default_sections && Array.isArray(folder.value.settings.default_sections) && folder.value.settings.default_sections.length > 0) {
+      importWorkflowSections.value = folder.value.settings.default_sections.map((s: any) => typeof s === 'string' ? s : (s.title || ''))
+    } else {
+      importWorkflowSections.value = ['Offen', 'In Arbeit', 'Abgeschlossen']
+    }
   }
 }
 

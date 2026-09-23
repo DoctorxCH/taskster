@@ -1,224 +1,348 @@
 <template>
-  <div class="w-full">
+  <div class="w-full min-h-screen bg-slate-50/50">
     <div v-if="isAnyAdmin" class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-    <!-- Header with Integrated Stat Pills -->
-    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-xs">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold mb-2">
-            <Users v-if="activeTab === 'users'" class="w-3.5 h-3.5 text-purple-600" />
-            <Building2 v-else-if="activeTab === 'companies'" class="w-3.5 h-3.5 text-purple-600" />
-            <CreditCard v-else-if="activeTab === 'finance'" class="w-3.5 h-3.5 text-purple-600" />
-            <ClipboardList v-else-if="activeTab === 'templates'" class="w-3.5 h-3.5 text-purple-600" />
-            <Mail v-else-if="activeTab === 'email'" class="w-3.5 h-3.5 text-purple-600" />
-            <ShieldCheck v-else class="w-3.5 h-3.5 text-purple-600" />
-            <span>{{ activeSectionBadge }}</span>
+      
+      <!-- Layout: Left Sidepanel + Right Content Area -->
+      <div class="flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Sidepanel (Admin Sub-Menu Navigation) -->
+        <aside class="w-full lg:w-64 shrink-0">
+          <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-1.5 sticky top-6">
+            <div class="px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-2 flex items-center justify-between">
+              <span>Admin Menü</span>
+              <ShieldCheck class="w-3.5 h-3.5 text-purple-600" />
+            </div>
+
+            <button
+              @click="setTab('users')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'users' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <Users class="w-4 h-4 shrink-0" />
+              <span>Benutzer & Kunden</span>
+            </button>
+
+            <button
+              @click="setTab('companies')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'companies' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <Building2 class="w-4 h-4 shrink-0" />
+              <span>Unternehmen & B2B</span>
+            </button>
+
+            <button
+              @click="setTab('finance')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'finance' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <CreditCard class="w-4 h-4 shrink-0" />
+              <span>Finanzen & MRR</span>
+            </button>
+
+            <button
+              @click="setTab('templates')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'templates' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <ClipboardList class="w-4 h-4 shrink-0" />
+              <span>Projekt-Vorlagen</span>
+            </button>
+
+            <button
+              @click="setTab('email')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'email' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <Mail class="w-4 h-4 shrink-0" />
+              <span>E-Mail System</span>
+            </button>
+
+            <button
+              @click="setTab('invites')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'invites' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <Send class="w-4 h-4 shrink-0" />
+              <span>Einladungen</span>
+            </button>
+
+            <button
+              @click="setTab('website')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'website' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <Globe class="w-4 h-4 shrink-0 text-cyan-300" />
+              <span>Webseiten-Verwaltung</span>
+            </button>
+
+            <button
+              @click="setTab('audit')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+              :class="activeTab === 'audit' ? 'bg-purple-900 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100/80'"
+            >
+              <ShieldCheck class="w-4 h-4 shrink-0 text-purple-300" />
+              <span>Security & Audit Logs</span>
+            </button>
           </div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-            {{ activeSectionTitle }}
-          </h1>
-          <p class="text-sm text-slate-600 mt-1">
-            {{ activeSectionDescription }}
-          </p>
-        </div>
+        </aside>
 
-        <div class="flex items-center gap-3 shrink-0">
-          <button
-            v-if="activeTab === 'users' && hasPermission('manage_users')"
-            @click="openCreateUserModal"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Neuen Benutzer anlegen</span>
-          </button>
+        <!-- Right Main Content Area -->
+        <main class="flex-1 min-w-0">
+          <!-- Header with Integrated Stat Pills -->
+          <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-xs">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold mb-2">
+                  <Users v-if="activeTab === 'users'" class="w-3.5 h-3.5 text-purple-600" />
+                  <Building2 v-else-if="activeTab === 'companies'" class="w-3.5 h-3.5 text-purple-600" />
+                  <CreditCard v-else-if="activeTab === 'finance'" class="w-3.5 h-3.5 text-purple-600" />
+                  <ClipboardList v-else-if="activeTab === 'templates'" class="w-3.5 h-3.5 text-purple-600" />
+                  <Mail v-else-if="activeTab === 'email'" class="w-3.5 h-3.5 text-purple-600" />
+                  <Globe v-else-if="activeTab === 'website'" class="w-3.5 h-3.5 text-purple-600" />
+                  <ShieldCheck v-else class="w-3.5 h-3.5 text-purple-600" />
+                  <span>{{ activeSectionBadge }}</span>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+                  {{ activeSectionTitle }}
+                </h1>
+                <p class="text-sm text-slate-600 mt-1">
+                  {{ activeSectionDescription }}
+                </p>
+              </div>
 
-          <button
-            v-else-if="activeTab === 'companies' && hasPermission('company_settings')"
-            @click="showCreateCompanyModal = true"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Neues Unternehmen</span>
-          </button>
+              <div class="flex items-center gap-3 shrink-0">
+                <button
+                  v-if="activeTab === 'users' && hasPermission('manage_users')"
+                  @click="openCreateUserModal"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <Plus class="w-4 h-4" />
+                  <span>Neuen Benutzer anlegen</span>
+                </button>
 
-          <button
-            v-else-if="activeTab === 'finance' && hasPermission('finance')"
-            @click="loadOrdersData()"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loadingOrders }" />
-            <span>Aktualisieren</span>
-          </button>
+                <button
+                  v-else-if="activeTab === 'companies' && hasPermission('company_settings')"
+                  @click="showCreateCompanyModal = true"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <Plus class="w-4 h-4" />
+                  <span>Neues Unternehmen</span>
+                </button>
 
-          <button
-            v-else-if="activeTab === 'templates' && hasPermission('manage_templates')"
-            @click="openCreateTemplateModal"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Neue Vorlage</span>
-          </button>
+                <button
+                  v-else-if="activeTab === 'finance' && hasPermission('finance')"
+                  @click="loadOrdersData()"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loadingOrders }" />
+                  <span>Aktualisieren</span>
+                </button>
 
-          <button
-            v-else-if="activeTab === 'email' && hasPermission('company_settings')"
-            @click="openTestEmailModal()"
-            class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-          >
-            <Send class="w-4 h-4" />
-            <span>Test-E-Mail</span>
-          </button>
-        </div>
-      </div>
+                <button
+                  v-else-if="activeTab === 'templates' && hasPermission('manage_templates')"
+                  @click="openCreateTemplateModal"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <Plus class="w-4 h-4" />
+                  <span>Neue Vorlage</span>
+                </button>
 
-      <!-- Integrated Stat Pills -->
-      <!-- USERS PILLS -->
-      <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-center">
-          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
-          <div class="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
-          <div class="text-[10px] text-slate-400">Registriert</div>
-        </div>
+                <button
+                  v-else-if="activeTab === 'email' && hasPermission('company_settings')"
+                  @click="openTestEmailModal()"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <Send class="w-4 h-4" />
+                  <span>Test-E-Mail</span>
+                </button>
 
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ overview?.metrics?.companies || 0 }}</div>
-          <div class="text-[10px] text-slate-400">Organisationen</div>
-        </div>
+                <button
+                  v-else-if="activeTab === 'website' && hasPermission('company_settings')"
+                  @click="saveWebsiteSettings()"
+                  :disabled="savingWebsiteSettings"
+                  class="taskster_button px-6 text-xs h-[42px] rounded-lg"
+                >
+                  <Save class="w-4 h-4" />
+                  <span>{{ savingWebsiteSettings ? 'Speichere...' : 'Einstellungen speichern' }}</span>
+                </button>
+              </div>
+            </div>
 
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Projekte</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ overview?.metrics?.projects || 0 }}</div>
-          <div class="text-[10px] text-slate-400">Aktiv</div>
-        </div>
+            <!-- Integrated Stat Pills -->
+            <!-- USERS PILLS -->
+            <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-center">
+                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
+                <div class="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
+                <div class="text-[10px] text-slate-400">Registriert</div>
+              </div>
 
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
-          <div class="text-[10px] text-slate-400">In Abschnitten gepflegt</div>
-        </div>
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ overview?.metrics?.companies || 0 }}</div>
+                <div class="text-[10px] text-slate-400">Organisationen</div>
+              </div>
 
-        <div class="p-3 rounded-lg bg-amber-50/50 border border-amber-200/60 text-center">
-          <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
-          <div class="text-xl font-bold text-amber-900 mt-0.5 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
-          <div class="text-[10px] text-slate-400">Aktivitätsnotizen</div>
-        </div>
-      </div>
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Projekte</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ overview?.metrics?.projects || 0 }}</div>
+                <div class="text-[10px] text-slate-400">Aktiv</div>
+              </div>
 
-      <!-- COMPANIES PILLS -->
-      <div v-else-if="activeTab === 'companies'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ companies.length }}</div>
-          <div class="text-[10px] text-slate-400">Organisationen & Mandanten</div>
-        </div>
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
+                <div class="text-[10px] text-slate-400">In Abschnitten gepflegt</div>
+              </div>
 
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ totalCompanyUsers }}</div>
-          <div class="text-[10px] text-slate-400">Mitarbeiter-Accounts</div>
-        </div>
+              <div class="p-3 rounded-lg bg-amber-50/50 border border-amber-200/60 text-center">
+                <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
+                <div class="text-xl font-bold text-amber-900 mt-0.5 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
+                <div class="text-[10px] text-slate-400">Aktivitätsnotizen</div>
+              </div>
+            </div>
 
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
-          <div class="text-[10px] text-slate-400">Uploads freigegeben</div>
-        </div>
-      </div>
+            <!-- COMPANIES PILLS -->
+            <div v-else-if="activeTab === 'companies'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ companies.length }}</div>
+                <div class="text-[10px] text-slate-400">Organisationen & Mandanten</div>
+              </div>
 
-      <!-- FINANCE PILLS -->
-      <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
-            {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ totalCompanyUsers }}</div>
+                <div class="text-[10px] text-slate-400">Mitarbeiter-Accounts</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
+                <div class="text-[10px] text-slate-400">Uploads freigegeben</div>
+              </div>
+            </div>
+
+            <!-- FINANCE PILLS -->
+            <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
+                  {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
+                </div>
+                <div class="text-[10px] text-slate-400">Wiederkehrender monatlicher Umsatz</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">
+                  {{ ordersSummary?.active_subscriptions || 0 }}
+                </div>
+                <div class="text-[10px] text-slate-400">Unternehmen & PRO-Nutzer</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">
+                  {{ ordersSummary?.total_seats || 0 }}
+                </div>
+                <div class="text-[10px] text-slate-400">Zugewiesene Mitarbeiter-Lizenzen</div>
+              </div>
+            </div>
+
+            <!-- TEMPLATES PILLS -->
+            <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ templates.length }}</div>
+                <div class="text-[10px] text-slate-400">Systemweite Vorlagen</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ jobTemplatesCount }}</div>
+                <div class="text-[10px] text-slate-400">Baufirmen & Business</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ privateTemplatesCount }}</div>
+                <div class="text-[10px] text-slate-400">Bauherren & Privatnutzer</div>
+              </div>
+            </div>
+
+            <!-- EMAIL PILLS -->
+            <div v-else-if="activeTab === 'email'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Versand-Methode</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5">
+                  {{ smtpConfig.mail_provider === 'resend' ? 'Resend API' : 'SMTP' }}
+                </div>
+                <div class="text-[10px] text-slate-400">{{ smtpConfig.mail_provider === 'resend' ? 'noreply@kurka.ch' : (smtpConfig.smtp_host || 'Server') }}</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
+                  {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
+                </div>
+                <div class="text-[10px] text-slate-400">System-Trigger bereit</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ emailOutbox.length }}</div>
+                <div class="text-[10px] text-slate-400">Protokollierte Einträge</div>
+              </div>
+            </div>
+
+            <!-- WEBSITE PILLS -->
+            <div v-else-if="activeTab === 'website'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Webseite Status</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5">
+                  {{ websiteSettings.website_maintenance_mode ? 'Wartungsmodus' : 'Online / Aktiv' }}
+                </div>
+                <div class="text-[10px] text-slate-400">Öffentliche Landingpage</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Ankündigung</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5">
+                  {{ websiteSettings.website_announcement_active ? 'Banner Aktiv' : 'Kein Banner' }}
+                </div>
+                <div class="text-[10px] text-slate-400">Live In-App Hinweise</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">SEO & Metadaten</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5">Konfiguriert</div>
+                <div class="text-[10px] text-slate-400">Google & OpenGraph</div>
+              </div>
+            </div>
+
+            <!-- AUDIT PILLS -->
+            <div v-else-if="activeTab === 'audit'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
+              <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Audit Log-Einträge</div>
+                <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ auditLogsTotal }}</div>
+                <div class="text-[10px] text-slate-400">Systemweit protokolliert</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aktivitäts-Typen</div>
+                <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ auditLogsActions.length }}</div>
+                <div class="text-[10px] text-slate-400">Verschiedene Event-Klassen</div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Security Standard</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5">Zero-Trust Audit</div>
+                <div class="text-[10px] text-slate-400">Revisionssicher geloggt</div>
+              </div>
+            </div>
           </div>
-          <div class="text-[10px] text-slate-400">Wiederkehrender monatlicher Umsatz</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">
-            {{ ordersSummary?.active_subscriptions || 0 }}
-          </div>
-          <div class="text-[10px] text-slate-400">Unternehmen & PRO-Nutzer</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">
-            {{ ordersSummary?.total_seats || 0 }}
-          </div>
-          <div class="text-[10px] text-slate-400">Zugewiesene Mitarbeiter-Lizenzen</div>
-        </div>
-      </div>
-
-      <!-- TEMPLATES PILLS -->
-      <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ templates.length }}</div>
-          <div class="text-[10px] text-slate-400">Systemweite Vorlagen</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ jobTemplatesCount }}</div>
-          <div class="text-[10px] text-slate-400">Baufirmen & Business</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ privateTemplatesCount }}</div>
-          <div class="text-[10px] text-slate-400">Bauherren & Privatnutzer</div>
-        </div>
-      </div>
-
-      <!-- EMAIL PILLS -->
-      <div v-else-if="activeTab === 'email'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Versand-Methode</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5">
-            {{ smtpConfig.mail_provider === 'resend' ? 'Resend API' : 'SMTP' }}
-          </div>
-          <div class="text-[10px] text-slate-400">{{ smtpConfig.mail_provider === 'resend' ? 'noreply@kurka.ch' : (smtpConfig.smtp_host || 'Server') }}</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
-            {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
-          </div>
-          <div class="text-[10px] text-slate-400">System-Trigger bereit</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ emailOutbox.length }}</div>
-          <div class="text-[10px] text-slate-400">Protokollierte Einträge</div>
-        </div>
-      </div>
-
-      <!-- AUDIT PILLS -->
-      <div v-else-if="activeTab === 'audit'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
-        <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-          <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Audit Log-Einträge</div>
-          <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ auditLogsTotal }}</div>
-          <div class="text-[10px] text-slate-400">Systemweit protokolliert</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-          <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aktivitäts-Typen</div>
-          <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ auditLogsActions.length }}</div>
-          <div class="text-[10px] text-slate-400">Verschiedene Event-Klassen</div>
-        </div>
-
-        <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-          <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Security Standard</div>
-          <div class="text-xl font-bold text-emerald-900 mt-0.5">Zero-Trust Audit</div>
-          <div class="text-[10px] text-slate-400">Revisionssicher geloggt</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Admin Navigation Tabs Bar -->
     <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-slate-200/80">
@@ -1494,6 +1618,182 @@
       </div>
     </div>
 
+    <!-- TAB 8: WEBSITE MANAGEMENT (Webseiten-Verwaltung) -->
+    <div v-if="activeTab === 'website'" class="space-y-6">
+      <div class="liquid_glass rounded-3xl p-6 shadow-xl space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Webseiten-Verwaltung & CMS</h3>
+            <p class="text-xs text-slate-600 font-medium">Steuere Inhalte der öffentlichen Webseite, Preismodelle, Ankündigungs-Banner und SEO.</p>
+          </div>
+          <button
+            @click="saveWebsiteSettings"
+            :disabled="savingWebsiteSettings"
+            class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Save class="w-4 h-4" />
+            <span>{{ savingWebsiteSettings ? 'Speichere...' : 'Einstellungen speichern' }}</span>
+          </button>
+        </div>
+
+        <div v-if="websiteSettingsSavedNotice" class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2">
+          <CheckCircle2 class="w-4 h-4 text-emerald-600" />
+          <span>Webseiten-Einstellungen erfolgreich aktualisiert!</span>
+        </div>
+
+        <!-- 1. Hero & Kontakt Section -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <Globe class="w-4 h-4 text-cyan-600" />
+            <span>Landingpage & Kontakt-Informationen</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Hero Hauptüberschrift</label>
+              <input
+                v-model="websiteSettings.website_hero_title"
+                type="text"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Hero Untertitel / Beschreibung</label>
+              <input
+                v-model="websiteSettings.website_hero_subtitle"
+                type="text"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Support E-Mail Adresse</label>
+              <input
+                v-model="websiteSettings.website_contact_email"
+                type="email"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium font-mono"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Support Telefonnummer</label>
+              <input
+                v-model="websiteSettings.website_contact_phone"
+                type="text"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Preismodell Steuerung -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <CreditCard class="w-4 h-4 text-purple-600" />
+            <span>Preismodelle & Tarife auf der Webseite</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <span class="font-bold text-slate-800 block text-[11px] uppercase">Free / Basic Plan</span>
+              <input
+                v-model="websiteSettings.website_pricing_basic_price"
+                type="text"
+                placeholder="0 CHF"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold"
+              />
+            </div>
+            <div class="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2">
+              <span class="font-bold text-amber-900 block text-[11px] uppercase">PRO Plan</span>
+              <input
+                v-model="websiteSettings.website_pricing_pro_price"
+                type="text"
+                placeholder="29 CHF"
+                class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs font-bold"
+              />
+            </div>
+            <div class="p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl space-y-2">
+              <span class="font-bold text-purple-900 block text-[11px] uppercase">ENTERPRISE Plan</span>
+              <input
+                v-model="websiteSettings.website_pricing_enterprise_price"
+                type="text"
+                placeholder="Auf Anfrage"
+                class="w-full px-3 py-2 bg-white border border-purple-300 rounded-lg text-xs font-bold"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Ankündigung & Wartungsmodus -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 text-amber-600" />
+            <span>In-App Ankündigungs-Banner & Wartungsmodus</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="space-y-3">
+              <label class="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="websiteSettings.website_announcement_active"
+                  class="sr-only peer"
+                />
+                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-900"></div>
+                <span class="text-xs font-bold text-slate-900">Ankündigung-Banner auf der Webseite anzeigen</span>
+              </label>
+
+              <input
+                v-model="websiteSettings.website_announcement_text"
+                type="text"
+                placeholder="Banner-Nachricht eingeben..."
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              />
+            </div>
+
+            <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <Lock class="w-4 h-4 text-rose-700" />
+                  <span class="font-bold text-rose-900 text-xs">Wartungsmodus (Maintenance Switch)</span>
+                </div>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="websiteSettings.website_maintenance_mode"
+                    class="sr-only peer"
+                  />
+                  <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+              <p class="text-[11px] text-rose-700">Wenn aktiviert, können sich nur Superadmins in die Plattform einloggen. Normale Nutzer sehen einen Wartungshinweis.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. SEO & Metadaten -->
+        <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <FileText class="w-4 h-4 text-emerald-600" />
+            <span>SEO & Suchmaschinen-Optimierung</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Globaler Meta-Titel</label>
+              <input
+                v-model="websiteSettings.website_seo_title"
+                type="text"
+                class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
+              />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Globaler Meta-Beschreibungstext</label>
+              <textarea
+                v-model="websiteSettings.website_seo_description"
+                rows="2"
+                class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium resize-none"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Create / Edit Template -->
     <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-8 border border-white/80">
@@ -2462,6 +2762,8 @@
         </form>
       </div>
     </div>
+        </main>
+      </div>
     </div>
     <div v-else class="max-w-md mx-auto py-24 text-center">
       <div class="liquid_glass rounded-3xl p-8 shadow-xl">
@@ -2713,19 +3015,6 @@ function syncTabFromRoute() {
       (qTab === 'email' && hasPermission('company_settings')) ||
       qTab === 'invites' ||
       qTab === 'website' ||
-      qTab === 'audit'
-    ) {
-      activeTab.value = qTab
-      return
-    }
-  }
-    if (
-      (qTab === 'users' && hasPermission('manage_users')) ||
-      (qTab === 'companies' && hasPermission('company_settings')) ||
-      (qTab === 'finance' && hasPermission('finance')) ||
-      (qTab === 'templates' && hasPermission('manage_templates')) ||
-      (qTab === 'email' && hasPermission('company_settings')) ||
-      qTab === 'invites' ||
       qTab === 'audit'
     ) {
       activeTab.value = qTab
