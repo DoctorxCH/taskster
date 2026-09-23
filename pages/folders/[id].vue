@@ -1062,11 +1062,11 @@
       </div>
 
     <!-- Modal: New Project (with Templates support) -->
-    <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col my-8">
+    <div v-if="showNewProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         
-        <!-- Modal Header -->
-        <div class="p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50">
+        <!-- Sticky Modal Header -->
+        <div class="p-5 sm:p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50 shrink-0">
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-xl">📁</span>
@@ -1079,20 +1079,22 @@
           <button
             type="button"
             @click="closeNewProjectModal"
-            class="text-slate-400 hover:text-slate-600 text-lg p-1 rounded-lg hover:bg-slate-200 transition"
+            class="text-slate-400 hover:text-slate-600 text-lg p-1 rounded-lg hover:bg-slate-200 transition cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        <div v-if="projectModalError" class="mx-6 mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
-          <span>{{ projectModalError }}</span>
-          <button type="button" @click="projectModalError = ''" class="text-rose-500 hover:text-rose-700 font-bold ml-2">✕</button>
-        </div>
+        <form @submit.prevent="createProject" class="flex flex-col flex-1 overflow-hidden min-h-0">
+          <!-- Scrollable Body Container -->
+          <div class="p-6 overflow-y-auto flex-1 space-y-6">
+            <div v-if="projectModalError" class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+              <span>{{ projectModalError }}</span>
+              <button type="button" @click="projectModalError = ''" class="text-rose-500 hover:text-rose-700 font-bold ml-2">✕</button>
+            </div>
 
-        <form @submit.prevent="createProject" class="p-6 space-y-6">
-          <!-- Creation Mode Selector (Template vs Import vs Blank) -->
-          <div class="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+            <!-- Creation Mode Selector (Template vs Import vs Blank) -->
+            <div class="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl">
             <button
               type="button"
               @click="projectCreationMode = 'template'"
@@ -1863,8 +1865,10 @@
             </div>
           </div>
 
-          <!-- Bottom Actions -->
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          </div>
+
+          <!-- Sticky Modal Footer -->
+          <div class="p-4 px-6 border-t border-slate-200 bg-slate-50 shrink-0 flex items-center justify-end space-x-3">
             <button
               type="button"
               @click="closeNewProjectModal"
@@ -2633,8 +2637,8 @@
     </div>
 
     <!-- Modal: Add / Edit Custom Field & Standard Field Logic (Unlocked) -->
-    <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 my-8">
+    <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 max-h-[92vh] overflow-y-auto my-auto">
         <div class="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
@@ -3079,8 +3083,8 @@
     </div>
 
     <!-- Modal: Add / Edit Contact -->
-    <div v-if="showContactModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 my-8">
+    <div v-if="showContactModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4 max-h-[92vh] overflow-y-auto my-auto">
         <div class="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-bold text-slate-900">
