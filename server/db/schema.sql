@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS projects (
   visibility TEXT NOT NULL DEFAULT 'private',
   template_id TEXT,
   is_default INTEGER NOT NULL DEFAULT 0,
+  due_date TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -22,7 +22,11 @@
             <NuxtLink :to="`/folders/${project?.folder_id}`" class="hover:text-[#0891B2] transition-colors flex items-center gap-1">
               <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
               <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
-              <span>{{ project?.folder_name || 'Ordner' }}</span>
+              <span class="text-slate-800 font-semibold flex items-center gap-1">
+            <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
+            <Folder v-else class="w-3.5 h-3.5 text-[#0891B2]" />
+            <span>{{ folder?.name || 'Ordner' }}</span>
+          </span>
             </NuxtLink>
             <span>/</span>
           </template>
@@ -105,6 +109,17 @@
                 >
                   {{ Math.round(((project.tracked_hours || 0) / project.budget_hours) * 100) }}%
                 </span>
+              </span>
+
+              <span
+                v-if="project.due_date"
+                class="px-2.5 py-0.5 rounded text-xs font-semibold border flex items-center space-x-1"
+                :class="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10) ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' : 'bg-amber-50 text-amber-800 border-amber-200'"
+                :title="`Fälligkeitsdatum: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
+              >
+                <span>📅</span>
+                <span>Fällig: {{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
+                <span v-if="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10)" class="text-[10px] uppercase font-bold text-rose-600 ml-0.5">(Überfällig)</span>
               </span>
             </div>
 
@@ -1546,6 +1561,18 @@
                 <option value="on_hold">Pausiert (On Hold)</option>
                 <option value="completed">Abgeschlossen (Completed)</option>
               </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">📅 Fälligkeitsdatum</label>
+              <input
+                v-model="settingsForm.due_date"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">
+                Standard-Fälligkeit für dieses Projekt (optional).
+              </p>
             </div>
 
             <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
@@ -4397,7 +4424,7 @@
               <div
                 v-for="(att, attIdx) in newEntryForm.attachments"
                 :key="attIdx"
-                class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-xs text-cyan-950"
+                class="flex items-center space-x-1.5 px-2.5 py-1  text-xs text-cyan-950"
               >
                 <span>📎</span>
                 <span class="truncate max-w-[140px] font-medium">{{ att.file_name }}</span>
@@ -6971,6 +6998,7 @@ const initSettingsTab = () => {
     settingsForm.value = {
       title: project.value.title,
       status: project.value.status,
+      due_date: project.value.due_date ? String(project.value.due_date).slice(0, 10) : '',
       currency: project.value.currency || 'CHF',
       budget_hours: project.value.budget_hours ?? null,
       budget_amount: project.value.budget_amount ?? null,
@@ -6989,6 +7017,7 @@ const saveProjectSettings = async () => {
       body: {
         title: settingsForm.value.title,
         status: settingsForm.value.status,
+        due_date: settingsForm.value.due_date || null,
         currency: settingsForm.value.currency || 'CHF',
         budget_hours: settingsForm.value.budget_hours ? Number(settingsForm.value.budget_hours) : null,
         budget_amount: settingsForm.value.budget_amount ? Number(settingsForm.value.budget_amount) : null,

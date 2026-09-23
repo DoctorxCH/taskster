@@ -41,6 +41,7 @@ export function initDatabase() {
     "ALTER TABLE project_folders ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE projects ADD COLUMN due_date TEXT",
     "ALTER TABLE projects ADD COLUMN custom_data TEXT NOT NULL DEFAULT '{}'",
     "ALTER TABLE users ADD COLUMN settings TEXT NOT NULL DEFAULT '{}'",
     "ALTER TABLE contacts ADD COLUMN latitude REAL",

@@ -11,7 +11,7 @@ export default defineEventHandler((event) => {
 
   const companyId = user.company_id || '__none__'
   const projects = db.prepare(`
-    SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default,
+    SELECT p.id, p.title, p.folder_id, p.currency, p.status, p.is_default, p.due_date,
            pf.name AS folder_name, pf.icon AS folder_icon, pf.owner_id
     FROM projects p
     JOIN project_folders pf ON pf.id = p.folder_id

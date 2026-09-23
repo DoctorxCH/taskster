@@ -501,9 +501,18 @@
                   <h3 class="text-sm font-bold text-slate-900 group-hover/card:text-[#0891B2] transition mb-1">
                     {{ project.title }}
                   </h3>
-                  <p class="text-xs text-slate-500 flex items-center space-x-1">
+                  <div class="flex items-center space-x-2 flex-wrap gap-1 text-xs text-slate-500">
                     <span>{{ project.currency || 'CHF' }}</span>
-                  </p>
+                    <span
+                      v-if="project.due_date"
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
+                      :class="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10) ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' : 'bg-amber-50 text-amber-800 border-amber-200'"
+                      :title="`Fälligkeitsdatum: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
+                    >
+                      <span>📅</span>
+                      <span>{{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
+                    </span>
+                  </div>
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
@@ -560,7 +569,7 @@
               >
                 <div>
                   <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
+                    <div class="w-10 h-10  flex items-center justify-center text-[#0891B2] text-xl font-bold group-hover/card:scale-105 transition-transform">
                       <span v-if="folder.icon">{{ folder.icon }}</span>
                       <Folder v-else class="w-5 h-5" />
                     </div>
@@ -1032,6 +1041,15 @@
             />
           </div>
 
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">📅 Fälligkeitsdatum</label>
+            <input
+              v-model="newProjectDueDate"
+              type="date"
+              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
+            />
+          </div>
+
           <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
             <button
               type="button"
@@ -1313,11 +1331,13 @@ const filteredProjects = computed(() => projects.value)
 // New Project Modal (nur für Free-/Single-User, ohne Ordner-Ebene)
 const showNewProjectModal = ref(false)
 const newProjectTitle = ref('')
+const newProjectDueDate = ref('')
 const creatingProject = ref(false)
 const projectModalError = ref('')
 
 const openNewProjectModal = () => {
   newProjectTitle.value = ''
+  newProjectDueDate.value = ''
   projectModalError.value = ''
   showNewProjectModal.value = true
 }
@@ -1333,10 +1353,14 @@ const createProject = async () => {
     await $fetch('/api/projects', {
       method: 'POST',
       headers: authHeaders(),
-      body: { title: newProjectTitle.value.trim() }
+      body: {
+        title: newProjectTitle.value.trim(),
+        due_date: newProjectDueDate.value || null
+      }
     })
     showNewProjectModal.value = false
     newProjectTitle.value = ''
+    newProjectDueDate.value = ''
     await loadProjects()
   } catch (err: any) {
     projectModalError.value = err.data?.statusMessage || t('dashboard.projekt_konnte_nicht_erstellt_werden')

@@ -99,6 +99,7 @@ async function migrate() {
       title VARCHAR(255) NOT NULL,
       status VARCHAR(64) NOT NULL DEFAULT 'active',
       is_default TINYINT(1) NOT NULL DEFAULT 0,
+      due_date VARCHAR(64) NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_projects_folder (folder_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -106,6 +107,9 @@ async function migrate() {
 
   try {
     await conn.query(`ALTER TABLE projects ADD COLUMN is_default TINYINT(1) NOT NULL DEFAULT 0;`)
+  } catch (e) { }
+  try {
+    await conn.query(`ALTER TABLE projects ADD COLUMN due_date VARCHAR(64) NULL;`)
   } catch (e) { }
 
   await conn.query(`
@@ -425,6 +429,7 @@ async function migrate() {
     "ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00",
     "ALTER TABLE project_folders ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
     "ALTER TABLE projects ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'private'",
+    "ALTER TABLE projects ADD COLUMN due_date VARCHAR(64) NULL",
     "ALTER TABLE lists ADD COLUMN is_completed_target TINYINT(1) NOT NULL DEFAULT 0",
     "ALTER TABLE companies ADD COLUMN billing_email VARCHAR(255) NULL",
     "ALTER TABLE companies ADD COLUMN stripe_customer_id VARCHAR(128) NULL",

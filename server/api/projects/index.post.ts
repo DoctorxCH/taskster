@@ -1,10 +1,12 @@
 import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
 import { getOrCreateDefaultFolder } from '~/server/utils/defaultFolder'
+import { parseImportDate } from '~/server/utils/dateParser'
 import { randomUUID } from 'crypto'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
+  const isFreeUser = !user.is_pro && !user.company_id && !user.is_superadmin
   const body = await readBody(event)
   const { title, template_id, custom_lists, import_tasks, projects } = body
   let { folder_id } = body
@@ -76,8 +78,8 @@ export default defineEventHandler(async (event) => {
     }
 
     const insProject = db.prepare(`
-      INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data, due_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const insList = db.prepare(`
       INSERT INTO lists (id, project_id, title, access_mode, sort_order)
@@ -101,8 +103,9 @@ export default defineEventHandler(async (event) => {
         const pBh = p.budget_hours != null && p.budget_hours !== '' ? Number(p.budget_hours) : 0
         const pBa = p.budget_amount != null && p.budget_amount !== '' ? Number(p.budget_amount) : 0
         const pCd = p.custom_data && typeof p.custom_data === 'object' ? JSON.stringify(p.custom_data) : '{}'
+        const pDueDate = p.due_date ? parseImportDate(p.due_date) : null
 
-        insProject.run(pId, folder_id, pTitle, pStatus, pVis, pCurr, pBh, pBa, pCd)
+        insProject.run(pId, folder_id, pTitle, pStatus, pVis, pCurr, pBh, pBa, pCd, pDueDate)
         const listId = 'lst_' + randomUUID().substring(0, 8)
         insList.run(listId, pId, 'Aufgabenliste 1')
 
@@ -120,7 +123,8 @@ export default defineEventHandler(async (event) => {
           id: pId,
           folder_id,
           title: pTitle,
-          status: pStatus
+          status: pStatus,
+          due_date: pDueDate
         })
       }
     })
@@ -163,11 +167,12 @@ export default defineEventHandler(async (event) => {
   const customData = body.custom_data && typeof body.custom_data === 'object' ? JSON.stringify(body.custom_data) : '{}'
   const visibility = (user.company_id && body.visibility === 'company') ? 'company' : 'private'
   const status = (body.status && ['active', 'archived', 'completed', 'on_hold'].includes(body.status)) ? body.status : 'active'
+  const dueDate = body.due_date ? parseImportDate(body.due_date) : null
 
   db.prepare(`
-    INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(projectId, folder_id, title.trim(), status, visibility, currency, budgetHours, budgetAmount, customData)
+    INSERT INTO projects (id, folder_id, title, status, visibility, currency, budget_hours, budget_amount, custom_data, due_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(projectId, folder_id, title.trim(), status, visibility, currency, budgetHours, budgetAmount, customData, dueDate)
 
   // Determine lists to create
   const listsToCreate: string[] = []
@@ -342,7 +347,8 @@ export default defineEventHandler(async (event) => {
       id: projectId,
       folder_id,
       title: title.trim(),
-      status: 'active'
+      status: 'active',
+      due_date: dueDate
     }
   }
 })

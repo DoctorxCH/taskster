@@ -1,6 +1,7 @@
 import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
 import { evaluateProjectAccess } from '~/server/utils/permissions'
+import { parseImportDate } from '~/server/utils/dateParser'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
   const currency = body.currency !== undefined ? String(body.currency).toUpperCase().trim() : (project.currency || 'CHF')
   const budgetHours = body.budget_hours !== undefined ? Math.max(0, parseFloat(body.budget_hours) || 0) : (Number(project.budget_hours) || 0)
   const budgetAmount = body.budget_amount !== undefined ? Math.max(0, parseFloat(body.budget_amount) || 0) : (Number(project.budget_amount) || 0)
+  const dueDate = body.due_date !== undefined ? (body.due_date ? parseImportDate(body.due_date) : null) : project.due_date
 
   db.prepare(`
     UPDATE projects
@@ -31,9 +33,10 @@ export default defineEventHandler(async (event) => {
         custom_data = ?,
         currency = ?,
         budget_hours = ?,
-        budget_amount = ?
+        budget_amount = ?,
+        due_date = ?
     WHERE id = ?
-  `).run(title, status, customData, currency, budgetHours, budgetAmount, projectId)
+  `).run(title, status, customData, currency, budgetHours, budgetAmount, dueDate, projectId)
 
   const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) as any
   return {

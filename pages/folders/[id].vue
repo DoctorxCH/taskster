@@ -432,6 +432,15 @@
                       <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
                     </span>
+                    <span
+                      v-if="project.due_date"
+                      class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
+                      :class="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10) ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' : 'bg-amber-50 text-amber-800 border-amber-200'"
+                      :title="`Fälligkeitsdatum: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
+                    >
+                      <span>📅</span>
+                      <span>{{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
+                    </span>
                   </div>
                 </div>
 
@@ -552,6 +561,15 @@
                         >
                           <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                           {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
+                        </span>
+                        <span
+                          v-if="project.due_date"
+                          class="px-2 py-0.5 rounded text-[10px] font-semibold border flex items-center space-x-1"
+                          :class="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10) ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' : 'bg-amber-50 text-amber-800 border-amber-200'"
+                          :title="`Fälligkeitsdatum: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
+                        >
+                          <span>📅</span>
+                          <span>{{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
                         </span>
                       </div>
                     </td>
@@ -1583,6 +1601,7 @@
                             </optgroup>
                             <optgroup label="Standard Projekt-Felder">
                               <option value="title">📌 Projekttitel (Pflicht)</option>
+                              <option value="due_date">📅 Fälligkeitsdatum</option>
                               <option value="status">🔄 Status (active/archived/completed)</option>
                               <option value="visibility">🔒 Sichtbarkeit (private/company)</option>
                               <option value="currency">💰 Währung (CHF, EUR, USD)</option>
@@ -1735,6 +1754,20 @@
               />
               <p class="text-[11px] text-slate-500 mt-1">
                 Gib dem Projekt eine aussagekräftige Bezeichnung.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">
+                📅 Fälligkeitsdatum
+              </label>
+              <input
+                v-model="newProjectDueDate"
+                type="date"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">
+                Standard-Fälligkeitsdatum für dieses Projekt (optional).
               </p>
             </div>
 
@@ -4340,6 +4373,7 @@ const removeGroupFromFolder = async (groupId: string) => {
 // Project creation & Template state
 const showNewProjectModal = ref(false)
 const newProjectTitle = ref('')
+const newProjectDueDate = ref('')
 const newProjectVisibility = ref('private')
 const newProjectCustomData = ref<Record<string, any>>({})
 const creatingProject = ref(false)
@@ -4792,6 +4826,11 @@ const applyAutoColumnMapping = (headers: string[]) => {
       lower.includes('vorgang') || lower.includes('auftrag') || lower.includes('objekt')
     )) {
       mapping[idx] = 'title'
+    } else if (!Object.values(mapping).includes('due_date') && (
+      lower.includes('fällig') || lower.includes('faellig') || lower.includes('due') ||
+      lower.includes('termin') || lower.includes('ende') || lower.includes('deadline')
+    )) {
+      mapping[idx] = 'due_date'
     } else if (!Object.values(mapping).includes('status') && (lower.includes('status') || lower.includes('zustand') || lower.includes('state'))) {
       mapping[idx] = 'status'
     } else if (!Object.values(mapping).includes('visibility') && (lower.includes('sichtbar') || lower.includes('visibility') || lower.includes('zugriff'))) {
@@ -4978,6 +5017,7 @@ const onImportPaste = (e: ClipboardEvent) => {
 
 const resetNewProjectForm = () => {
   newProjectTitle.value = ''
+  newProjectDueDate.value = ''
   newProjectVisibility.value = 'private'
   newProjectCustomData.value = {}
   selectedTemplateId.value = currentFolderTemplate.value ? currentFolderTemplate.value.id : null
@@ -5054,6 +5094,8 @@ const createProject = async () => {
         throw new Error('Bitte weise mindestens einer Spalte das Pflichtfeld "Projekttitel" zu.')
       }
       const titleColIdx = parseInt(titleColIdxStr)
+      const dueDateColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'due_date')?.[0]
+      const dueDateColIdx = dueDateColIdxStr !== undefined ? parseInt(dueDateColIdxStr) : null
       const statusColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'status')?.[0]
       const statusColIdx = statusColIdxStr !== undefined ? parseInt(statusColIdxStr) : null
       const visColIdxStr = Object.entries(importColumnMapping.value).find(([_, f]) => f === 'visibility')?.[0]
@@ -5129,6 +5171,8 @@ const createProject = async () => {
           }
         }
 
+        const pDueDate = dueDateColIdx !== null ? String(row[dueDateColIdx] || '').trim() || null : null
+
         projectsToImport.push({
           folder_id: folderId,
           title: pTitle,
@@ -5138,6 +5182,7 @@ const createProject = async () => {
           budget_hours: pBh,
           budget_amount: pBa,
           custom_data: pCustomData,
+          due_date: pDueDate,
           tasks: projectTasks
         })
       }
@@ -5213,6 +5258,7 @@ const createProject = async () => {
     const payload: any = {
       folder_id: folderId,
       title: newProjectTitle.value.trim(),
+      due_date: newProjectDueDate.value || null,
       visibility: newProjectVisibility.value,
       custom_data: newProjectCustomData.value
     }
