@@ -3346,6 +3346,12 @@ try {
         $chkStmt->execute([$fldId, $key]);
         $existing = $chkStmt->fetch();
         if ($existing) {
+            $logicRules = $body['logic_rules'] ?? null;
+            $db->prepare("UPDATE folder_field_definitions SET logic_rules = ?, label = COALESCE(?, label) WHERE id = ?")->execute([
+                $logicRules ? json_encode($logicRules) : null,
+                $label,
+                $existing['id']
+            ]);
             jsonResponse(['success' => true, 'fieldId' => $existing['id'], 'fieldKey' => $existing['field_key']]);
         }
 

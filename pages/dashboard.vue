@@ -882,80 +882,87 @@
     </div>
 
     <!-- Modal: Edit Folder (Owner only) -->
-    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
-      <div class="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl border border-slate-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.projektordner_anpassen') }}</h3>
-          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1">
+    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
+        <!-- Sticky Header -->
+        <div class="p-6 pb-4 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('dashboard.projektordner_anpassen') }}</h3>
+            <p class="text-xs text-slate-500 font-medium mt-1">
+              {{ $t('dashboard.passe_den_namen_und_die_sichtbarkei') }}
+            </p>
+          </div>
+          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer">
             <X class="w-4 h-4" />
           </button>
         </div>
-        <p class="text-xs text-slate-500 font-medium mb-4">
-          {{ $t('dashboard.passe_den_namen_und_die_sichtbarkei') }}
-        </p>
 
-        <div v-if="editFolderError" class="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-          {{ editFolderError }}
-        </div>
-
-        <form @submit.prevent="updateFolder" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
-            <input
-              v-model="editFolderName"
-              type="text"
-              required
-              :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
-              class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
-            />
-          </div>
-
-          <!-- Icon Selector -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon aus Liste auswählen</label>
-            <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
-              <button
-                v-for="item in availableFolderIcons"
-                :key="item.icon"
-                type="button"
-                @click="editFolderIcon = item.icon"
-                class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
-                :class="editFolderIcon === item.icon ? 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
-                :title="item.label"
-              >
-                {{ item.icon }}
-              </button>
+        <form @submit.prevent="updateFolder" class="flex flex-col flex-1 overflow-hidden min-h-0">
+          <!-- Scrollable Body -->
+          <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <div v-if="editFolderError" class="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+              {{ editFolderError }}
             </div>
-            <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
-          </div>
 
-          <!-- Sichtbarkeit im Unternehmen -->
-          <div v-if="user?.company_id || editFolderCompanyId" class="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2">
-            <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
-            <div class="grid grid-cols-2 gap-2">
-              <label
-                class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                :class="editFolderVisibility === 'private' ? 'bg-white border-[#0891B2] text-[#0891B2] ring-1 ring-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
-              >
-                <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
-                <Lock class="w-3.5 h-3.5" />
-                <span>{{ $t('dashboard.privat_standard') }}</span>
-              </label>
-              <label
-                class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
-                :class="editFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
-              >
-                <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
-                <Building2 class="w-3.5 h-3.5" />
-                <span>{{ $t('common.unternehmen') }}</span>
-              </label>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('dashboard.name_des_projektordners') }}</label>
+              <input
+                v-model="editFolderName"
+                type="text"
+                required
+                :placeholder="$t('dashboard.zb_privates_renovationsprojekt')"
+                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0891B2] shadow-2xs transition"
+              />
             </div>
-            <p class="text-[11px] text-slate-500">
-              {{ editFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: editFolderCompanyName || user?.company_name || $t('common.firma') }) }}
-            </p>
+
+            <!-- Icon Selector -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon aus Liste auswählen</label>
+              <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <button
+                  v-for="item in availableFolderIcons"
+                  :key="item.icon"
+                  type="button"
+                  @click="editFolderIcon = item.icon"
+                  class="w-9 h-9 rounded-xl flex items-center justify-center text-lg transition border cursor-pointer"
+                  :class="editFolderIcon === item.icon ? 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500/40 scale-105' : 'border-slate-200 bg-white hover:bg-slate-100'"
+                  :title="item.label"
+                >
+                  {{ item.icon }}
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
+            </div>
+
+            <!-- Sichtbarkeit im Unternehmen -->
+            <div v-if="user?.company_id" class="p-3 bg-slate-50 rounded-md border border-slate-200 space-y-2">
+              <label class="block text-xs font-bold text-slate-700">{{ $t('dashboard.sichtbarkeit_des_ordners') }}</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
+                  :class="editFolderVisibility === 'private' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
+                  <Lock class="w-3.5 h-3.5" />
+                  <span>{{ $t('dashboard.privat_standard') }}</span>
+                </label>
+                <label
+                  class="flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition text-xs font-semibold"
+                  :class="editFolderVisibility === 'company' ? 'bg-white border-[#0891B2] text-[#0891B2]' : 'bg-white border-slate-200 text-slate-700'"
+                >
+                  <input type="radio" value="company" v-model="editFolderVisibility" class="sr-only" />
+                  <Building2 class="w-3.5 h-3.5" />
+                  <span>{{ $t('common.unternehmen') }}</span>
+                </label>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                {{ editFolderVisibility === 'private' ? $t('dashboard.privater_ordner_desc') : $t('dashboard.unternehmens_ordner_desc', { company: editFolderCompanyName || user?.company_name || $t('common.firma') }) }}
+              </p>
+            </div>
           </div>
 
-          <div class="flex items-center justify-between pt-3 border-t border-slate-200">
+          <!-- Sticky Footer -->
+          <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 rounded-b-2xl">
             <button
               v-if="user?.id === editFolderOwnerId || user?.is_superadmin"
               type="button"

@@ -1743,12 +1743,62 @@
             </button>
           </div>
 
-          <!-- Fields Table -->
-          <div v-if="fields.length === 0" class="text-center py-8 text-xs text-slate-400">
+          <!-- Standard-Felder Logik-Regeln -->
+          <div class="mb-6 pb-5 border-b border-slate-100">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">Sichtbarkeit Standard-Felder</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">Hier kannst du Standard-Felder unter bestimmten Bedingungen ausblenden.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div
+                v-for="sf in [
+                  { key: 'status', label: 'Status', icon: '📋' },
+                  { key: 'priority', label: 'Priorit\u00e4t', icon: '🚦' },
+                  { key: 'assigned_to', label: 'Zuweisung', icon: '👥' },
+                  { key: 'due_date', label: 'F\u00e4lligkeitsdatum', icon: '📅' },
+                  { key: 'color', label: 'Farbmarkierung', icon: '🎨' },
+                  { key: 'tags', label: 'Tags', icon: '🏷️' }
+                ]"
+                :key="sf.key"
+                class="flex items-center justify-between p-3 rounded-2xl border transition"
+                :class="fields.find((f: any) => f.field_key === sf.key && f.logic_rules?.depends_on_field)
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-slate-50 border-slate-200'"
+              >
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-900 flex items-center space-x-1">
+                    <span>{{ sf.icon }}</span>
+                    <span>{{ sf.label }}</span>
+                  </div>
+                  <div
+                    v-if="fields.find((f: any) => f.field_key === sf.key && f.logic_rules?.depends_on_field)"
+                    class="text-[10px] text-amber-700 font-medium mt-0.5 truncate"
+                  >
+                    ⚡ Wenn {{ fields.find((f: any) => f.field_key === sf.key)?.logic_rules?.depends_on_field }}
+                    = &quot;{{ fields.find((f: any) => f.field_key === sf.key)?.logic_rules?.depends_on_value }}&quot;
+                  </div>
+                  <div v-else class="text-[10px] text-slate-400 mt-0.5">Immer sichtbar</div>
+                </div>
+                <button
+                  type="button"
+                  @click="openStandardFieldLogicModal(sf.key, sf.label)"
+                  class="ml-2 shrink-0 text-[10px] font-bold text-cyan-700 hover:text-cyan-900 underline"
+                >
+                  Logik
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Fields Table -->
+          <div v-if="fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key)).length === 0" class="text-center py-8 text-xs text-slate-400">
             Noch keine benutzerdefinierten Felder angelegt.
           </div>
 
           <div v-else class="overflow-x-auto">
+            <div class="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Eigene Felder</div>
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
@@ -1760,7 +1810,11 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-700">
-                <tr v-for="f in fields" :key="f.id" class="hover:bg-slate-50 transition">
+                <tr
+                  v-for="f in fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key))"
+                  :key="f.id"
+                  class="hover:bg-slate-50 transition"
+                >
                   <td class="py-3 px-4 font-bold text-slate-900">
                     {{ f.label_key ? $t(f.label_key) : f.label }}
                   </td>
@@ -3429,7 +3483,7 @@
             </div>
 
             <!-- Status Dropdown (Viewer darf abhaken!) -->
-            <div>
+            <div v-show="isStandardFieldVisible('status', drawerTask)">
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Status</label>
               <select
                 v-model="drawerTask.status"
@@ -3450,7 +3504,7 @@
             </div>
 
             <!-- Priority Dropdown -->
-            <div>
+            <div v-show="isStandardFieldVisible('priority', drawerTask)">
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Priorität</label>
               <select
                 v-model="drawerTask.priority"
@@ -3472,7 +3526,7 @@
             </div>
 
             <!-- Mehrfach-Zuweisung (Aus den Eingeladenen im Ordner/Projekt) -->
-            <div>
+            <div v-show="isStandardFieldVisible('assigned_to', drawerTask)">
               <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
                   👥 Zuweisung ({{ drawerTaskAssignedUsers.length }})
@@ -3550,7 +3604,7 @@
             </div>
 
             <!-- Due Date -->
-            <div>
+            <div v-show="isStandardFieldVisible('due_date', drawerTask)">
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">📅 Fälligkeitsdatum</label>
               <input
                 v-model="drawerTask.due_date"
@@ -3562,7 +3616,7 @@
             </div>
 
             <!-- Color Palette Chips -->
-            <div>
+            <div v-show="isStandardFieldVisible('color', drawerTask)">
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-2">🎨 Farbmarkierung</label>
               <div class="flex items-center flex-wrap gap-2">
                 <button
@@ -3588,7 +3642,7 @@
             </div>
 
             <!-- Tags -->
-            <div>
+            <div v-show="isStandardFieldVisible('tags', drawerTask)">
               <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">🏷️ Tags</label>
               <div class="flex flex-wrap gap-1.5 mb-2">
                 <span
@@ -3872,13 +3926,18 @@
 
     <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-black text-slate-900 mb-1">{{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">
+          <span v-if="isStandardFieldModal">⚡ Logik-Regel: {{ newFieldLabel }}</span>
+          <span v-else>{{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}</span>
+        </h3>
         <p class="text-xs text-slate-500 mb-4">
-          Definiere ein Attribut für Aufgaben oder das Projekt.
+          <span v-if="isStandardFieldModal">Bestimme, unter welcher Bedingung dieses Standard-Feld sichtbar ist.</span>
+          <span v-else>Definiere ein Attribut f&#252;r Aufgaben oder das Projekt.</span>
         </p>
 
         <form @submit.prevent="saveField" class="space-y-4">
-          <div>
+          <!-- Scope selector: only for regular custom fields -->
+          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1">Gültigkeitsbereich</label>
             <div class="grid grid-cols-2 gap-2">
               <button
@@ -3900,18 +3959,19 @@
             </div>
           </div>
 
-          <div>
+          <!-- Label: only for regular custom fields -->\n          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1">Feld-Bezeichnung (Label)</label>
             <input
               v-model="newFieldLabel"
               type="text"
               required
-              placeholder="z.B. Kostenstelle oder Priorität"
+              placeholder="z.B. Kostenstelle oder Priorit&#228;t"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
-          <div>
+          <!-- Field type: only for regular custom fields -->
+          <div v-if="!isStandardFieldModal">
             <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
             <select
               v-model="newFieldType"
@@ -3929,7 +3989,8 @@
             </select>
           </div>
 
-          <div v-if="newFieldType === 'select'">
+          <!-- Options: only for select type regular custom fields -->
+          <div v-if="!isStandardFieldModal && newFieldType === 'select'">
             <label class="block text-xs font-bold text-slate-700 mb-1">Optionen (Komma-getrennt)</label>
             <input
               v-model="newFieldOptionsRaw"
@@ -3941,7 +4002,8 @@
 
           <!-- Conditional Logic Builder -->
           <div class="pt-3 border-t border-slate-100 space-y-3">
-            <div class="flex items-center space-x-2">
+            <!-- Checkbox: hidden for standard field modals (always shown there) -->
+            <div v-if="!isStandardFieldModal" class="flex items-center space-x-2">
               <input
                 id="enableLogic"
                 v-model="enableFieldLogic"
@@ -3952,24 +4014,119 @@
                 Bedingte Logik (Feld nur unter Bedingung anzeigen)
               </label>
             </div>
+            <!-- Info for standard field modal -->
+            <div v-else class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700">Bedingung definieren</span>
+              <button
+                v-if="fields.find((f: any) => f.field_key === newFieldForcedKey && f.logic_rules?.depends_on_field)"
+                type="button"
+                @click="enableFieldLogic = false; logicDependsOnField = ''; logicDependsOnValue = ''"
+                class="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline"
+              >
+                Bedingung entfernen
+              </button>
+            </div>
 
-            <div v-if="enableFieldLogic" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <div v-if="enableFieldLogic || isStandardFieldModal" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
               <div>
-                <label class="block text-[11px] font-bold text-slate-600 mb-1">Abhängig von Feld</label>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Abh&#228;ngig von Feld</label>
                 <select
                   v-model="logicDependsOnField"
+                  @change="logicDependsOnValue = ''"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Feld auswählen --</option>
-                  <option v-for="other in fields" :key="other.id" :value="other.field_key">
-                    {{ other.label }} ({{ other.field_key }})
-                  </option>
+                  <option value="">-- Feld ausw&#228;hlen --</option>
+                  <optgroup label="Standard-Aufgabenfelder">
+                    <option value="status">Status</option>
+                    <option value="priority">Priorit&#228;t</option>
+                    <option value="assigned_to">Zuweisung</option>
+                    <option value="due_date">F&#228;lligkeitsdatum</option>
+                    <option value="color">Farbmarkierung</option>
+                    <option value="tags">Tags</option>
+                  </optgroup>
+                  <optgroup label="Eigene Felder" v-if="fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key) && f.entity_type !== 'project').length > 0">
+                    <option
+                      v-for="other in fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key) && f.entity_type !== 'project')"
+                      :key="other.id"
+                      :value="other.field_key"
+                    >
+                      {{ other.label }} ({{ other.field_key }})
+                    </option>
+                  </optgroup>
                 </select>
               </div>
 
               <div>
                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Nur anzeigen wenn Wert gleich:</label>
+
+                <select
+                  v-if="logicDependsOnField === 'status'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="todo">Zu erledigen (todo)</option>
+                  <option value="in_progress">In Arbeit (in_progress)</option>
+                  <option value="review">In Pr&#252;fung (review)</option>
+                  <option value="done">Abgeschlossen (done)</option>
+                </select>
+
+                <select
+                  v-else-if="logicDependsOnField === 'priority'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="dringend">Dringend</option>
+                  <option value="hoch">Hoch</option>
+                  <option value="normal">Normal</option>
+                  <option value="niedrig">Niedrig</option>
+                </select>
+
+                <select
+                  v-else-if="logicDependsOnField === 'assigned_to'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="assigned">Mind. eine Person zugewiesen</option>
+                  <option value="unassigned">Keine Person zugewiesen</option>
+                </select>
+
+                <select
+                  v-else-if="logicDependsOnField === 'due_date'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="set">Datum ist gesetzt</option>
+                  <option value="not_set">Kein Datum</option>
+                  <option value="overdue">&#220;berf&#228;llig</option>
+                  <option value="today">Heute f&#228;llig</option>
+                </select>
+
+                <select
+                  v-else-if="logicDependsOnField === 'color'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="set">Farbe gesetzt</option>
+                  <option value="not_set">Keine Farbe</option>
+                </select>
+
+                <select
+                  v-else-if="logicDependsOnField === 'tags'"
+                  v-model="logicDependsOnValue"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
+                >
+                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="set">Mind. ein Tag gesetzt</option>
+                  <option value="not_set">Keine Tags</option>
+                </select>
+
                 <input
+                  v-else
                   v-model="logicDependsOnValue"
                   type="text"
                   placeholder="z.B. Hoch oder Freigegeben"
@@ -3982,7 +4139,7 @@
           <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
-              @click="showNewFieldModal = false"
+              @click="showNewFieldModal = false; isStandardFieldModal = false; newFieldForcedKey = ''"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
               Abbrechen
@@ -3991,7 +4148,7 @@
               type="submit"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              Feld speichern
+              {{ isStandardFieldModal ? 'Regel speichern' : 'Feld speichern' }}
             </button>
           </div>
         </form>
@@ -5551,6 +5708,9 @@ const newFieldOptionsRaw = ref('')
 const enableFieldLogic = ref(false)
 const logicDependsOnField = ref('')
 const logicDependsOnValue = ref('')
+// When set, forces a specific field_key (used for standard field logic rules)
+const newFieldForcedKey = ref('')
+const isStandardFieldModal = ref(false)
 
 const openNewFieldModal = () => {
   editingFieldId.value = ''
@@ -5561,8 +5721,47 @@ const openNewFieldModal = () => {
   enableFieldLogic.value = false
   logicDependsOnField.value = ''
   logicDependsOnValue.value = ''
+  newFieldForcedKey.value = ''
+  isStandardFieldModal.value = false
   showNewFieldModal.value = true
 }
+
+// Opens the field modal for a standard field (status, priority, etc.)
+// allowing the user to set / edit / remove a logic rule for it
+const openStandardFieldLogicModal = (fieldKey: string, label: string) => {
+  const existing = fields.value.find((f: any) => f.field_key === fieldKey)
+  if (existing) {
+    // Edit existing entry (PUT)
+    editingFieldId.value = existing.id
+    newFieldLabel.value = existing.label || label
+    newFieldType.value = existing.field_type || 'text'
+    newFieldEntityType.value = existing.entity_type || 'task'
+    newFieldOptionsRaw.value = ''
+    if (existing.logic_rules && existing.logic_rules.depends_on_field) {
+      enableFieldLogic.value = true
+      logicDependsOnField.value = existing.logic_rules.depends_on_field
+      logicDependsOnValue.value = existing.logic_rules.depends_on_value
+    } else {
+      enableFieldLogic.value = false
+      logicDependsOnField.value = ''
+      logicDependsOnValue.value = ''
+    }
+  } else {
+    // Create new entry for standard field (POST with forced key)
+    editingFieldId.value = ''
+    newFieldLabel.value = label
+    newFieldType.value = 'text'
+    newFieldEntityType.value = 'task'
+    newFieldOptionsRaw.value = ''
+    enableFieldLogic.value = true
+    logicDependsOnField.value = ''
+    logicDependsOnValue.value = ''
+  }
+  newFieldForcedKey.value = fieldKey
+  isStandardFieldModal.value = true
+  showNewFieldModal.value = true
+}
+
 
 const editField = (f: any) => {
   editingFieldId.value = f.id
@@ -5612,11 +5811,23 @@ const saveCustomField = async () => {
         body: payload
       })
     } else {
-      await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: payload
-      })
+      // If a forced key is set, check if an entry already exists and use PUT
+      const forcedKey = newFieldForcedKey.value
+      const existingByKey = forcedKey ? fields.value.find((f: any) => f.field_key === forcedKey) : null
+      if (existingByKey) {
+        await $fetch(`/api/folders/${project.value.folder_id}/fields/${existingByKey.id}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: payload
+        })
+      } else {
+        if (forcedKey) payload.field_key = forcedKey
+        await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: payload
+        })
+      }
     }
     showNewFieldModal.value = false
     await loadProjectData()
@@ -6006,13 +6217,70 @@ const taskColors = [
   { value: '#64748B', label: 'Slate' },
 ]
 
+// ─── Standard Task Field Keys & Logic Helpers ─────────────────────────────
+const STANDARD_TASK_FIELD_KEYS = ['status', 'priority', 'assigned_to', 'due_date', 'color', 'tags']
+
+/**
+ * Evaluates a logic_rules object against a given task.
+ * Supports both standard task fields and custom_data fields.
+ */
+const checkFieldRule = (logicRules: any, task: any): boolean => {
+  if (!logicRules || !logicRules.depends_on_field) return true
+  const depField = logicRules.depends_on_field
+  const expectedVal = logicRules.depends_on_value
+
+  if (depField === 'status') {
+    return task.status === expectedVal
+  } else if (depField === 'priority') {
+    return task.priority === expectedVal
+  } else if (depField === 'assigned_to') {
+    const assignedUsers: string[] = task.assigned_users
+      ? (Array.isArray(task.assigned_users) ? task.assigned_users : JSON.parse(task.assigned_users || '[]'))
+      : []
+    if (expectedVal === 'assigned') return assignedUsers.length > 0
+    if (expectedVal === 'unassigned') return assignedUsers.length === 0
+    return assignedUsers.includes(expectedVal)
+  } else if (depField === 'due_date') {
+    if (expectedVal === 'set') return !!task.due_date
+    if (expectedVal === 'not_set') return !task.due_date
+    if (expectedVal === 'overdue') {
+      if (!task.due_date) return false
+      return new Date(task.due_date) < new Date(new Date().toDateString())
+    }
+    if (expectedVal === 'today') {
+      if (!task.due_date) return false
+      return task.due_date.substring(0, 10) === new Date().toISOString().substring(0, 10)
+    }
+    return task.due_date === expectedVal
+  } else if (depField === 'color') {
+    if (expectedVal === 'set') return !!task.color
+    if (expectedVal === 'not_set') return !task.color
+    return task.color === expectedVal
+  } else if (depField === 'tags') {
+    const tagList: string[] = Array.isArray(task.tags) ? task.tags : []
+    if (expectedVal === 'set') return tagList.length > 0
+    if (expectedVal === 'not_set') return tagList.length === 0
+    return tagList.includes(expectedVal)
+  } else {
+    // Custom field
+    return task.custom_data?.[depField] === expectedVal
+  }
+}
+
+/**
+ * Returns whether a standard field (e.g. 'status', 'priority') should be shown
+ * for the given task, based on any saved logic_rules in folder_field_definitions.
+ */
+const isStandardFieldVisible = (fieldKey: string, task: any): boolean => {
+  if (!task) return true
+  const def = fields.value.find((f: any) => f.field_key === fieldKey)
+  if (!def || !def.logic_rules || !def.logic_rules.depends_on_field) return true
+  return checkFieldRule(def.logic_rules, task)
+}
+
 const visibleDrawerFields = computed(() => {
   if (!drawerTask.value) return []
-  return taskCustomFields.value.filter((f: any) => {
-    if (!f.logic_rules || !f.logic_rules.depends_on_field) return true
-    const depVal = drawerTask.value.custom_data?.[f.logic_rules.depends_on_field]
-    return depVal === f.logic_rules.depends_on_value
-  })
+  return taskCustomFields.value.filter((f: any) => checkFieldRule(f.logic_rules, drawerTask.value))
 })
 
 const totalTasks = computed(() => {
@@ -6020,7 +6288,10 @@ const totalTasks = computed(() => {
 })
 
 const taskCustomFields = computed(() => {
-  return fields.value.filter((f: any) => f.entity_type !== 'project')
+  // Exclude project fields AND standard field keys (they're handled separately in drawer/modal)
+  return fields.value.filter((f: any) =>
+    f.entity_type !== 'project' && !STANDARD_TASK_FIELD_KEYS.includes(f.field_key)
+  )
 })
 
 const projectCustomFields = computed(() => {
@@ -6170,13 +6441,9 @@ const getFilteredTasks = (listTasks: any[]) => {
   })
 }
 
-// Check conditional visibility of a task field
+// Check conditional visibility of a task field (task modal)
 const isFieldVisibleForTask = (f: any) => {
-  if (!f.logic_rules || !f.logic_rules.depends_on_field) return true
-  const depField = f.logic_rules.depends_on_field
-  const expectedVal = f.logic_rules.depends_on_value
-  const currentVal = taskForm.value.custom_data[depField]
-  return currentVal == expectedVal
+  return checkFieldRule(f.logic_rules, { ...taskForm.value, assigned_users: [] })
 }
 
 const onDragStart = (task: any, listId: string) => {
@@ -6778,30 +7045,38 @@ const saveField = async () => {
       ? { depends_on_field: logicDependsOnField.value, depends_on_value: logicDependsOnValue.value }
       : null
 
+    const payload: any = {
+      label: newFieldLabel.value,
+      field_type: newFieldType.value,
+      entity_type: newFieldEntityType.value,
+      options,
+      logic_rules: logicRules
+    }
+
     if (editingFieldId.value) {
       await $fetch(`/api/folders/${project.value.folder_id}/fields/${editingFieldId.value}`, {
         method: 'PUT',
         headers: authHeaders(),
-        body: {
-          label: newFieldLabel.value,
-          field_type: newFieldType.value,
-          entity_type: newFieldEntityType.value,
-          options,
-          logic_rules: logicRules
-        }
+        body: payload
       })
     } else {
-      await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: {
-          label: newFieldLabel.value,
-          field_type: newFieldType.value,
-          entity_type: newFieldEntityType.value,
-          options,
-          logic_rules: logicRules
-        }
-      })
+      // If a forced key is set, check if an entry already exists and use PUT
+      const forcedKey = newFieldForcedKey.value
+      const existingByKey = forcedKey ? fields.value.find((f: any) => f.field_key === forcedKey) : null
+      if (existingByKey) {
+        await $fetch(`/api/folders/${project.value.folder_id}/fields/${existingByKey.id}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: payload
+        })
+      } else {
+        if (forcedKey) payload.field_key = forcedKey
+        await $fetch(`/api/folders/${project.value.folder_id}/fields`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: payload
+        })
+      }
     }
     showNewFieldModal.value = false
     newFieldLabel.value = ''
@@ -6812,6 +7087,8 @@ const saveField = async () => {
     logicDependsOnField.value = ''
     logicDependsOnValue.value = ''
     editingFieldId.value = ''
+    newFieldForcedKey.value = ''
+    isStandardFieldModal.value = false
     await loadProjectData()
   } catch (err: any) {
     alert(err.data?.statusMessage || 'Fehler beim Speichern des Feldes')

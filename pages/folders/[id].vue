@@ -1620,29 +1620,34 @@
     </div>
 
     <!-- Modal: Edit Folder (Owner only) -->
-    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-black text-slate-900">Projektordner anpassen</h3>
-          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
-        </div>
-        <p class="text-xs text-slate-500 mb-5">
-          Passe den Namen und das Erkennungs-Icon dieses Projektordners an.
-        </p>
-
-        <div v-if="editFolderError" class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-          {{ editFolderError }}
-        </div>
-
-        <form @submit.prevent="updateFolder" class="space-y-4">
+    <div v-if="showEditFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
+        <!-- Sticky Header -->
+        <div class="p-6 pb-4 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
-            <input
-              v-model="editFolderName"
-              type="text"
-              required
-              placeholder="z.B. Peters Privates Renovationsprojekt"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
+            <h3 class="text-lg font-black text-slate-900">Projektordner anpassen</h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Passe den Namen, das Icon, die Vorlage und die Phasen dieses Projektordners an.
+            </p>
+          </div>
+          <button @click="showEditFolderModal = false" class="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 rounded-lg hover:bg-slate-100 cursor-pointer transition">✕</button>
+        </div>
+
+        <form @submit.prevent="updateFolder" class="flex flex-col flex-1 overflow-hidden min-h-0">
+          <!-- Scrollable Body -->
+          <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <div v-if="editFolderError" class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+              {{ editFolderError }}
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+              <input
+                v-model="editFolderName"
+                type="text"
+                required
+                placeholder="z.B. Peters Privates Renovationsprojekt"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
@@ -1898,8 +1903,10 @@
               + Einladen
             </button>
           </div>
+        </div>
 
-          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+        <!-- Sticky Footer -->
+          <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 rounded-b-3xl">
             <button
               v-if="user?.id === folder?.owner_id || user?.is_superadmin"
               type="button"
