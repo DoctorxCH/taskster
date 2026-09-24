@@ -127,7 +127,7 @@
           </div>
         </div>
 
-        <!-- 3. Task Assignment (with Auto Assignment or Dropdown Search) -->
+        <!-- 3. Task Assignment (User Choice: Manual or Suggestion, Never Auto-Forced) -->
         <div class="space-y-1">
           <label class="block text-xs font-bold text-slate-700 mb-0.5">Aufgaben-Zuweisung</label>
           <div class="relative">
@@ -136,14 +136,13 @@
               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between cursor-pointer hover:bg-white hover:border-[#00A3C4] transition"
             >
               <div class="flex items-center gap-1.5 truncate">
-                <span v-if="selectedTaskId === 'auto'" class="text-[#00A3C4] font-bold">✨ Automatisch zuweisen (anhand Text)</span>
-                <span v-else-if="!selectedTaskId" class="text-slate-500">-- Keine Verknüpfung --</span>
+                <span v-if="!selectedTaskId" class="text-slate-500">-- Keine Verknüpfung --</span>
                 <span v-else class="text-slate-900 font-bold">☑️ {{ getTaskDisplay(selectedTaskId) }}</span>
               </div>
               <ChevronDown class="w-4 h-4 text-slate-400 shrink-0 ml-1" />
             </div>
 
-            <!-- Task Popover -->
+            <!-- Task Popover with instant search -->
             <div
               v-if="isTaskDropdownOpen"
               class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-2 space-y-1 max-h-52 flex flex-col"
@@ -160,17 +159,6 @@
               </div>
 
               <div class="overflow-y-auto space-y-0.5 flex-1 pr-1">
-                <button
-                  type="button"
-                  @click="selectTask('auto')"
-                  class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-cyan-50 transition"
-                  :class="selectedTaskId === 'auto' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700'"
-                >
-                  <span>✨</span>
-                  <span>Automatisch zuweisen (anhand Text)</span>
-                  <Check v-if="selectedTaskId === 'auto'" class="w-3.5 h-3.5 ml-auto text-[#00A3C4]" />
-                </button>
-
                 <button
                   type="button"
                   @click="selectTask('')"
@@ -194,6 +182,26 @@
                   <Check v-if="selectedTaskId === t.id" class="w-3.5 h-3.5 ml-2 shrink-0 text-[#00A3C4]" />
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- Suggestions when note text matches tasks (max 2 suggestions) -->
+          <div v-if="suggestedTasks.length > 0 && !selectedTaskId" class="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-1.5 mt-1.5">
+            <div class="text-[10px] font-bold text-amber-900 flex items-center gap-1">
+              <span>✨</span>
+              <span>Passende Aufgabe erkannt (Klick zum Zuweisen):</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="sug in suggestedTasks"
+                :key="sug.task.id"
+                type="button"
+                @click="selectTask(sug.task.id)"
+                class="text-left px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-xs font-semibold text-slate-800 hover:bg-amber-100 hover:border-amber-400 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>☑️ {{ sug.task.title }}</span>
+                <span class="text-[10px] text-amber-700 font-normal">({{ sug.reason }})</span>
+              </button>
             </div>
           </div>
         </div>
@@ -282,7 +290,7 @@ const selectedProjectId = ref(props.projectId || 'auto')
 const isProjectDropdownOpen = ref(false)
 const projectSearchTerm = ref('')
 
-const selectedTaskId = ref('auto')
+const selectedTaskId = ref('')
 const isTaskDropdownOpen = ref(false)
 const taskSearchTerm = ref('')
 
@@ -295,7 +303,7 @@ watch(() => props.show, (newVal) => {
     category.value = 'notiz'
     entryDate.value = new Date().toISOString().substring(0, 10)
     selectedProjectId.value = props.projectId || 'auto'
-    selectedTaskId.value = 'auto'
+    selectedTaskId.value = ''
     isProjectDropdownOpen.value = false
     isTaskDropdownOpen.value = false
     projectSearchTerm.value = ''
@@ -350,6 +358,43 @@ const filteredTasks = computed(() => {
   return list
 })
 
+// Suggest matching tasks from content text (max 2 suggestions, no forced auto-assign)
+const suggestedTasks = computed(() => {
+  if (selectedTaskId.value) return []
+  const text = (content.value || '').toLowerCase().trim()
+  if (!text || text.length < 3) return []
+
+  const availableTasks = filteredTasks.value || []
+  if (availableTasks.length === 0) return []
+
+  const matches: Array<{ task: any, reason: string, score: number }> = []
+
+  for (const t of availableTasks) {
+    let score = 0
+    let reason = ''
+    const title = (t.title || '').trim()
+    const lowerTitle = title.toLowerCase()
+
+    if (lowerTitle && text.includes(lowerTitle)) {
+      score += 60
+      reason = `Titel: "${title}"`
+    } else {
+      const words = lowerTitle.split(/[\s\-_,./]+/).filter((w: string) => w.length >= 4)
+      const matched = words.filter((w: string) => text.includes(w))
+      if (matched.length >= 2) {
+        score += matched.length * 20
+        reason = `Stichworte: ${matched.join(', ')}`
+      }
+    }
+
+    if (score >= 30) {
+      matches.push({ task: t, reason, score })
+    }
+  }
+
+  return matches.sort((a, b) => b.score - a.score).slice(0, 2)
+})
+
 const getTaskDisplay = (tId: string) => {
   const t = (props.tasks || []).find(item => item.id === tId)
   return t ? t.title : tId
@@ -370,13 +415,16 @@ const handleSubmit = async () => {
   error.value = ''
 
   try {
+    const firstLine = content.value.trim().split('\n')[0].trim()
+    const autoTitle = firstLine.substring(0, 60) || `Notiz (${new Date().toLocaleDateString('de-CH')})`
+
     const payload = {
       folder_id: fixedFolderId.value || null,
       project_id: fixedProjectId.value || (selectedProjectId.value === 'auto' ? 'auto' : (selectedProjectId.value || null)),
-      task_id: selectedTaskId.value === 'auto' ? 'auto' : (selectedTaskId.value || null),
+      task_id: selectedTaskId.value || null,
       type: 'note',
       category: category.value,
-      title: '', // Empty: backend will auto-generate title from first line of content!
+      title: autoTitle,
       content: content.value.trim(),
       visibility: 'all',
       entry_date: entryDate.value

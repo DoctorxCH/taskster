@@ -863,6 +863,21 @@
                   <span class="text-[10px] text-slate-400">({{ Math.round(att.file_size / 1024) }} KB)</span>
                 </div>
               </div>
+
+              <!-- Linked Task -->
+              <div v-if="entry.task_id" class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 text-xs">
+                <span class="text-slate-600 flex items-center gap-1.5 font-medium">
+                  <span>📌 Verknüpfte Aufgabe:</span>
+                  <strong class="text-slate-900 font-bold">{{ entry.task_title || 'Aufgabe' }}</strong>
+                </span>
+                <NuxtLink
+                  v-if="entry.project_id"
+                  :to="`/projects/${entry.project_id}`"
+                  class="text-[11px] font-bold text-[#00A3C4] hover:underline"
+                >
+                  Im Projekt öffnen →
+                </NuxtLink>
+              </div>
             </div>
           </div>
         </div>
@@ -2708,6 +2723,7 @@
       :show="showJournalEntryModal"
       :folder-id="folderId"
       :projects="projects"
+      :tasks="folderTasks"
       :contacts="folderContacts"
       @close="showJournalEntryModal = false"
       @saved="onFolderJournalSaved"
@@ -2717,6 +2733,7 @@
       :show="showJournalNoteModal"
       :folder-id="folderId"
       :projects="projects"
+      :tasks="folderTasks"
       @close="showJournalNoteModal = false"
       @saved="onFolderJournalSaved"
     />
@@ -3609,6 +3626,7 @@ const onFolderJournalSaved = async () => {
 }
 
 const folderJournals = ref<any[]>([])
+const folderTasks = ref<any[]>([])
 const loadingFolderJournals = ref(false)
 
 const folderJournalFilterType = ref<'all' | 'entry' | 'note'>('all')
@@ -5324,7 +5342,12 @@ const loadFolderData = async () => {
     if (res.folder?.settings?.default_sections && Array.isArray(res.folder.settings.default_sections) && res.folder.settings.default_sections.length > 0) {
       importWorkflowSections.value = res.folder.settings.default_sections.map((s: any) => typeof s === 'string' ? s : (s.title || ''))
     }
-    await Promise.all([loadFolderJournals(), loadFolderContacts()])
+    const [tasksRes] = await Promise.all([
+      $fetch<any>('/api/tasks', { headers: authHeaders() }).catch(() => ({ tasks: [] })),
+      loadFolderJournals(),
+      loadFolderContacts()
+    ])
+    folderTasks.value = tasksRes?.tasks || []
   } catch (err: any) {
     if (err.statusCode === 404 || err.statusCode === 401) {
       navigateTo('/dashboard')

@@ -270,6 +270,21 @@
           {{ entry.content }}
         </p>
 
+        <!-- Linked Task -->
+        <div v-if="entry.task_id" class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 text-xs">
+          <span class="text-slate-600 flex items-center gap-1.5 font-medium">
+            <span>📌 Verknüpfte Aufgabe:</span>
+            <strong class="text-slate-900 font-bold">{{ entry.task_title || 'Aufgabe' }}</strong>
+          </span>
+          <NuxtLink
+            v-if="entry.project_id"
+            :to="`/projects/${entry.project_id}`"
+            class="text-[11px] font-bold text-[#00A3C4] hover:underline"
+          >
+            Im Projekt öffnen →
+          </NuxtLink>
+        </div>
+
         <!-- Attendees badges -->
         <div v-if="entry.attendees && entry.attendees.length > 0" class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
           <span class="text-[11px] font-bold text-slate-500 mr-1">Teilnehmer:</span>
@@ -341,6 +356,10 @@
           Möchtest du diesen Journal-Eintrag wirklich unwiderruflich löschen?
         </p>
 
+        <div v-if="deleteError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
+          {{ deleteError }}
+        </div>
+
         <div class="flex items-center justify-end gap-2.5 pt-2">
           <button
             type="button"
@@ -357,6 +376,19 @@
           >
             {{ deleting ? 'Wird gelöscht...' : 'Eintrag löschen' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Feedback -->
+    <div v-if="toast.show" class="fixed bottom-6 right-6 z-50 max-w-sm w-full transition-all duration-300">
+      <div
+        class="flex items-start gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md"
+        :class="toast.type === 'error' ? 'bg-rose-50/95 border-rose-200 text-rose-900' : toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900' : 'bg-slate-900/90 border-slate-700 text-white'"
+      >
+        <div class="flex-1 text-xs">
+          <div class="font-bold">{{ toast.type === 'error' ? 'Fehler' : toast.type === 'success' ? 'Erfolg' : 'Hinweis' }}</div>
+          <div class="mt-0.5 leading-relaxed">{{ toast.message }}</div>
         </div>
       </div>
     </div>
@@ -400,21 +432,32 @@ const showNoteModal = ref(false)
 
 const itemToDelete = ref<any | null>(null)
 const deleting = ref(false)
+const deleteError = ref('')
+
+const toast = ref<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' })
+let toastTimer: any = null
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  toast.value = { show: true, message, type }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
 
 const loadData = async () => {
   loading.value = true
   try {
-    const [foldersRes, projectsRes, journalsRes, contactsRes] = await Promise.all([
+    const [foldersRes, projectsRes, journalsRes, contactsRes, tasksRes] = await Promise.all([
       $fetch<any>('/api/folders', { headers: authHeaders() }).catch(() => ({ folders: [] })),
       $fetch<any>('/api/projects', { headers: authHeaders() }).catch(() => ({ projects: [] })),
       $fetch<any>(selectedFolderId.value ? `/api/journals?folder_id=${selectedFolderId.value}` : '/api/journals', { headers: authHeaders() }).catch(() => ({ entries: [] })),
-      $fetch<any>('/api/contacts', { headers: authHeaders() }).catch(() => ({ contacts: [] }))
+      $fetch<any>('/api/contacts', { headers: authHeaders() }).catch(() => ({ contacts: [] })),
+      $fetch<any>('/api/tasks', { headers: authHeaders() }).catch(() => ({ tasks: [] }))
     ])
 
     folders.value = foldersRes.folders || []
     projects.value = projectsRes.projects || []
     allJournals.value = journalsRes.entries || []
     allContacts.value = contactsRes.contacts || []
+    allTasks.value = tasksRes.tasks || []
   } catch (err) {
     console.error('Error loading journal overview data:', err)
   } finally {
@@ -504,6 +547,7 @@ const onEntrySaved = async () => {
   const url = selectedFolderId.value ? `/api/journals?folder_id=${selectedFolderId.value}` : '/api/journals'
   const res = await $fetch<any>(url, { headers: authHeaders() })
   allJournals.value = res.entries || []
+  showToast('Journal-Eintrag erfolgreich gespeichert', 'success')
 }
 
 const canDeleteEntry = (entry: any) => {
@@ -514,12 +558,14 @@ const canDeleteEntry = (entry: any) => {
 }
 
 const confirmDelete = (entry: any) => {
+  deleteError.value = ''
   itemToDelete.value = entry
 }
 
 const executeDelete = async () => {
   if (!itemToDelete.value) return
   deleting.value = true
+  deleteError.value = ''
   try {
     await $fetch(`/api/journals/${itemToDelete.value.id}`, {
       method: 'DELETE',
@@ -527,7 +573,9 @@ const executeDelete = async () => {
     })
     allJournals.value = allJournals.value.filter(j => j.id !== itemToDelete.value.id)
     itemToDelete.value = null
+    showToast('Journal-Eintrag erfolgreich gelöscht', 'success')
   } catch (err: any) {
+    deleteError.value = err.data?.statusMessage || err.message || 'Fehler beim Löschen des Eintrags'
     console.error('Delete failed:', err)
   } finally {
     deleting.value = false

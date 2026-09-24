@@ -1353,30 +1353,39 @@
 
                   <!-- Zustand B: Keine Aufgabe verknüpft -->
                   <div v-else class="space-y-2.5">
-                    <!-- Automatischer Erkennungsvorschlag anhand Adresse / Name / Custom Fields -->
+                    <!-- Automatischer Erkennungsvorschlag (max 2 Vorschläge, nie erzwungen) -->
                     <div
-                      v-if="getSuggestedTaskForEntry(entry)"
-                      class="p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 space-y-1.5 shadow-2xs"
+                      v-if="getSuggestedTasksForEntry(entry).length > 0"
+                      class="p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 space-y-2 shadow-2xs"
                     >
                       <div class="text-[10px] font-black text-amber-950 uppercase tracking-wider flex items-center space-x-1">
                         <span>✨</span>
-                        <span>Passende Aufgabe erkannt</span>
+                        <span>{{ getSuggestedTasksForEntry(entry).length > 1 ? 'Passende Aufgaben erkannt' : 'Passende Aufgabe erkannt' }}</span>
                       </div>
                       <p class="text-xs font-bold text-slate-900 leading-snug">
-                        Möchtest du diesen Eintrag der Aufgabe „{{ getSuggestedTaskForEntry(entry)?.task.title }}“ zuweisen?
+                        {{ getSuggestedTasksForEntry(entry).length > 1 ? 'Möchtest du diesen Eintrag einer Aufgabe zuweisen?' : `Möchtest du diesen Eintrag der Aufgabe „${getSuggestedTasksForEntry(entry)[0].task.title}“ zuweisen?` }}
                       </p>
-                      <p class="text-[10px] text-amber-800">
-                        Erkannt: <em>{{ getSuggestedTaskForEntry(entry)?.reason }}</em>
-                      </p>
-                      <button
-                        type="button"
-                        v-if="userRole !== 'viewer'"
-                        :disabled="updatingJournalTaskId === entry.id"
-                        @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
-                        class="w-full py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#00A3C4] text-white text-xs font-bold transition flex items-center justify-center space-x-1 shadow-xs cursor-pointer"
-                      >
-                        <span>✓ Ja, zuweisen</span>
-                      </button>
+                      <div class="space-y-1.5">
+                        <div
+                          v-for="sug in getSuggestedTasksForEntry(entry)"
+                          :key="sug.task.id"
+                          class="flex items-center justify-between gap-2 p-2 bg-white/95 rounded-lg border border-amber-200"
+                        >
+                          <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold text-slate-900 truncate">{{ sug.task.title }}</p>
+                            <p class="text-[10px] text-amber-800 truncate">Erkannt: <em>{{ sug.reason }}</em></p>
+                          </div>
+                          <button
+                            type="button"
+                            v-if="userRole !== 'viewer'"
+                            :disabled="updatingJournalTaskId === entry.id"
+                            @click="updateJournalTaskLink(entry, sug.task.id)"
+                            class="shrink-0 py-1.5 px-3 rounded-lg bg-[#00A3C4] hover:bg-[#008ba8] text-white text-xs font-bold transition flex items-center space-x-1 cursor-pointer disabled:opacity-50 shadow-2xs"
+                          >
+                            <span>✓ Zuweisen</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Manuelle Schnellauswahl aus Aufgabenliste -->
@@ -4281,13 +4290,10 @@
             </div>
           </div>
 
-          <!-- Linked Task (optional) -->
+          <!-- Linked Task (optional, no forced auto-assign) -->
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
-              <span v-if="newEntryAutoDetectedReason" class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                ✨ Automatisch erkannt: {{ newEntryAutoDetectedReason }}
-              </span>
             </div>
             <select
               v-model="newEntryForm.task_id"
@@ -4298,6 +4304,22 @@
                 {{ t.title }} ({{ getSectionTitle(t.list_id) }})
               </option>
             </select>
+            <!-- Suggestions if detected (max 2) - user must click to assign -->
+            <div v-if="newEntrySuggestedTasks.length > 0 && !newEntryForm.task_id" class="mt-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+              <span class="text-[10px] font-bold text-amber-900 block">✨ Vorgeschlagene Aufgaben (Klick zum Zuweisen):</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="sug in newEntrySuggestedTasks"
+                  :key="sug.task.id"
+                  type="button"
+                  @click="newEntryForm.task_id = sug.task.id"
+                  class="px-2.5 py-1 rounded bg-white border border-amber-300 text-xs font-semibold text-slate-800 hover:bg-amber-100 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                >
+                  <span>☑️ {{ sug.task.title }}</span>
+                  <span class="text-[10px] text-amber-700 font-normal">({{ sug.reason }})</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Attendees Management -->
@@ -4597,13 +4619,10 @@
             </select>
           </div>
 
-          <!-- Linked Task (optional) -->
+          <!-- Linked Task (optional, no forced auto-assign) -->
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
-              <span v-if="newNoteAutoDetectedReason" class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                ✨ Automatisch erkannt: {{ newNoteAutoDetectedReason }}
-              </span>
             </div>
             <select
               v-model="newNoteForm.task_id"
@@ -4614,6 +4633,22 @@
                 {{ t.title }} ({{ getSectionTitle(t.list_id) }})
               </option>
             </select>
+            <!-- Suggestions if detected (max 2) - user must click to assign -->
+            <div v-if="newNoteSuggestedTasks.length > 0 && !newNoteForm.task_id" class="mt-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+              <span class="text-[10px] font-bold text-amber-900 block">✨ Vorgeschlagene Aufgaben (Klick zum Zuweisen):</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="sug in newNoteSuggestedTasks"
+                  :key="sug.task.id"
+                  type="button"
+                  @click="newNoteForm.task_id = sug.task.id"
+                  class="px-2.5 py-1 rounded bg-white border border-amber-300 text-xs font-semibold text-slate-800 hover:bg-amber-100 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                >
+                  <span>☑️ {{ sug.task.title }}</span>
+                  <span class="text-[10px] text-amber-700 font-normal">({{ sug.reason }})</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Email Sender Info (if category is email) -->
@@ -5320,18 +5355,25 @@
                 <span>Aufgabe öffnen →</span>
               </button>
             </div>
-            <div v-else-if="getSuggestedTaskForEntry(entry)" class="p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+            <div v-else-if="getSuggestedTasksForEntry(entry).length > 0" class="p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1.5">
               <p class="text-[11px] font-bold text-amber-950">
-                Möchtest du diesen Eintrag der Aufgabe „{{ getSuggestedTaskForEntry(entry)?.task.title }}“ zuweisen?
+                Möchtest du diesen Eintrag einer Aufgabe zuweisen?
               </p>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  @click="updateJournalTaskLink(entry, getSuggestedTaskForEntry(entry)?.task.id)"
-                  class="px-2.5 py-1 rounded bg-[#00A3C4] hover:bg-[#00A3C4] text-white text-[10px] font-bold transition cursor-pointer"
+              <div class="space-y-1">
+                <div
+                  v-for="sug in getSuggestedTasksForEntry(entry)"
+                  :key="sug.task.id"
+                  class="flex items-center justify-between gap-1 text-[11px] bg-white/80 p-1.5 rounded border border-amber-200"
                 >
-                  ✓ Ja, zuweisen
-                </button>
+                  <span class="truncate font-medium text-slate-800">{{ sug.task.title }}</span>
+                  <button
+                    type="button"
+                    @click="updateJournalTaskLink(entry, sug.task.id)"
+                    class="px-2 py-0.5 rounded bg-[#00A3C4] hover:bg-[#008ba8] text-white text-[10px] font-bold transition shrink-0 cursor-pointer"
+                  >
+                    ✓ Zuweisen
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -5365,7 +5407,9 @@
           </NuxtLink>
         </div>
       </div>
-      <!-- UNIVERSAL IN-APP CONFIRMATION MODAL (Zero Native Popups) -->
+    </div>
+
+    <!-- UNIVERSAL IN-APP CONFIRMATION MODAL (Zero Native Popups) -->
     <div v-if="confirmModal.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex items-center space-x-3">
@@ -5428,7 +5472,6 @@
         </button>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -6065,15 +6108,15 @@ const journalSearchQuery = ref('')
 const expandedMailIds = ref<Record<string, boolean>>({})
 const userGroups = ref<any[]>([])
 
-const newEntryAutoDetectedReason = ref('')
-const newNoteAutoDetectedReason = ref('')
+const newEntrySuggestedTasks = ref<Array<{ task: any, reason: string, score: number }>>([])
+const newNoteSuggestedTasks = ref<Array<{ task: any, reason: string, score: number }>>([])
 const updatingJournalTaskId = ref<string | null>(null)
 
-// Intelligent Task Auto-Matching (Adresse, Name, Kundennummer, benutzerdefinierte Felder)
-const detectMatchingTask = (text: string) => {
-  if (!text || !allProjectTasks.value || allProjectTasks.value.length === 0) return null
+// Intelligent Task Matching (Adresse, Name, Kundennummer, benutzerdefinierte Felder) - Returns up to max matches
+const detectMatchingTasks = (text: string, max = 2) => {
+  if (!text || !allProjectTasks.value || allProjectTasks.value.length === 0) return []
   const clean = text.toLowerCase()
-  let best: { task: any, score: number, reason: string } | null = null
+  const matches: Array<{ task: any, score: number, reason: string }> = []
 
   for (const t of allProjectTasks.value) {
     let score = 0
@@ -6117,18 +6160,26 @@ const detectMatchingTask = (text: string) => {
       }
     }
 
-    if (score >= 30 && (!best || score > best.score)) {
-      best = { task: t, score, reason: reasons[0] || title }
+    if (score >= 30) {
+      matches.push({ task: t, score, reason: reasons[0] || title })
     }
   }
 
-  return best
+  return matches.sort((a, b) => b.score - a.score).slice(0, max)
+}
+
+const detectMatchingTask = (text: string) => {
+  return detectMatchingTasks(text, 1)[0] || null
+}
+
+const getSuggestedTasksForEntry = (entry: any) => {
+  if (entry.task_id) return []
+  const combined = (entry.title || '') + ' ' + (entry.content || '') + ' ' + (entry.metadata?.ai_summary || '')
+  return detectMatchingTasks(combined, 2)
 }
 
 const getSuggestedTaskForEntry = (entry: any) => {
-  if (entry.task_id) return null
-  const combined = (entry.title || '') + ' ' + (entry.content || '') + ' ' + (entry.metadata?.ai_summary || '')
-  return detectMatchingTask(combined)
+  return getSuggestedTasksForEntry(entry)[0] || null
 }
 
 const getTaskSectionId = (taskId?: string) => {
@@ -6313,25 +6364,21 @@ const filteredJournals = computed(() => {
   return list
 })
 
-// Auto-Detection Watcher for New Entry Form
+// Detection Watcher for New Entry Form (Suggestions only, NEVER silent auto-assign)
 watch([() => newEntryForm.value.title, () => newEntryForm.value.content], ([t, c]) => {
-  if (!newEntryForm.value.task_id && (t || c)) {
-    const match = detectMatchingTask((t || '') + ' ' + (c || ''))
-    if (match) {
-      newEntryForm.value.task_id = match.task.id
-      newEntryAutoDetectedReason.value = match.reason
-    }
+  if (t || c) {
+    newEntrySuggestedTasks.value = detectMatchingTasks((t || '') + ' ' + (c || ''), 2)
+  } else {
+    newEntrySuggestedTasks.value = []
   }
 })
 
-// Auto-Detection Watcher for New Note Form
+// Detection Watcher for New Note Form (Suggestions only, NEVER silent auto-assign)
 watch([() => newNoteForm.value.title, () => newNoteForm.value.content], ([t, c]) => {
-  if (!newNoteForm.value.task_id && (t || c)) {
-    const match = detectMatchingTask((t || '') + ' ' + (c || ''))
-    if (match) {
-      newNoteForm.value.task_id = match.task.id
-      newNoteAutoDetectedReason.value = match.reason
-    }
+  if (t || c) {
+    newNoteSuggestedTasks.value = detectMatchingTasks((t || '') + ' ' + (c || ''), 2)
+  } else {
+    newNoteSuggestedTasks.value = []
   }
 })
 
@@ -8952,7 +8999,7 @@ const deleteJournalEntry = async (entry: any) => {
   triggerConfirmModal({
     title: 'Journaleintrag löschen',
     subtitle: entry.title,
-    message: t('journal.delete_entry_confirm') || 'Möchtest du diesen Journaleintrag wirklich löschen?',
+    message: (te && te('journal.delete_entry_confirm') ? t('journal.delete_entry_confirm') : '') || 'Möchtest du diesen Journaleintrag wirklich unwiderruflich löschen?',
     confirmText: 'Eintrag löschen',
     danger: true,
     action: async () => {

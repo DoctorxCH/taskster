@@ -4698,7 +4698,7 @@ try {
     }
 
     // 15. GET projects/:id/journal & GET journals
-    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || ($path === 'journals' && (!empty($_GET['project_id']) || !empty($_GET['folder_id'])))) && $method === 'GET') {
+    if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || $path === 'journals') && $method === 'GET') {
         $user = requireAuth();
         $projectId = !empty($m[1]) ? $m[1] : ($_GET['project_id'] ?? '');
         $folderId = trim($_GET['folder_id'] ?? '');
@@ -4727,10 +4727,28 @@ try {
         if ($projectId) {
             $whereClause = "j.project_id = ?";
             $queryParams[] = $projectId;
-        } else {
+        } else if ($folderId) {
             $whereClause = "(j.folder_id = ? OR j.project_id IN (SELECT id FROM projects WHERE folder_id = ?))";
             $queryParams[] = $folderId;
             $queryParams[] = $folderId;
+        } else {
+            // All accessible journals (e.g. for /journal page)
+            if ($isSuperadmin) {
+                $whereClause = "1=1";
+            } elseif ($companyId) {
+                $whereClause = "(j.company_id = ? OR COALESCE(j.user_id, j.author_id) = ? OR j.folder_id IN (SELECT id FROM project_folders WHERE company_id = ? OR owner_id = ?) OR j.project_id IN (SELECT p2.id FROM projects p2 JOIN project_folders pf2 ON pf2.id = p2.folder_id WHERE pf2.company_id = ? OR pf2.owner_id = ?))";
+                $queryParams[] = $companyId;
+                $queryParams[] = $userId;
+                $queryParams[] = $companyId;
+                $queryParams[] = $userId;
+                $queryParams[] = $companyId;
+                $queryParams[] = $userId;
+            } else {
+                $whereClause = "(COALESCE(j.user_id, j.author_id) = ? OR j.folder_id IN (SELECT id FROM project_folders WHERE owner_id = ?) OR j.project_id IN (SELECT p2.id FROM projects p2 JOIN project_folders pf2 ON pf2.id = p2.folder_id WHERE pf2.owner_id = ?))";
+                $queryParams[] = $userId;
+                $queryParams[] = $userId;
+                $queryParams[] = $userId;
+            }
         }
 
         // Visibility-Matrix Filter:
@@ -4744,11 +4762,13 @@ try {
                    COALESCE(u.name, 'Unbekannt') as author_name,
                    u.email as author_email,
                    t.title as task_title,
-                   p.title as project_title
+                   p.title as project_title,
+                   pf.name as folder_name
             FROM project_journals j
             LEFT JOIN users u ON u.id = COALESCE(j.user_id, j.author_id)
             LEFT JOIN tasks t ON t.id = j.task_id
             LEFT JOIN projects p ON p.id = j.project_id
+            LEFT JOIN project_folders pf ON pf.id = COALESCE(j.folder_id, p.folder_id)
             WHERE $whereClause
               AND (
                 ? = 1
@@ -4761,6 +4781,7 @@ try {
                 ))
               )
             ORDER BY j.created_at DESC
+            LIMIT 500
         ");
         $allParams = array_merge($queryParams, [$isSuperadmin, $userId, $companyId, $companyId, $userId]);
         $stmt->execute($allParams);
@@ -4801,29 +4822,6 @@ try {
         jsonResponse(['entries' => $entries]);
     }
 
-    // 15b. Legacy GET journals without project_id (User's own recent entries)
-    if ($path === 'journals' && $method === 'GET' && empty($_GET['project_id']) && empty($_GET['folder_id'])) {
-        $user = requireAuth();
-        $stmt = $db->prepare("
-            SELECT j.*, u.name as author_name, t.title as task_title, p.title as project_title
-            FROM project_journals j
-            JOIN users u ON u.id = COALESCE(j.user_id, j.author_id)
-            LEFT JOIN tasks t ON t.id = j.task_id
-            LEFT JOIN projects p ON p.id = j.project_id
-            WHERE COALESCE(j.user_id, j.author_id) = ?
-            ORDER BY j.created_at DESC
-            LIMIT 100
-        ");
-        $stmt->execute([$user['id']]);
-        $entries = array_map(function($e) {
-            $e['metadata'] = !empty($e['metadata']) ? (is_string($e['metadata']) ? json_decode($e['metadata'], true) : $e['metadata']) : [];
-            $e['attachments'] = [];
-            $e['attendees'] = [];
-            return $e;
-        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
-        jsonResponse(['entries' => $entries]);
-    }
-
     // 16. POST projects/:id/journal & POST journals
     if ((preg_match('#^projects/([^/]+)/journal$#', $path, $m) || $path === 'journals') && $method === 'POST') {
         $user = requireAuth();
@@ -4840,8 +4838,12 @@ try {
         $attachments = is_array($body['attachments'] ?? null) ? $body['attachments'] : [];
         $attendees = is_array($body['attendees'] ?? null) ? $body['attendees'] : [];
 
-        if (empty($title) || empty($content)) {
-            errorResponse('Titel und Inhalt sind erforderlich', 400);
+        if (empty($title)) {
+            $lines = explode("\n", trim($content));
+            $title = !empty($lines[0]) ? mb_substr(trim($lines[0]), 0, 60) : 'Notiz';
+        }
+        if (empty($content)) {
+            errorResponse('Inhalt ist erforderlich', 400);
         }
 
         // Auto assignment if projectId is empty or 'auto':
@@ -5030,10 +5032,12 @@ try {
     }
 
     // 16b. POST projects/:id/journal/parse-email (E-Mail Ingestion & KI Pipeline)
-    if (preg_match('#^projects/([^/]+)/journal/parse-email$#', $path, $m) && $method === 'POST') {
+    if ((preg_match('#^projects/([^/]+)/journal/parse-email$#', $path, $m) || $path === 'journals/parse-email') && $method === 'POST') {
         $user = requireAuth();
-        $projectId = $m[1];
-        evaluateProjectAccess($user, $projectId, 'write');
+        $projectId = !empty($m[1]) ? $m[1] : ($body['project_id'] ?? '');
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
 
         $emailText = trim($body['email_text'] ?? $body['content'] ?? '');
         if (empty($emailText)) {
@@ -5407,17 +5411,40 @@ try {
         ]);
     }
 
-    // 16c. PUT projects/:id/journal/:journalId
-    if (preg_match('#^projects/([^/]+)/journal/([^/]+)$#', $path, $m) && $method === 'PUT') {
+    // 16c. PUT projects/:id/journal/:journalId & PUT/PATCH journals/:id
+    if (((preg_match('#^projects/([^/]+)/journal/([^/]+)$#', $path, $m)) || (preg_match('#^journals/([^/]+)$#', $path, $m2)) || (preg_match('#^projects/([^/]+)/journals/([^/]+)$#', $path, $m3))) && ($method === 'PUT' || $method === 'PATCH')) {
         $user = requireAuth();
-        $projectId = $m[1];
-        $journalId = $m[2];
-        evaluateProjectAccess($user, $projectId, 'write');
+        $journalId = isset($m2) ? $m2[1] : (isset($m) ? $m[2] : $m3[2]);
+        $projectId = isset($m) ? $m[1] : (isset($m3) ? $m3[1] : null);
 
-        $jStmt = $db->prepare("SELECT * FROM project_journals WHERE id = ? AND project_id = ?");
-        $jStmt->execute([$journalId, $projectId]);
+        $jStmt = $db->prepare("SELECT * FROM project_journals WHERE id = ?");
+        $jStmt->execute([$journalId]);
         $existing = $jStmt->fetch();
         if (!$existing) errorResponse('Journaleintrag nicht gefunden', 404);
+
+        if ($projectId && !empty($existing['project_id']) && $existing['project_id'] !== $projectId) {
+            errorResponse('Journaleintrag gehört nicht zu diesem Projekt', 404);
+        }
+
+        // Permission check
+        if (!empty($existing['project_id'])) {
+            evaluateProjectAccess($user, $existing['project_id'], 'write');
+        } elseif (!empty($existing['folder_id'])) {
+            evaluateFolderAccess($user, $existing['folder_id'], 'write');
+        } else {
+            $isAuthor = (!empty($existing['author_id']) && $existing['author_id'] === $user['id']) || (!empty($existing['user_id']) && $existing['user_id'] === $user['id']);
+            $isSuperAdmin = !empty($user['is_superadmin']);
+            $isCompanyAdmin = false;
+            if (!empty($user['company_id'])) {
+                $cAdminStmt = $db->prepare("SELECT role FROM company_memberships WHERE company_id = ? AND user_id = ?");
+                $cAdminStmt->execute([$user['company_id'], $user['id']]);
+                $cRole = $cAdminStmt->fetchColumn();
+                if ($cRole === 'owner' || $cRole === 'admin') $isCompanyAdmin = true;
+            }
+            if (!$isAuthor && !$isSuperAdmin && !$isCompanyAdmin) {
+                errorResponse('Keine Berechtigung zum Bearbeiten dieses Eintrags', 403);
+            }
+        }
 
         $title = isset($body['title']) ? trim($body['title']) : $existing['title'];
         $content = isset($body['content']) ? trim($body['content']) : $existing['content'];
@@ -5425,7 +5452,8 @@ try {
         $visibility = isset($body['visibility']) ? $body['visibility'] : $existing['visibility'];
         $allowedGroupId = array_key_exists('allowed_group_id', $body) ? $body['allowed_group_id'] : $existing['allowed_group_id'];
         $taskId = array_key_exists('task_id', $body) ? (!empty($body['task_id']) ? trim($body['task_id']) : null) : $existing['task_id'];
-        
+        $targetProjectId = array_key_exists('project_id', $body) ? (!empty($body['project_id']) ? trim($body['project_id']) : null) : $existing['project_id'];
+
         $metaJson = $existing['metadata'];
         if (isset($body['metadata'])) {
             $metaJson = is_array($body['metadata']) ? json_encode($body['metadata'], JSON_UNESCAPED_UNICODE) : $body['metadata'];
@@ -5433,9 +5461,9 @@ try {
 
         $db->prepare("
             UPDATE project_journals
-            SET title = ?, content = ?, category = ?, visibility = ?, allowed_group_id = ?, task_id = ?, metadata = ?, updated_at = NOW()
-            WHERE id = ? AND project_id = ?
-        ")->execute([$title, $content, $category, $visibility, $allowedGroupId, $taskId, $metaJson, $journalId, $projectId]);
+            SET title = ?, content = ?, category = ?, visibility = ?, allowed_group_id = ?, task_id = ?, project_id = ?, metadata = ?, updated_at = NOW()
+            WHERE id = ?
+        ")->execute([$title, $content, $category, $visibility, $allowedGroupId, $taskId, $targetProjectId, $metaJson, $journalId]);
 
         jsonResponse(['success' => true]);
     }
@@ -5449,7 +5477,58 @@ try {
 
         try { $db->prepare("DELETE FROM project_journal_attachments WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
         try { $db->prepare("DELETE FROM project_journal_attendees WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
-        $db->prepare("DELETE FROM project_journals WHERE id = ? AND project_id = ?")->execute([$journalId, $projectId]);
+        $db->prepare("DELETE FROM project_journals WHERE id = ? AND (project_id = ? OR project_id IS NULL)")->execute([$journalId, $projectId]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // 16e. DELETE journals/:id
+    if (preg_match('#^journals/([^/]+)$#', $path, $m) && $method === 'DELETE') {
+        $user = requireAuth();
+        $journalId = $m[1];
+
+        $jStmt = $db->prepare("SELECT * FROM project_journals WHERE id = ?");
+        $jStmt->execute([$journalId]);
+        $journal = $jStmt->fetch();
+        if (!$journal) {
+            errorResponse('Journal-Eintrag nicht gefunden', 404);
+        }
+
+        // Permission check:
+        // 1. Author
+        $isAuthor = (!empty($journal['author_id']) && $journal['author_id'] === $user['id']) 
+                 || (!empty($journal['user_id']) && $journal['user_id'] === $user['id']);
+        $isSuperadmin = !empty($user['is_superadmin']);
+        $isCompanyAdmin = (!empty($user['company_role']) && $user['company_role'] === 'admin' 
+                           && !empty($user['company_id']) && !empty($journal['company_id']) 
+                           && $user['company_id'] === $journal['company_id']);
+
+        if (!$isAuthor && !$isSuperadmin && !$isCompanyAdmin) {
+            $hasAccess = false;
+            if (!empty($journal['project_id'])) {
+                try {
+                    evaluateProjectAccess($user, $journal['project_id'], 'write');
+                    $hasAccess = true;
+                } catch (Exception $e) {}
+            }
+            if (!$hasAccess && !empty($journal['folder_id'])) {
+                try {
+                    $fCheck = $db->prepare("SELECT * FROM project_folders WHERE id = ?");
+                    $fCheck->execute([$journal['folder_id']]);
+                    $folder = $fCheck->fetch();
+                    if ($folder && ($folder['owner_id'] === $user['id'] || (!empty($user['company_id']) && $user['company_id'] === $folder['company_id'] && $folder['visibility'] === 'company'))) {
+                        $hasAccess = true;
+                    }
+                } catch (Exception $e) {}
+            }
+            if (!$hasAccess) {
+                errorResponse('Keine Berechtigung zum Löschen dieses Eintrags', 403);
+            }
+        }
+
+        try { $db->prepare("DELETE FROM project_journal_attachments WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
+        try { $db->prepare("DELETE FROM project_journal_attendees WHERE journal_id = ?")->execute([$journalId]); } catch (Exception $e) {}
+        $db->prepare("DELETE FROM project_journals WHERE id = ?")->execute([$journalId]);
 
         jsonResponse(['success' => true]);
     }
