@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-generate_index.py — Taskster Code-Indexer
+generate_index.py — Taskster Code-Indexer mit Zeilennummern-Tracking
+Erzeugt .agent_index.json im kompakten Format (1 Zeile pro Datei)
+mit exakten Zeilennummern für Funktionen, Endpunkte, Klassen, Vue-APIs und SQL-Tabellen.
 """
 
 import os
@@ -22,32 +24,47 @@ IGNORE_DIRS = {
 
 ALLOWED_EXTENSIONS = {".php", ".js", ".ts", ".vue", ".mjs", ".cjs"}
 IGNORE_FILES = {"package-lock.json", "pnpm-lock.yaml", "yarn.lock"}
-NOISE_WORDS = {"setup", "render", "data", "mounted", "created", "index", "show", "store", "update", "destroy", "constructor"}
 
-PHP_FUNCTION_PATTERN = re.compile(r'(?:public|protected|static|\s)*\s*function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
-PHP_CLASS_PATTERN = re.compile(r'\b(?:class|interface|trait|enum)\s+([A-Za-z_][A-Za-z0-9_]*)')
-PHP_ROUTE_PATTERN = re.compile(r'(?:Route::|router\.)(get|post|put|delete|patch|match|any)\s*\(\s*[\'"]([^\'"]+)', re.IGNORECASE)
+NOISE_WORDS = {
+    "setup", "render", "data", "mounted", "created", "index", "show", "store",
+    "update", "destroy", "constructor", "computed", "ref", "reactive", "watch",
+    "watcheffect", "onmounted", "onunmounted", "nexttick", "t", "d", "to", "from",
+    "select", "where", "set", "values", "table", "if", "not", "exists", "current_timestamp",
+    "localstorage", "sessionstorage", "dual", "null", "true", "false", "import", "export",
+    "und", "oder", "abgelehnt", "von", "nach", "fuer", "mit", "auf", "aus", "mail"
+}
 
-# JS/TS/Vue beschränkt auf Exports
-JS_FUNCTION_PATTERN = re.compile(r'export\s+(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(')
-JS_ARROW_PATTERN = re.compile(r'export\s+const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>')
-VUE_DEFINE_PATTERN = re.compile(r'define(Props|Emits|Expose|Model|Slots)\s*\(')
+# PHP Regex
+PHP_FUNCTION_PATTERN = re.compile(r'^\s*(?:public|protected|private|static|\s)*\s*\bfunction\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', re.M)
+PHP_CLASS_PATTERN = re.compile(r'^\s*(?:abstract\s+|final\s+)?\b(?:class|interface|trait|enum)\s+([A-Za-z_][A-Za-z0-9_]*)', re.M)
 
-SQL_TABLE_PATTERN = re.compile(r'(?:CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?|FROM|JOIN|INTO|UPDATE)\s+[`"]?([a-z_][a-z0-9_]*)', re.IGNORECASE)
+PHP_ROUTE_PATTERNS = [
+    re.compile(r"if\s*\(\s*\$path\s*===\s*['\"]([^'\"]+)['\"]\s*&&\s*\$method\s*===\s*['\"]([A-Z]+)['\"]"),
+    re.compile(r"if\s*\(\s*\$method\s*===\s*['\"]([A-Z]+)['\"]\s*&&\s*\$path\s*===\s*['\"]([^'\"]+)['\"]"),
+    re.compile(r"preg_match\s*\(\s*['\"]#\^?([^#$]+)\$?#['\"].*?\$path.*?\)\s*&&\s*\$method\s*===\s*['\"]([A-Z]+)['\"]"),
+    re.compile(r"if\s*\(\s*\$method\s*===\s*['\"]([A-Z]+)['\"]\s*&&\s*preg_match\s*\(\s*['\"]#\^?([^#$]+)\$?#['\"].*?\$path"),
+    re.compile(r"(?:Route::|router->)(get|post|put|delete|patch|options)\s*\(\s*['\"]([^'\"]+)['\"]", re.I)
+]
+
+# JS/TS/Vue Regex
+JS_FUNCTION_PATTERN = re.compile(r'^\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*[\(<]', re.M)
+JS_CONST_FN_PATTERN = re.compile(r'^\s*(?:export\s+)?(?:const|let)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?(?:\((?:[a-zA-Z0-9_$,\s:?<>={}\[\]\'\"])*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?::\s*[^=]+)?=>', re.M)
+JS_CLASS_PATTERN = re.compile(r'^\s*(?:export\s+)?(?:default\s+)?(?:class|interface)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)', re.M)
+VUE_DEFINE_PATTERN = re.compile(r'\bdefine(Props|Emits|Expose|Model|Slots)\b\s*[\(<]')
+
+NITRO_HANDLER_PATTERN = re.compile(r'\bdefineEventHandler\b')
+
+# SQL Patterns
+SQL_PATS = [
+    re.compile(r'\b(?:FROM|JOIN|INTO)\s+[`"]?([a-zA-Z_][a-zA-Z0-9_]*)[`"]?', re.I),
+    re.compile(r'\bUPDATE\s+[`"]?([a-zA-Z_][a-zA-Z0-9_]*)[`"]?\s+SET\b', re.I),
+    re.compile(r'\bTABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?([a-zA-Z_][a-zA-Z0-9_]*)[`"]?', re.I),
+]
 
 NITRO_METHODS = {
     "get": "GET", "post": "POST", "put": "PUT", "delete": "DELETE",
     "patch": "PATCH", "head": "HEAD", "options": "OPTIONS",
 }
-
-def _dedupe(seq, limit=None):
-    seen = set()
-    out = []
-    for item in seq:
-        if item and item not in seen and item.lower() not in NOISE_WORDS:
-            seen.add(item)
-            out.append(item)
-    return out[:limit] if limit else out
 
 def nitro_route_from_path(rel_path):
     norm = rel_path.replace("\\", "/")
@@ -84,48 +101,108 @@ def scan_file(file_path, rel_path):
     except Exception:
         return None
 
+    lines = content.splitlines(keepends=True)
     ext = os.path.splitext(file_path)[1].lower()
     entry = {"path": rel_path.replace("\\", "/")}
+    norm_path = entry["path"]
 
-    route = nitro_route_from_path(rel_path)
-    if route:
-        entry["endpoints"] = [route]
+    endpoints = {}
+    classes = {}
+    functions = {}
+    vue_apis = {}
+    tables = {}
 
+    # 1. Nitro Route (aus Dateipfad für server/api/)
+    nitro_route = nitro_route_from_path(rel_path)
+    if nitro_route:
+        h_line = 1
+        for idx, line in enumerate(lines, 1):
+            if NITRO_HANDLER_PATTERN.search(line):
+                h_line = idx
+                break
+        endpoints[nitro_route] = h_line
+
+    # 2. PHP Analyse
     if ext == ".php":
-        classes = PHP_CLASS_PATTERN.findall(content)
-        if classes:
-            entry["classes"] = _dedupe(classes, 5)
+        for m in PHP_CLASS_PATTERN.finditer(content):
+            cname = m.group(1)
+            if cname not in classes and cname.lower() not in NOISE_WORDS:
+                classes[cname] = content.count('\n', 0, m.start()) + 1
 
-        routes = PHP_ROUTE_PATTERN.findall(content)
-        if routes:
-            entry.setdefault("endpoints", [])
-            entry["endpoints"] = _dedupe(entry["endpoints"] + [f"{m.upper()} {p}" for m, p in routes], 15)
+        for m in PHP_FUNCTION_PATTERN.finditer(content):
+            fname = m.group(1)
+            if fname not in functions and fname.lower() not in NOISE_WORDS:
+                functions[fname] = content.count('\n', 0, m.start()) + 1
 
-        funcs = PHP_FUNCTION_PATTERN.findall(content)
-        if funcs:
-            entry["functions"] = _dedupe(funcs, 15)
+        for idx, line in enumerate(lines, 1):
+            for p_idx, pat in enumerate(PHP_ROUTE_PATTERNS):
+                rm = pat.search(line)
+                if rm:
+                    if p_idx == 0:
+                        ep = f"{rm.group(2)} /api/{rm.group(1)}"
+                    elif p_idx == 1:
+                        ep = f"{rm.group(1)} /api/{rm.group(2)}"
+                    elif p_idx == 2:
+                        p = rm.group(1)
+                        p = re.sub(r'\([^)]+\)', ':id', p)
+                        ep = f"{rm.group(2)} /api/{p}"
+                    elif p_idx == 3:
+                        p = rm.group(2)
+                        p = re.sub(r'\([^)]+\)', ':id', p)
+                        ep = f"{rm.group(1)} /api/{p}"
+                    elif p_idx == 4:
+                        ep = f"{rm.group(1).upper()} {rm.group(2)}"
+                    if ep not in endpoints:
+                        endpoints[ep] = idx
 
+    # 3. JS / TS / Vue Analyse
     else:
-        funcs = []
-        funcs += JS_FUNCTION_PATTERN.findall(content)
-        funcs += JS_ARROW_PATTERN.findall(content)
-        funcs = _dedupe(funcs, 15)
-        if funcs:
-            entry["functions"] = funcs
+        for m in JS_CLASS_PATTERN.finditer(content):
+            cname = m.group(1)
+            if cname not in classes and cname.lower() not in NOISE_WORDS:
+                classes[cname] = content.count('\n', 0, m.start()) + 1
 
-        defines = VUE_DEFINE_PATTERN.findall(content)
-        if defines:
-            entry["vue_api"] = _dedupe([f"define{d}" for d in defines], 5)
+        for m in JS_FUNCTION_PATTERN.finditer(content):
+            fname = m.group(1)
+            if fname not in functions and fname.lower() not in NOISE_WORDS:
+                functions[fname] = content.count('\n', 0, m.start()) + 1
 
-    tables = SQL_TABLE_PATTERN.findall(content)
+        for m in JS_CONST_FN_PATTERN.finditer(content):
+            fname = m.group(1)
+            if fname not in functions and fname.lower() not in NOISE_WORDS:
+                functions[fname] = content.count('\n', 0, m.start()) + 1
+
+        for m in VUE_DEFINE_PATTERN.finditer(content):
+            api_name = f"define{m.group(1)}"
+            if api_name not in vue_apis:
+                vue_apis[api_name] = content.count('\n', 0, m.start()) + 1
+
+    # 4. SQL-Tabellen (Backend, Migrationen, Scripts oder DB-Dateien)
+    is_backend = any(norm_path.startswith(p) for p in ("api/", "server/", "scripts/"))
+    if is_backend and any(k in content for k in ("SELECT", "INSERT", "UPDATE", "DELETE", "CREATE TABLE", "db.prepare", "pdo->", "query(")):
+        for idx, line in enumerate(lines, 1):
+            sline = line.strip()
+            if sline.startswith(("//", "/*", "*", "#", "import ", "from ")):
+                continue
+            for pat in SQL_PATS:
+                for sm in pat.finditer(line):
+                    tbl = sm.group(1).lower()
+                    if tbl not in NOISE_WORDS and len(tbl) > 2 and not tbl.startswith(("this", "window", "process", "res", "req", "err")):
+                        if tbl not in tables:
+                            tables[tbl] = idx
+
+    if endpoints:
+        entry["endpoints"] = endpoints
+    if classes:
+        entry["classes"] = classes
+    if functions:
+        entry["functions"] = functions
+    if vue_apis:
+        entry["vue_api"] = vue_apis
     if tables:
-        noise = {"select", "where", "set", "values", "table", "if", "not", "exists", "current_timestamp", "localstorage", "sessionstorage", "dual"}
-        tables = [t.lower() for t in tables if t.lower() not in noise]
-        tables = _dedupe(tables, 10)
-        if tables:
-            entry["tables"] = tables
+        entry["tables"] = tables
 
-    if any(k in entry for k in ("classes", "endpoints", "functions", "vue_api", "tables")):
+    if any(k in entry for k in ("endpoints", "classes", "functions", "vue_api", "tables")):
         return entry
     return None
 
@@ -161,7 +238,7 @@ def build_index(quiet=False):
 
     index_data["files"].sort(key=lambda e: e["path"])
     index_data["files_count"] = len(index_data["files"])
-    index_data["endpoints_count"] = sum(len(e.get("endpoints", [])) for e in index_data["files"])
+    index_data["endpoints_count"] = sum(len(e.get("endpoints", {})) for e in index_data["files"])
 
     # Kompaktes JSON-Format: Metadaten oben, dann ein Array, in dem jedes Dateiobjekt exakt eine Zeile einnimmt
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
@@ -180,12 +257,22 @@ def build_index(quiet=False):
 
 def print_stats(index_data):
     endpoints = []
-    for e in index_data["files"]:
-        endpoints += e.get("endpoints", [])
+    total_functions = 0
+    total_classes = 0
+    all_tables = set()
 
-    print("\n--- Index-Statistik ---")
+    for e in index_data["files"]:
+        endpoints += list(e.get("endpoints", {}).keys())
+        total_functions += len(e.get("functions", {}))
+        total_classes += len(e.get("classes", {}))
+        all_tables.update(e.get("tables", {}).keys())
+
+    print("\n--- Index-Statistik (mit Zeilennummern) ---")
     print(f"Dateien mit Logik : {index_data['files_count']}")
     print(f"Endpunkte gesamt  : {len(endpoints)}")
+    print(f"Funktionen gesamt : {total_functions}")
+    print(f"Klassen/Typen     : {total_classes}")
+    print(f"SQL-Tabellen      : {len(all_tables)}")
 
     by_method = {}
     for ep in endpoints:
@@ -195,9 +282,9 @@ def print_stats(index_data):
         print(f"  {m:<7}: {by_method[m]}")
 
     print("\nTop-Dateien (nach Funktionsanzahl):")
-    ranked = sorted(index_data["files"], key=lambda e: len(e.get("functions", [])), reverse=True)[:10]
+    ranked = sorted(index_data["files"], key=lambda e: len(e.get("functions", {})), reverse=True)[:10]
     for e in ranked:
-        print(f"  {len(e.get('functions', [])):>3}  {e['path']}")
+        print(f"  {len(e.get('functions', {})):>3}  {e['path']}")
 
 if __name__ == "__main__":
     quiet = "--quiet" in sys.argv

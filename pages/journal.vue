@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-full p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+  <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
     <!-- Top Action Card -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-6 rounded-3xl shadow-xs">
       <div>
@@ -97,7 +97,7 @@
         </div>
       </div>
 
-      <!-- Tier 2: Main Type Tabs & Category Filter -->
+      <!-- Tier 2: Main Type Tabs & Category / Sorting Filters -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
         <!-- Type Tabs -->
         <div class="flex items-center p-1 bg-slate-100 rounded-2xl space-x-1 overflow-x-auto">
@@ -136,23 +136,39 @@
           </button>
         </div>
 
-        <!-- Category Dropdown -->
-        <div class="flex items-center gap-2">
-          <select
-            v-model="categoryFilter"
-            class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4]"
-          >
-            <option value="">Alle Kategorien</option>
-            <option value="bausitzung">🏛️ Bausitzung</option>
-            <option value="bautagebuch">📋 Bautagebuch</option>
-            <option value="abnahmebegehung">🔍 Abnahmebegehung</option>
-            <option value="wetter_behinderung">⛈️ Wetter & Behinderung</option>
-            <option value="regie">⏱️ Regiearbeit</option>
-            <option value="email">✉️ E-Mail Import</option>
-            <option value="notiz">📝 Notiz</option>
-            <option value="mangel">⚠️ Mangel / Behinderung</option>
-            <option value="allgemein">📖 Allgemein</option>
-          </select>
+        <!-- Category & Sort Dropdowns -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Kategorie:</span>
+            <select
+              v-model="categoryFilter"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="">Alle Kategorien</option>
+              <option value="bausitzung">🏛️ Bausitzung</option>
+              <option value="bautagebuch">📋 Bautagebuch</option>
+              <option value="abnahmebegehung">🔍 Abnahmebegehung</option>
+              <option value="wetter_behinderung">⛈️ Wetter & Behinderung</option>
+              <option value="regie">⏱️ Regiearbeit</option>
+              <option value="email">✉️ E-Mail Import</option>
+              <option value="notiz">📝 Notiz</option>
+              <option value="mangel">⚠️ Mangel / Behinderung</option>
+              <option value="allgemein">📖 Allgemein</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Sortierung:</span>
+            <select
+              v-model="journalSortBy"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="date_desc">📅 Datum (Neueste zuerst)</option>
+              <option value="date_asc">📅 Datum (Älteste zuerst)</option>
+              <option value="project">📁 Auftrag / Projekt (A-Z)</option>
+              <option value="category">🏷️ Kategorie</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -208,6 +224,9 @@
             <span class="text-xs font-bold text-slate-900">{{ entry.author_name || 'Benutzer' }}</span>
             <span class="text-slate-300">•</span>
             <span class="text-xs text-slate-500">{{ formatDate(entry.entry_date || entry.created_at) }}</span>
+            <span v-if="isEdited(entry)" class="text-[11px] font-medium text-slate-400 italic">
+              • bearbeitet {{ formatDateTime(entry.updated_at) }}
+            </span>
 
             <!-- Category badge -->
             <span
@@ -248,6 +267,15 @@
               Nur Ordner
             </span>
 
+            <!-- Edit action -->
+            <button
+              @click="openEditModal(entry)"
+              class="p-1.5 text-slate-400 hover:text-[#00A3C4] rounded-lg hover:bg-cyan-50 transition cursor-pointer"
+              title="Eintrag bearbeiten"
+            >
+              <Pencil class="w-3.5 h-3.5" />
+            </button>
+
             <!-- Delete action -->
             <button
               v-if="canDeleteEntry(entry)"
@@ -265,10 +293,49 @@
           {{ entry.title }}
         </h4>
 
-        <!-- Content -->
-        <p class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-          {{ entry.content }}
-        </p>
+        <!-- Content (Cleaned & 5-Line Smooth Collapse) -->
+        <div class="relative mt-2">
+          <div
+            class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed transition-all duration-300 ease-in-out overflow-hidden"
+            :style="isExpanded(entry.id) || !isLongContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+          >
+            {{ cleanContent(entry.content) }}
+          </div>
+
+          <!-- Elegant soft gradient fade-out over 5th line when collapsed -->
+          <div
+            v-if="isLongContent(entry.content) && !isExpanded(entry.id)"
+            class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none"
+          ></div>
+        </div>
+
+        <!-- Expansion Toggle & Original-Ansicht Button Row -->
+        <div class="flex items-center justify-between gap-2 mt-2 pt-1">
+          <div>
+            <button
+              v-if="isLongContent(entry.content)"
+              type="button"
+              @click="toggleExpand(entry.id)"
+              class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
+            >
+              <ChevronDown v-if="!isExpanded(entry.id)" class="w-3.5 h-3.5" />
+              <ChevronUp v-else class="w-3.5 h-3.5" />
+              <span>{{ isExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
+            </button>
+          </div>
+
+          <!-- Original-Ansicht Button -->
+          <button
+            v-if="hasOriginalText(entry)"
+            type="button"
+            @click="openOriginalView(entry)"
+            class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer ml-auto"
+            title="Vollständiges Original-Dokument / E-Mail ansehen"
+          >
+            <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
+            <span>Original-Ansicht</span>
+          </button>
+        </div>
 
         <!-- Linked Task -->
         <div v-if="entry.task_id" class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 text-xs">
@@ -321,9 +388,153 @@
       :projects="projects"
       :tasks="allTasks"
       :contacts="allContacts"
-      @close="showEntryModal = false"
+      :entry-to-edit="entryToEdit"
+      @close="showEntryModal = false; entryToEdit = null"
       @saved="onEntrySaved"
     />
+
+    <JournalNoteModal
+      :show="showNoteModal"
+      :folder-id="selectedFolderId"
+      :folders="folders"
+      :projects="projects"
+      :tasks="allTasks"
+      @close="showNoteModal = false"
+      @saved="onEntrySaved"
+    />
+
+    <!-- Original-Ansicht In-App Popup Modal (Taskster Standard) -->
+    <div
+      v-if="showOriginalModal && originalEntry"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+      @mousedown.self="showOriginalModal = false"
+    >
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+          <div class="flex items-center space-x-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-cyan-50 text-[#00A3C4] border border-cyan-200 flex items-center justify-center shrink-0">
+              <Eye class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-slate-900 truncate">
+                  {{ originalEntry.title || 'Original-Dokument' }}
+                </h3>
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider shrink-0"
+                  :class="categoryBadgeClass(originalEntry.category)"
+                >
+                  {{ categoryLabel(originalEntry.category) }}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 truncate">
+                Originalansicht des importierten Dokuments / der E-Mail
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="showOriginalModal = false"
+            class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-200/60 transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto space-y-4">
+          <!-- Metadata Card (Sender, Recipients, Date) -->
+          <div
+            v-if="originalEntry.metadata?.email_sender || originalEntry.metadata?.email_subject || originalEntry.author_name"
+            class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-1.5"
+          >
+            <div v-if="originalEntry.metadata?.email_sender" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Absender:</span>
+              <span class="text-slate-900 font-medium select-all">{{ originalEntry.metadata.email_sender }}</span>
+            </div>
+            <div v-if="originalEntry.metadata?.email_recipients" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Empfänger:</span>
+              <span class="text-slate-700 select-all">{{ originalEntry.metadata.email_recipients }}</span>
+            </div>
+            <div v-if="originalEntry.metadata?.email_subject" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Betreff:</span>
+              <span class="text-slate-900 font-semibold select-all">{{ originalEntry.metadata.email_subject }}</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Datum:</span>
+              <span class="text-slate-600">{{ formatDateTime(originalEntry.metadata?.email_date || originalEntry.entry_date || originalEntry.created_at) }}</span>
+            </div>
+          </div>
+
+          <!-- Extracted Contacts Box if present -->
+          <div v-if="originalEntry.metadata?.contacts && originalEntry.metadata.contacts.length > 0" class="space-y-2">
+            <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <span>👤</span>
+              <span>Erkannte Kontakte (in Kontakte synchronisiert):</span>
+            </h5>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="(c, cIdx) in originalEntry.metadata.contacts"
+                :key="cIdx"
+                class="p-3 bg-white border border-slate-200 rounded-xl text-xs space-y-1 shadow-2xs"
+              >
+                <div class="font-bold text-slate-900 flex items-center justify-between">
+                  <span>{{ c.first_name }} {{ c.last_name }}</span>
+                  <span v-if="c.role_function" class="text-[10px] font-normal text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">{{ c.role_function }}</span>
+                </div>
+                <div v-if="c.company_name" class="text-slate-600 text-[11px]">🏢 {{ c.company_name }}</div>
+                <div v-if="c.phone" class="text-slate-600 text-[11px]">📞 {{ c.phone }}</div>
+                <div v-if="c.email" class="text-cyan-700 text-[11px]">✉️ {{ c.email }}</div>
+                <div v-if="c.address" class="text-slate-500 text-[10px]">📍 {{ c.address }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Full Text Box -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                Originaltext
+              </label>
+              <button
+                type="button"
+                @click="copyOriginalText"
+                class="text-[11px] font-semibold text-[#00A3C4] hover:text-[#008ba8] flex items-center gap-1 cursor-pointer"
+              >
+                <Check v-if="copiedText" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+                <span>{{ copiedText ? 'Kopiert!' : 'Text kopieren' }}</span>
+              </button>
+            </div>
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed max-h-[50vh] overflow-y-auto selection:bg-cyan-100 select-text">
+              {{ getOriginalContent(originalEntry) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            @click="copyOriginalText"
+            class="taskster_button_light px-4 text-xs h-[38px] rounded-lg flex items-center gap-1.5 cursor-pointer"
+          >
+            <Check v-if="copiedText" class="w-3.5 h-3.5 text-emerald-600" />
+            <Copy v-else class="w-3.5 h-3.5" />
+            <span>{{ copiedText ? 'Text kopiert!' : 'Originaltext kopieren' }}</span>
+          </button>
+
+          <button
+            type="button"
+            @click="showOriginalModal = false"
+            class="taskster_button px-6 text-xs h-[38px] rounded-lg cursor-pointer"
+          >
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
 
     <JournalNoteModal
       :show="showNoteModal"
@@ -405,7 +616,13 @@ import {
   Folder,
   Trash2,
   Paperclip,
-  AlertTriangle
+  AlertTriangle,
+  Pencil,
+  Eye,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 
@@ -425,10 +642,95 @@ const selectedProjectId = ref('')
 const filterType = ref<'all' | 'entry' | 'note'>('all')
 const categoryFilter = ref('')
 const searchQuery = ref('')
+const journalSortBy = ref<'date_desc' | 'date_asc' | 'project' | 'category'>('date_desc')
 
 const loading = ref(false)
 const showEntryModal = ref(false)
 const showNoteModal = ref(false)
+const entryToEdit = ref<any | null>(null)
+
+// 5-line expansion state
+const expandedEntries = ref<Record<string, boolean>>({})
+const isExpanded = (id: string) => !!expandedEntries.value[id]
+const toggleExpand = (id: string) => {
+  expandedEntries.value[id] = !expandedEntries.value[id]
+}
+
+// Clean duplicate / large linebreaks
+const cleanContent = (text?: string) => {
+  if (!text) return ''
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+// Check if content exceeds 5 lines or length threshold
+const isLongContent = (text?: string) => {
+  if (!text) return false
+  const cleaned = cleanContent(text)
+  const lines = cleaned.split('\n')
+  return lines.length > 5 || cleaned.length > 250
+}
+
+// Original View Modal state
+const showOriginalModal = ref(false)
+const originalEntry = ref<any | null>(null)
+const copiedText = ref(false)
+
+const hasOriginalText = (entry: any) => {
+  if (!entry) return false
+  if (entry.metadata?.original_text || entry.metadata?.raw_text) return true
+  if (entry.category === 'email') return true
+  return isLongContent(entry.content)
+}
+
+const getOriginalContent = (entry: any) => {
+  if (!entry) return ''
+  return entry.metadata?.original_text || entry.metadata?.raw_text || entry.content || ''
+}
+
+const openOriginalView = (entry: any) => {
+  originalEntry.value = entry
+  copiedText.value = false
+  showOriginalModal.value = true
+}
+
+const copyOriginalText = async () => {
+  if (!originalEntry.value) return
+  const text = getOriginalContent(originalEntry.value)
+  try {
+    await navigator.clipboard.writeText(text)
+    copiedText.value = true
+    setTimeout(() => { copiedText.value = false }, 2500)
+  } catch (e) {
+    console.error('Clipboard copy failed:', e)
+  }
+}
+
+// Edit detection & date formatters
+const isEdited = (entry: any) => {
+  if (!entry?.updated_at || !entry?.created_at) return false
+  const diff = new Date(entry.updated_at).getTime() - new Date(entry.created_at).getTime()
+  return diff > 60000 // more than 1 minute difference
+}
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr)
+    const date = d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const time = d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })
+    return `${date} um ${time}`
+  } catch (_) {
+    return dateStr
+  }
+}
+
+const openEditModal = (entry: any) => {
+  entryToEdit.value = entry
+  showEntryModal.value = true
+}
 
 const itemToDelete = ref<any | null>(null)
 const deleting = ref(false)
@@ -501,7 +803,7 @@ const notesCount = computed(() => {
 })
 
 const filteredJournals = computed(() => {
-  return allJournals.value.filter(j => {
+  const filtered = allJournals.value.filter(j => {
     // Project filter
     if (selectedProjectId.value) {
       if (selectedProjectId.value === 'none' && j.project_id) return false
@@ -533,9 +835,32 @@ const filteredJournals = computed(() => {
 
     return true
   })
+
+  // Sorting
+  return filtered.slice().sort((a, b) => {
+    if (journalSortBy.value === 'date_asc') {
+      const da = new Date(a.entry_date || a.created_at).getTime()
+      const db = new Date(b.entry_date || b.created_at).getTime()
+      return da - db
+    } else if (journalSortBy.value === 'project') {
+      const pa = (a.project_title || a.folder_name || '').toLowerCase()
+      const pb = (b.project_title || b.folder_name || '').toLowerCase()
+      return pa.localeCompare(pb, 'de')
+    } else if (journalSortBy.value === 'category') {
+      const ca = categoryLabel(a.category).toLowerCase()
+      const cb = categoryLabel(b.category).toLowerCase()
+      return ca.localeCompare(cb, 'de')
+    } else {
+      // date_desc (default)
+      const da = new Date(a.entry_date || a.created_at).getTime()
+      const db = new Date(b.entry_date || b.created_at).getTime()
+      return db - da
+    }
+  })
 })
 
 const openJournalEntryModal = () => {
+  entryToEdit.value = null
   showEntryModal.value = true
 }
 
@@ -544,6 +869,7 @@ const openJournalNoteModal = () => {
 }
 
 const onEntrySaved = async () => {
+  entryToEdit.value = null
   const url = selectedFolderId.value ? `/api/journals?folder_id=${selectedFolderId.value}` : '/api/journals'
   const res = await $fetch<any>(url, { headers: authHeaders() })
   allJournals.value = res.entries || []

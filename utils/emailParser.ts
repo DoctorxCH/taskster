@@ -422,7 +422,61 @@ export function parseMsgFile(buffer: ArrayBuffer | Uint8Array): { subject: strin
 }
 
 /**
- * Universal email parser for Files (both .eml and Outlook .msg)
+ * Extracts visible text content from PDF binary data (streams & text operators)
+ */
+export function extractTextFromPdf(bytes: Uint8Array): string {
+  try {
+    let latinStr = ''
+    const len = bytes.length
+    for (let i = 0; i < len; i++) {
+      latinStr += String.fromCharCode(bytes[i])
+    }
+
+    const textPieces: string[] = []
+
+    // 1. Match bracketed TJ text arrays: [ (text1) 120 (text2) ] TJ
+    const tjRegex = /\[(.*?)\]\s*TJ/g
+    let match: RegExpExecArray | null
+    while ((match = tjRegex.exec(latinStr)) !== null) {
+      const inner = match[1]
+      const strRegex = /\(([^()]*)\)/g
+      let strMatch: RegExpExecArray | null
+      let linePart = ''
+      while ((strMatch = strRegex.exec(inner)) !== null) {
+        linePart += strMatch[1].replace(/\\([()\\])/g, '$1')
+      }
+      if (linePart.trim()) {
+        textPieces.push(linePart.trim())
+      }
+    }
+
+    // 2. Match single Tj strings: (text) Tj
+    const tjSingleRegex = /\(([^()]{2,})\)\s*Tj/g
+    while ((match = tjSingleRegex.exec(latinStr)) !== null) {
+      const raw = match[1].replace(/\\([()\\])/g, '$1').trim()
+      if (raw && !textPieces.includes(raw)) {
+        textPieces.push(raw)
+      }
+    }
+
+    // 3. Fallback: Search for meaningful text chunks in uncompressed streams
+    if (textPieces.length === 0) {
+      const words = latinStr.match(/[A-Za-zÄÖÜäöüß0-9\-_./:]{4,}/g) || []
+      const meaningful = words.filter(w => !['obj', 'endobj', 'stream', 'endstream', 'xref', 'trailer', 'startxref', 'Length', 'Filter', 'FlateDecode'].includes(w))
+      if (meaningful.length > 5) {
+        return meaningful.slice(0, 150).join(' ')
+      }
+    }
+
+    return textPieces.join('\n').trim()
+  } catch (err) {
+    console.warn('extractTextFromPdf error:', err)
+    return ''
+  }
+}
+
+/**
+ * Universal email & document parser for Files (.eml, Outlook .msg, and .pdf)
  */
 export async function parseEmailFile(file: Blob, fileName?: string): Promise<{ subject: string; fromName: string; fromEmail: string; body: string }> {
   const buffer = await file.arrayBuffer()
@@ -436,6 +490,21 @@ export async function parseEmailFile(file: Blob, fileName?: string): Promise<{ s
     const res = parseMsgFile(buffer)
     if (res && (res.subject || res.body)) {
       return res
+    }
+  }
+
+  // PDF Document signature: %PDF (25 50 44 46)
+  const isPdf = (fileName && fileName.toLowerCase().endsWith('.pdf')) ||
+    (bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46)
+
+  if (isPdf) {
+    const extracted = extractTextFromPdf(bytes)
+    const cleanName = (fileName || 'Dokument').replace(/\.[^/.]+$/, '')
+    return {
+      subject: cleanName,
+      fromName: '',
+      fromEmail: '',
+      body: extracted || `[PDF-Dokument: ${fileName || 'Dokument.pdf'} - Textinhalt für KI-Verarbeitung]`
     }
   }
 

@@ -5434,22 +5434,32 @@ try {
 
         // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
         $systemPrompt = "Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.\n"
-                      . "Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.\n"
+                      . "Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung/E-Mail präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.\n"
                       . "WICHTIGE REGELN:\n"
-                      . "1. summary: Sachliche, prägnante Zusammenfassung (max. 2-3 Sätze). Beschreibe neutral den baulichen/projektbezogenen Sachverhalt.\n"
-                      . "2. VERKNÜPFTE AUFGABE (HÖCHSTE PRIORITÄT):\n"
-                      . "   Falls dieser Journaleintrag mit einer bestehenden Aufgabe verknüpft ist (siehe 'DIREKT VERKNÜPFTE AUFGABE'):\n"
-                      . "   - Dieser Eintrag bezieht sich PRIMÄR auf genau diese verknüpfte Aufgabe!\n"
-                      . "   - Falls der Text die Erledigung, den Abschluss oder die Fertigstellung beschreibt (z.B. 'ersetzt', 'erledigt', 'kann abgeschlossen werden', 'fertiggestellt', 'in Betrieb', 'abgenommen', 'fertig'):\n"
-                      . "     -> Erzeuge zwingend ein 'complete_task' für diese verknüpfte Aufgabe (task_id: ID der verknüpften Aufgabe)!\n"
-                      . "     -> Erstelle in diesem Fall KEINE neue Aufgabe (create_task), sondern schliesse die verknüpfte Aufgabe ab!\n"
-                      . "   - Falls der Text Terminverschiebungen, Statusänderungen oder Details beschreibt:\n"
-                      . "     -> Erzeuge ein 'update_task' für diese verknüpfte Aufgabe.\n"
-                      . "3. ALLGEMEINE REGELN FÜR action_items:\n"
-                      . "   - type 'complete_task': 'task_id' (insb. die verknüpfte Aufgabe), 'reason': Grund für Abschluss.\n"
+                      . "1. summary: Sachliche, kompakte Zusammenfassung in maximal 2-3 Sätzen OHNE unnötige Leerzeilen. Beschreibe neutral den baulichen/projektbezogenen Sachverhalt.\n"
+                      . "2. contacts: Extrahiere ALLE in der Nachricht oder in Signaturen vorkommenden Personen/Kontakte vollständig (auch weitergeleitete E-Mails, Signaturblöcke, Cc-Empfänger, Kunden, Bauleiter, Techniker, etc.).\n"
+                      . "   Für jeden Kontakt:\n"
+                      . "   - first_name: Vorname (falls ermittelbar)\n"
+                      . "   - last_name: Nachname oder vollständiger Name / Firmenkontakt\n"
+                      . "   - company_name: Firmenname (z.B. cablex AG, Swisscom, etc.)\n"
+                      . "   - role_function: Funktion / Abteilung / Berufsbezeichnung aus Signatur (z.B. Operation Engineer I, Technician Supporter, etc.)\n"
+                      . "   - email: E-Mail-Adresse\n"
+                      . "   - phone: Telefonnummer, Festnetz oder Mobilnummer (z.B. +41-58-221 64 80, +4179...)\n"
+                      . "   - address: Vollständige Adresse aus der Signatur (Strasse, PLZ, Ort)\n"
+                      . "   - notes: Kurzer Kontext (z.B. 'Absender', 'Signatur', 'Kontaktaufnahme gewünscht')\n"
+                      . "3. events: Erkannte Termine, Besprechungen, Begehungen oder Fristen im Text:\n"
+                      . "   - title: Treffender Termintitel (z.B. 'Kontaktaufnahme mit Frau Krummenacher')\n"
+                      . "   - start_at: Beginn (YYYY-MM-DD HH:mm:ss falls Zeit genannt, sonst YYYY-MM-DD)\n"
+                      . "   - end_at: Ende oder null\n"
+                      . "   - location: Ort / Adresse\n"
+                      . "   - description: Beschreibung\n"
+                      . "4. action_items: Konkrete Aufgaben oder Statusänderungen:\n"
+                      . "   - type 'create_task': 'title', 'description', 'priority', 'due_date'. (z.B. 'Frau Krummenacher kontaktieren betreffend weiterem Vorgehen')\n"
                       . "   - type 'update_task': 'task_id', 'suggested_status', 'suggested_due_date', 'reason'.\n"
-                      . "   - type 'create_task': Nur falls KEINE passende bestehende/verknüpfte Aufgabe existiert und ein neuer Arbeitsschritt angelegt werden muss.\n"
-                      . "Gib AUSSCHLIESSLICH das JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.";
+                      . "   - type 'complete_task': 'task_id' (insb. die verknüpfte Aufgabe), 'reason'.\n"
+                      . "5. VERKNÜPFTE AUFGABE:\n"
+                      . "   Falls ein Journaleintrag mit einer bestehenden Aufgabe verknüpft ist, bezieht sich der Text primär auf diese Aufgabe.\n"
+                      . "Gib AUSSCHLIESSLICH das valide JSON-Objekt zurück, ohne Markdown-Codeblock oder sonstige Erklärungen.";
 
         $userPrompt = ($linkedTaskContext ? "$linkedTaskContext" : "")
                     . "PROJEKT-ABSCHNITTE (SECTIONS):\n$sectionsContext\n\n"
@@ -5458,11 +5468,15 @@ try {
                     . "Erzeuge das JSON im folgenden Format:\n"
                     . "{\n"
                     . '  "subject": "Treffender Titel",' . "\n"
-                    . '  "summary": "Zusammenfassung in 2-3 Sätzen",' . "\n"
+                    . '  "summary": "Kompakte Zusammenfassung in 2-3 Sätzen",' . "\n"
+                    . '  "contacts": [' . "\n"
+                    . '    { "first_name": "Stefan", "last_name": "Jecklin", "company_name": "cablex AG", "role_function": "Operation Engineer I", "email": "stefan.jecklin@cablex.ch", "phone": "+41 58 221 64 80", "address": "Industriestrasse 57, 6034 Inwil", "notes": "Absender" }' . "\n"
+                    . "  ],\n"
+                    . '  "events": [' . "\n"
+                    . '    { "title": "Besprechung / Termin", "start_at": "2026-09-25 10:00:00", "location": "Hinterwies 1, Root", "description": "Details" }' . "\n"
+                    . "  ],\n"
                     . '  "action_items": [' . "\n"
-                    . '    { "type": "complete_task", "task_id": "task_id", "reason": "Abschlussgrund" },' . "\n"
-                    . '    { "type": "update_task", "task_id": "task_id", "suggested_status": "in_progress", "suggested_due_date": null, "reason": "Begründung" },' . "\n"
-                    . '    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "normal", "due_date": null, "description": "Details" }' . "\n"
+                    . '    { "type": "create_task", "title": "Aufgabentitel", "section_id": "section_id", "priority": "high", "due_date": null, "description": "Details" }' . "\n"
                     . "  ]\n"
                     . "}";
 
@@ -5485,13 +5499,113 @@ try {
             $aiResult = [
                 'subject' => !empty($emailSubject) ? $emailSubject : 'E-Mail Import',
                 'summary' => substr(strip_tags($emailText), 0, 200) . '...',
+                'contacts' => [],
+                'events' => [],
                 'action_items' => []
             ];
         }
 
         $finalTitle = !empty($emailSubject) ? $emailSubject : (!empty($aiResult['subject']) ? $aiResult['subject'] : 'E-Mail Notiz');
-        $summary = $aiResult['summary'] ?? '';
+        $rawSummary = $aiResult['summary'] ?? '';
+        // Säubere Zusammenfassung von überflüssigen Leerzeilen
+        $summary = trim(preg_replace("/[\r\n]{2,}/", "\n", $rawSummary));
         $actionItems = is_array($aiResult['action_items'] ?? null) ? $aiResult['action_items'] : [];
+        $extractedContacts = is_array($aiResult['contacts'] ?? null) ? $aiResult['contacts'] : [];
+        $extractedEvents = is_array($aiResult['events'] ?? null) ? $aiResult['events'] : [];
+
+        // Kontakte aus E-Mail & Signatur in Tabelle `contacts` speichern und anreichern
+        $companyId = $user['company_id'] ?? null;
+        $savedContactAttendees = [];
+
+        foreach ($extractedContacts as $c) {
+            $cEmail = strtolower(trim($c['email'] ?? ''));
+            $cFirst = trim($c['first_name'] ?? '');
+            $cLast = trim($c['last_name'] ?? '');
+            $cCompany = trim($c['company_name'] ?? '');
+            $cRole = trim($c['role_function'] ?? '');
+            $cPhone = trim($c['phone'] ?? $c['mobile'] ?? '');
+            $cAddress = trim($c['address'] ?? '');
+            $cNotes = trim($c['notes'] ?? '');
+
+            if (empty($cEmail) && empty($cLast) && empty($cFirst)) continue;
+
+            if (empty($cLast) && !empty($cFirst)) {
+                $cLast = $cFirst;
+                $cFirst = '';
+            }
+
+            $existingContactId = null;
+            if (!empty($cEmail)) {
+                $chk = $db->prepare("
+                    SELECT id, company_name, role_function, phone, address, project_id 
+                    FROM contacts 
+                    WHERE LOWER(email) = ? AND (company_id = ? OR (company_id IS NULL AND user_id = ?)) 
+                    LIMIT 1
+                ");
+                $chk->execute([$cEmail, $companyId, $user['id']]);
+                $exRow = $chk->fetch(PDO::FETCH_ASSOC);
+                if ($exRow) {
+                    $existingContactId = $exRow['id'];
+                    $updParts = [];
+                    $updParams = [];
+                    if (empty($exRow['company_name']) && !empty($cCompany)) { $updParts[] = "company_name = ?"; $updParams[] = $cCompany; }
+                    if (empty($exRow['role_function']) && !empty($cRole)) { $updParts[] = "role_function = ?"; $updParams[] = $cRole; }
+                    if (empty($exRow['phone']) && !empty($cPhone)) { $updParts[] = "phone = ?"; $updParams[] = $cPhone; }
+                    if (empty($exRow['address']) && !empty($cAddress)) { $updParts[] = "address = ?"; $updParams[] = $cAddress; }
+                    if (empty($exRow['project_id']) && !empty($projectId)) { $updParts[] = "project_id = ?"; $updParams[] = $projectId; }
+                    if (!empty($updParts)) {
+                        $updParams[] = $existingContactId;
+                        $db->prepare("UPDATE contacts SET " . implode(', ', $updParts) . ", updated_at = NOW() WHERE id = ?")->execute($updParams);
+                    }
+                }
+            }
+
+            if (!$existingContactId && !empty($cLast)) {
+                $chkName = $db->prepare("
+                    SELECT id, company_name, role_function, phone, address, project_id 
+                    FROM contacts 
+                    WHERE LOWER(last_name) = ? AND (LOWER(first_name) = ? OR first_name IS NULL OR first_name = '') 
+                      AND (company_id = ? OR (company_id IS NULL AND user_id = ?)) 
+                    LIMIT 1
+                ");
+                $chkName->execute([strtolower($cLast), strtolower($cFirst), $companyId, $user['id']]);
+                $exNameRow = $chkName->fetch(PDO::FETCH_ASSOC);
+                if ($exNameRow) {
+                    $existingContactId = $exNameRow['id'];
+                }
+            }
+
+            if (!$existingContactId) {
+                $newContactId = 'cnt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $db->prepare("
+                    INSERT INTO contacts (id, user_id, company_id, project_id, first_name, last_name, company_name, role_function, email, phone, address, category_group, share_scope, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Sonstige', ?, ?, NOW())
+                ")->execute([
+                    $newContactId,
+                    $user['id'],
+                    $companyId,
+                    $projectId ?: null,
+                    $cFirst,
+                    $cLast,
+                    $cCompany,
+                    $cRole,
+                    $cEmail ?: null,
+                    $cPhone ?: null,
+                    $cAddress ?: null,
+                    !empty($companyId) ? 'company' : 'private',
+                    $cNotes ?: null
+                ]);
+                $existingContactId = $newContactId;
+            }
+
+            $savedContactAttendees[] = [
+                'contact_id' => $existingContactId,
+                'name' => trim("$cFirst $cLast") ?: ($cCompany ?: $cEmail),
+                'email' => $cEmail,
+                'role' => $cRole ?: $cCompany,
+                'present' => 1
+            ];
+        }
 
         $targetJournalId = !empty($body['journal_id']) ? $body['journal_id'] : (!empty($body['entry_id']) ? $body['entry_id'] : null);
         if ($targetJournalId) {
@@ -5502,6 +5616,8 @@ try {
             if (!is_array($existingMeta)) $existingMeta = [];
 
             $existingMeta['ai_summary'] = $summary;
+            $existingMeta['contacts'] = $extractedContacts;
+            $existingMeta['events'] = $extractedEvents;
             $existingMeta['action_items'] = $actionItems;
             if (!empty($senderEmail)) {
                 $existingMeta['sender'] = [
@@ -5518,6 +5634,8 @@ try {
                 'success' => true,
                 'metadata' => $existingMeta,
                 'summary' => $summary,
+                'contacts' => $extractedContacts,
+                'events' => $extractedEvents,
                 'action_items' => $actionItems
             ]);
         }
@@ -5536,6 +5654,8 @@ try {
             ],
             'recipients' => $recipients,
             'ai_summary' => $summary,
+            'contacts' => $extractedContacts,
+            'events' => $extractedEvents,
             'action_items' => $actionItems,
             'raw_subject' => $emailSubject
         ];
@@ -5559,6 +5679,26 @@ try {
             $targetAllowedGroup,
             $metaJson
         ]);
+
+        // Verknüpfe extrahierte Kontakte als Teilnehmer in project_journal_attendees
+        if (!empty($savedContactAttendees)) {
+            $pjaInsert = $db->prepare("
+                INSERT INTO project_journal_attendees (id, journal_id, contact_id, name, email, role, present)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            foreach ($savedContactAttendees as $sca) {
+                $pjaId = 'pjatt_' . substr(bin2hex(random_bytes(6)), 0, 8);
+                $pjaInsert->execute([
+                    $pjaId,
+                    $jrnId,
+                    $sca['contact_id'],
+                    $sca['name'],
+                    $sca['email'] ?: null,
+                    $sca['role'] ?: null,
+                    $sca['present'] ?? 1
+                ]);
+            }
+        }
 
         // Attachments speichern
         $savedAttachments = [];

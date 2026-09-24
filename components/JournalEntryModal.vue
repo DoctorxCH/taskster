@@ -9,11 +9,11 @@
       <div class="flex items-start justify-between pb-3 border-b border-slate-100 mb-3 shrink-0">
         <div>
           <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
-            <span class="text-xl">📖</span>
-            <span>Neuen Journaleintrag erfassen</span>
+            <span class="text-xl">{{ entryToEdit ? '✏️' : '📖' }}</span>
+            <span>{{ entryToEdit ? 'Journaleintrag bearbeiten' : 'Neuen Journaleintrag erfassen' }}</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            Offizielles Bauprotokoll, Bausitzung, Begehung oder E-Mail-Ablage mit KI-Analyse.
+            {{ entryToEdit ? 'Passe Titel, Inhalt, Kategorie, Zuweisung oder Notizen an.' : 'Offizielles Bauprotokoll, Bausitzung, Begehung oder E-Mail-Ablage mit KI-Analyse.' }}
           </p>
         </div>
         <button
@@ -31,7 +31,116 @@
           {{ error }}
         </div>
 
-        <!-- 1. Folder & Project Selection (when not fixed to a specific project) -->
+        <!-- 1. E-Mail Ingestion & AI Analysis Banner (Drag & Drop at top) -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border border-amber-200 shadow-2xs space-y-2.5">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-lg">⚡</span>
+              <div>
+                <h4 class="text-xs font-black text-amber-950">E-Mail / Dokument importieren & mit KI analysieren</h4>
+                <p class="text-[11px] text-amber-900 leading-tight">
+                  Füge Text ein oder ziehe eine .eml, .msg oder .pdf Datei hinein.
+                </p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 border border-amber-300 text-amber-900">
+              DeepSeek AI Engine
+            </span>
+          </div>
+
+          <!-- Dropzone: Spacious & Animated Drag & Drop -->
+          <div
+            @dragenter.prevent.stop="onEmlDragEnter"
+            @dragover.prevent.stop="onEmlDragOver"
+            @dragleave.prevent.stop="onEmlDragLeave"
+            @drop.prevent.stop="onEmlDrop"
+            class="relative rounded-2xl p-5 sm:p-6 text-center transition-all duration-300 cursor-pointer overflow-hidden border-2"
+            :class="[
+              isDraggingEml
+                ? 'border-[#00A3C4] bg-cyan-50/90 shadow-lg shadow-[#00A3C4]/20 scale-[1.01] ring-4 ring-[#00A3C4]/20'
+                : 'border-dashed border-amber-300 hover:border-[#00A3C4] bg-white/90 hover:bg-white hover:shadow-md'
+            ]"
+          >
+            <input
+              type="file"
+              accept=".eml,.msg,.txt,.pdf"
+              @change="onEmlFileChange"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+
+            <!-- Dragging Active Animation Overlay -->
+            <div v-if="isDraggingEml" class="flex flex-col items-center justify-center pointer-events-none py-1">
+              <div class="w-12 h-12 mb-2 rounded-2xl bg-[#00A3C4] text-white flex items-center justify-center shadow-md animate-bounce">
+                <UploadCloud class="w-6 h-6" />
+              </div>
+              <p class="text-sm font-black text-[#00A3C4] tracking-tight">
+                Datei jetzt hier loslassen!
+              </p>
+              <p class="text-[11px] font-semibold text-cyan-800 mt-0.5">
+                E-Mail (.msg / .eml) oder PDF wird automatisch ausgelesen & vorstrukturiert
+              </p>
+            </div>
+
+            <!-- Normal State -->
+            <div v-else class="flex flex-col items-center justify-center pointer-events-none py-1 group">
+              <div class="w-11 h-11 mb-2 rounded-2xl bg-amber-100/80 group-hover:bg-[#00A3C4]/10 text-amber-800 group-hover:text-[#00A3C4] flex items-center justify-center transition-all duration-300 shadow-2xs">
+                <Mail class="w-5 h-5 text-amber-700 transition-transform duration-300 group-hover:scale-110" />
+              </div>
+
+              <div class="flex items-center justify-center gap-1.5 text-xs font-black text-slate-800">
+                <span>.eml, Outlook .msg oder .pdf Datei hierher ziehen</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">Drag & Drop</span>
+              </div>
+
+              <p class="text-[11px] text-slate-500 mt-1">
+                oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span> • Betreff, Absender, Kontakte & Text werden automatisch übernommen
+              </p>
+
+              <!-- Confirmation if a file was loaded -->
+              <div v-if="loadedEmailFileName" class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
+                <Check class="w-3.5 h-3.5 text-emerald-600" />
+                <span>Geladen: {{ loadedEmailFileName }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sender Fields (if category is email or sender extracted) -->
+          <div v-if="form.category === 'email' || form.sender_name || form.sender_email" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender Name</label>
+              <input
+                v-model="form.sender_name"
+                type="text"
+                placeholder="z.B. Max Muster"
+                class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00A3C4]"
+              />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender E-Mail</label>
+              <input
+                v-model="form.sender_email"
+                type="email"
+                placeholder="z.B. m.muster@partner.ch"
+                class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00A3C4]"
+              />
+            </div>
+          </div>
+
+          <!-- AI Sync Checkbox -->
+          <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
+            <input
+              v-model="form.analyzeWithAi"
+              type="checkbox"
+              class="w-4 h-4 mt-0.5 rounded border-amber-300 text-[#00A3C4] focus:ring-[#00A3C4]"
+            />
+            <div class="text-[11px]">
+              <span class="font-bold text-amber-950">Mit KI analysieren & Aufgaben / Termine synchronisieren</span>
+              <p class="text-amber-900/80">Generiert kompakte Zusammenfassung, übernimmt Signatur-Kontaktdaten und schlägt Aktionskarten vor.</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- 2. Folder & Project Selection (Unterhalb dem Drag & Drop Fenster) -->
         <div v-if="!fixedProjectId" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
           <div v-if="!fixedFolderId && folderOptions.length > 0">
             <label class="block text-xs font-bold text-slate-700 mb-1">Ordner wählen</label>
@@ -144,115 +253,6 @@
               Das System ordnet den Eintrag automatisch dem passenden Projekt zu (z.B. nach Kundennummer, Adresse oder Name im Text).
             </p>
           </div>
-        </div>
-
-        <!-- 2. E-Mail Ingestion & AI Analysis Banner (Rich Integration) -->
-        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border border-amber-200 shadow-2xs space-y-2.5">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="text-lg">⚡</span>
-              <div>
-                <h4 class="text-xs font-black text-amber-950">E-Mail importieren & mit KI analysieren</h4>
-                <p class="text-[11px] text-amber-900 leading-tight">
-                  Füge den E-Mail-Text ein oder ziehe eine .eml / .msg Datei hinein.
-                </p>
-              </div>
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 border border-amber-300 text-amber-900">
-              DeepSeek AI Engine
-            </span>
-          </div>
-
-          <!-- Dropzone: Spacious & Animated Drag & Drop -->
-          <div
-            @dragenter.prevent.stop="onEmlDragEnter"
-            @dragover.prevent.stop="onEmlDragOver"
-            @dragleave.prevent.stop="onEmlDragLeave"
-            @drop.prevent.stop="onEmlDrop"
-            class="relative rounded-2xl p-5 sm:p-6 text-center transition-all duration-300 cursor-pointer overflow-hidden border-2"
-            :class="[
-              isDraggingEml
-                ? 'border-[#00A3C4] bg-cyan-50/90 shadow-lg shadow-[#00A3C4]/20 scale-[1.01] ring-4 ring-[#00A3C4]/20'
-                : 'border-dashed border-amber-300 hover:border-[#00A3C4] bg-white/90 hover:bg-white hover:shadow-md'
-            ]"
-          >
-            <input
-              type="file"
-              accept=".eml,.msg,.txt"
-              @change="onEmlFileChange"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-
-            <!-- Dragging Active Animation Overlay -->
-            <div v-if="isDraggingEml" class="flex flex-col items-center justify-center pointer-events-none py-1">
-              <div class="w-12 h-12 mb-2 rounded-2xl bg-[#00A3C4] text-white flex items-center justify-center shadow-md animate-bounce">
-                <UploadCloud class="w-6 h-6" />
-              </div>
-              <p class="text-sm font-black text-[#00A3C4] tracking-tight">
-                Datei jetzt hier loslassen!
-              </p>
-              <p class="text-[11px] font-semibold text-cyan-800 mt-0.5">
-                E-Mail (.msg / .eml) wird automatisch ausgelesen & vorstrukturiert
-              </p>
-            </div>
-
-            <!-- Normal State -->
-            <div v-else class="flex flex-col items-center justify-center pointer-events-none py-1 group">
-              <div class="w-11 h-11 mb-2 rounded-2xl bg-amber-100/80 group-hover:bg-[#00A3C4]/10 text-amber-800 group-hover:text-[#00A3C4] flex items-center justify-center transition-all duration-300 shadow-2xs">
-                <Mail class="w-5 h-5 text-amber-700 transition-transform duration-300 group-hover:scale-110" />
-              </div>
-
-              <div class="flex items-center justify-center gap-1.5 text-xs font-black text-slate-800">
-                <span>.eml oder Outlook .msg Datei hierher ziehen</span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">Drag & Drop</span>
-              </div>
-
-              <p class="text-[11px] text-slate-500 mt-1">
-                oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span> • Betreff, Absender & Text werden automatisch übernommen
-              </p>
-
-              <!-- Confirmation if a file was loaded -->
-              <div v-if="loadedEmailFileName" class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
-                <Check class="w-3.5 h-3.5 text-emerald-600" />
-                <span>Geladen: {{ loadedEmailFileName }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sender Fields (if category is email or sender extracted) -->
-          <div v-if="form.category === 'email' || form.sender_name || form.sender_email" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            <div>
-              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender Name</label>
-              <input
-                v-model="form.sender_name"
-                type="text"
-                placeholder="z.B. Max Muster"
-                class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00A3C4]"
-              />
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender E-Mail</label>
-              <input
-                v-model="form.sender_email"
-                type="email"
-                placeholder="z.B. m.muster@partner.ch"
-                class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00A3C4]"
-              />
-            </div>
-          </div>
-
-          <!-- AI Sync Checkbox -->
-          <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
-            <input
-              v-model="form.analyzeWithAi"
-              type="checkbox"
-              class="w-4 h-4 mt-0.5 rounded border-amber-300 text-[#00A3C4] focus:ring-[#00A3C4]"
-            />
-            <div class="text-[11px]">
-              <span class="font-bold text-amber-950">Mit KI analysieren & Aufgaben synchronisieren</span>
-              <p class="text-amber-900/80">Generiert prägnante Zusammenfassung und schlägt Aktionskarten (neue Aufgaben, Fristen) vor.</p>
-            </div>
-          </label>
         </div>
 
         <!-- 3. Title / Betreff -->
@@ -494,7 +494,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
         >
           <span v-if="saving">Speichern...</span>
-          <span v-else>Eintrag speichern</span>
+          <span v-else>{{ entryToEdit ? 'Änderungen speichern' : 'Eintrag speichern' }}</span>
         </button>
       </div>
     </div>
@@ -517,6 +517,7 @@ import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
   show: boolean
+  entryToEdit?: any
   folderId?: string
   projectId?: string
   folders?: Array<{ id: string; name: string }>
@@ -586,19 +587,39 @@ watch(() => props.show, (newVal) => {
     autoMatchedProjectInfo.value = null
     isDraggingEml.value = false
     dragCounter.value = 0
-    form.value = {
-      title: '',
-      category: 'bausitzung',
-      entry_date: new Date().toISOString().substring(0, 10),
-      visibility: 'all',
-      allowed_group_id: null,
-      task_id: null,
-      content: '',
-      sender_name: '',
-      sender_email: '',
-      analyzeWithAi: false,
-      attendees: [],
-      attachments: []
+
+    if (props.entryToEdit) {
+      form.value = {
+        title: props.entryToEdit.title || '',
+        category: props.entryToEdit.category || 'bausitzung',
+        entry_date: props.entryToEdit.entry_date || (props.entryToEdit.created_at ? props.entryToEdit.created_at.substring(0, 10) : new Date().toISOString().substring(0, 10)),
+        visibility: props.entryToEdit.visibility || 'all',
+        allowed_group_id: props.entryToEdit.allowed_group_id || null,
+        task_id: props.entryToEdit.task_id || null,
+        content: props.entryToEdit.content || '',
+        sender_name: props.entryToEdit.metadata?.sender?.name || '',
+        sender_email: props.entryToEdit.metadata?.sender?.email || '',
+        analyzeWithAi: false,
+        attendees: props.entryToEdit.attendees ? JSON.parse(JSON.stringify(props.entryToEdit.attendees)) : [],
+        attachments: props.entryToEdit.attachments ? JSON.parse(JSON.stringify(props.entryToEdit.attachments)) : []
+      }
+      selectedProjectId.value = props.entryToEdit.project_id || ''
+      selectedFolderId.value = props.entryToEdit.folder_id || ''
+    } else {
+      form.value = {
+        title: '',
+        category: 'bausitzung',
+        entry_date: new Date().toISOString().substring(0, 10),
+        visibility: 'all',
+        allowed_group_id: null,
+        task_id: null,
+        content: '',
+        sender_name: '',
+        sender_email: '',
+        analyzeWithAi: false,
+        attendees: [],
+        attachments: []
+      }
     }
   }
 })
@@ -835,6 +856,42 @@ const handleSubmit = async () => {
           email: form.value.sender_email
         }
       } : {}
+    }
+
+    if (props.entryToEdit?.id) {
+      const editPayload = {
+        folder_id: selectedFolderId.value || fixedFolderId.value || null,
+        project_id: fixedProjectId.value || (selectedProjectId.value === 'auto' ? null : (selectedProjectId.value || null)),
+        task_id: form.value.task_id || null,
+        category: form.value.category,
+        title: form.value.title.trim(),
+        content: form.value.content.trim(),
+        visibility: form.value.visibility,
+        allowed_group_id: form.value.visibility === 'group' ? form.value.allowed_group_id : null,
+        metadata: {
+          ...(props.entryToEdit.metadata || {}),
+          ...(form.value.category === 'email' ? {
+            sender: {
+              name: form.value.sender_name,
+              email: form.value.sender_email
+            }
+          } : {})
+        }
+      }
+
+      await $fetch(`/api/journals/${props.entryToEdit.id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: editPayload
+      })
+
+      emit('saved', {
+        ...props.entryToEdit,
+        ...editPayload,
+        updated_at: new Date().toISOString()
+      })
+      emit('close')
+      return
     }
 
     const res = await $fetch<any>('/api/journals', {

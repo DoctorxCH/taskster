@@ -987,6 +987,16 @@
               <option value="30days">📅 Letzte 30 Tage</option>
             </select>
 
+            <!-- 3b. Sorting Filter -->
+            <select
+              v-model="journalSortOrder"
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+            >
+              <option value="date_desc">📅 Datum (Neueste zuerst)</option>
+              <option value="date_asc">📅 Datum (Älteste zuerst)</option>
+              <option value="category">🏷️ Kategorie</option>
+            </select>
+
             <!-- 4. Open Actions Toggle Pill -->
             <button
               type="button"
@@ -1082,7 +1092,10 @@
                   <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
                     <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name }}</strong></span>
                     <span>•</span>
-                    <span>{{ new Date(entry.created_at).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
+                    <span>{{ new Date(entry.entry_date || entry.created_at).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
+                    <span v-if="isJournalEdited(entry)" class="text-[11px] font-medium text-slate-400 italic">
+                      • bearbeitet {{ formatJournalDateTime(entry.updated_at) }}
+                    </span>
                     <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
                       <span>• Verknüpft: {{ entry.task_title }}</span>
                     </span>
@@ -1090,7 +1103,7 @@
                 </div>
               </div>
 
-              <!-- Top-Right Actions: AI Trigger, Bulk Apply, Visibility, Delete -->
+              <!-- Top-Right Actions: AI Trigger, Bulk Apply, Edit, Visibility, Delete -->
               <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
                 <button
                   v-if="userRole !== 'viewer'"
@@ -1118,6 +1131,17 @@
                 >
                   <CheckCircle2 class="w-3 h-3" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
                   <span>{{ isApplyingAllId === entry.id ? 'Synchronisiere...' : '⚡ Aktionen ins Board (' + entry.metadata.action_items.filter(it => !it.applied).length + ')' }}</span>
+                </button>
+
+                <!-- Edit Journal Entry Button -->
+                <button
+                  v-if="userRole !== 'viewer'"
+                  @click="openEditJournalEntry(entry)"
+                  type="button"
+                  class="p-1 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition cursor-pointer"
+                  title="Eintrag bearbeiten"
+                >
+                  <Pencil class="w-3.5 h-3.5" />
                 </button>
 
                 <span
@@ -1279,24 +1303,47 @@
                   </div>
                 </div>
 
-                <!-- Text-Inhalt / E-Mail Body -->
+                <!-- Text-Inhalt / E-Mail Body (Cleaned & 5-Line Smooth Collapse) -->
                 <div>
                   <div class="flex items-center justify-between mb-1.5">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
                     <button
-                      v-if="entry.type === 'note' && entry.category === 'email'"
+                      v-if="hasOriginalJournalText(entry)"
                       type="button"
-                      @click="expandedMailIds[entry.id] = !expandedMailIds[entry.id]"
-                      class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
+                      @click="openOriginalJournalView(entry)"
+                      class="text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer flex items-center gap-1.5"
+                      title="Vollständiges Original-Dokument / E-Mail ansehen"
                     >
-                      <span>{{ expandedMailIds[entry.id] ? 'E-Mail Text verbergen ▲' : 'Vollständigen E-Mail Text anzeigen ▼' }}</span>
+                      <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
+                      <span>Original-Ansicht</span>
                     </button>
                   </div>
-                  <div
-                    v-if="entry.type !== 'note' || entry.category !== 'email' || expandedMailIds[entry.id]"
-                    class="text-xs text-slate-800 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans max-h-96 overflow-y-auto"
-                  >
-                    {{ entry.content }}
+
+                  <div class="relative">
+                    <div
+                      class="text-xs text-slate-800 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans transition-all duration-300 ease-in-out overflow-hidden"
+                      :style="isJournalExpanded(entry.id) || !isLongJournalContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+                    >
+                      {{ cleanJournalContent(entry.content) }}
+                    </div>
+
+                    <!-- Soft gradient fade-out over 5th line when collapsed -->
+                    <div
+                      v-if="isLongJournalContent(entry.content) && !isJournalExpanded(entry.id)"
+                      class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-slate-100 via-slate-100/80 to-transparent pointer-events-none rounded-b-2xl"
+                    ></div>
+                  </div>
+
+                  <div v-if="isLongJournalContent(entry.content)" class="mt-1.5">
+                    <button
+                      type="button"
+                      @click="toggleJournalExpand(entry.id)"
+                      class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
+                    >
+                      <ChevronDown v-if="!isJournalExpanded(entry.id)" class="w-3.5 h-3.5" />
+                      <ChevronUp v-else class="w-3.5 h-3.5" />
+                      <span>{{ isJournalExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -5499,6 +5546,152 @@
       </div>
     </div>
 
+    <!-- Journal Entry Edit Modal -->
+    <JournalEntryModal
+      :show="showEditJournalModal"
+      :folder-id="project?.folder_id"
+      :project-id="project?.id"
+      :projects="project ? [project] : []"
+      :tasks="allProjectTasks"
+      :contacts="attendeeContactOptions"
+      :entry-to-edit="journalEntryToEdit"
+      @close="showEditJournalModal = false; journalEntryToEdit = null"
+      @saved="onJournalEntrySaved"
+    />
+
+    <!-- Original-Ansicht In-App Popup Modal (Taskster Standard) -->
+    <div
+      v-if="showOriginalJournalModal && originalJournalEntry"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+      @mousedown.self="showOriginalJournalModal = false"
+    >
+      <div class="bg-white border border-slate-200 rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+          <div class="flex items-center space-x-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-cyan-50 text-[#00A3C4] border border-cyan-200 flex items-center justify-center shrink-0">
+              <Eye class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-slate-900 truncate">
+                  {{ originalJournalEntry.title || 'Original-Dokument' }}
+                </h3>
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider shrink-0"
+                  :class="getCategoryBadge(originalJournalEntry.category, originalJournalEntry.type).bg"
+                >
+                  {{ getCategoryBadge(originalJournalEntry.category, originalJournalEntry.type).label }}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 truncate">
+                Originalansicht des importierten Dokuments / der E-Mail
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="showOriginalJournalModal = false"
+            class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-200/60 transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto space-y-4">
+          <!-- Metadata Card (Sender, Recipients, Date) -->
+          <div
+            v-if="originalJournalEntry.metadata?.email_sender || originalJournalEntry.metadata?.email_subject || originalJournalEntry.author_name"
+            class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-1.5"
+          >
+            <div v-if="originalJournalEntry.metadata?.email_sender" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Absender:</span>
+              <span class="text-slate-900 font-medium select-all">{{ originalJournalEntry.metadata.email_sender }}</span>
+            </div>
+            <div v-if="originalJournalEntry.metadata?.email_recipients" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Empfänger:</span>
+              <span class="text-slate-700 select-all">{{ originalJournalEntry.metadata.email_recipients }}</span>
+            </div>
+            <div v-if="originalJournalEntry.metadata?.email_subject" class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Betreff:</span>
+              <span class="text-slate-900 font-semibold select-all">{{ originalJournalEntry.metadata.email_subject }}</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="font-bold text-slate-500 w-20 shrink-0">Datum:</span>
+              <span class="text-slate-600">{{ formatJournalDateTime(originalJournalEntry.metadata?.email_date || originalJournalEntry.entry_date || originalJournalEntry.created_at) }}</span>
+            </div>
+          </div>
+
+          <!-- Extracted Contacts Box if present -->
+          <div v-if="originalJournalEntry.metadata?.contacts && originalJournalEntry.metadata.contacts.length > 0" class="space-y-2">
+            <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <span>👤</span>
+              <span>Erkannte Kontakte (in Kontakte synchronisiert):</span>
+            </h5>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="(c, cIdx) in originalJournalEntry.metadata.contacts"
+                :key="cIdx"
+                class="p-3 bg-white border border-slate-200 rounded-xl text-xs space-y-1 shadow-2xs"
+              >
+                <div class="font-bold text-slate-900 flex items-center justify-between">
+                  <span>{{ c.first_name }} {{ c.last_name }}</span>
+                  <span v-if="c.role_function" class="text-[10px] font-normal text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">{{ c.role_function }}</span>
+                </div>
+                <div v-if="c.company_name" class="text-slate-600 text-[11px]">🏢 {{ c.company_name }}</div>
+                <div v-if="c.phone" class="text-slate-600 text-[11px]">📞 {{ c.phone }}</div>
+                <div v-if="c.email" class="text-cyan-700 text-[11px]">✉️ {{ c.email }}</div>
+                <div v-if="c.address" class="text-slate-500 text-[10px]">📍 {{ c.address }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Full Text Box -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                Originaltext
+              </label>
+              <button
+                type="button"
+                @click="copyOriginalJournalText"
+                class="text-[11px] font-semibold text-[#00A3C4] hover:text-[#008ba8] flex items-center gap-1 cursor-pointer"
+              >
+                <Check v-if="copiedJournalText" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+                <span>{{ copiedJournalText ? 'Kopiert!' : 'Text kopieren' }}</span>
+              </button>
+            </div>
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed max-h-[50vh] overflow-y-auto selection:bg-cyan-100 select-text">
+              {{ getOriginalJournalContent(originalJournalEntry) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            @click="copyOriginalJournalText"
+            class="taskster_button_light px-4 text-xs h-[38px] rounded-lg flex items-center gap-1.5 cursor-pointer"
+          >
+            <Check v-if="copiedJournalText" class="w-3.5 h-3.5 text-emerald-600" />
+            <Copy v-else class="w-3.5 h-3.5" />
+            <span>{{ copiedJournalText ? 'Text kopiert!' : 'Originaltext kopieren' }}</span>
+          </button>
+
+          <button
+            type="button"
+            @click="showOriginalJournalModal = false"
+            class="taskster_button px-6 text-xs h-[38px] rounded-lg cursor-pointer"
+          >
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- UNIVERSAL IN-APP TOAST FEEDBACK (Zero Native Popups) -->
     <div v-if="pageToast.show" class="fixed bottom-6 right-6 z-50 max-w-sm w-full transition-all duration-300">
       <div
@@ -5559,7 +5752,11 @@ import {
   UploadCloud,
   Download,
   Send,
-  ListFilter
+  ListFilter,
+  Eye,
+  Copy,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
@@ -6149,10 +6346,97 @@ const journalFilterType = ref<'all' | 'entry' | 'note'>('all')
 const journalFilterCategory = ref('all')
 const journalFilterTask = ref<'all' | 'assigned' | 'unassigned' | string>('all')
 const journalFilterPeriod = ref<'all' | 'today' | '7days' | '30days'>('all')
+const journalSortOrder = ref<'date_desc' | 'date_asc' | 'category'>('date_desc')
 const journalFilterOpenActions = ref(false)
 const journalSearchQuery = ref('')
 const expandedMailIds = ref<Record<string, boolean>>({})
 const userGroups = ref<any[]>([])
+
+// 5-Line expansion state & helpers
+const journalExpandedEntries = ref<Record<string, boolean>>({})
+const isJournalExpanded = (id: string) => !!journalExpandedEntries.value[id]
+const toggleJournalExpand = (id: string) => {
+  journalExpandedEntries.value[id] = !journalExpandedEntries.value[id]
+}
+
+const cleanJournalContent = (text?: string) => {
+  if (!text) return ''
+  return text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+const isLongJournalContent = (text?: string) => {
+  if (!text) return false
+  const cleaned = cleanJournalContent(text)
+  const lines = cleaned.split('\n')
+  return lines.length > 5 || cleaned.length > 250
+}
+
+// Edit Journal Modal
+const showEditJournalModal = ref(false)
+const journalEntryToEdit = ref<any | null>(null)
+const openEditJournalEntry = (entry: any) => {
+  journalEntryToEdit.value = entry
+  showEditJournalModal.value = true
+}
+const onJournalEntrySaved = async () => {
+  showEditJournalModal.value = false
+  journalEntryToEdit.value = null
+  await loadJournals()
+  showPageToast('Journal-Eintrag erfolgreich aktualisiert', 'success')
+}
+
+// Original View Modal
+const showOriginalJournalModal = ref(false)
+const originalJournalEntry = ref<any | null>(null)
+const copiedJournalText = ref(false)
+
+const hasOriginalJournalText = (entry: any) => {
+  if (!entry) return false
+  if (entry.metadata?.original_text || entry.metadata?.raw_text) return true
+  if (entry.category === 'email') return true
+  return isLongJournalContent(entry.content)
+}
+
+const getOriginalJournalContent = (entry: any) => {
+  if (!entry) return ''
+  return entry.metadata?.original_text || entry.metadata?.raw_text || entry.content || ''
+}
+
+const openOriginalJournalView = (entry: any) => {
+  originalJournalEntry.value = entry
+  copiedJournalText.value = false
+  showOriginalJournalModal.value = true
+}
+
+const copyOriginalJournalText = async () => {
+  if (!originalJournalEntry.value) return
+  const text = getOriginalJournalContent(originalJournalEntry.value)
+  try {
+    await navigator.clipboard.writeText(text)
+    copiedJournalText.value = true
+    setTimeout(() => { copiedJournalText.value = false }, 2500)
+  } catch (e) {
+    console.error('Clipboard copy failed:', e)
+  }
+}
+
+const isJournalEdited = (entry: any) => {
+  if (!entry?.updated_at || !entry?.created_at) return false
+  const diff = new Date(entry.updated_at).getTime() - new Date(entry.created_at).getTime()
+  return diff > 60000
+}
+
+const formatJournalDateTime = (dateStr?: string) => {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr)
+    const date = d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const time = d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })
+    return `${date} um ${time}`
+  } catch (_) {
+    return dateStr
+  }
+}
 
 const newEntrySuggestedTasks = ref<Array<{ task: any, reason: string, score: number }>>([])
 const newNoteSuggestedTasks = ref<Array<{ task: any, reason: string, score: number }>>([])
@@ -6407,7 +6691,23 @@ const filteredJournals = computed(() => {
     )
   }
 
-  return list
+  // 7. Sortierung (Datum, Kategorie)
+  return list.slice().sort((a: any, b: any) => {
+    if (journalSortOrder.value === 'date_asc') {
+      const da = new Date(a.entry_date || a.created_at).getTime()
+      const db = new Date(b.entry_date || b.created_at).getTime()
+      return da - db
+    } else if (journalSortOrder.value === 'category') {
+      const ca = (a.category || '').toLowerCase()
+      const cb = (b.category || '').toLowerCase()
+      return ca.localeCompare(cb, 'de')
+    } else {
+      // date_desc (default)
+      const da = new Date(a.entry_date || a.created_at).getTime()
+      const db = new Date(b.entry_date || b.created_at).getTime()
+      return db - da
+    }
+  })
 })
 
 // Detection Watcher for New Entry Form (Suggestions only, NEVER silent auto-assign)

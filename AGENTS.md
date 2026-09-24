@@ -7,15 +7,15 @@
 > *Hinweis Pfade:* Relative Links funktionieren arbeitsstationsunabhängig auf beiden Entwicklungs-PCs (`c:\Users\marti\...` und `c:\Users\taakumao\...`).
 
 ## 1b. Code-Index (Verbindlich für Agenten)
-- **Skript:** `generate_index.py` (Projekt-Root) erzeugt `.agent_index.json` (kompaktes Format, 1 Zeile pro Datei, ~20 KB).
+- **Skript:** `generate_index.py` (Projekt-Root) erzeugt `.agent_index.json` (kompaktes Format, 1 Zeile pro Datei, ~45 KB) mit exakten 1-basierten Zeilennummern für jedes Symbol.
 - **Such-Workflow (STRIKT EINZUHALTEN):**
   1. **Vor jeder Arbeit:** `python generate_index.py` ausführen.
   2. **Immer zuerst `.agent_index.json` lesen:** Bei jeder Suche nach Routen/Endpunkten, PHP-Klassen, Composables, exportierten Funktionen oder SQL-Tabellen MUSS der Agent **zuerst** in `.agent_index.json` nachschlagen.
-  3. **Gezielter Dateizugriff:** Sobald die Zieldatei im Index identifiziert ist, wird **nur** diese Datei (und nur der relevante Code-Abschnitt) geöffnet.
+  3. **Gezielter Dateizugriff:** Sobald die Zieldatei und Zeilennummer im Index identifiziert ist, wird **nur** dieser relevante Code-Abschnitt gezielt geöffnet (z. B. `view_file` mit `StartLine`/`EndLine`).
   4. **Fallback auf `grep` nur bei Fehlschlag:** Ein Dateisystem-Suchlauf (`grep_search`) ist **erst dann erlaubt**, wenn das gesuchte Element (z. B. ein spezifischer UI-String, CSS-Klasse, unveröffentlichte interne Hilfsfunktion) im Index **nicht** gefunden wurde. Blinde Repo-weite Suchläufe ohne vorherigen Index-Check sind verboten!
   5. **Nach jeder Arbeit:** `python generate_index.py` erneut ausführen, damit der Index aktuell bleibt.
-- **Inhalt:** API-Endpunkte (Nitro-Routen aus Dateipfaden + PHP-Routen), Klassen, exportierte TS/Vue-Funktionen & Composables, Vue-APIs (`defineProps`, etc.), referenzierte SQL-Tabellen.
-- **Nutzen:** Der Agent liest zuerst `.agent_index.json` statt das Repo zu durchsuchen (0 Tokens für die Suche).
+- **Inhalt:** API-Endpunkte (Nitro-Routen + alle PHP-Routen), Klassen/Interfaces, TS/Vue-Funktionen & Composables, Vue-APIs (`defineProps`, etc.), referenzierte SQL-Tabellen. Jedes Symbol ist direkt mit seiner Startzeilennummer als Key-Value-Paar abgebildet (z. B. `{"getDb": 18}`).
+- **Nutzen:** Der Agent liest zuerst `.agent_index.json` und springt dank exakter Zeilennummern direkt an die richtige Codestelle (minimale Tokenkosten, maximale Präzision).
 - **Befehle:**
   - `python generate_index.py` — Index neu erzeugen
   - `python generate_index.py --stats` — zusätzlich Statistik ausgeben
