@@ -151,17 +151,59 @@
             </span>
           </div>
 
-          <!-- Dropzone -->
-          <div class="relative border-2 border-dashed border-amber-300/80 rounded-xl p-2.5 bg-white/80 text-center hover:bg-white transition cursor-pointer">
+          <!-- Dropzone: Spacious & Animated Drag & Drop -->
+          <div
+            @dragenter.prevent.stop="onEmlDragEnter"
+            @dragover.prevent.stop="onEmlDragOver"
+            @dragleave.prevent.stop="onEmlDragLeave"
+            @drop.prevent.stop="onEmlDrop"
+            class="relative rounded-2xl p-5 sm:p-6 text-center transition-all duration-300 cursor-pointer overflow-hidden border-2"
+            :class="[
+              isDraggingEml
+                ? 'border-[#00A3C4] bg-cyan-50/90 shadow-lg shadow-[#00A3C4]/20 scale-[1.01] ring-4 ring-[#00A3C4]/20'
+                : 'border-dashed border-amber-300 hover:border-[#00A3C4] bg-white/90 hover:bg-white hover:shadow-md'
+            ]"
+          >
             <input
               type="file"
               accept=".eml,.msg,.txt"
-              @change="handleDropEml"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              @change="onEmlFileChange"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            <div class="flex items-center justify-center gap-2 text-xs font-bold text-amber-900">
-              <Mail class="w-4 h-4 text-amber-700" />
-              <span>.eml oder Textdatei hier ablegen zum automatischen Auslesen</span>
+
+            <!-- Dragging Active Animation Overlay -->
+            <div v-if="isDraggingEml" class="flex flex-col items-center justify-center pointer-events-none py-1">
+              <div class="w-12 h-12 mb-2 rounded-2xl bg-[#00A3C4] text-white flex items-center justify-center shadow-md animate-bounce">
+                <UploadCloud class="w-6 h-6" />
+              </div>
+              <p class="text-sm font-black text-[#00A3C4] tracking-tight">
+                Datei jetzt hier loslassen!
+              </p>
+              <p class="text-[11px] font-semibold text-cyan-800 mt-0.5">
+                E-Mail (.msg / .eml) wird automatisch ausgelesen & vorstrukturiert
+              </p>
+            </div>
+
+            <!-- Normal State -->
+            <div v-else class="flex flex-col items-center justify-center pointer-events-none py-1 group">
+              <div class="w-11 h-11 mb-2 rounded-2xl bg-amber-100/80 group-hover:bg-[#00A3C4]/10 text-amber-800 group-hover:text-[#00A3C4] flex items-center justify-center transition-all duration-300 shadow-2xs">
+                <Mail class="w-5 h-5 text-amber-700 transition-transform duration-300 group-hover:scale-110" />
+              </div>
+
+              <div class="flex items-center justify-center gap-1.5 text-xs font-black text-slate-800">
+                <span>.eml oder Outlook .msg Datei hierher ziehen</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">Drag & Drop</span>
+              </div>
+
+              <p class="text-[11px] text-slate-500 mt-1">
+                oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span> • Betreff, Absender & Text werden automatisch übernommen
+              </p>
+
+              <!-- Confirmation if a file was loaded -->
+              <div v-if="loadedEmailFileName" class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
+                <Check class="w-3.5 h-3.5 text-emerald-600" />
+                <span>Geladen: {{ loadedEmailFileName }}</span>
+              </div>
             </div>
           </div>
 
@@ -457,7 +499,7 @@ import {
   UploadCloud,
   Paperclip
 } from 'lucide-vue-next'
-import { parseRawEml, readFileAsDataUrl, readFileAsText } from '~/utils/emailParser'
+import { parseEmailFile, parseRawEml, readFileAsDataUrl, cleanOleResidue } from '~/utils/emailParser'
 import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
@@ -494,6 +536,10 @@ const projectSearchTerm = ref('')
 const saving = ref(false)
 const error = ref('')
 
+const isDraggingEml = ref(false)
+const dragCounter = ref(0)
+const loadedEmailFileName = ref('')
+
 const selectedContactToAdd = ref('')
 const newAttendeeName = ref('')
 const newAttendeeRole = ref('')
@@ -522,6 +568,9 @@ watch(() => props.show, (newVal) => {
     isProjectDropdownOpen.value = false
     error.value = ''
     autoTaskMatch.value = ''
+    loadedEmailFileName.value = ''
+    isDraggingEml.value = false
+    dragCounter.value = 0
     form.value = {
       title: '',
       category: 'bausitzung',
@@ -603,27 +652,74 @@ const addCustomAttendee = () => {
   newAttendeeRole.value = ''
 }
 
-const handleDropEml = async (e: Event) => {
+const onEmlDragEnter = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  dragCounter.value++
+  if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+    isDraggingEml.value = true
+  }
+}
+
+const onEmlDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+  isDraggingEml.value = true
+}
+
+const onEmlDragLeave = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  dragCounter.value--
+  if (dragCounter.value <= 0) {
+    dragCounter.value = 0
+    isDraggingEml.value = false
+  }
+}
+
+const onEmlDrop = async (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  dragCounter.value = 0
+  isDraggingEml.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    await processEmailFile(files[0])
+  }
+}
+
+const onEmlFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
-  if (!target.files || target.files.length === 0) return
-  const file = target.files[0]
-  const text = await readFileAsText(file)
-  const parsed = parseRawEml(text)
+  if (target.files && target.files.length > 0) {
+    await processEmailFile(target.files[0])
+    target.value = ''
+  }
+}
 
-  form.value.title = parsed.subject || file.name.replace(/\.[^/.]+$/, '')
-  if (parsed.fromName) form.value.sender_name = parsed.fromName
-  if (parsed.fromEmail) form.value.sender_email = parsed.fromEmail
-  form.value.content = parsed.body || text.trim()
-  form.value.category = 'email'
-  form.value.analyzeWithAi = true
+const processEmailFile = async (file: File) => {
+  try {
+    const parsed = await parseEmailFile(file, file.name)
+    loadedEmailFileName.value = file.name
+    form.value.title = parsed.subject || file.name.replace(/\.[^/.]+$/, '')
+    if (parsed.fromName) form.value.sender_name = parsed.fromName
+    if (parsed.fromEmail) form.value.sender_email = parsed.fromEmail
+    form.value.content = cleanOleResidue(parsed.body)
+    form.value.category = 'email'
+    form.value.analyzeWithAi = true
 
-  const base64 = await readFileAsDataUrl(file)
-  form.value.attachments.push({
-    file_name: file.name,
-    file_type: file.type || 'message/rfc822',
-    file_size: file.size,
-    file_path: base64
-  })
+    const base64 = await readFileAsDataUrl(file)
+    form.value.attachments.push({
+      file_name: file.name,
+      file_type: file.type || (file.name.toLowerCase().endsWith('.msg') ? 'application/vnd.ms-outlook' : 'message/rfc822'),
+      file_size: file.size,
+      file_path: base64
+    })
+  } catch (err) {
+    console.error('Fehler beim Verarbeiten der E-Mail Datei:', err)
+  }
 }
 
 const handleContentPaste = (e: ClipboardEvent) => {
@@ -632,12 +728,14 @@ const handleContentPaste = (e: ClipboardEvent) => {
     pasted.includes('Content-Transfer-Encoding:') ||
     pasted.includes('Content-Type: text/') ||
     /^--[a-zA-Z0-9_-]+/m.test(pasted) ||
-    (pasted.includes('From:') && pasted.includes('Subject:'))
+    (pasted.includes('From:') && pasted.includes('Subject:')) ||
+    pasted.includes('substg1.0') ||
+    pasted.includes('þÿÿÿ')
   )) {
     const parsed = parseRawEml(pasted)
     if (parsed.body && parsed.body !== pasted) {
       e.preventDefault()
-      form.value.content = parsed.body
+      form.value.content = cleanOleResidue(parsed.body)
       if (!form.value.title && parsed.subject) {
         form.value.title = parsed.subject
       }
@@ -646,6 +744,12 @@ const handleContentPaste = (e: ClipboardEvent) => {
         form.value.sender_name = parsed.fromName
         form.value.category = 'email'
         form.value.analyzeWithAi = true
+      }
+    } else {
+      const cleaned = cleanOleResidue(pasted)
+      if (cleaned !== pasted) {
+        e.preventDefault()
+        form.value.content = cleaned
       }
     }
   }

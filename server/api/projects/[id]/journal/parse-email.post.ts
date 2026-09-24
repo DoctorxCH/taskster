@@ -40,7 +40,7 @@ function getApiKey(): string {
   return ''
 }
 
-import { decodeMimeHeader, decodeQuotedPrintable, decodeBase64Utf8, parseRawEml } from '~/utils/emailParser'
+import { decodeMimeHeader, decodeQuotedPrintable, decodeBase64Utf8, parseRawEml, cleanOleResidue } from '~/utils/emailParser'
 
 
 export default defineEventHandler(async (event) => {
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
 
   evaluateProjectAccess(user, projectId, event, 'write')
 
-  let emailText = (body.email_text || body.content || '').trim()
+  let emailText = cleanOleResidue((body.email_text || body.content || '').trim())
   if (!emailText) {
     throw createError({ statusCode: 400, statusMessage: 'E-Mail-Text erforderlich' })
   }
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
   // Automatische MIME / Base64 Dekodierung
   if (emailText.includes('Content-Transfer-Encoding') || emailText.includes('Content-Type:') || /^--[a-zA-Z0-9_-]+/m.test(emailText)) {
     const parsed = parseRawEml(emailText)
-    if (parsed.body) emailText = parsed.body
+    if (parsed.body) emailText = cleanOleResidue(parsed.body)
     if (!emailSubject && parsed.subject) emailSubject = parsed.subject
     if (!sender.email && parsed.fromEmail) {
       sender.email = parsed.fromEmail

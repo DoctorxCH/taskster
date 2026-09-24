@@ -2,6 +2,7 @@ import { db } from '~/server/db'
 import { requireAuth } from '~/server/utils/auth'
 import { evaluateProjectAccess, evaluateFolderAccess } from '~/server/utils/permissions'
 import { randomUUID } from 'crypto'
+import { cleanOleResidue } from '~/utils/emailParser'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
     attendees
   } = body
 
-  content = (content || '').trim()
+  content = cleanOleResidue((content || '').trim())
   if (!content && !title) {
     throw createError({ statusCode: 400, statusMessage: 'Inhalt oder Titel ist erforderlich' })
   }

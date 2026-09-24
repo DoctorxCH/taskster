@@ -4554,15 +4554,60 @@
               </div>
             </div>
 
-            <div class="relative border-2 border-dashed border-amber-300/80 rounded-xl p-3 bg-white/80 text-center hover:bg-white transition cursor-pointer">
+            <!-- Dropzone: Spacious & Animated Drag & Drop -->
+            <div
+              @dragenter.prevent.stop="onNoteEmlDragEnter"
+              @dragover.prevent.stop="onNoteEmlDragOver"
+              @dragleave.prevent.stop="onNoteEmlDragLeave"
+              @drop.prevent.stop="onNoteEmlDrop"
+              class="relative rounded-2xl p-5 sm:p-6 text-center transition-all duration-300 cursor-pointer overflow-hidden border-2"
+              :class="[
+                isDraggingNoteEml
+                  ? 'border-[#00A3C4] bg-cyan-50/90 shadow-lg shadow-[#00A3C4]/20 scale-[1.01] ring-4 ring-[#00A3C4]/20'
+                  : 'border-dashed border-amber-300 hover:border-[#00A3C4] bg-white/90 hover:bg-white hover:shadow-md'
+              ]"
+            >
               <input
                 type="file"
                 accept=".eml,.msg,.txt"
-                @change="handleNoteDropEml"
-                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                @change="onNoteEmlFileChange"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <Mail class="w-5 h-5 text-amber-700 mx-auto mb-1" />
-              <p class="text-xs font-bold text-amber-900">.eml oder Textdatei hier ablegen zum automatischen Auslesen</p>
+
+              <!-- Dragging Active Animation Overlay -->
+              <div v-if="isDraggingNoteEml" class="flex flex-col items-center justify-center pointer-events-none py-1">
+                <div class="w-12 h-12 mb-2 rounded-2xl bg-[#00A3C4] text-white flex items-center justify-center shadow-md animate-bounce">
+                  <UploadCloud class="w-6 h-6" />
+                </div>
+                <p class="text-sm font-black text-[#00A3C4] tracking-tight">
+                  Datei jetzt hier loslassen!
+                </p>
+                <p class="text-[11px] font-semibold text-cyan-800 mt-0.5">
+                  E-Mail (.msg / .eml) wird automatisch ausgelesen & vorstrukturiert
+                </p>
+              </div>
+
+              <!-- Normal State -->
+              <div v-else class="flex flex-col items-center justify-center pointer-events-none py-1 group">
+                <div class="w-11 h-11 mb-2 rounded-2xl bg-amber-100/80 group-hover:bg-[#00A3C4]/10 text-amber-800 group-hover:text-[#00A3C4] flex items-center justify-center transition-all duration-300 shadow-2xs">
+                  <Mail class="w-5 h-5 text-amber-700 transition-transform duration-300 group-hover:scale-110" />
+                </div>
+
+                <div class="flex items-center justify-center gap-1.5 text-xs font-black text-slate-800">
+                  <span>.eml oder Outlook .msg Datei hierher ziehen</span>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">Drag & Drop</span>
+                </div>
+
+                <p class="text-[11px] text-slate-500 mt-1">
+                  oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span> • Betreff, Absender & Text werden automatisch übernommen
+                </p>
+
+                <!-- Confirmation if a file was loaded -->
+                <div v-if="loadedNoteEmailFileName" class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
+                  <Check class="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Geladen: {{ loadedNoteEmailFileName }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -5518,7 +5563,7 @@ import {
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
-import { parseRawEml, readFileAsText, readFileAsDataUrl, decodeMimeHeader, decodeQuotedPrintable, decodeBase64Utf8 } from '~/utils/emailParser'
+import { parseEmailFile, parseRawEml, readFileAsText, readFileAsDataUrl, decodeMimeHeader, decodeQuotedPrintable, decodeBase64Utf8, cleanOleResidue } from '~/utils/emailParser'
 
 const { t, te } = useI18n()
 
@@ -8645,29 +8690,78 @@ const removeNoteAttachment = (idx: number) => {
   newNoteForm.value.attachments.splice(idx, 1)
 }
 
-const handleNoteDropEml = async (e: Event) => {
+const isDraggingNoteEml = ref(false)
+const noteDragCounter = ref(0)
+const loadedNoteEmailFileName = ref('')
+
+const onNoteEmlDragEnter = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  noteDragCounter.value++
+  if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+    isDraggingNoteEml.value = true
+  }
+}
+
+const onNoteEmlDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+  isDraggingNoteEml.value = true
+}
+
+const onNoteEmlDragLeave = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  noteDragCounter.value--
+  if (noteDragCounter.value <= 0) {
+    noteDragCounter.value = 0
+    isDraggingNoteEml.value = false
+  }
+}
+
+const onNoteEmlDrop = async (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  noteDragCounter.value = 0
+  isDraggingNoteEml.value = false
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    await processNoteEmailFile(files[0])
+  }
+}
+
+const onNoteEmlFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
-  if (!target.files || target.files.length === 0) return
-  const file = target.files[0]
-  const text = await readFileAsText(file)
+  if (target.files && target.files.length > 0) {
+    await processNoteEmailFile(target.files[0])
+    target.value = ''
+  }
+}
 
-  const parsed = parseRawEml(text)
+const processNoteEmailFile = async (file: File) => {
+  try {
+    const parsed = await parseEmailFile(file, file.name)
+    loadedNoteEmailFileName.value = file.name
+    newNoteForm.value.title = parsed.subject || file.name.replace(/\.[^/.]+$/, '')
+    if (parsed.fromName) newNoteForm.value.sender_name = parsed.fromName
+    if (parsed.fromEmail) newNoteForm.value.sender_email = parsed.fromEmail
+    newNoteForm.value.content = cleanOleResidue(parsed.body)
+    newNoteForm.value.category = 'email'
+    newNoteForm.value.analyzeWithAi = true
 
-
-  newNoteForm.value.title = parsed.subject || file.name.replace(/\.[^/.]+$/, '')
-  if (parsed.fromName) newNoteForm.value.sender_name = parsed.fromName
-  if (parsed.fromEmail) newNoteForm.value.sender_email = parsed.fromEmail
-  newNoteForm.value.content = parsed.body || text.trim()
-  newNoteForm.value.category = 'email'
-  newNoteForm.value.analyzeWithAi = true
-
-  const base64 = await readFileAsDataUrl(file)
-  newNoteForm.value.attachments.push({
-    file_name: file.name,
-    file_type: file.type || 'message/rfc822',
-    file_size: file.size,
-    file_path: base64
-  })
+    const base64 = await readFileAsDataUrl(file)
+    newNoteForm.value.attachments.push({
+      file_name: file.name,
+      file_type: file.type || (file.name.toLowerCase().endsWith('.msg') ? 'application/vnd.ms-outlook' : 'message/rfc822'),
+      file_size: file.size,
+      file_path: base64
+    })
+  } catch (err) {
+    console.error('Fehler beim Verarbeiten der E-Mail Datei:', err)
+  }
 }
 
 const handleNoteContentPaste = (e: ClipboardEvent) => {
@@ -8676,12 +8770,14 @@ const handleNoteContentPaste = (e: ClipboardEvent) => {
     pasted.includes('Content-Transfer-Encoding:') ||
     pasted.includes('Content-Type: text/') ||
     /^--[a-zA-Z0-9_-]+/m.test(pasted) ||
-    (pasted.includes('From:') && pasted.includes('Subject:'))
+    (pasted.includes('From:') && pasted.includes('Subject:')) ||
+    pasted.includes('substg1.0') ||
+    pasted.includes('þÿÿÿ')
   )) {
     const parsed = parseRawEml(pasted)
     if (parsed.body && parsed.body !== pasted) {
       e.preventDefault()
-      newNoteForm.value.content = parsed.body
+      newNoteForm.value.content = cleanOleResidue(parsed.body)
       if (!newNoteForm.value.title && parsed.subject) {
         newNoteForm.value.title = parsed.subject
       }
@@ -8690,6 +8786,12 @@ const handleNoteContentPaste = (e: ClipboardEvent) => {
         newNoteForm.value.sender_name = parsed.fromName
         newNoteForm.value.category = 'email'
         newNoteForm.value.analyzeWithAi = true
+      }
+    } else {
+      const cleaned = cleanOleResidue(pasted)
+      if (cleaned !== pasted) {
+        e.preventDefault()
+        newNoteForm.value.content = cleaned
       }
     }
   }
@@ -8699,11 +8801,13 @@ watch(() => newNoteForm.value.content, (val) => {
   if (val && typeof val === 'string' && (
     val.includes('Content-Transfer-Encoding:') ||
     val.includes('Content-Type: text/') ||
-    /^--[a-zA-Z0-9_-]+/m.test(val)
+    /^--[a-zA-Z0-9_-]+/m.test(val) ||
+    val.includes('substg1.0') ||
+    val.includes('þÿÿÿ')
   )) {
     const parsed = parseRawEml(val)
     if (parsed.body && parsed.body !== val) {
-      newNoteForm.value.content = parsed.body
+      newNoteForm.value.content = cleanOleResidue(parsed.body)
       if (!newNoteForm.value.title && parsed.subject) {
         newNoteForm.value.title = parsed.subject
       }
@@ -8712,6 +8816,11 @@ watch(() => newNoteForm.value.content, (val) => {
         newNoteForm.value.sender_name = parsed.fromName
         newNoteForm.value.category = 'email'
         newNoteForm.value.analyzeWithAi = true
+      }
+    } else {
+      const cleaned = cleanOleResidue(val)
+      if (cleaned !== val) {
+        newNoteForm.value.content = cleaned
       }
     }
   }

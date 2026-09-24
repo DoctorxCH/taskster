@@ -1,8 +1,10 @@
 /**
  * Taskster Email Parser Utility
- * Robust RFC 2047 MIME header decoding and Quoted-Printable / Base64 body parsing.
+ * Robust RFC 2047 MIME header decoding, Quoted-Printable / Base64 body parsing,
+ * and Microsoft Outlook .msg (OLE Compound File) binary parsing via SheetJS CFB.
  * Supports UTF-8, ISO-8859-1 (Latin-1), Windows-1252, and European charsets.
  */
+import * as XLSX from 'xlsx'
 
 export function normalizeCharset(charset: string): string {
   const cs = (charset || '').trim().toLowerCase()
@@ -63,6 +65,29 @@ export function decodeBase64ToBytes(base64Str: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i)
   }
   return bytes
+}
+
+/**
+ * Strips raw binary / OLE Compound File residue (e.g. from accidentally pasting or reading raw .msg files)
+ */
+export function cleanOleResidue(text: string): string {
+  if (!text) return ''
+  let cleaned = text
+
+  // Cut at any OLE stream signature, sector markers (þÿÿÿ), or binary garbage
+  const cutIdx = cleaned.search(/(?:substg1\.0|__substg|LZFu|rcpg[0-9]{3,4}|þÿÿÿ|[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]{3,})/i)
+  if (cutIdx >= 0) {
+    cleaned = cleaned.substring(0, cutIdx)
+  }
+
+  // Clean trailing binary noise or sector boundary artifacts (e.g. trailing control characters or corruption)
+  cleaned = cleaned.replace(/[’'"`!Æ§°~^<>@\s]+[a-zA-Z0-9`~:!&]{3,}[^\n]*$/g, '')
+
+  // Trim trailing orphaned email tags or message-id brackets like <ZR0P278MB...
+  cleaned = cleaned.replace(/<[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[^\n>]*>?\s*$/g, '')
+  cleaned = cleaned.replace(/<[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}>\s*$/g, '')
+
+  return cleaned.trim()
 }
 
 /**
@@ -264,13 +289,157 @@ export function parseRawEml(rawText: string): { subject: string; fromName: strin
     }
   }
 
-  // 5. Clean MIME boundaries and header artifacts
+  // 5. Clean MIME boundaries, header artifacts and OLE residue
   body = body
     .replace(/^--[a-zA-Z0-9_-]+[^\n]*\n?/gm, '')
     .replace(/^Content-(?:Type|Transfer-Encoding|Disposition):[^\n]*\n?/gim, '')
     .trim()
 
+  body = cleanOleResidue(body)
+
   return { subject, fromName, fromEmail, body }
+}
+
+/**
+ * Parses an Outlook .msg binary file (OLE Compound File) using SheetJS CFB
+ */
+export function parseMsgFile(buffer: ArrayBuffer | Uint8Array): { subject: string; fromName: string; fromEmail: string; body: string } {
+  try {
+    const cfb = XLSX.CFB.read(new Uint8Array(buffer), { type: 'array' })
+    let subject = ''
+    let body = ''
+    let html = ''
+    let senderName = ''
+    let senderEmail = ''
+
+    for (const entry of (cfb.FileIndex || [])) {
+      if (!entry || !entry.name || !entry.content) continue
+      const rawName = String(entry.name)
+      const cleanName = rawName.replace(/^.*[\\\/]/, '').toUpperCase()
+      const rawContent = entry.content instanceof Uint8Array ? entry.content : new Uint8Array(entry.content)
+
+      const decodeEntry = (isUnicode: boolean): string => {
+        try {
+          if (isUnicode) {
+            return new TextDecoder('utf-16le').decode(rawContent).replace(/\0+$/, '')
+          } else {
+            return new TextDecoder('windows-1252').decode(rawContent).replace(/\0+$/, '')
+          }
+        } catch {
+          return ''
+        }
+      }
+
+      const isTopLevel = !rawName.includes('__recip') && !rawName.includes('__attach') && !rawName.includes('#')
+
+      // PR_SUBJECT: 0037
+      if (cleanName.includes('0037001F') && (!subject || isTopLevel)) {
+        subject = decodeEntry(true)
+      } else if (cleanName.includes('0037001E') && (!subject || isTopLevel)) {
+        subject = decodeEntry(false)
+      }
+
+      // PR_BODY: 1000
+      if (cleanName.includes('1000001F') && (!body || isTopLevel)) {
+        body = decodeEntry(true)
+      } else if (cleanName.includes('1000001E') && (!body || isTopLevel)) {
+        body = decodeEntry(false)
+      }
+
+      // PR_HTML: 1013
+      if (!html && (cleanName.includes('10130102') || cleanName.includes('1013001F') || cleanName.includes('1013001E'))) {
+        if (cleanName.includes('001F')) {
+          html = decodeEntry(true)
+        } else {
+          try {
+            html = new TextDecoder('utf-8', { fatal: true }).decode(rawContent).replace(/\0+$/, '')
+          } catch {
+            html = new TextDecoder('windows-1252').decode(rawContent).replace(/\0+$/, '')
+          }
+        }
+      }
+
+      // PR_SENDER_NAME: 0C1A or 0042
+      if (isTopLevel && (!senderName || cleanName.includes('0C1A'))) {
+        if (cleanName.includes('0C1A001F') || cleanName.includes('0042001F')) {
+          senderName = decodeEntry(true)
+        } else if (cleanName.includes('0C1A001E') || cleanName.includes('0042001E')) {
+          senderName = decodeEntry(false)
+        }
+      }
+
+      // PR_SMTP_ADDRESS: 39FE (Direct SMTP address in Exchange / Outlook)
+      if (cleanName.includes('39FE001F') && isTopLevel) {
+        const val = decodeEntry(true)
+        if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
+      } else if (cleanName.includes('39FE001E') && isTopLevel) {
+        const val = decodeEntry(false)
+        if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
+      }
+
+      // PR_SENDER_EMAIL_ADDRESS: 5D01 or 0065 or 0C1F
+      if (!senderEmail || senderEmail.startsWith('/O=')) {
+        if (cleanName.includes('5D01001F') || cleanName.includes('0065001F') || cleanName.includes('0C1F001F')) {
+          const val = decodeEntry(true)
+          if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
+        } else if (cleanName.includes('5D01001E') || cleanName.includes('0065001E') || cleanName.includes('0C1F001E')) {
+          const val = decodeEntry(false)
+          if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
+        }
+      }
+    }
+
+    if (!body && html) {
+      body = html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .trim()
+    }
+
+    body = cleanOleResidue(body)
+
+    return {
+      subject: decodeMimeHeader(subject),
+      fromName: decodeMimeHeader(senderName),
+      fromEmail: senderEmail,
+      body: body.trim()
+    }
+  } catch (err) {
+    console.warn('XLSX.CFB parseMsgFile error, falling back:', err)
+    return { subject: '', fromName: '', fromEmail: '', body: '' }
+  }
+}
+
+/**
+ * Universal email parser for Files (both .eml and Outlook .msg)
+ */
+export async function parseEmailFile(file: Blob, fileName?: string): Promise<{ subject: string; fromName: string; fromEmail: string; body: string }> {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+
+  // OLE Compound Document signature: D0 CF 11 E0 A1 B1 1A E1
+  const isMsg = (fileName && fileName.toLowerCase().endsWith('.msg')) ||
+    (bytes.length >= 8 && bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0)
+
+  if (isMsg) {
+    const res = parseMsgFile(buffer)
+    if (res && (res.subject || res.body)) {
+      return res
+    }
+  }
+
+  // Fallback to text parsing (with automatic charset detection)
+  const text = await readFileAsText(file)
+  const parsed = parseRawEml(text)
+  parsed.body = cleanOleResidue(parsed.body)
+  return parsed
 }
 
 /**

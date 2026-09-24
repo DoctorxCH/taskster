@@ -259,6 +259,7 @@
 import { ref, computed, watch } from 'vue'
 import { ChevronDown, Search, Check } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
+import { cleanOleResidue } from '~/utils/emailParser'
 
 const props = defineProps<{
   show: boolean
@@ -415,7 +416,8 @@ const handleSubmit = async () => {
   error.value = ''
 
   try {
-    const firstLine = content.value.trim().split('\n')[0].trim()
+    const cleanedContent = cleanOleResidue(content.value.trim())
+    const firstLine = cleanedContent.split('\n')[0].trim()
     const autoTitle = firstLine.substring(0, 60) || `Notiz (${new Date().toLocaleDateString('de-CH')})`
 
     const payload = {
@@ -425,7 +427,7 @@ const handleSubmit = async () => {
       type: 'note',
       category: category.value,
       title: autoTitle,
-      content: content.value.trim(),
+      content: cleanedContent,
       visibility: 'all',
       entry_date: entryDate.value
     }
