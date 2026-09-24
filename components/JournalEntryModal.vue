@@ -457,7 +457,7 @@ import {
   UploadCloud,
   Paperclip
 } from 'lucide-vue-next'
-import { parseRawEml, readFileAsDataUrl } from '~/utils/emailParser'
+import { parseRawEml, readFileAsDataUrl, readFileAsText } from '~/utils/emailParser'
 import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
@@ -607,7 +607,7 @@ const handleDropEml = async (e: Event) => {
   const target = e.target as HTMLInputElement
   if (!target.files || target.files.length === 0) return
   const file = target.files[0]
-  const text = await file.text()
+  const text = await readFileAsText(file)
   const parsed = parseRawEml(text)
 
   form.value.title = parsed.subject || file.name.replace(/\.[^/.]+$/, '')

@@ -1854,26 +1854,60 @@ function parseMimeEmailText($rawText) {
     $fromEmail = '';
     $body = '';
 
-    $decodeMimeHeader = function($str) {
+    $cleanResidualQp = function($text) {
+        if (empty($text) || !is_string($text)) return '';
+        if (preg_match('/=[0-9A-Fa-f]{2}/', $text)) {
+            if (preg_match('/[a-zA-Z0-9]_+[a-zA-Z0-9]/', $text)) {
+                $text = str_replace('_', ' ', $text);
+            }
+            $decoded = quoted_printable_decode($text);
+            if (function_exists('mb_check_encoding') && !@mb_check_encoding($decoded, 'UTF-8')) {
+                if (function_exists('mb_convert_encoding')) {
+                    $decoded = @mb_convert_encoding($decoded, 'UTF-8', 'Windows-1252');
+                }
+            }
+            return $decoded;
+        }
+        return $text;
+    };
+
+    $decodeMimeHeader = function($str) use ($cleanResidualQp) {
+        if (empty($str)) return '';
+        $str = preg_replace('/\r?\n\s+/', ' ', $str);
+        $str = preg_replace('/(\?=\s+=\?)/', '?==?', $str);
+
         if (function_exists('iconv_mime_decode')) {
             $dec = @iconv_mime_decode($str, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
-            if ($dec !== false && $dec !== '') return $dec;
+            if ($dec !== false && $dec !== '') {
+                return $cleanResidualQp($dec);
+            }
         }
-        return preg_replace_callback('/=\?([^?]+)\?([BQ])\?([^?]+)\?=/i', function($m) {
-            $charset = strtolower($m[1]);
-            $encoding = strtoupper($m[2]);
+
+        $decoded = preg_replace_callback('/=\?([^?]+)\?([BQ])\?([^?]+)\?=/i', function($m) {
+            $charset = strtolower(trim($m[1]));
+            $encoding = strtoupper(trim($m[2]));
             $data = $m[3];
             if ($encoding === 'B') {
-                $decoded = base64_decode($data);
-                if (function_exists('mb_convert_encoding') && !str_contains($charset, 'utf')) {
-                    $decoded = @mb_convert_encoding($decoded, 'UTF-8', $charset);
+                $dec = base64_decode(preg_replace('/\s+/', '', $data));
+                if (function_exists('mb_convert_encoding') && stripos($charset, 'utf') === false) {
+                    $dec = @mb_convert_encoding($dec, 'UTF-8', $charset);
+                } elseif (function_exists('mb_check_encoding') && !@mb_check_encoding($dec, 'UTF-8')) {
+                    $dec = @mb_convert_encoding($dec, 'UTF-8', 'Windows-1252');
                 }
-                return $decoded;
+                return $dec;
             } elseif ($encoding === 'Q') {
-                return quoted_printable_decode(str_replace('_', ' ', $data));
+                $dec = quoted_printable_decode(str_replace('_', ' ', $data));
+                if (function_exists('mb_convert_encoding') && stripos($charset, 'utf') === false) {
+                    $dec = @mb_convert_encoding($dec, 'UTF-8', $charset);
+                } elseif (function_exists('mb_check_encoding') && !@mb_check_encoding($dec, 'UTF-8')) {
+                    $dec = @mb_convert_encoding($dec, 'UTF-8', 'Windows-1252');
+                }
+                return $dec;
             }
             return $m[0];
         }, $str);
+
+        return $cleanResidualQp($decoded);
     };
 
     if (preg_match('/^Subject:\s*(.+?)(?=\r?\n[^\s]|$)/im', $rawText, $sm)) {
@@ -1908,11 +1942,24 @@ function parseMimeEmailText($rawText) {
             $isBase64 = stripos($partHeaders, 'base64') !== false;
             $isQP = stripos($partHeaders, 'quoted-printable') !== false;
 
+            $partCharset = 'UTF-8';
+            if (preg_match('/charset=["\']?([^"\'\r\n;]+)["\']?/i', $partHeaders, $cm)) {
+                $partCharset = trim($cm[1]);
+            }
+
             $decoded = $partBody;
             if ($isBase64) {
                 $decoded = base64_decode(preg_replace('/\s+/', '', $partBody));
             } elseif ($isQP) {
                 $decoded = quoted_printable_decode($partBody);
+            } else {
+                $decoded = $cleanResidualQp($partBody);
+            }
+
+            if (function_exists('mb_convert_encoding') && stripos($partCharset, 'utf') === false) {
+                $decoded = @mb_convert_encoding($decoded, 'UTF-8', $partCharset);
+            } elseif (function_exists('mb_check_encoding') && !@mb_check_encoding($decoded, 'UTF-8')) {
+                $decoded = @mb_convert_encoding($decoded, 'UTF-8', 'Windows-1252');
             }
 
             if ($isPlain && empty($plainPart)) {
@@ -1930,19 +1977,41 @@ function parseMimeEmailText($rawText) {
 
     // Single-Part Fallback
     if (empty($body)) {
+        $mainCharset = 'UTF-8';
+        if (preg_match('/charset=["\']?([^"\'\r\n;]+)["\']?/i', $rawText, $cm)) {
+            $mainCharset = trim($cm[1]);
+        }
         if (stripos($rawText, 'Content-Transfer-Encoding: base64') !== false) {
             $split = preg_split('/\r?\n\r?\n/', $rawText, 2);
             if (isset($split[1])) {
                 $decoded = base64_decode(preg_replace('/\s+/', '', $split[1]));
-                if (!empty($decoded)) $body = trim($decoded);
+                if (!empty($decoded)) {
+                    if (function_exists('mb_convert_encoding') && stripos($mainCharset, 'utf') === false) {
+                        $decoded = @mb_convert_encoding($decoded, 'UTF-8', $mainCharset);
+                    } elseif (function_exists('mb_check_encoding') && !@mb_check_encoding($decoded, 'UTF-8')) {
+                        $decoded = @mb_convert_encoding($decoded, 'UTF-8', 'Windows-1252');
+                    }
+                    $body = trim($decoded);
+                }
             }
         } elseif (stripos($rawText, 'Content-Transfer-Encoding: quoted-printable') !== false) {
             $split = preg_split('/\r?\n\r?\n/', $rawText, 2);
             if (isset($split[1])) {
-                $body = trim(quoted_printable_decode($split[1]));
+                $decoded = quoted_printable_decode($split[1]);
+                if (function_exists('mb_convert_encoding') && stripos($mainCharset, 'utf') === false) {
+                    $decoded = @mb_convert_encoding($decoded, 'UTF-8', $mainCharset);
+                } elseif (function_exists('mb_check_encoding') && !@mb_check_encoding($decoded, 'UTF-8')) {
+                    $decoded = @mb_convert_encoding($decoded, 'UTF-8', 'Windows-1252');
+                }
+                $body = trim($decoded);
             }
         } else {
-            $body = trim($rawText);
+            $split = preg_split('/\r?\n\r?\n/', $rawText, 2);
+            $rawContent = isset($split[1]) ? $split[1] : $rawText;
+            if (function_exists('mb_check_encoding') && !@mb_check_encoding($rawContent, 'UTF-8')) {
+                $rawContent = @mb_convert_encoding($rawContent, 'UTF-8', 'Windows-1252');
+            }
+            $body = trim($cleanResidualQp($rawContent));
         }
     }
 
