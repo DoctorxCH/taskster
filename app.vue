@@ -67,6 +67,26 @@
             </NuxtLink>
 
             <NuxtLink
+              to="/calendar"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/calendar') ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+            >
+              <CalendarDays class="w-4 h-4 shrink-0" />
+              <span>{{ $t('common.kalender') }}</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/journal"
+              @click="mobileMenuOpen = false"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/journal') ? 'bg-cyan-50 text-cyan-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+            >
+              <BookOpen class="w-4 h-4 shrink-0" />
+              <span>{{ $t('journal.tab_journal') || 'Projektjournal' }}</span>
+            </NuxtLink>
+
+            <NuxtLink
               v-if="isPlatformAdmin"
               to="/admin"
               @click="mobileMenuOpen = false"
@@ -269,6 +289,16 @@
             >
               <CalendarDays class="w-4 h-4 shrink-0 text-slate-500" />
               <span>{{ $t('common.kalender') }}</span>
+            </NuxtLink>
+
+            <NuxtLink
+              to="/journal"
+              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
+              :class="$route.path.startsWith('/journal') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+              :title="$t('journal.tab_journal') || 'Projektjournal'"
+            >
+              <BookOpen class="w-4 h-4 shrink-0 text-slate-500" />
+              <span>{{ $t('journal.tab_journal') || 'Projektjournal' }}</span>
             </NuxtLink>
 
             <NuxtLink
@@ -520,6 +550,7 @@ import {
   Check,
   X,
   CalendarDays,
+  BookOpen,
   Users,
   CreditCard,
   ClipboardList,

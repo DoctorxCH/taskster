@@ -4544,16 +4544,15 @@
             </div>
           </div>
 
-          <!-- Title -->
+          <!-- Title (optional) -->
           <div>
             <label class="block text-xs font-bold text-slate-800 mb-1">
-              {{ $t('journal.field_title') }} <span class="text-rose-500">*</span>
+              {{ $t('journal.field_title') }} <span class="text-slate-400 font-normal">(optional)</span>
             </label>
             <input
               v-model="newNoteForm.title"
               type="text"
-              required
-              placeholder="z.B. Bauherrenentscheid Farbe Fassade"
+              placeholder="z.B. Bauherrenentscheid Farbe Fassade (oder leer lassen)"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             />
           </div>
@@ -8884,9 +8883,13 @@ const saveNewEntry = async () => {
 }
 
 const saveNewNote = async () => {
-  if (!newNoteForm.value.title?.trim() && !newNoteForm.value.content?.trim()) {
-    journalError.value = 'Bitte gib einen Titel oder Inhalt für die Notiz an.'
+  if (!newNoteForm.value.content?.trim()) {
+    journalError.value = 'Bitte gib einen Inhalt für die Notiz an.'
     return
+  }
+  if (!newNoteForm.value.title?.trim()) {
+    const firstLine = newNoteForm.value.content.trim().split('\n')[0]
+    newNoteForm.value.title = firstLine.substring(0, 60) || 'Notiz'
   }
   savingJournal.value = true
   journalError.value = ''
@@ -8953,10 +8956,17 @@ const deleteJournalEntry = async (entry: any) => {
     confirmText: 'Eintrag löschen',
     danger: true,
     action: async () => {
-      await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
-        method: 'DELETE',
-        headers: authHeaders()
-      })
+      try {
+        await $fetch(`/api/journals/${entry.id}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        })
+      } catch (_) {
+        await $fetch(`/api/projects/${projectId}/journal/${entry.id}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        })
+      }
       journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
       showToast('Journaleintrag erfolgreich gelöscht', 'success')
     }

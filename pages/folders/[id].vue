@@ -72,14 +72,22 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-            <!-- Quick Journal Entry Button -->
+            <!-- Journal & Note Buttons -->
             <button
-              @click="openQuickFolderJournalModal"
-              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
-              title="Projektjournal-Eintrag erfassen"
+              @click="openJournalEntryModal"
+              class="taskster_button px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 shadow-xs"
+              title="Neuen Journaleintrag erfassen"
             >
-              <BookOpen class="w-3.5 h-3.5 text-[#00A3C4]" />
-              <span class="font-semibold">+ PJ erfassen</span>
+              <Plus class="w-3.5 h-3.5" />
+              <span class="font-semibold">+ Journaleintrag</span>
+            </button>
+            <button
+              @click="openJournalNoteModal"
+              class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
+              title="Neue Notiz erfassen"
+            >
+              <FileText class="w-3.5 h-3.5 text-slate-600" />
+              <span class="font-semibold">+ Notiz</span>
             </button>
 
             <!-- More Actions Dropdown -->
@@ -637,69 +645,173 @@
         </div>
 
         <!-- TAB 2: PROJEKTJOURNAL -->
-        <div v-else-if="currentFolderTab === 'journal'" class="space-y-4">
-          <div class="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div v-else-if="currentFolderTab === 'journal'" class="space-y-5">
+          <!-- Top Action Card (Taskster Standard) -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-6 rounded-3xl shadow-xs">
             <div>
-              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <BookOpen class="w-4 h-4 text-[#00A3C4]" />
-                <span>Projektjournal in diesem Ordner</span>
-              </h3>
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">📖</span>
+                <h3 class="text-base font-black text-slate-900">Projektjournal & Logbuch</h3>
+              </div>
               <p class="text-xs text-slate-500 mt-0.5">
-                Alle Journal- und Bautagebucheinträge über die Projekte in «{{ folder.name }}».
+                Chronologischer Ereignisstrom, offizielle Bausitzungen, Notizen und KI-Aktionskarten in «{{ folder.name }}».
               </p>
             </div>
-            <button
-              @click="openQuickFolderJournalModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Neuen PJ-Eintrag erfassen</span>
-            </button>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                @click="openJournalEntryModal"
+                type="button"
+                class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Journaleintrag</span>
+              </button>
+              <button
+                @click="openJournalNoteModal"
+                type="button"
+                class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
+              >
+                <FileText class="w-3.5 h-3.5 text-slate-600" />
+                <span>+ Notiz</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar (2-Tier, comprehensive & clean) -->
+          <div class="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xs">
+            <!-- Tier 1: Main Type Tabs & Search -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+              <div class="flex items-center p-1 bg-slate-100 rounded-2xl space-x-1 w-full md:w-auto overflow-x-auto">
+                <button
+                  type="button"
+                  @click="folderJournalFilterType = 'all'"
+                  class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                  :class="folderJournalFilterType === 'all' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  <span>Alle</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ folderJournals.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  @click="folderJournalFilterType = 'entry'"
+                  class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                  :class="folderJournalFilterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  <span>🏛️ Bausitzungen & Protokolle</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ folderEntriesCount }}</span>
+                </button>
+                <button
+                  type="button"
+                  @click="folderJournalFilterType = 'note'"
+                  class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
+                  :class="folderJournalFilterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                >
+                  <span>✉️ Notizen & E-Mails</span>
+                  <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ folderNotesCount }}</span>
+                </button>
+              </div>
+
+              <!-- Full-text search -->
+              <div class="relative w-full md:w-80">
+                <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-2.5" />
+                <input
+                  v-model="folderJournalSearchQuery"
+                  type="text"
+                  placeholder="Im Journal, E-Mails & Aufgaben suchen..."
+                  class="w-full pl-9 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
+                />
+                <button
+                  v-if="folderJournalSearchQuery"
+                  @click="folderJournalSearchQuery = ''"
+                  class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Tier 2: Category and Project Filter -->
+            <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 text-xs">
+              <select
+                v-model="folderJournalCategoryFilter"
+                class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4]"
+              >
+                <option value="">Alle Kategorien</option>
+                <option value="bausitzung">🏛️ Bausitzung</option>
+                <option value="bautagebuch">📋 Bautagebuch</option>
+                <option value="abnahmebegehung">🔍 Abnahme</option>
+                <option value="wetter_behinderung">⛈️ Wetter & Behinderung</option>
+                <option value="regie">⏱️ Regiearbeit</option>
+                <option value="email">✉️ E-Mail Import</option>
+                <option value="notiz">📝 Notiz</option>
+                <option value="mangel">⚠️ Mangel</option>
+                <option value="allgemein">📖 Allgemein</option>
+              </select>
+
+              <select
+                v-if="projects.length > 0"
+                v-model="folderJournalProjectFilter"
+                class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4]"
+              >
+                <option value="">Alle Projekte im Ordner</option>
+                <option value="none">Nur Ordner-Journal (ohne Projekt)</option>
+                <option v-for="p in projects" :key="p.id" :value="p.id">📁 {{ p.title }}</option>
+              </select>
+            </div>
           </div>
 
           <!-- Empty State Journals -->
-          <div v-if="folderJournals.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
-            <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
-              <BookOpen class="w-6 h-6" />
+          <div v-if="filteredFolderJournals.length === 0" class="text-center py-16 px-6 bg-white border border-dashed border-slate-300 rounded-3xl max-w-lg mx-auto shadow-xs">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-4 border border-cyan-200 shadow-2xs">
+              <BookOpen class="w-7 h-7" />
             </div>
-            <h3 class="text-base font-bold text-slate-900">Noch keine Journal-Einträge vorhanden</h3>
+            <h3 class="text-base font-bold text-slate-900">Keine passenden Journaleinträge gefunden</h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
-              Erfasse Notizen, Mängel oder Baufortschritte direkt für diesen Ordner oder weise sie automatisch einem Projekt zu.
+              Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.
             </p>
-            <button
-              @click="openQuickFolderJournalModal"
-              class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
-            >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Ersten Eintrag erfassen</span>
-            </button>
+            <div class="flex items-center justify-center gap-3">
+              <button
+                @click="openJournalEntryModal"
+                class="taskster_button px-4 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Journaleintrag</span>
+              </button>
+              <button
+                @click="openJournalNoteModal"
+                class="taskster_button_light px-4 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
+              >
+                <FileText class="w-3.5 h-3.5 text-slate-600" />
+                <span>+ Notiz</span>
+              </button>
+            </div>
           </div>
 
           <!-- Journal Entries List -->
-          <div v-else class="space-y-3">
+          <div v-else class="space-y-3.5">
             <div
-              v-for="entry in folderJournals"
+              v-for="entry in filteredFolderJournals"
               :key="entry.id"
-              class="bg-white border border-slate-200 rounded-lg p-5 shadow-2xs hover:shadow-xs transition"
+              class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-xs transition"
             >
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 pb-2.5 border-b border-slate-100">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-xs font-bold text-slate-900">{{ entry.user_name || 'Benutzer' }}</span>
+                  <span class="text-xs font-bold text-slate-900">{{ entry.author_name || entry.user_name || 'Benutzer' }}</span>
                   <span class="text-slate-300">•</span>
                   <span class="text-xs text-slate-500">{{ new Date(entry.entry_date || entry.created_at).toLocaleDateString('de-CH') }}</span>
                   <span
                     class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase"
-                    :class="entry.category === 'mangel' ? 'bg-rose-50 text-rose-700 border-rose-200' : (entry.category === 'baufortschritt' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200')"
+                    :class="entry.category === 'mangel' ? 'bg-rose-50 text-rose-700 border-rose-200' : (entry.category === 'baufortschritt' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (entry.category === 'email' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'))"
                   >
                     {{ entry.category || 'Notiz' }}
                   </span>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <NuxtLink
                     v-if="entry.project_id"
                     :to="`/projects/${entry.project_id}`"
-                    class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[#00A3C4] border border-slate-200 flex items-center gap-1 transition"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 flex items-center gap-1 transition"
                   >
                     <Folder class="w-3 h-3" />
                     <span>Projekt: {{ getProjectTitle(entry.project_id) }}</span>
@@ -708,9 +820,9 @@
                     Ordner-Journal
                   </span>
                   <button
-                    v-if="entry.can_edit || user?.id === folder.owner_id || user?.is_superadmin"
+                    v-if="entry.can_edit || user?.id === folder.owner_id || user?.is_superadmin || entry.author_id === user?.id"
                     @click="deleteFolderJournal(entry.id)"
-                    class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                    class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
                     title="Eintrag löschen"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
@@ -725,6 +837,32 @@
               <p class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
                 {{ entry.content }}
               </p>
+
+              <!-- Attendees -->
+              <div v-if="entry.attendees && entry.attendees.length > 0" class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
+                <span class="text-[11px] font-bold text-slate-500 mr-1">Teilnehmer:</span>
+                <span
+                  v-for="(atd, atdIdx) in entry.attendees"
+                  :key="atdIdx"
+                  class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-medium"
+                  :class="atd.present ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-50 border-slate-200 text-slate-400 line-through'"
+                >
+                  {{ atd.name }}{{ atd.role ? ` (${atd.role})` : '' }}
+                </span>
+              </div>
+
+              <!-- Attachments -->
+              <div v-if="entry.attachments && entry.attachments.length > 0" class="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+                <div
+                  v-for="(att, attIdx) in entry.attachments"
+                  :key="attIdx"
+                  class="flex items-center space-x-1 text-xs px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium"
+                >
+                  <Paperclip class="w-3.5 h-3.5 text-slate-400" />
+                  <span>{{ att.file_name }}</span>
+                  <span class="text-[10px] text-slate-400">({{ Math.round(att.file_size / 1024) }} KB)</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2565,109 +2703,23 @@
       </div>
     </div>
 
-    <!-- Modal: Quick Journal Entry -->
-    <div v-if="showQuickJournalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl p-6 sm:p-7 space-y-4">
-        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen class="w-4 h-4 text-[#00A3C4]" />
-              <span>Journal-Eintrag erfassen</span>
-            </h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Ordner: <strong class="text-slate-800">{{ folder?.name }}</strong>
-            </p>
-          </div>
-          <button @click="showQuickJournalModal = false" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
-        </div>
+    <!-- Modals: JournalEntryModal and JournalNoteModal -->
+    <JournalEntryModal
+      :show="showJournalEntryModal"
+      :folder-id="folderId"
+      :projects="projects"
+      :contacts="folderContacts"
+      @close="showJournalEntryModal = false"
+      @saved="onFolderJournalSaved"
+    />
 
-        <div v-if="quickJournalError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
-          {{ quickJournalError }}
-        </div>
-
-        <form @submit.prevent="saveQuickJournal" class="space-y-3.5">
-          <!-- Project Assignment -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">
-              Projekt-Zuweisung
-            </label>
-            <select
-              v-model="quickJournalProjectId"
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
-            >
-              <option value="auto">✨ Automatisch zuweisen (anhand Text/Titel)</option>
-              <optgroup v-if="projects.length > 0" label="Spezifisches Projekt auswählen">
-                <option v-for="p in projects" :key="p.id" :value="p.id">
-                  📁 {{ p.title }}
-                </option>
-              </optgroup>
-              <option value="">General (Nur Ordner-Journal)</option>
-            </select>
-            <p class="text-[11px] text-slate-500 mt-1">
-              {{ quickJournalProjectId === 'auto' ? 'Das System ordnet den Eintrag automatisch dem passenden Projekt zu (z.B. nach Kundennummer, Adresse oder Name im Text).' : '' }}
-            </p>
-          </div>
-
-          <!-- Category -->
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Kategorie</label>
-              <select
-                v-model="quickJournalCategory"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
-              >
-                <option value="notiz">Notiz</option>
-                <option value="baufortschritt">Baufortschritt</option>
-                <option value="mangel">Mangel / Beanstandung</option>
-                <option value="abnahme">Abnahme / Übergabe</option>
-                <option value="telefonat">Telefonat / Besprechung</option>
-                <option value="allgemein">Allgemein</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Betreff / Titel</label>
-              <input
-                v-model="quickJournalTitle"
-                type="text"
-                placeholder="z.B. Bauabnahme Keller"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
-              />
-            </div>
-          </div>
-
-          <!-- Content -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">
-              Inhalt / Bericht <span class="text-rose-500">*</span>
-            </label>
-            <textarea
-              v-model="quickJournalContent"
-              required
-              rows="4"
-              placeholder="Bericht, Feststellungen, Beschlüsse oder Notizen..."
-              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4] resize-y"
-            ></textarea>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              @click="showQuickJournalModal = false"
-              class="taskster_button_light px-5 text-xs h-[38px] rounded-lg cursor-pointer"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              :disabled="savingQuickJournal || !quickJournalContent.trim()"
-              class="taskster_button px-5 text-xs h-[38px] rounded-lg cursor-pointer"
-            >
-              <span>{{ savingQuickJournal ? 'Wird gespeichert...' : 'Eintrag speichern' }}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <JournalNoteModal
+      :show="showJournalNoteModal"
+      :folder-id="folderId"
+      :projects="projects"
+      @close="showJournalNoteModal = false"
+      @saved="onFolderJournalSaved"
+    />
 
     <!-- Modal: Add / Edit Custom Field & Standard Field Logic (Unlocked) -->
     <div v-if="showFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
@@ -3353,7 +3405,9 @@ import {
   Globe,
   MapPin,
   Download,
-  StickyNote
+  StickyNote,
+  FileText,
+  Paperclip
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { CONSTRUCTION_TEMPLATES, TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
@@ -3537,24 +3591,72 @@ const removeImportSection = (idx: number) => {
 
 // Quick Journal state & methods
 const showQuickJournalModal = ref(false)
-const quickJournalProjectId = ref('auto')
-const quickJournalTitle = ref('')
-const quickJournalContent = ref('')
-const quickJournalCategory = ref('notiz')
-const quickJournalError = ref('')
-const savingQuickJournal = ref(false)
+const showJournalEntryModal = ref(false)
+const showJournalNoteModal = ref(false)
 
-const openQuickFolderJournalModal = () => {
-  quickJournalProjectId.value = 'auto'
-  quickJournalTitle.value = ''
-  quickJournalContent.value = ''
-  quickJournalCategory.value = 'notiz'
-  quickJournalError.value = ''
-  showQuickJournalModal.value = true
+const openJournalEntryModal = () => {
+  showJournalEntryModal.value = true
+}
+
+const openJournalNoteModal = () => {
+  showJournalNoteModal.value = true
+}
+
+const onFolderJournalSaved = async () => {
+  await loadFolderJournals()
+  await loadFolderData()
+  showToast('Journal-Eintrag erfolgreich gespeichert', 'success')
 }
 
 const folderJournals = ref<any[]>([])
 const loadingFolderJournals = ref(false)
+
+const folderJournalFilterType = ref<'all' | 'entry' | 'note'>('all')
+const folderJournalSearchQuery = ref('')
+const folderJournalCategoryFilter = ref('')
+const folderJournalProjectFilter = ref('')
+
+const folderEntriesCount = computed(() => {
+  return folderJournals.value.filter(j => j.type === 'entry' || (j.category && !['notiz', 'note'].includes(j.category))).length
+})
+
+const folderNotesCount = computed(() => {
+  return folderJournals.value.filter(j => j.type === 'note' || j.category === 'notiz' || j.category === 'note' || j.category === 'email').length
+})
+
+const filteredFolderJournals = computed(() => {
+  return folderJournals.value.filter(j => {
+    // Type filter
+    if (folderJournalFilterType.value === 'entry') {
+      if (j.type === 'note' && (j.category === 'notiz' || j.category === 'note')) return false
+    } else if (folderJournalFilterType.value === 'note') {
+      if (j.type === 'entry' && !['notiz', 'note', 'email'].includes(j.category)) return false
+    }
+
+    // Category filter
+    if (folderJournalCategoryFilter.value && j.category !== folderJournalCategoryFilter.value) {
+      return false
+    }
+
+    // Project filter
+    if (folderJournalProjectFilter.value) {
+      if (folderJournalProjectFilter.value === 'none' && j.project_id) return false
+      if (folderJournalProjectFilter.value !== 'none' && j.project_id !== folderJournalProjectFilter.value) return false
+    }
+
+    // Search query
+    if (folderJournalSearchQuery.value.trim()) {
+      const q = folderJournalSearchQuery.value.toLowerCase().trim()
+      const tMatch = (j.title || '').toLowerCase().includes(q)
+      const cMatch = (j.content || '').toLowerCase().includes(q)
+      const uMatch = (j.author_name || j.user_name || '').toLowerCase().includes(q)
+      const pMatch = (j.project_title || getProjectTitle(j.project_id)).toLowerCase().includes(q)
+      return tMatch || cMatch || uMatch || pMatch
+    }
+
+    return true
+  })
+})
 
 const loadFolderJournals = async () => {
   loadingFolderJournals.value = true
@@ -3574,32 +3676,6 @@ const getProjectTitle = (pId?: string) => {
   if (!pId) return ''
   const p = projects.value.find(item => item.id === pId)
   return p ? p.title : pId
-}
-
-const saveQuickJournal = async () => {
-  if (!quickJournalContent.value.trim()) return
-  savingQuickJournal.value = true
-  quickJournalError.value = ''
-  try {
-    await $fetch('/api/journals', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: {
-        folder_id: folderId,
-        project_id: quickJournalProjectId.value === 'auto' ? 'auto' : (quickJournalProjectId.value || null),
-        title: quickJournalTitle.value.trim(),
-        content: quickJournalContent.value.trim(),
-        category: quickJournalCategory.value
-      }
-    })
-    showQuickJournalModal.value = false
-    await loadFolderJournals()
-    await loadFolderData()
-  } catch (err: any) {
-    quickJournalError.value = err.data?.statusMessage || err.message || 'Journal-Eintrag konnte nicht gespeichert werden'
-  } finally {
-    savingQuickJournal.value = false
-  }
 }
 
 const deleteFolderJournal = async (journalId: string) => {
