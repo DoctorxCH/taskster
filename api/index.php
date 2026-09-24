@@ -1841,6 +1841,112 @@ function buildInviteBody($organizerName, $title, $startAt, $endAt, $location = n
 }
 
 /**
+ * Taskster Intelligent Multi-Criteria Project Matching Engine (PHP)
+ * Scores projects based on Auftragsnummer, SID, Street, Address, and Title.
+ */
+function matchProjectByTextPhp(array $projects, string $text) {
+    if (empty($projects) || empty(trim($text))) return null;
+    $normalizedText = mb_strtolower($text);
+
+    // 1. Numbers 6-10 digits (e.g. 100312101 or 0100312101)
+    preg_match_all('/\b\d{6,10}\b/', $text, $numMatches);
+    $numberTokens = array_map(function($n) { return ltrim($n, '0'); }, $numMatches[0] ?? []);
+
+    // 2. SIDs (e.g. SID007000GPHCBA)
+    preg_match_all('/\bSID[0-9A-Z]{4,}\b/i', $text, $sidMatches);
+    $sidTokens = array_map('strtoupper', $sidMatches[0] ?? []);
+
+    $bestCandidate = null;
+
+    foreach ($projects as $prj) {
+        $score = 0;
+        $matchedCriteria = [];
+        $pTitle = mb_strtolower(trim($prj['title'] ?? ''));
+        $pTitleNorm = ltrim($pTitle, '0');
+
+        $cd = [];
+        if (!empty($prj['custom_data'])) {
+            $cd = is_string($prj['custom_data']) ? json_decode($prj['custom_data'], true) : $prj['custom_data'];
+            if (!is_array($cd)) $cd = [];
+        }
+
+        // 1. Auftragsnummer / Kundenreferenz (Score: 100)
+        $rawRef = trim((string)($cd['kundenreferenz'] ?? $cd['kundenreferenz_oder_projekt_id'] ?? $cd['order_number'] ?? $cd['auftragsnummer'] ?? ''));
+        $cleanRef = ltrim($rawRef, '0');
+
+        foreach ($numberTokens as $num) {
+            if ($cleanRef !== '' && ($cleanRef === $num || strpos($cleanRef, $num) !== false)) {
+                $score += 100;
+                $matchedCriteria[] = "Auftragsnummer ($rawRef)";
+                break;
+            }
+            if ($num !== '' && strpos($pTitleNorm, $num) !== false) {
+                $score += 100;
+                $matchedCriteria[] = "Projektnummer ($num)";
+                break;
+            }
+        }
+
+        // 2. SID (Score: 100)
+        $pSid = strtoupper(trim((string)($cd['sid'] ?? $cd['service_id'] ?? $cd['leitungs_id'] ?? '')));
+        foreach ($sidTokens as $sid) {
+            if ($pSid !== '' && ($pSid === $sid || strpos($pSid, $sid) !== false)) {
+                $score += 100;
+                $matchedCriteria[] = "Service-ID ($sid)";
+                break;
+            }
+            if ($sid !== '' && strpos(strtoupper($pTitle), $sid) !== false) {
+                $score += 100;
+                $matchedCriteria[] = "Service-ID im Titel ($sid)";
+                break;
+            }
+        }
+
+        // 3. Strasse & Hausnummer (Score: 80)
+        $rawStrasse = mb_strtolower(trim((string)($cd['strasse'] ?? $cd['street'] ?? '')));
+        if (mb_strlen($rawStrasse) >= 4 && mb_strpos($normalizedText, $rawStrasse) !== false) {
+            $score += 80;
+            $matchedCriteria[] = "Strasse ({$cd['strasse']})";
+        }
+
+        $rawAdresse = mb_strtolower(trim((string)($cd['adresse'] ?? $cd['address'] ?? '')));
+        if (mb_strlen($rawAdresse) >= 5 && mb_strpos($normalizedText, $rawAdresse) !== false) {
+            $score += 70;
+            $matchedCriteria[] = "Adresse ({$cd['adresse']})";
+        }
+
+        // 4. Ortschaft (Score: 10 points only)
+        $rawOrt = mb_strtolower(trim((string)($cd['ort'] ?? $cd['city'] ?? '')));
+        if (mb_strlen($rawOrt) >= 3 && mb_strpos($normalizedText, $rawOrt) !== false) {
+            $score += 10;
+            $matchedCriteria[] = "Ort ({$cd['ort']})";
+        }
+
+        // 5. Projekttitel Substring (Score: 60)
+        if ($pTitle !== '') {
+            $cleanTitle = trim(preg_replace('/^[\d\s\-_.]+/', '', $pTitle));
+            if (mb_strlen($cleanTitle) >= 4 && mb_strpos($normalizedText, $cleanTitle) !== false) {
+                $score += 60;
+                $matchedCriteria[] = "Projektname ($cleanTitle)";
+            }
+        }
+
+        if (!$bestCandidate || $score > $bestCandidate['score']) {
+            $bestCandidate = [
+                'project' => $prj,
+                'score' => $score,
+                'matchedCriteria' => $matchedCriteria
+            ];
+        }
+    }
+
+    if ($bestCandidate && $bestCandidate['score'] >= 50) {
+        return $bestCandidate;
+    }
+    return null;
+}
+
+/**
  * Parst und dekodiert rohen E-Mail-Text (MIME Multipart, Base64, Quoted-Printable, RFC 2047 Headers).
  * Verhindert WAF-Blockaden (HTTP 403) und decodiert Base64-Inhalte zuverlässig in UTF-8.
  */
@@ -4916,37 +5022,34 @@ try {
         }
 
         // Auto assignment if projectId is empty or 'auto':
-        if ((empty($projectId) || $projectId === 'auto') && $folderId) {
-            $pStmt = $db->prepare("SELECT id, title, custom_data FROM projects WHERE folder_id = ?");
-            $pStmt->execute([$folderId]);
-            $folderProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
-            $fullText = mb_strtolower($title . ' ' . $content);
-            $matchedPrjId = null;
-            foreach ($folderProjects as $fp) {
-                $t = mb_strtolower(trim($fp['title']));
-                if ($t !== '' && mb_strpos($fullText, $t) !== false) {
-                    $matchedPrjId = $fp['id'];
-                    break;
-                }
-                if (!empty($fp['custom_data'])) {
-                    $cd = is_string($fp['custom_data']) ? json_decode($fp['custom_data'], true) : $fp['custom_data'];
-                    if (is_array($cd)) {
-                        foreach ($cd as $val) {
-                            $vStr = mb_strtolower(trim((string)$val));
-                            if (mb_strlen($vStr) >= 3 && mb_strpos($fullText, $vStr) !== false) {
-                                $matchedPrjId = $fp['id'];
-                                break 2;
-                            }
-                        }
-                    }
-                }
-            }
-            if ($matchedPrjId) {
-                $projectId = $matchedPrjId;
+        if (empty($projectId) || $projectId === 'auto') {
+            if ($folderId) {
+                $pStmt = $db->prepare("SELECT id, title, folder_id, custom_data FROM projects WHERE folder_id = ?");
+                $pStmt->execute([$folderId]);
+                $candidateProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
+                $pStmt = $db->prepare("
+                    SELECT p.id, p.title, p.folder_id, p.custom_data FROM projects p
+                    JOIN project_folders pf ON pf.id = p.folder_id
+                    WHERE pf.company_id = ? OR pf.owner_id = ?
+                ");
+                $pStmt->execute([$user['company_id'] ?? '', $user['id']]);
+                $candidateProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            $matched = matchProjectByTextPhp($candidateProjects, $title . ' ' . $content);
+            if ($matched) {
+                $projectId = $matched['project']['id'];
+                if (!$folderId && !empty($matched['project']['folder_id'])) {
+                    $folderId = $matched['project']['folder_id'];
+                }
+            } elseif ($folderId) {
                 $defP = $db->prepare("SELECT id FROM projects WHERE folder_id = ? ORDER BY is_default DESC, created_at ASC LIMIT 1");
                 $defP->execute([$folderId]);
                 $projectId = $defP->fetchColumn() ?: null;
+            } else {
+                // In global scope with no high-confidence project match, keep projectId null
+                $projectId = null;
             }
         }
 
@@ -5104,8 +5207,8 @@ try {
     if ((preg_match('#^projects/([^/]+)/journal/parse-email$#', $path, $m) || $path === 'journals/parse-email') && $method === 'POST') {
         $user = requireAuth();
         $projectId = !empty($m[1]) ? $m[1] : ($body['project_id'] ?? '');
-        if ($projectId) {
-            evaluateProjectAccess($user, $projectId, 'write');
+        if ($projectId === 'auto') {
+            $projectId = '';
         }
 
         $emailText = trim($body['email_text'] ?? $body['content'] ?? '');
@@ -5150,6 +5253,33 @@ try {
             $emailSubject = trim($subMatch[1]);
         }
 
+        // Falls kein Projekt angegeben oder 'auto': automatische Projekt-Erkennung anhand E-Mail-Inhalt & Betreff
+        if (empty($projectId)) {
+            $folderId = !empty($body['folder_id']) ? trim($body['folder_id']) : null;
+            if ($folderId) {
+                $pStmt = $db->prepare("SELECT id, title, folder_id, custom_data FROM projects WHERE folder_id = ?");
+                $pStmt->execute([$folderId]);
+                $candidateProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $pStmt = $db->prepare("
+                    SELECT p.id, p.title, p.folder_id, p.custom_data FROM projects p
+                    JOIN project_folders pf ON pf.id = p.folder_id
+                    WHERE pf.company_id = ? OR pf.owner_id = ?
+                ");
+                $pStmt->execute([$user['company_id'] ?? '', $user['id']]);
+                $candidateProjects = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            $matched = matchProjectByTextPhp($candidateProjects, $emailSubject . ' ' . $emailText);
+            if ($matched) {
+                $projectId = $matched['project']['id'];
+            }
+        }
+
+        if ($projectId) {
+            evaluateProjectAccess($user, $projectId, 'write');
+        }
+
         // Kontakt in contacts prüfen/erstellen
         if (!empty($senderEmail)) {
             $companyId = $user['company_id'] ?? null;
@@ -5175,7 +5305,7 @@ try {
                     $newContactId,
                     $user['id'],
                     $companyId,
-                    $projectId,
+                    $projectId ?: null,
                     $firstName,
                     $lastName,
                     $senderCompany,
@@ -5189,7 +5319,7 @@ try {
         // 2. Projektkontext & verknüpfte Aufgabe laden
         $linkedTaskId = !empty($body['task_id']) ? $body['task_id'] : null;
         $targetJournalId = !empty($body['journal_id']) ? $body['journal_id'] : (!empty($body['entry_id']) ? $body['entry_id'] : null);
-        if ($targetJournalId && empty($linkedTaskId)) {
+        if ($targetJournalId && empty($linkedTaskId) && $projectId) {
             $jCheckTask = $db->prepare("SELECT task_id FROM project_journals WHERE id = ? AND project_id = ?");
             $jCheckTask->execute([$targetJournalId, $projectId]);
             $foundTaskId = $jCheckTask->fetchColumn();
@@ -5198,13 +5328,17 @@ try {
             }
         }
 
-        $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
-        $lStmt->execute([$projectId]);
-        $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+        $sections = [];
+        $existingTasks = [];
+        if ($projectId) {
+            $lStmt = $db->prepare("SELECT id, title FROM lists WHERE project_id = ? ORDER BY sort_order ASC");
+            $lStmt->execute([$projectId]);
+            $sections = $lStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, t.custom_data FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
-        $tStmt->execute([$projectId]);
-        $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+            $tStmt = $db->prepare("SELECT t.id, t.list_id, t.title, t.description, t.status, t.due_date, t.custom_data FROM tasks t JOIN lists l ON l.id = t.list_id WHERE l.project_id = ?");
+            $tStmt->execute([$projectId]);
+            $existingTasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+        }
 
         // Intelligente automatische Aufgabenerkennung anhand Adresse, Name, Kundennummer oder Feldern
         if (!$linkedTaskId && !empty($existingTasks)) {
@@ -5414,7 +5548,7 @@ try {
         ")->execute([
             $jrnId,
             $user['company_id'] ?? null,
-            $projectId,
+            $projectId ?: null,
             $user['id'],
             $user['id'],
             $targetCategory,

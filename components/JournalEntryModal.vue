@@ -128,7 +128,19 @@
                 </div>
               </div>
             </div>
-            <p v-if="selectedProjectId === 'auto'" class="text-[11px] text-slate-500 mt-1">
+
+            <!-- Live Match Confirmation Badge -->
+            <div v-if="autoMatchedProjectInfo" class="mt-1.5 p-2 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-950 flex items-center justify-between animate-fade-in shadow-2xs">
+              <div class="flex items-center gap-1.5 truncate">
+                <span class="text-sm">✨</span>
+                <span class="font-bold truncate">Projekt erkannt: {{ autoMatchedProjectInfo.title }}</span>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-200/70 text-cyan-900 border border-cyan-300/50 shrink-0 ml-2">
+                {{ autoMatchedProjectInfo.reasons.join(' • ') }}
+              </span>
+            </div>
+
+            <p v-else-if="selectedProjectId === 'auto'" class="text-[11px] text-slate-500 mt-1">
               Das System ordnet den Eintrag automatisch dem passenden Projekt zu (z.B. nach Kundennummer, Adresse oder Name im Text).
             </p>
           </div>
@@ -500,6 +512,7 @@ import {
   Paperclip
 } from 'lucide-vue-next'
 import { parseEmailFile, parseRawEml, readFileAsDataUrl, cleanOleResidue } from '~/utils/emailParser'
+import { matchProjectByText } from '~/utils/projectMatcher'
 import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
@@ -539,6 +552,7 @@ const error = ref('')
 const isDraggingEml = ref(false)
 const dragCounter = ref(0)
 const loadedEmailFileName = ref('')
+const autoMatchedProjectInfo = ref<{ title: string; score: number; reasons: string[] } | null>(null)
 
 const selectedContactToAdd = ref('')
 const newAttendeeName = ref('')
@@ -569,6 +583,7 @@ watch(() => props.show, (newVal) => {
     error.value = ''
     autoTaskMatch.value = ''
     loadedEmailFileName.value = ''
+    autoMatchedProjectInfo.value = null
     isDraggingEml.value = false
     dragCounter.value = 0
     form.value = {
@@ -717,6 +732,23 @@ const processEmailFile = async (file: File) => {
       file_size: file.size,
       file_path: base64
     })
+
+    // Instant Live Matching against all available projects
+    if (!props.projectId && (selectedProjectId.value === 'auto' || !selectedProjectId.value)) {
+      const candidateProjects = props.projects || []
+      const match = matchProjectByText(candidateProjects, (form.value.title + ' ' + form.value.content))
+      if (match) {
+        selectedProjectId.value = match.project.id
+        autoMatchedProjectInfo.value = {
+          title: match.project.title,
+          reasons: match.matchedCriteria,
+          score: match.score
+        }
+        if (match.project.folder_id && !selectedFolderId.value) {
+          selectedFolderId.value = match.project.folder_id
+        }
+      }
+    }
   } catch (err) {
     console.error('Fehler beim Verarbeiten der E-Mail Datei:', err)
   }

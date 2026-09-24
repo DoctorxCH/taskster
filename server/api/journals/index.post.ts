@@ -3,6 +3,7 @@ import { requireAuth } from '~/server/utils/auth'
 import { evaluateProjectAccess, evaluateFolderAccess } from '~/server/utils/permissions'
 import { randomUUID } from 'crypto'
 import { cleanOleResidue } from '~/utils/emailParser'
+import { matchProjectByText } from '~/utils/projectMatcher'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
@@ -40,60 +41,34 @@ export default defineEventHandler(async (event) => {
   category = category || (type === 'note' ? 'notiz' : 'allgemein')
   visibility = ['only_me', 'group', 'company', 'all'].includes(visibility) ? visibility : 'all'
 
-  // Auto project assignment if project_id is 'auto' or empty with folder_id
-  if ((!project_id || project_id === 'auto') && folder_id) {
-    const folderProjects = db.prepare(`
-      SELECT id, title, custom_data FROM projects WHERE folder_id = ?
-    `).all(folder_id) as any[]
-
-    const searchTarget = (title + ' ' + content).toLowerCase()
-    let matchedId: string | null = null
-
-    for (const fp of folderProjects) {
-      const pTitle = (fp.title || '').trim().toLowerCase()
-      if (pTitle && searchTarget.includes(pTitle)) {
-        matchedId = fp.id
-        break
-      }
-      if (fp.custom_data) {
-        try {
-          const cd = typeof fp.custom_data === 'string' ? JSON.parse(fp.custom_data) : fp.custom_data
-          if (cd && typeof cd === 'object') {
-            for (const val of Object.values(cd)) {
-              const valStr = String(val).trim().toLowerCase()
-              if (valStr.length >= 3 && searchTarget.includes(valStr)) {
-                matchedId = fp.id
-                break
-              }
-            }
-          }
-        } catch (_) {}
-      }
-      if (matchedId) break
+  // Auto project assignment if project_id is 'auto' or empty
+  if (!project_id || project_id === 'auto') {
+    let candidateProjects: any[] = []
+    if (folder_id) {
+      candidateProjects = db.prepare(`
+        SELECT id, title, folder_id, custom_data FROM projects WHERE folder_id = ?
+      `).all(folder_id) as any[]
+    } else {
+      candidateProjects = db.prepare(`
+        SELECT p.id, p.title, p.folder_id, p.custom_data FROM projects p
+        JOIN project_folders pf ON pf.id = p.folder_id
+        WHERE pf.company_id = ? OR pf.owner_id = ?
+      `).all(user.company_id || '', user.id) as any[]
     }
 
-    if (matchedId) {
-      project_id = matchedId
-    } else {
+    const match = matchProjectByText(candidateProjects, title + ' ' + content)
+    if (match) {
+      project_id = match.project.id
+      if (!folder_id && match.project.folder_id) {
+        folder_id = match.project.folder_id
+      }
+    } else if (folder_id) {
       // Pick default project or first project in folder, or keep null
       const defProj = db.prepare(`SELECT id FROM projects WHERE folder_id = ? ORDER BY is_default DESC, created_at ASC LIMIT 1`).get(folder_id) as any
       project_id = defProj?.id || null
-    }
-  }
-
-  // If still no project_id and no folder_id, find or fallback to user default
-  if (!project_id && !folder_id) {
-    const existing = db.prepare(`
-      SELECT p.id, p.folder_id FROM projects p
-      JOIN project_folders pf ON pf.id = p.folder_id
-      WHERE pf.company_id = ? OR pf.owner_id = ?
-      ORDER BY p.is_default DESC, p.created_at ASC
-      LIMIT 1
-    `).get(user.company_id || '', user.id) as any
-
-    if (existing?.id) {
-      project_id = existing.id
-      folder_id = existing.folder_id
+    } else {
+      // No project match in global scope: reset 'auto' to null so it doesn't fail permission check
+      project_id = null
     }
   }
 

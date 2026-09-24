@@ -312,9 +312,11 @@ export function parseMsgFile(buffer: ArrayBuffer | Uint8Array): { subject: strin
     let senderName = ''
     let senderEmail = ''
 
-    for (const entry of (cfb.FileIndex || [])) {
+    for (let i = 0; i < (cfb.FileIndex || []).length; i++) {
+      const entry = cfb.FileIndex[i]
       if (!entry || !entry.name || !entry.content) continue
       const rawName = String(entry.name)
+      const fullPath = (cfb.FullPaths && cfb.FullPaths[i]) ? String(cfb.FullPaths[i]) : rawName
       const cleanName = rawName.replace(/^.*[\\\/]/, '').toUpperCase()
       const rawContent = entry.content instanceof Uint8Array ? entry.content : new Uint8Array(entry.content)
 
@@ -330,7 +332,8 @@ export function parseMsgFile(buffer: ArrayBuffer | Uint8Array): { subject: strin
         }
       }
 
-      const isTopLevel = !rawName.includes('__recip') && !rawName.includes('__attach') && !rawName.includes('#')
+      // Check whether this stream is in the root message, NOT inside a recipient or attachment folder
+      const isTopLevel = !fullPath.includes('__recip') && !fullPath.includes('__attach') && !fullPath.includes('#') && (fullPath.split('/').length <= 2)
 
       // PR_SUBJECT: 0037
       if (cleanName.includes('0037001F') && (!subject || isTopLevel)) {
@@ -360,31 +363,32 @@ export function parseMsgFile(buffer: ArrayBuffer | Uint8Array): { subject: strin
       }
 
       // PR_SENDER_NAME: 0C1A or 0042
-      if (isTopLevel && (!senderName || cleanName.includes('0C1A'))) {
+      if (isTopLevel) {
         if (cleanName.includes('0C1A001F') || cleanName.includes('0042001F')) {
-          senderName = decodeEntry(true)
+          const val = decodeEntry(true)
+          if (val) senderName = val
         } else if (cleanName.includes('0C1A001E') || cleanName.includes('0042001E')) {
-          senderName = decodeEntry(false)
+          const val = decodeEntry(false)
+          if (val) senderName = val
         }
       }
 
-      // PR_SMTP_ADDRESS: 39FE (Direct SMTP address in Exchange / Outlook)
-      if (cleanName.includes('39FE001F') && isTopLevel) {
-        const val = decodeEntry(true)
-        if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
-      } else if (cleanName.includes('39FE001E') && isTopLevel) {
-        const val = decodeEntry(false)
-        if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
-      }
-
-      // PR_SENDER_EMAIL_ADDRESS: 5D01 or 0065 or 0C1F
-      if (!senderEmail || senderEmail.startsWith('/O=')) {
-        if (cleanName.includes('5D01001F') || cleanName.includes('0065001F') || cleanName.includes('0C1F001F')) {
+      // PR_SMTP_ADDRESS / PR_SENDER_EMAIL: 39FE, 5D01, 0065, 0C1F (STRICTLY TOP-LEVEL ONLY)
+      if (isTopLevel) {
+        if (cleanName.includes('39FE001F')) {
           const val = decodeEntry(true)
-          if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
-        } else if (cleanName.includes('5D01001E') || cleanName.includes('0065001E') || cleanName.includes('0C1F001E')) {
+          if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
+        } else if (cleanName.includes('39FE001E')) {
           const val = decodeEntry(false)
-          if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
+          if (val && val.includes('@') && !val.startsWith('/')) senderEmail = val
+        } else if (!senderEmail || senderEmail.startsWith('/O=')) {
+          if (cleanName.includes('5D01001F') || cleanName.includes('0065001F') || cleanName.includes('0C1F001F')) {
+            const val = decodeEntry(true)
+            if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
+          } else if (cleanName.includes('5D01001E') || cleanName.includes('0065001E') || cleanName.includes('0C1F001E')) {
+            const val = decodeEntry(false)
+            if (val && val.includes('@') && !val.startsWith('/O=')) senderEmail = val
+          }
         }
       }
     }
