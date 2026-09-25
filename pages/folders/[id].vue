@@ -2,7 +2,7 @@
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
     <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
-      Lade Ordnerdetails und Projekte...
+      {{ $t('folders.lade_ordnerdetails_und_projekte') }}
     </div>
 
     <div v-else-if="folder" class="space-y-6">
@@ -12,13 +12,13 @@
         <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
           <NuxtLink to="/dashboard" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1 font-medium">
             <LayoutDashboard class="w-3.5 h-3.5" />
-            <span>Dashboard</span>
+            <span>{{ $t('common.dashboard') }}</span>
           </NuxtLink>
           <span>/</span>
           <span class="text-slate-800 font-semibold flex items-center gap-1">
             <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
             <Folder v-else class="w-3.5 h-3.5 text-[#00A3C4]" />
-            <span>{{ folder?.name || 'Ordner' }}</span>
+            <span>{{ folder?.name || $t('folders.ordner_badge') }}</span>
           </span>
         </div>
 
@@ -32,13 +32,13 @@
               </div>
               <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ folder.name }}</h1>
               <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200 ml-1">
-                {{ projects.length }} {{ projects.length === 1 ? 'Projekt' : 'Projekte' }}
+                {{ projects.length }} {{ projects.length === 1 ? $t('folders.projekt') : $t('folders.projekte') }}
               </span>
             </div>
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>Owner: <strong class="text-slate-900 font-semibold">{{ folder.owner_name }}</strong></span>
+              <span>{{ $t('folders.owner') }} <strong class="text-slate-900 font-semibold">{{ folder.owner_name }}</strong></span>
               <span v-if="user?.id === folder.owner_id" class="px-2 py-0.5 rounded bg-cyan-50 text-[#00A3C4] border border-cyan-200 text-xs font-semibold">
-                Du (Owner)
+                {{ $t('folders.du_owner') }}
               </span>
               <span
                 class="px-2 py-0.5 rounded border text-xs font-semibold flex items-center space-x-1"
@@ -46,7 +46,7 @@
               >
                 <Building2 v-if="folder.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
                 <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                <span>{{ folder.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                <span>{{ folder.visibility === 'company' ? $t('common.unternehmen') : $t('folders.privat') }}</span>
               </span>
               <span v-if="folder.company_name" class="text-slate-700 font-medium">• {{ folder.company_name }}</span>
               <span>• {{ new Date(folder.created_at).toLocaleDateString('de-CH') }}</span>
@@ -57,16 +57,16 @@
                 :title="`Projektordner-Vorlage: ${currentFolderTemplate.name}. Klicken zum Anpassen.`"
               >
                 <BookOpen class="w-3.5 h-3.5 text-[#00A3C4]" />
-                <span>Vorlage: <strong>{{ currentFolderTemplate.name }}</strong></span>
+                <span>{{ $t('folders.vorlage') }}: <strong>{{ currentFolderTemplate.name }}</strong></span>
               </span>
               <button
                 v-else-if="user?.id === folder.owner_id"
                 @click="openEditFolderModal"
                 class="px-2.5 py-0.5 rounded-full border border-dashed border-slate-300 text-slate-500 hover:text-[#00A3C4] hover:border-cyan-300 text-xs font-medium flex items-center gap-1 cursor-pointer transition"
-                title="Branchen-Vorlage für diesen Projektordner zuweisen"
+                :title="$t('folders.ordner_vorlage_title')"
               >
                 <Plus class="w-3 h-3" />
-                <span>Ordner-Vorlage zuweisen</span>
+                <span>{{ $t('folders.ordner_vorlage_zuweisen') }}</span>
               </button>
             </p>
           </div>
@@ -76,18 +76,18 @@
             <button
               @click="openJournalNoteModal"
               class="taskster_button px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 shadow-xs"
-              title="Neuen Journaleintrag erfassen"
+              :title="$t('folders.neuen_journaleintrag_erfassen')"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span class="font-semibold">+ Journaleintrag</span>
+              <span class="font-semibold">{{ $t('folders.plus_journaleintrag') }}</span>
             </button>
             <button
               @click="openJournalEntryModal"
               class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
-              title="Dokument oder Protokoll mit KI analysieren"
+              :title="$t('folders.dokument_ki_analysieren_title')"
             >
               <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
-              <span class="font-semibold">+ Dokument / Protokoll (KI)</span>
+              <span class="font-semibold">{{ $t('folders.plus_dokument_ki') }}</span>
             </button>
 
             <!-- More Actions Dropdown -->
@@ -96,22 +96,22 @@
                 @click="showActionsMenu = !showActionsMenu"
                 class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
                 :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
-                title="Weitere Aktionen"
+                :title="$t('folders.weitere_aktionen')"
               >
                 <MoreVertical class="w-4 h-4 text-slate-600" />
-                <span class="hidden sm:inline">Mehr</span>
+                <span class="hidden sm:inline">{{ $t('folders.mehr') }}</span>
               </button>
               <div v-if="showActionsMenu" class="fixed inset-0 z-40" @click="showActionsMenu = false"></div>
               <div v-if="showActionsMenu" class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
                 <!-- Ansicht -->
-                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ansicht</div>
+                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ $t('folders.ansicht') }}</div>
                 <button
                   @click="projectViewMode = 'grid'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
                   :class="projectViewMode === 'grid' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <LayoutGrid class="w-4 h-4" />
-                  <span>Kacheln</span>
+                  <span>{{ $t('folders.kacheln') }}</span>
                   <Check v-if="projectViewMode === 'grid'" class="w-3.5 h-3.5 ml-auto" />
                 </button>
                 <button
@@ -120,7 +120,7 @@
                   :class="projectViewMode === 'list' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <List class="w-4 h-4" />
-                  <span>Liste</span>
+                  <span>{{ $t('folders.liste') }}</span>
                   <Check v-if="projectViewMode === 'list'" class="w-3.5 h-3.5 ml-auto" />
                 </button>
 
@@ -133,7 +133,7 @@
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Users class="w-4 h-4 text-slate-500" />
-                  <span>Ordner teilen</span>
+                  <span>{{ $t('folders.ordner_teilen_btn') }}</span>
                 </button>
                 <button
                   v-if="user?.id === folder.owner_id"
@@ -141,14 +141,14 @@
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Pencil class="w-4 h-4 text-slate-500" />
-                  <span>Ordner anpassen</span>
+                  <span>{{ $t('folders.ordner_anpassen') }}</span>
                 </button>
                 <button
                   @click="showActionsMenu = false; openImportProjectModal()"
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <FileUp class="w-4 h-4 text-slate-500" />
-                  <span>Projekt importieren</span>
+                  <span>{{ $t('folders.projekt_importieren') }}</span>
                 </button>
                 <div v-if="user?.id === folder.owner_id || user?.is_superadmin" class="my-1 border-t border-slate-100"></div>
                 <button
@@ -166,7 +166,7 @@
               class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Neues Projekt</span>
+              <span>{{ $t('folders.neues_projekt') }}</span>
             </button>
           </div>
         </div>
@@ -176,8 +176,8 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2 text-xs text-slate-700">
               <BarChart3 class="w-4 h-4 text-[#00A3C4] shrink-0" />
-              <span class="font-semibold text-slate-900">Controlling:</span>
-              <span class="text-[#00A3C4] font-bold">{{ timeSummary?.total_hours || 0 }} Std. Gesamtaufwand</span>
+              <span class="font-semibold text-slate-900">{{ $t('folders.controlling') }}</span>
+              <span class="text-[#00A3C4] font-bold">{{ timeSummary?.total_hours || 0 }} {{ $t('folders.std_gesamtaufwand') }}</span>
               <span v-if="timeSummary?.total_cost > 0" class="text-slate-600 hidden sm:inline">• {{ Number(timeSummary.total_cost).toLocaleString('de-CH') }} CHF</span>
             </div>
 
@@ -186,7 +186,7 @@
               @click="showControllingDetails = !showControllingDetails"
               class="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition flex items-center space-x-1 shrink-0 cursor-pointer"
             >
-              <span>{{ showControllingDetails ? 'Details einklappen' : 'Details anzeigen' }}</span>
+              <span>{{ showControllingDetails ? $t('folders.details_einklappen') : $t('folders.details_anzeigen') }}</span>
               <ChevronUp v-if="showControllingDetails" class="w-3.5 h-3.5" />
               <ChevronDown v-else class="w-3.5 h-3.5" />
             </button>
@@ -206,20 +206,20 @@
                   </NuxtLink>
                   <span class="text-[10px] px-2 py-0.5 rounded font-semibold uppercase flex items-center gap-1" :class="p.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-100 text-[#00A3C4] border border-cyan-200'">
                     <span v-if="p.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {{ p.status === 'completed' ? '✓ Erledigt' : p.status }}
+                    {{ p.status === 'completed' ? '✓ ' + $t('folders.erledigt') : p.status }}
                   </span>
                 </div>
 
                 <div class="flex items-center space-x-4 text-xs font-medium text-slate-700">
                   <span>
-                    Ist: <strong class="text-slate-900">{{ p.tracked_hours || 0 }} Std.</strong>
+                    {{ $t('folders.ist') }} <strong class="text-slate-900">{{ p.tracked_hours || 0 }} Std.</strong>
                     <span v-if="p.budget_hours" class="text-slate-500 font-normal"> / {{ p.budget_hours }} Std.</span>
                   </span>
                   <span v-if="p.tracked_cost > 0" class="text-slate-600">
                     {{ Number(p.tracked_cost).toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}
                   </span>
                   <NuxtLink :to="`/projects/${p.id}`" class="text-[#00A3C4] hover:underline text-xs font-semibold flex items-center space-x-0.5">
-                    <span>Öffnen</span>
+                    <span>{{ $t('folders.oeffnen') }}</span>
                     <ArrowRight class="w-3 h-3" />
                   </NuxtLink>
                 </div>
@@ -242,12 +242,12 @@
               
               <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-1">
                 <span v-if="p.budget_hours > 0">
-                  Auslastung: {{ Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100) }}%
-                  <span v-if="(p.tracked_hours || 0) > p.budget_hours" class="text-rose-600 font-semibold ml-1">Budget überschritten (+{{ ((p.tracked_hours || 0) - p.budget_hours).toFixed(1) }} Std.)</span>
-                  <span v-else class="text-emerald-700 font-semibold ml-1">({{ (p.budget_hours - (p.tracked_hours || 0)).toFixed(1) }} Std. verbleibend)</span>
+                  {{ $t('folders.auslastung') }}: {{ Math.round(((p.tracked_hours || 0) / p.budget_hours) * 100) }}%
+                  <span v-if="(p.tracked_hours || 0) > p.budget_hours" class="text-rose-600 font-semibold ml-1">{{ $t('folders.budget_ueberschritten') }} (+{{ ((p.tracked_hours || 0) - p.budget_hours).toFixed(1) }} Std.)</span>
+                  <span v-else class="text-emerald-700 font-semibold ml-1">({{ (p.budget_hours - (p.tracked_hours || 0)).toFixed(1) }} Std. {{ $t('folders.verbleibend') }})</span>
                 </span>
-                <span v-else class="italic text-slate-400">Kein Stunden-Budget festgelegt</span>
-                <span v-if="p.budget_amount > 0">Kostenbudget: {{ p.budget_amount.toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}</span>
+                <span v-else class="italic text-slate-400">{{ $t('folders.kein_stundenbudget_festgelegt') }}</span>
+                <span v-if="p.budget_amount > 0">{{ $t('folders.kostenbudget') }} {{ p.budget_amount.toLocaleString('de-CH') }} {{ p.currency || 'CHF' }}</span>
               </div>
             </div>
           </div>
@@ -262,7 +262,7 @@
             :class="currentFolderTab === 'projects' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <LayoutGrid class="w-4 h-4" />
-            <span>Projekte ({{ projects.length }})</span>
+            <span>{{ $t('folders.projekte') }} ({{ projects.length }})</span>
           </button>
           <button
             type="button"
@@ -271,7 +271,7 @@
             :class="currentFolderTab === 'journal' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <BookOpen class="w-4 h-4" />
-            <span>Projektjournal ({{ folderJournals.length }})</span>
+            <span>{{ $t('folders.projektjournal') }} ({{ folderJournals.length }})</span>
           </button>
           <button
             type="button"
@@ -280,7 +280,7 @@
             :class="currentFolderTab === 'fields' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <SlidersHorizontal class="w-4 h-4" />
-            <span>Benutzerdefinierte Felder ({{ fields.length }})</span>
+            <span>{{ $t('folders.benutzerdefinierte_felder') }} ({{ fields.length }})</span>
           </button>
           <button
             type="button"
@@ -289,7 +289,7 @@
             :class="currentFolderTab === 'contacts' ? 'bg-[#00A3C4] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
           >
             <Contact class="w-4 h-4" />
-            <span>Kontakte ({{ folderContacts.length }})</span>
+            <span>{{ $t('common.kontakte') }} ({{ folderContacts.length }})</span>
           </button>
         </div>
       </div>
@@ -304,7 +304,7 @@
                 <input
                   v-model="projectSearchQuery"
                   type="text"
-                  placeholder="Projekte durchsuchen (Titel, Adresse, Ref-Nr...)"
+                  :placeholder="$t('folders.projekte_durchsuchen_placeholder')"
                   class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 />
                 <button
@@ -326,7 +326,7 @@
                   class="px-2.5 py-1 rounded-md transition cursor-pointer"
                   :class="projectStatusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
                 >
-                  Alle ({{ projects.length }})
+                  {{ $t('folders.alle') }} ({{ projects.length }})
                 </button>
                 <button
                   type="button"
@@ -334,7 +334,7 @@
                   class="px-2.5 py-1 rounded-md transition cursor-pointer"
                   :class="projectStatusFilter === 'active' ? 'bg-white text-[#00A3C4] shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
                 >
-                  Aktiv ({{ activeProjectsCount }})
+                  {{ $t('folders.aktiv') }} ({{ activeProjectsCount }})
                 </button>
                 <button
                   type="button"
@@ -342,7 +342,7 @@
                   class="px-2.5 py-1 rounded-md transition cursor-pointer"
                   :class="projectStatusFilter === 'completed' ? 'bg-white text-emerald-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
                 >
-                  Erledigt ({{ completedProjectsCount }})
+                  {{ $t('folders.erledigt') }} ({{ completedProjectsCount }})
                 </button>
               </div>
 
@@ -353,7 +353,7 @@
                   @click="projectViewMode = 'grid'"
                   class="p-1.5 rounded text-xs transition cursor-pointer"
                   :class="projectViewMode === 'grid' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
-                  title="Kachelansicht"
+                  :title="$t('folders.kachelansicht')"
                 >
                   <LayoutGrid class="w-4 h-4" />
                 </button>
@@ -362,7 +362,7 @@
                   @click="projectViewMode = 'list'"
                   class="p-1.5 rounded text-xs transition cursor-pointer"
                   :class="projectViewMode === 'list' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-500 hover:text-slate-800'"
-                  title="Listenansicht"
+                  :title="$t('folders.listenansicht')"
                 >
                   <List class="w-4 h-4" />
                 </button>
@@ -376,10 +376,10 @@
               <Folder class="w-6 h-6" />
             </div>
             <h3 class="text-base font-bold text-slate-900">
-              {{ projectSearchQuery || projectStatusFilter !== 'all' ? 'Keine passenden Projekte gefunden' : 'Noch keine Projekte in diesem Ordner' }}
+              {{ projectSearchQuery || projectStatusFilter !== 'all' ? $t('folders.keine_passenden_projekte') : $t('folders.noch_keine_projekte_in_diesem_ordne') }}
             </h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
-              {{ projectSearchQuery || projectStatusFilter !== 'all' ? 'Passe die Suchkriterien oder Filter an, um Projekte anzuzeigen.' : 'Erstelle jetzt dein erstes Projekt – z.B. aus einer unserer Vorlagen oder per Excel/CSV Import.' }}
+              {{ projectSearchQuery || projectStatusFilter !== 'all' ? $t('folders.passe_suchkriterien_an') : $t('folders.erstelle_jetzt_dein_erstes_projekt_') }}
             </p>
             <button
               v-if="!projectSearchQuery && projectStatusFilter === 'all'"
@@ -387,14 +387,14 @@
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Neues Projekt anlegen</span>
+              <span>{{ $t('folders.neues_projekt_anlegen') }}</span>
             </button>
             <button
               v-else
               @click="projectSearchQuery = ''; projectStatusFilter = 'all'"
               class="taskster_button_light px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
             >
-              <span>Filter zurücksetzen</span>
+              <span>{{ $t('folders.filter_zuruecksetzen') }}</span>
             </button>
           </div>
 
@@ -423,7 +423,7 @@
                       title="Standard-Projekt dieses Ordners"
                     >
                       <Star class="w-3 h-3 text-amber-600" />
-                      <span>Standard</span>
+                      <span>{{ $t('folders.standard') }}</span>
                     </span>
                     <span
                       class="text-[10px] font-semibold px-2 py-0.5 rounded border flex items-center space-x-1"
@@ -431,14 +431,14 @@
                     >
                       <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
                       <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                      <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                      <span>{{ project.visibility === 'company' ? $t('common.unternehmen') : $t('folders.privat') }}</span>
                     </span>
                     <span
                       class="text-[10px] font-semibold px-2 py-0.5 rounded uppercase flex items-center gap-1"
                       :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#00A3C4] border border-cyan-200'"
                     >
                       <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
+                      {{ project.status === 'completed' ? '✓ ' + $t('folders.erledigt') : project.status }}
                     </span>
                     <span
                       v-if="project.due_date"
@@ -486,19 +486,19 @@
 
                 <div class="grid grid-cols-4 gap-1.5 py-2.5 border-y border-slate-100 my-3 text-center">
                   <div>
-                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Abschnitte</div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">{{ $t('folders.abschnitte') }}</div>
                     <div class="text-xs font-bold text-slate-900">{{ project.list_count }}</div>
                   </div>
                   <div>
-                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Aufgaben</div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">{{ $t('folders.aufgaben') }}</div>
                     <div class="text-xs font-bold text-slate-900">{{ project.task_count }}</div>
                   </div>
                   <div>
-                    <div class="text-[9px] text-slate-500 uppercase font-semibold">Team</div>
+                    <div class="text-[9px] text-slate-500 uppercase font-semibold">{{ $t('folders.team') }}</div>
                     <div class="text-xs font-bold text-slate-900">{{ project.member_count }}</div>
                   </div>
                   <div>
-                    <div class="text-[9px] text-[#00A3C4] uppercase font-semibold">Aufwand</div>
+                    <div class="text-[9px] text-[#00A3C4] uppercase font-semibold">{{ $t('folders.aufwand') }}</div>
                     <div class="text-xs font-bold" :class="(project.tracked_hours || 0) > (project.budget_hours || 0) && project.budget_hours > 0 ? 'text-rose-600' : 'text-slate-900'">
                       {{ project.tracked_hours || 0 }}h
                     </div>
@@ -511,7 +511,7 @@
                   :to="`/projects/${project.id}`"
                   class="taskster_button flex-1 px-4 text-xs h-[38px] rounded-lg flex items-center justify-center space-x-1.5 font-semibold"
                 >
-                  <span>Projekt öffnen</span>
+                  <span>{{ $t('folders.projekt_oeffnen') }}</span>
                   <ArrowRight class="w-3.5 h-3.5" />
                 </NuxtLink>
                 <button
@@ -533,12 +533,12 @@
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
                   <tr>
-                    <th class="py-3 px-4">Projekttitel</th>
-                    <th class="py-3 px-4">Status</th>
-                    <th class="py-3 px-4">Abschnitte & Aufgaben</th>
-                    <th class="py-3 px-4">Aufwand & Budget</th>
-                    <th class="py-3 px-4">Projekt-Felder</th>
-                    <th class="py-3 px-4 text-right">Aktion</th>
+                    <th class="py-3 px-4">{{ $t('folders.projekttitel') }}</th>
+                    <th class="py-3 px-4">{{ $t('common.status') }}</th>
+                    <th class="py-3 px-4">{{ $t('folders.abschnitte_aufgaben') }}</th>
+                    <th class="py-3 px-4">{{ $t('folders.aufwand_budget') }}</th>
+                    <th class="py-3 px-4">{{ $t('folders.projekt_felder') }}</th>
+                    <th class="py-3 px-4 text-right">{{ $t('folders.aktion') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
@@ -561,14 +561,14 @@
                         >
                           <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
                           <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                          <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                          <span>{{ project.visibility === 'company' ? $t('common.unternehmen') : $t('folders.privat') }}</span>
                         </span>
                         <span
                           class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase flex items-center gap-1"
                           :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-xs' : 'bg-cyan-50 text-[#00A3C4] border border-cyan-200'"
                         >
                           <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          {{ project.status === 'completed' ? '✓ Erledigt' : project.status }}
+                          {{ project.status === 'completed' ? '✓ ' + $t('folders.erledigt') : project.status }}
                         </span>
                         <span
                           v-if="project.due_date"
@@ -582,8 +582,8 @@
                       </div>
                     </td>
                     <td class="py-3 px-4">
-                      <span class="text-slate-900 font-bold">{{ project.task_count }} Aufgaben</span>
-                      <span class="text-slate-500"> in {{ project.list_count }} Abschnitten</span>
+                      <span class="text-slate-900 font-bold">{{ project.task_count }} {{ $t('folders.aufgaben') }}</span>
+                      <span class="text-slate-500"> in {{ project.list_count }} {{ $t('folders.in_abschnitten') }}</span>
                     </td>
                     <td class="py-3 px-4">
                       <div class="flex items-center space-x-1.5">
@@ -623,7 +623,7 @@
                           :to="`/projects/${project.id}`"
                           class="taskster_button px-3 text-xs h-7 rounded-md inline-flex items-center space-x-1"
                         >
-                          <span>Öffnen</span>
+                          <span>{{ $t('folders.oeffnen') }}</span>
                           <ArrowRight class="w-3.5 h-3.5" />
                         </NuxtLink>
                         <button
@@ -651,10 +651,10 @@
             <div>
               <div class="flex items-center space-x-2">
                 <span class="text-xl">📖</span>
-                <h3 class="text-base font-black text-slate-900">Projektjournal & Logbuch</h3>
+                <h3 class="text-base font-black text-slate-900">{{ $t('folders.projektjournal_und_logbuch') }}</h3>
               </div>
               <p class="text-xs text-slate-500 mt-0.5">
-                Chronologischer Ereignisstrom, offizielle Bausitzungen, Notizen und KI-Aktionskarten in «{{ folder.name }}».
+                {{ $t('folders.journal_subline') }} in «{{ folder.name }}».
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -697,7 +697,7 @@
                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
                   :class="folderJournalFilterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
                 >
-                  <span>🏛️ Bausitzungen & Protokolle</span>
+                  <span>🏛️ {{ $t('folders.bausitzungen_protokolle') }}</span>
                   <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ folderEntriesCount }}</span>
                 </button>
                 <button
@@ -706,7 +706,7 @@
                   class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
                   :class="folderJournalFilterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
                 >
-                  <span>✉️ Notizen & E-Mails</span>
+                  <span>✉️ {{ $t('folders.notizen_emails') }}</span>
                   <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">{{ folderNotesCount }}</span>
                 </button>
               </div>
@@ -717,7 +717,7 @@
                 <input
                   v-model="folderJournalSearchQuery"
                   type="text"
-                  placeholder="Im Journal, E-Mails & Aufgaben suchen..."
+                  :placeholder="$t('folders.journal_suche_placeholder')"
                   class="w-full pl-9 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 />
                 <button
@@ -736,7 +736,7 @@
                 v-model="folderJournalCategoryFilter"
                 class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4]"
               >
-                <option value="">Alle Kategorien</option>
+                <option value="">{{ $t('folders.alle_kategorien') }}</option>
                 <option value="bausitzung">🏛️ Bausitzung</option>
                 <option value="bautagebuch">📋 Bautagebuch</option>
                 <option value="abnahmebegehung">🔍 Abnahme</option>
@@ -753,8 +753,8 @@
                 v-model="folderJournalProjectFilter"
                 class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4]"
               >
-                <option value="">Alle Projekte im Ordner</option>
-                <option value="none">Nur Ordner-Journal (ohne Projekt)</option>
+                <option value="">{{ $t('folders.alle_projekte_im_ordner') }}</option>
+                <option value="none">Nur {{ $t('folders.ordner_badge') }}-Journal (ohne Projekt)</option>
                 <option v-for="p in projects" :key="p.id" :value="p.id">📁 {{ p.title }}</option>
               </select>
             </div>
@@ -765,9 +765,9 @@
             <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-4 border border-cyan-200 shadow-2xs">
               <BookOpen class="w-7 h-7" />
             </div>
-            <h3 class="text-base font-bold text-slate-900">Keine passenden Journaleinträge gefunden</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('folders.keine_passenden_journaleintraege') }}</h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
-              Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.
+              {{ $t('folders.journal_empty_desc') }}
             </p>
             <div class="flex items-center justify-center gap-3">
               <button
@@ -814,11 +814,11 @@
                       </span>
                     </div>
                     <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                      <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name || entry.user_name || 'Benutzer' }}</strong></span>
+                      <span>{{ $t('journal.von') }} <strong class="text-slate-700 font-semibold">{{ entry.author_name || entry.user_name || 'Benutzer' }}</strong></span>
                       <span>•</span>
                       <span>{{ new Date(entry.entry_date || entry.created_at).toLocaleDateString('de-CH') }}</span>
                       <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
-                        <span>• Verknüpft: {{ entry.task_title }}</span>
+                        <span>• {{ $t('journal.verknuepft') }}: {{ entry.task_title }}</span>
                       </span>
                     </div>
                   </div>
@@ -836,7 +836,7 @@
                     <span class="max-w-[120px] truncate">{{ getProjectTitle(entry.project_id) }}</span>
                   </NuxtLink>
                   <span v-else class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                    Ordner-Journal
+                    {{ $t('folders.ordner_badge') }}-Journal
                   </span>
 
                   <!-- AI Trigger Button -->
@@ -851,7 +851,7 @@
                     :title="entry.metadata?.ai_summary ? 'KI-Analyse erneut ausführen' : 'Mit KI analysieren'"
                   >
                     <Sparkles class="w-3 h-3" :class="{ 'animate-spin': folderAnalyzingEntryId === entry.id }" />
-                    <span>{{ folderAnalyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
+                    <span>{{ folderAnalyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? $t('journal.ki_aktualisieren') : '⚡ ' + $t('journal.ki_analyse')) }}</span>
                   </button>
 
                   <!-- Edit action -->
@@ -888,7 +888,7 @@
                       <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
                         <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
                         <span>KI-Zusammenfassung</span>
-                        <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
+                        <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">{{ $t('journal.ki_agent') }}</span>
                       </div>
                       <button
                         type="button"
@@ -897,7 +897,7 @@
                         class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
                       >
                         <Sparkles class="w-3 h-3" :class="{ 'animate-spin': folderAnalyzingEntryId === entry.id }" />
-                        <span>{{ folderAnalyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+                        <span>{{ folderAnalyzingEntryId === entry.id ? 'Aktualisiere...' : $t('journal.neu_analysieren') }}</span>
                       </button>
                     </div>
                     <p class="text-xs text-slate-800 leading-relaxed font-sans">
@@ -968,7 +968,7 @@
                   <!-- Text-Inhalt / Notizen (Cleaned & 5-Line Smooth Collapse) -->
                   <div>
                     <div class="flex items-center justify-between mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $t('journal.inhalt_notizen') }}</span>
                     </div>
 
                     <div class="relative">
@@ -994,7 +994,7 @@
                       >
                         <ChevronDown v-if="!isFolderJournalExpanded(entry.id)" class="w-3.5 h-3.5" />
                         <ChevronUp v-else class="w-3.5 h-3.5" />
-                        <span>{{ isFolderJournalExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
+                        <span>{{ isFolderJournalExpanded(entry.id) ? $t('journal.weniger_anzeigen') : $t('journal.mehr_anzeigen') }}</span>
                       </button>
                     </div>
                   </div>
@@ -1010,13 +1010,13 @@
                     <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
                       <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
                         <span>📌</span>
-                        <span>Verknüpfte Aufgabe</span>
+                        <span>{{ $t('journal.verknuepfte_aufgabe') }}</span>
                       </span>
                       <span
                         class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
                         :class="entry.task_id ? 'bg-white border-cyan-300 text-cyan-800' : 'bg-amber-50 border-amber-200 text-amber-800'"
                       >
-                        {{ entry.task_id ? (getFolderTaskSectionTitle(entry.task_id) || 'Zugeordnet') : 'Offen' }}
+                        {{ entry.task_id ? (getFolderTaskSectionTitle(entry.task_id) || 'Zugeordnet') : $t('journal.offen') }}
                       </span>
                     </div>
 
@@ -1031,7 +1031,7 @@
                         class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:underline transition cursor-pointer"
                       >
                         <ExternalLink class="w-3 h-3" />
-                        <span>Aufgabe im Projekt öffnen</span>
+                        <span>{{ $t('journal.aufgabe_im_projekt_oeffnen') }}</span>
                       </NuxtLink>
 
                       <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
@@ -1085,7 +1085,7 @@
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
                       <span class="flex items-center space-x-1">
                         <Users class="w-3 h-3 text-[#00A3C4]" />
-                        <span>Teilnehmer</span>
+                        <span>{{ $t('journal.teilnehmer') }}</span>
                       </span>
                       <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-white border border-slate-200 text-slate-700">
                         {{ entry.attendees.filter(a => a.present).length }} / {{ entry.attendees.length }}
@@ -1108,7 +1108,7 @@
                   <div v-if="entry.attachments && entry.attachments.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
                       <Paperclip class="w-3 h-3 text-slate-400" />
-                      <span>Dateianhänge ({{ entry.attachments.length }})</span>
+                      <span>{{ $t('journal.dateianhaenge') }} ({{ entry.attachments.length }})</span>
                     </div>
                     <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                       <div
@@ -1145,7 +1145,7 @@
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <SlidersHorizontal class="w-4 h-4 text-[#00A3C4]" />
-                <span>Benutzerdefinierte Felder für diesen Ordner</span>
+                <span>{{ $t('folders.benutzerdefinierte_felder_fuer_ordner') }}</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
                 Definiere eigene Attribute für Projekte und Aufgaben. Diese stehen allen Projekten dieses Ordners zur Verfügung.
@@ -1156,7 +1156,7 @@
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Neues Feld anlegen</span>
+              <span>{{ $t('folders.neues_feld_anlegen') }}</span>
             </button>
           </div>
 
@@ -1224,7 +1224,7 @@
             <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <SlidersHorizontal class="w-6 h-6" />
             </div>
-            <h3 class="text-base font-bold text-slate-900">Noch keine benutzerdefinierten Felder</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('folders.noch_keine_felder') }}</h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
               Erstelle strukturierte Attribute wie Bauleiter, Vorgangsnummer, Fertigstellungstermin oder mehrzeilige Notizfelder.
             </p>
@@ -1233,7 +1233,7 @@
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Erstes Feld anlegen</span>
+              <span>{{ $t('folders.erstes_feld_anlegen') }}</span>
             </button>
           </div>
 
@@ -1242,13 +1242,13 @@
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
-                  <th class="py-3 px-4">Feld-Bezeichnung (Label)</th>
-                  <th class="py-3 px-4">Bereich</th>
-                  <th class="py-3 px-4">Feldtyp</th>
-                  <th class="py-3 px-4">Pflichtfeld</th>
-                  <th class="py-3 px-4">Bedingte Logik</th>
-                  <th class="py-3 px-4">Details / Optionen</th>
-                  <th class="py-3 px-4 text-right">Aktionen</th>
+                  <th class="py-3 px-4">{{ $t('folders.feld_bezeichnung') }}</th>
+                  <th class="py-3 px-4">{{ $t('folders.bereich') }}</th>
+                  <th class="py-3 px-4">{{ $t('folders.feldtyp') }}</th>
+                  <th class="py-3 px-4">{{ $t('folders.pflichtfeld') }}</th>
+                  <th class="py-3 px-4">{{ $t('folders.bedingte_logik') }}</th>
+                  <th class="py-3 px-4">{{ $t('folders.details_optionen') }}</th>
+                  <th class="py-3 px-4 text-right">{{ $t('folders.aktionen') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
@@ -1262,7 +1262,7 @@
                       class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border"
                       :class="f.entity_type === 'project' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'"
                     >
-                      {{ f.entity_type === 'project' ? 'Projekt-Feld' : 'Aufgaben-Feld' }}
+                      {{ f.entity_type === 'project' ? $t('folders.projekt_feld') : $t('folders.aufgaben_feld') }}
                     </span>
                   </td>
                   <td class="py-3 px-4">
@@ -1272,7 +1272,7 @@
                   </td>
                   <td class="py-3 px-4">
                     <span class="text-xs" :class="f.is_required ? 'text-rose-600 font-bold' : 'text-slate-400'">
-                      {{ f.is_required ? '✓ Ja' : 'Nein' }}
+                      {{ f.is_required ? '✓ ' + $t('common.ja') : $t('common.nein') }}
                     </span>
                   </td>
                   <td class="py-3 px-4">
@@ -1303,7 +1303,7 @@
                         title="Feld bearbeiten"
                       >
                         <Pencil class="w-3 h-3 text-[#00A3C4]" />
-                        <span>Bearbeiten</span>
+                        <span>{{ $t('common.bearbeiten') }}</span>
                       </button>
                       <button
                         type="button"
@@ -1327,7 +1327,7 @@
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <Contact class="w-4 h-4 text-[#00A3C4]" />
-                <span>Kontakte in diesem Ordner</span>
+                <span>{{ $t('folders.ordner_kontakte') }}</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
                 Kontakte gelten pro Projektordner und stehen in allen zugehörigen Projekten zur Verfügung.
@@ -1338,7 +1338,7 @@
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 shrink-0"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Neuer Kontakt</span>
+              <span>{{ $t('folders.neuer_kontakt') }}</span>
             </button>
           </div>
 
@@ -1347,7 +1347,7 @@
             <div class="w-12 h-12 mx-auto rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-3 border border-cyan-200">
               <Contact class="w-6 h-6" />
             </div>
-            <h3 class="text-base font-bold text-slate-900">Noch keine Kontakte in diesem Ordner</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('folders.noch_keine_kontakte') }}</h3>
             <p class="text-xs text-slate-500 mt-1 mb-5 leading-relaxed">
               Erfasse Bauleiter, Handwerker, Ingenieure oder Eigentümer für diesen Ordner.
             </p>
@@ -1356,7 +1356,7 @@
               class="taskster_button px-4 text-xs h-9 rounded-md flex items-center space-x-1 mx-auto"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Ersten Kontakt anlegen</span>
+              <span>{{ $t('folders.ersten_kontakt_anlegen') }}</span>
             </button>
           </div>
 
@@ -1389,7 +1389,7 @@
 
                   <!-- Scope Badge -->
                   <span class="shrink-0 px-1.5 py-0.2 rounded-sm text-[10px] font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200">
-                    Ordner
+                    {{ $t('folders.ordner_badge') }}
                   </span>
                 </div>
 
