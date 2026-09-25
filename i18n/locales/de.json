@@ -1468,7 +1468,7 @@
   "journal.title": "Projektjournal & Logbuch",
   "journal.subtitle": "Chronologischer Ereignisstrom, offizielle Bausitzungen, Notizen und KI-Aktionskarten.",
   "journal.new_entry": "+ Journaleintrag",
-  "journal.new_note": "+ Notiz",
+  "journal.new_note": "+ Dokument / Protokoll (KI)",
   "journal.all": "Alle Einträge",
   "journal.filter_all": "Alle",
   "journal.filter_entries": "Bausitzungen & Protokolle",

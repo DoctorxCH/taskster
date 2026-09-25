@@ -873,20 +873,20 @@
           </div>
           <div v-if="userRole !== 'viewer'" class="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
-              @click="openNewEntryModal"
+              @click="openNewNoteModal"
               type="button"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>{{ $t('journal.new_entry') }}</span>
+              <span>+ Journaleintrag</span>
             </button>
             <button
-              @click="openNewNoteModal"
+              @click="openNewEntryModal"
               type="button"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
             >
-              <FileText class="w-3.5 h-3.5 text-slate-600" />
-              <span>{{ $t('journal.new_note') }}</span>
+              <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+              <span>+ Dokument / Protokoll (KI)</span>
             </button>
           </div>
         </div>
@@ -1047,18 +1047,20 @@
           </div>
           <div v-else-if="userRole !== 'viewer'" class="flex items-center justify-center gap-3">
             <button
-              @click="openNewEntryModal"
-              type="button"
-              class="taskster_button px-6 text-xs h-[42px] rounded-lg"
-            >
-              {{ $t('journal.new_entry') }}
-            </button>
-            <button
               @click="openNewNoteModal"
               type="button"
-              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
+              class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
             >
-              {{ $t('journal.new_note') }}
+              <Plus class="w-3.5 h-3.5" />
+              <span>+ Journaleintrag</span>
+            </button>
+            <button
+              @click="openNewEntryModal"
+              type="button"
+              class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
+            >
+              <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+              <span>+ Dokument / Protokoll (KI)</span>
             </button>
           </div>
         </div>

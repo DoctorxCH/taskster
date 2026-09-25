@@ -16,7 +16,7 @@
 
       <div class="flex flex-wrap items-center gap-2.5 shrink-0">
         <button
-          @click="openJournalEntryModal"
+          @click="openJournalNoteModal"
           type="button"
           class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
         >
@@ -24,12 +24,12 @@
           <span>+ Journaleintrag</span>
         </button>
         <button
-          @click="openJournalNoteModal"
+          @click="openJournalEntryModal"
           type="button"
           class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
         >
-          <FileText class="w-3.5 h-3.5 text-slate-600" />
-          <span>+ Notiz</span>
+          <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+          <span>+ Dokument / Protokoll (KI)</span>
         </button>
       </div>
     </div>
@@ -193,7 +193,7 @@
       </p>
       <div class="flex items-center justify-center gap-3">
         <button
-          @click="openJournalEntryModal"
+          @click="openJournalNoteModal"
           type="button"
           class="taskster_button px-5 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
         >
@@ -201,12 +201,12 @@
           <span>+ Journaleintrag</span>
         </button>
         <button
-          @click="openJournalNoteModal"
+          @click="openJournalEntryModal"
           type="button"
           class="taskster_button_light px-5 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
         >
-          <FileText class="w-3.5 h-3.5 text-slate-600" />
-          <span>+ Notiz</span>
+          <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+          <span>+ Dokument / Protokoll (KI)</span>
         </button>
       </div>
     </div>
@@ -267,6 +267,21 @@
               Nur Ordner
             </span>
 
+            <!-- AI Trigger Button -->
+            <button
+              type="button"
+              @click="triggerAiAnalysis(entry)"
+              :disabled="analyzingEntryId === entry.id"
+              class="text-[11px] font-bold px-2.5 py-1 rounded-lg border flex items-center space-x-1 transition cursor-pointer"
+              :class="entry.metadata?.ai_summary
+                ? 'bg-slate-50 hover:bg-cyan-50 border-slate-200 text-slate-700 hover:text-[#00A3C4]'
+                : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white shadow-xs border-transparent'"
+              :title="entry.metadata?.ai_summary ? 'KI-Analyse erneut ausführen' : 'Mit KI analysieren'"
+            >
+              <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+              <span>{{ analyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
+            </button>
+
             <!-- Edit action -->
             <button
               @click="openEditModal(entry)"
@@ -293,27 +308,123 @@
           {{ entry.title }}
         </h4>
 
-        <!-- Content (Cleaned & 5-Line Smooth Collapse) -->
-        <div class="relative mt-2">
-          <div
-            class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed transition-all duration-300 ease-in-out overflow-hidden"
-            :style="isExpanded(entry.id) || !isLongContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
-          >
-            {{ cleanContent(entry.content) }}
+        <!-- AI Summary Box (Taskster Standard) -->
+        <div v-if="entry.metadata?.ai_summary" class="mt-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
+              <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+              <span>KI-Zusammenfassung</span>
+              <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
+            </div>
+            <button
+              type="button"
+              @click="triggerAiAnalysis(entry)"
+              :disabled="analyzingEntryId === entry.id"
+              class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
+            >
+              <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+              <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+            </button>
           </div>
-
-          <!-- Elegant soft gradient fade-out over 5th line when collapsed -->
-          <div
-            v-if="isLongContent(entry.content) && !isExpanded(entry.id)"
-            class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none"
-          ></div>
+          <p class="text-xs text-slate-800 leading-relaxed font-sans">
+            {{ entry.metadata.ai_summary }}
+          </p>
         </div>
 
-        <!-- Expansion Toggle & Original-Ansicht Button Row -->
-        <div class="flex items-center justify-between gap-2 mt-2 pt-1">
-          <div>
+        <!-- Interactive AI Action Cards (if present) -->
+        <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="mt-3 space-y-2.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+            <span>⚡</span>
+            <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div
+              v-for="(item, idx) in entry.metadata.action_items"
+              :key="idx"
+              class="p-3 rounded-2xl border transition shadow-xs flex flex-col justify-between"
+              :class="[
+                item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
+                  item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200' :
+                  item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200' :
+                  'bg-purple-50/70 border-purple-200'
+                )
+              ]"
+            >
+              <div>
+                <div class="flex items-center justify-between gap-1 mb-1">
+                  <span
+                    class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
+                    :class="[
+                      item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                      item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                      'bg-purple-100 text-purple-800 border-purple-300'
+                    ]"
+                  >
+                    {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
+                  </span>
+
+                  <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
+                    <CheckCircle2 class="w-3 h-3" />
+                    <span>Erledigt</span>
+                  </span>
+                </div>
+
+                <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
+                  {{ item.title }}
+                </h5>
+
+                <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
+                  {{ item.description || item.reason }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-1">
+                  <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                    📅 {{ item.due_date || item.suggested_due_date }}
+                  </span>
+                  <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
+                    ⚡ {{ item.priority }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content (Cleaned & 5-Line Smooth Collapse) -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
             <button
-              v-if="isLongContent(entry.content)"
+              v-if="hasOriginalText(entry)"
+              type="button"
+              @click="openOriginalView(entry)"
+              class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer"
+              title="Vollständiges Original-Dokument / E-Mail ansehen"
+            >
+              <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
+              <span>Original-Ansicht</span>
+            </button>
+          </div>
+
+          <div class="relative">
+            <div
+              class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed transition-all duration-300 ease-in-out overflow-hidden"
+              :style="isExpanded(entry.id) || !isLongContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+            >
+              {{ cleanContent(entry.content) }}
+            </div>
+
+            <!-- Elegant soft gradient fade-out over 5th line when collapsed -->
+            <div
+              v-if="isLongContent(entry.content) && !isExpanded(entry.id)"
+              class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none"
+            ></div>
+          </div>
+
+          <!-- Expansion Toggle -->
+          <div v-if="isLongContent(entry.content)" class="mt-1.5">
+            <button
               type="button"
               @click="toggleExpand(entry.id)"
               class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
@@ -323,18 +434,6 @@
               <span>{{ isExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
             </button>
           </div>
-
-          <!-- Original-Ansicht Button -->
-          <button
-            v-if="hasOriginalText(entry)"
-            type="button"
-            @click="openOriginalView(entry)"
-            class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer ml-auto"
-            title="Vollständiges Original-Dokument / E-Mail ansehen"
-          >
-            <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
-            <span>Original-Ansicht</span>
-          </button>
         </div>
 
         <!-- Linked Task -->
@@ -621,6 +720,8 @@ import {
   Eye,
   Copy,
   Check,
+  CheckCircle2,
+  Sparkles,
   ChevronDown,
   ChevronUp
 } from 'lucide-vue-next'
@@ -742,6 +843,45 @@ const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info')
   toast.value = { show: true, message, type }
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
+
+const analyzingEntryId = ref<string | null>(null)
+
+const triggerAiAnalysis = async (entry: any) => {
+  if (!entry.content?.trim() && !entry.title?.trim()) {
+    showToast('Eintrag hat keinen Text zum Analysieren.', 'info')
+    return
+  }
+  analyzingEntryId.value = entry.id
+  try {
+    const endpoint = entry.project_id
+      ? `/api/projects/${entry.project_id}/journal/parse-email`
+      : '/api/journals/parse-email'
+    const res = await $fetch<any>(endpoint, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        journal_id: entry.id,
+        folder_id: entry.folder_id || null,
+        project_id: entry.project_id || null,
+        task_id: entry.task_id || null,
+        subject: entry.title,
+        content: entry.content,
+        category: entry.category,
+        visibility: entry.visibility
+      }
+    })
+    if (res.metadata) {
+      entry.metadata = res.metadata
+    } else if (res.entry?.metadata) {
+      entry.metadata = res.entry.metadata
+    }
+    showToast('KI-Zusammenfassung erfolgreich aktualisiert!', 'success')
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse', 'error')
+  } finally {
+    analyzingEntryId.value = null
+  }
 }
 
 const loadData = async () => {

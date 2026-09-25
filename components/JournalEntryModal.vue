@@ -10,10 +10,10 @@
         <div>
           <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
             <span class="text-xl">{{ entryToEdit ? '✏️' : '📖' }}</span>
-            <span>{{ entryToEdit ? 'Journaleintrag bearbeiten' : 'Neuen Journaleintrag erfassen' }}</span>
+            <span>{{ entryToEdit ? 'Journaleintrag bearbeiten' : 'Dokument / Protokoll erfassen (KI)' }}</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            {{ entryToEdit ? 'Passe Titel, Inhalt, Kategorie, Zuweisung oder Notizen an.' : 'Offizielles Bauprotokoll, Bausitzung, Begehung oder E-Mail-Ablage mit KI-Analyse.' }}
+            {{ entryToEdit ? 'Passe Titel, Inhalt, Kategorie, Zuweisung oder Notizen an.' : 'Offizielles Bauprotokoll, Bausitzung, Begehung oder E-Mail/PDF-Ablage mit KI-Analyse.' }}
           </p>
         </div>
         <button
@@ -323,24 +323,93 @@
           </div>
         </div>
 
-        <!-- 6. Linked Task (optional with search filter) -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
+        <!-- 6. Linked Task (with live search filter) -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between mb-0.5">
             <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
-            <span v-if="autoTaskMatch" class="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
-              ✨ Erkannt: {{ autoTaskMatch }}
-            </span>
+            <div class="flex items-center gap-1.5">
+              <span v-if="autoTaskMatch" class="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                ✨ Erkannt: {{ autoTaskMatch }}
+              </span>
+              <span class="text-[10px] text-slate-400">
+                {{ filteredTasks.length }} Aufgabe{{ filteredTasks.length === 1 ? '' : 'n' }}
+              </span>
+            </div>
           </div>
-          <select
-            v-model="form.task_id"
-            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
-          >
-            <option :value="null">-- Keine Verknüpfung --</option>
-            <option value="auto">✨ Automatisch zuweisen (anhand Text)</option>
-            <option v-for="t in availableTasks" :key="t.id" :value="t.id">
-              {{ t.title }} {{ t.list_title ? `(${t.list_title})` : '' }}
-            </option>
-          </select>
+
+          <div class="relative">
+            <div
+              @click="isTaskDropdownOpen = !isTaskDropdownOpen; isProjectDropdownOpen = false"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between cursor-pointer hover:bg-white hover:border-[#00A3C4] transition"
+            >
+              <div class="flex items-center gap-1.5 truncate">
+                <span v-if="!form.task_id" class="text-slate-500">-- Keine Verknüpfung --</span>
+                <span v-else-if="form.task_id === 'auto'" class="text-[#00A3C4] font-bold">✨ Automatisch zuweisen (anhand Text)</span>
+                <span v-else class="text-slate-900 font-bold truncate">☑️ {{ getTaskDisplay(form.task_id) }}</span>
+              </div>
+              <ChevronDown class="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+            </div>
+
+            <!-- Task Popover with live search -->
+            <div
+              v-if="isTaskDropdownOpen"
+              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-2 space-y-1.5 max-h-56 flex flex-col"
+            >
+              <div class="relative shrink-0">
+                <Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  v-model="taskSearchTerm"
+                  type="text"
+                  placeholder="Aufgabe suchen..."
+                  class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
+                  @click.stop
+                />
+              </div>
+
+              <div class="overflow-y-auto space-y-0.5 flex-1 pr-1">
+                <button
+                  type="button"
+                  @click="selectTask(null)"
+                  class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 hover:bg-slate-100 transition"
+                  :class="!form.task_id ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600'"
+                >
+                  <span>--</span>
+                  <span>Keine Verknüpfung</span>
+                  <Check v-if="!form.task_id" class="w-3.5 h-3.5 ml-auto text-slate-700" />
+                </button>
+
+                <button
+                  type="button"
+                  @click="selectTask('auto')"
+                  class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-cyan-50 transition"
+                  :class="form.task_id === 'auto' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700'"
+                >
+                  <span>✨</span>
+                  <span>Automatisch zuweisen (anhand Text)</span>
+                  <Check v-if="form.task_id === 'auto'" class="w-3.5 h-3.5 ml-auto text-[#00A3C4]" />
+                </button>
+
+                <div v-if="filteredTasks.length === 0" class="px-2 py-3 text-center text-xs text-slate-400">
+                  Keine Aufgaben gefunden
+                </div>
+
+                <button
+                  v-for="t in filteredTasks"
+                  :key="t.id"
+                  type="button"
+                  @click="selectTask(t.id)"
+                  class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between hover:bg-cyan-50/70 transition"
+                  :class="form.task_id === t.id ? 'text-[#00A3C4] font-bold bg-cyan-50' : 'text-slate-700'"
+                >
+                  <span class="truncate">
+                    {{ t.title }}
+                    <span v-if="t.list_title" class="text-[10px] text-slate-400 font-normal">({{ t.list_title }})</span>
+                  </span>
+                  <Check v-if="form.task_id === t.id" class="w-3.5 h-3.5 ml-2 shrink-0 text-[#00A3C4]" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 7. Attendees & Anwesenheit -->
@@ -494,7 +563,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
         >
           <span v-if="saving">Speichern...</span>
-          <span v-else>{{ entryToEdit ? 'Änderungen speichern' : 'Eintrag speichern' }}</span>
+          <span v-else>{{ entryToEdit ? 'Änderungen speichern' : 'Dokument / Protokoll speichern' }}</span>
         </button>
       </div>
     </div>
@@ -581,6 +650,8 @@ watch(() => props.show, (newVal) => {
     selectedProjectId.value = props.projectId || 'auto'
     projectSearchTerm.value = ''
     isProjectDropdownOpen.value = false
+    taskSearchTerm.value = ''
+    isTaskDropdownOpen.value = false
     error.value = ''
     autoTaskMatch.value = ''
     loadedEmailFileName.value = ''
@@ -657,7 +728,36 @@ const selectProject = (id: string) => {
   isProjectDropdownOpen.value = false
 }
 
+const isTaskDropdownOpen = ref(false)
+const taskSearchTerm = ref('')
+
 const availableTasks = computed(() => props.tasks || [])
+
+const filteredTasks = computed(() => {
+  let list = props.tasks || []
+  if (taskSearchTerm.value.trim()) {
+    const q = taskSearchTerm.value.toLowerCase().trim()
+    list = list.filter(t => {
+      const matchTitle = (t.title || '').toLowerCase().includes(q)
+      const matchList = (t.list_title || '').toLowerCase().includes(q)
+      return matchTitle || matchList
+    })
+  }
+  return list
+})
+
+const getTaskDisplay = (taskId: string | null) => {
+  if (!taskId) return ''
+  if (taskId === 'auto') return '✨ Automatisch zuweisen (anhand Text)'
+  const t = (props.tasks || []).find(item => item.id === taskId)
+  if (!t) return taskId
+  return `${t.title}${t.list_title ? ` (${t.list_title})` : ''}`
+}
+
+const selectTask = (taskId: string | null) => {
+  form.value.task_id = taskId
+  isTaskDropdownOpen.value = false
+}
 const contactOptions = computed(() => props.contacts || [])
 
 const addContactToAttendees = () => {

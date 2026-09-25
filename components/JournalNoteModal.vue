@@ -10,10 +10,10 @@
         <div>
           <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
             <span class="text-xl">📝</span>
-            <span>Neue Notiz erfassen</span>
+            <span>Neuen Journaleintrag erfassen</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            Schnelle Notiz ohne Titel mit automatischer Projekt- und Aufgabenzuweisung.
+            Schneller Journaleintrag mit automatischer Projekt- und Aufgabenzuweisung.
           </p>
         </div>
         <button
@@ -34,14 +34,14 @@
         <!-- 1. Note Text (Primary Field - Autofocused) -->
         <div>
           <label class="block text-xs font-bold text-slate-800 mb-1">
-            Notiz / Inhalt <span class="text-rose-500">*</span>
+            Journaleintrag / Inhalt <span class="text-rose-500">*</span>
           </label>
           <textarea
             v-model="content"
             required
             rows="5"
             autofocus
-            placeholder="Schreibe deine kurze Notiz, Feststellung, Mangel oder Telefonnotiz hier rein..."
+            placeholder="Schreibe deinen Journaleintrag, Feststellung, Mangel oder Notiz hier rein..."
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4] resize-y"
           ></textarea>
         </div>
@@ -248,7 +248,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
         >
           <span v-if="saving">Speichern...</span>
-          <span v-else>Notiz speichern</span>
+          <span v-else>Eintrag speichern</span>
         </button>
       </div>
     </div>

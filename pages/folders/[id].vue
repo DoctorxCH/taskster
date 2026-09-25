@@ -74,7 +74,7 @@
           <div class="flex items-center gap-2 shrink-0">
             <!-- Journal & Note Buttons -->
             <button
-              @click="openJournalEntryModal"
+              @click="openJournalNoteModal"
               class="taskster_button px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 shadow-xs"
               title="Neuen Journaleintrag erfassen"
             >
@@ -82,12 +82,12 @@
               <span class="font-semibold">+ Journaleintrag</span>
             </button>
             <button
-              @click="openJournalNoteModal"
+              @click="openJournalEntryModal"
               class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
-              title="Neue Notiz erfassen"
+              title="Dokument oder Protokoll mit KI analysieren"
             >
-              <FileText class="w-3.5 h-3.5 text-slate-600" />
-              <span class="font-semibold">+ Notiz</span>
+              <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+              <span class="font-semibold">+ Dokument / Protokoll (KI)</span>
             </button>
 
             <!-- More Actions Dropdown -->
@@ -659,7 +659,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
               <button
-                @click="openJournalEntryModal"
+                @click="openJournalNoteModal"
                 type="button"
                 class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
               >
@@ -667,12 +667,12 @@
                 <span>+ Journaleintrag</span>
               </button>
               <button
-                @click="openJournalNoteModal"
+                @click="openJournalEntryModal"
                 type="button"
                 class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
               >
-                <FileText class="w-3.5 h-3.5 text-slate-600" />
-                <span>+ Notiz</span>
+                <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+                <span>+ Dokument / Protokoll (KI)</span>
               </button>
             </div>
           </div>
@@ -771,18 +771,18 @@
             </p>
             <div class="flex items-center justify-center gap-3">
               <button
-                @click="openJournalEntryModal"
+                @click="openJournalNoteModal"
                 class="taskster_button px-4 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>+ Journaleintrag</span>
               </button>
               <button
-                @click="openJournalNoteModal"
+                @click="openJournalEntryModal"
                 class="taskster_button_light px-4 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
               >
-                <FileText class="w-3.5 h-3.5 text-slate-600" />
-                <span>+ Notiz</span>
+                <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
+                <span>+ Dokument / Protokoll (KI)</span>
               </button>
             </div>
           </div>
@@ -3424,6 +3424,7 @@ import {
   Download,
   StickyNote,
   FileText,
+  Sparkles,
   Paperclip
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'

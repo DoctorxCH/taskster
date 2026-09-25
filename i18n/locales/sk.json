@@ -1468,7 +1468,7 @@
   "journal.title": "Projektový denník a logbook",
   "journal.subtitle": "Chronologický záznam udalostí, oficiálne kontrolné dni, poznámky a akčné karty umelej inteligencie.",
   "journal.new_entry": "+ Záznam do denníka",
-  "journal.new_note": "+ Poznámka",
+  "journal.new_note": "+ Dokument / Zápisnica (AI)",
   "journal.all": "Všetky záznamy",
   "journal.filter_all": "Všetky",
   "journal.filter_entries": "Stavebné porady a protokoly",

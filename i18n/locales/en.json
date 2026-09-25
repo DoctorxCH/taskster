@@ -1468,7 +1468,7 @@
   "journal.title": "Project Journal & Logbook",
   "journal.subtitle": "Chronological activity feed, official site meetings, notes, and AI action cards.",
   "journal.new_entry": "+ Journal Entry",
-  "journal.new_note": "+ Note",
+  "journal.new_note": "+ Document / Protocol (AI)",
   "journal.all": "All Entries",
   "journal.filter_all": "All",
   "journal.filter_entries": "Meetings & Protocols",
