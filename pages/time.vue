@@ -642,6 +642,85 @@ import {
 
 const { user, token } = useAuth()
 
+// ---------------------------------------------------------------------------
+// In-App Confirm & Toast System (Zero Native Browser Popups)
+// ---------------------------------------------------------------------------
+const confirmModal = ref<{
+  show: boolean
+  title: string
+  subtitle?: string
+  message: string
+  confirmText: string
+  danger: boolean
+  loading: boolean
+  error?: string
+  action?: () => Promise<void> | void
+}>({
+  show: false,
+  title: '',
+  subtitle: '',
+  message: '',
+  confirmText: 'Bestätigen',
+  danger: true,
+  loading: false
+})
+
+const pageToast = ref<{
+  show: boolean
+  title?: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}>({
+  show: false,
+  title: '',
+  message: '',
+  type: 'info'
+})
+let pageToastTimer: any = null
+
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', title?: string) => {
+  pageToast.value = { show: true, message, type, title }
+  if (pageToastTimer) clearTimeout(pageToastTimer)
+  pageToastTimer = setTimeout(() => {
+    pageToast.value.show = false
+  }, 4000)
+}
+
+const triggerConfirmModal = (opts: {
+  title: string
+  subtitle?: string
+  message: string
+  confirmText?: string
+  danger?: boolean
+  action: () => Promise<void> | void
+}) => {
+  confirmModal.value = {
+    show: true,
+    title: opts.title,
+    subtitle: opts.subtitle,
+    message: opts.message,
+    confirmText: opts.confirmText || 'Löschen',
+    danger: opts.danger !== false,
+    loading: false,
+    error: '',
+    action: opts.action
+  }
+}
+
+const executeConfirmModalAction = async () => {
+  if (!confirmModal.value.action) return
+  confirmModal.value.loading = true
+  confirmModal.value.error = ''
+  try {
+    await confirmModal.value.action()
+    confirmModal.value.show = false
+  } catch (err: any) {
+    confirmModal.value.error = err?.data?.statusMessage || err?.message || 'Fehler beim Ausführen der Aktion'
+  } finally {
+    confirmModal.value.loading = false
+  }
+}
+
 const authHeaders = () => ({
   'Authorization': `Bearer ${token.value || ''}`
 })
