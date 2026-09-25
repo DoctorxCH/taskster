@@ -4514,7 +4514,7 @@
                 <div class="flex items-center space-x-1.5">
                   <Sparkles class="w-4 h-4 text-[#00A3C4]" />
                   <span class="text-xs font-black text-cyan-950">{{ $t('journal.analyze_with_ai') }}</span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">DeepSeek Engine</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">KI-Engine</span>
                 </div>
                 <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
                   Generiert eine prägnante Zusammenfassung des Protokolls und schlägt neue Aufgaben & Termine im Kanban-Board vor.
@@ -4552,7 +4552,7 @@
       </div>
     </div>
 
-    <!-- MODAL 2: NEUE NOTIZ & E-MAIL IMPORT (mit KI DeepSeek Engine) -->
+    <!-- MODAL 2: NEUE NOTIZ & E-MAIL IMPORT (mit KI-Engine) -->
     <div
       v-if="showNewNoteModal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in"
@@ -4786,7 +4786,7 @@
                 <div class="flex items-center space-x-1.5">
                   <Sparkles class="w-4 h-4 text-[#00A3C4]" />
                   <span class="text-xs font-black text-cyan-950">{{ $t('journal.analyze_with_ai') }}</span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">DeepSeek Engine</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">KI-Engine</span>
                 </div>
                 <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">
                   Generiert eine prägnante Zusammenfassung und schlägt interaktive Aktionskarten (neue Aufgaben, Fristverschiebungen, Erledigungen) vor.

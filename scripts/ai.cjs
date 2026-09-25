@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * ai.cjs — Taskster AI-CLI (OpenRouter / DeepSeek V4 Flash)
+ * ai.cjs — Taskster AI-CLI (OpenRouter)
  * =========================================================
  * Direkter Aufruf aus dem VS-Code-Terminal. Nutzt exakt die Konfiguration aus
- * `ai.config.json` und pinnt den Baidu-Qianfan-Endpoint (`baidu/fp8`) via
- * `provider.only` + `allow_fallbacks: false`.
+ * `ai.config.json`.
  *
  * Der API-Key wird NUR aus der Umgebung gelesen und nie geloggt oder committet.
  *

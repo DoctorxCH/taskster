@@ -1163,7 +1163,7 @@
   "StopwatchModal.was_wurde_während_dieser_zeit_erled": "What was completed during this time?",
   "StopwatchModal.möchtest_du_diese_zeitmessung_wirkl": "Do you really want to discard this time measurement?",
   "VoiceRecorderModal.sprachassistent_notiz": "Voice assistant & note",
-  "VoiceRecorderModal.whisper_deepseek": "Whisper + DeepSeek",
+  "VoiceRecorderModal.whisper_ai": "AI Assistant",
   "VoiceRecorderModal.sprache": "Language:",
   "VoiceRecorderModal.sprachaufnahme_starten": "Start voice recording",
   "VoiceRecorderModal.sprich_deine_aufgabe_notiz_oder_sta": "Speak your task, note or status update. The AI recognizes the task name, number or address and suggests suitable actions.",

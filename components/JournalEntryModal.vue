@@ -44,7 +44,7 @@
               </div>
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 border border-amber-300 text-amber-900">
-              DeepSeek AI Engine
+              KI-Engine
             </span>
           </div>
 

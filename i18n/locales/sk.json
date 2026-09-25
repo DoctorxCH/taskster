@@ -1162,7 +1162,7 @@
   "StopwatchModal.was_wurde_während_dieser_zeit_erled": "Čo bolo počas tohto času vykonané?",
   "StopwatchModal.möchtest_du_diese_zeitmessung_wirkl": "Naozaj chcete zahodiť toto meranie času?",
   "VoiceRecorderModal.sprachassistent_notiz": "Hlasový asistent a poznámka",
-  "VoiceRecorderModal.whisper_deepseek": "Whisper + DeepSeek",
+  "VoiceRecorderModal.whisper_ai": "AI Asistent",
   "VoiceRecorderModal.sprache": "Jazyk:",
   "VoiceRecorderModal.sprachaufnahme_starten": "Spustiť hlasové nahrávanie",
   "VoiceRecorderModal.sprich_deine_aufgabe_notiz_oder_sta": "Nadiktujte svoju úlohu, poznámku alebo aktualizáciu stavu. AI rozpozná názov úlohy, číslo alebo adresu a navrhne vhodné akcie.",

@@ -1572,7 +1572,7 @@ function parseImportDate($value): ?string {
 }
 
 // ---------------------------------------------------------------------------
-// AI (OpenRouter / DeepSeek V4 Flash) — serverseitig, Key bleibt in .env
+// AI (OpenRouter) — serverseitig, Key bleibt in .env
 // ---------------------------------------------------------------------------
 
 /**
@@ -5432,7 +5432,7 @@ try {
                                ], JSON_UNESCAPED_UNICODE) . "\n\n";
         }
 
-        // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
+        // 3. KI-Verarbeitung (OpenRouter / KI-Engine)
         $systemPrompt = "Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.\n"
                       . "Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung/E-Mail präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.\n"
                       . "WICHTIGE REGELN:\n"
@@ -6767,7 +6767,7 @@ try {
     }
 
     // ==========================================
-    // AI ENDPOINTS (OpenRouter / DeepSeek V4 Flash)
+    // AI ENDPOINTS (OpenRouter)
     // Serverseitig: API-Key bleibt in .env, nie im Client.
     // ==========================================
 

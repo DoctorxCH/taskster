@@ -28,7 +28,7 @@
 - **CLI (VS Code):** `npm run ai -- "Frage"`, `--file <pfad>`, `--git [n]`, `--json`, `--check`.
 - **Produktion (PHP / Nitro):** `POST /api/ai/chat` (Auth nötig), `GET /api/ai/config`.
 - **VS Code Tasks:** `AI: Frage stellen`, `AI: Aktuelle Datei analysieren`, `AI: Letzte Git-Änderungen erklären`.
-- **Doku:** [97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md](97_korrekturen/2026-09-20_ai_anbindung_openrouter_deepseek.md)
+- **Doku:** [97_korrekturen/2026-09-20_ai_anbindung_openrouter.md](97_korrekturen/2026-09-20_ai_anbindung_openrouter.md)
 
 ## 2. Antigravity Subagents & Kernrollen
 - **Architekt:** [.agents/agents/architect.md](.agents/agents/architect.md) / [.agents/rules/martin_persona.md](.agents/rules/martin_persona.md) (SaaS, Berechtigungen, B2B)

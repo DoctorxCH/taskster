@@ -30,7 +30,7 @@ Die Seite `/dashboard` selbst besitzt keine Unterverzeichnisse (`/dashboard/*`),
 | **Ordner löschen** (`showDeleteFolderModal`) | Sicherheitsabfrage vor Ordnerlöschung | Sauberes modales Popup, Buttons korrekt | Vorgabekonform |
 | **Neues Projekt** (`showNewProjectModal`) | Projektanlage für Free-User (ohne Ordner) | Buttons `h-9` statt Standard | Button-Höhe angepasst |
 | **Projekt löschen** (`showDeleteProjectModal`) | Sicherheitsabfrage für Free-User | Sauberes modales Popup | Vorgabekonform |
-| **Sprachassistent** (`VoiceRecorderModal`) | Whisper v3 Turbo Aufnahme & DeepSeek Smart Actions | Technisch hochmodern, korrekte Buttons | Vorgabekonform |
+| **Sprachassistent** (`VoiceRecorderModal`) | Whisper v3 Turbo Aufnahme & KI Smart Actions | Technisch hochmodern, korrekte Buttons | Vorgabekonform |
 | **Command Palette** (`CommandPalette`) | Globale Volltextsuche (Strg+K) | Sauberes Tastatur- und Klick-Event | Vorgabekonform |
 | **Natives Browser-Popup** (`alert()`) | Fehlermeldung bei Tages-Todo-Erstellung | **Verstoss gegen Systemregel 3:** `alert()` in Zeile 1541 | **Entfernt** und durch elegantes In-App Feedback ersetzt |
 

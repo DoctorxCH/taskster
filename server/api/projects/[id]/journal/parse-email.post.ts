@@ -240,7 +240,7 @@ export default defineEventHandler(async (event) => {
     })}\n\n`
   }
 
-  // 3. KI-Verarbeitung (OpenRouter / DeepSeek Engine)
+  // 3. KI-Verarbeitung (OpenRouter / KI-Engine)
   const systemPrompt = `Du bist ein intelligenter technischer Bauleiter-Assistent im System Taskster.
 Analysiere den Inhalt des Journaleintrags, Protokolls oder der Mitteilung präzise im Kontext des Bauprojekts und generiere ein valides JSON-Objekt.
 WICHTIGE REGELN:

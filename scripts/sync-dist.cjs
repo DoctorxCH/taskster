@@ -51,4 +51,18 @@ if (fs.existsSync(targetNuxtDir) && fs.existsSync(sourceNuxtDir)) {
   }
 }
 
+// 3. Clean up obsolete hash folders in _i18n directory
+const targetI18nDir = path.join(targetDir, '_i18n')
+const sourceI18nDir = path.join(sourceDir, '_i18n')
+if (fs.existsSync(targetI18nDir) && fs.existsSync(sourceI18nDir)) {
+  const sourceHashes = new Set(fs.readdirSync(sourceI18nDir))
+  const targetHashes = fs.readdirSync(targetI18nDir)
+  for (const h of targetHashes) {
+    if (!sourceHashes.has(h)) {
+      fs.rmSync(path.join(targetI18nDir, h), { recursive: true, force: true })
+      console.log(`  🗑️ Altes i18n-Verzeichnis gelöscht: _i18n/${h}`)
+    }
+  }
+}
+
 console.log('✅ Synchronisation nach Git-Root erfolgreich abgeschlossen!')

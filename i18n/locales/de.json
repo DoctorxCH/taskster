@@ -1163,7 +1163,7 @@
   "StopwatchModal.was_wurde_während_dieser_zeit_erled": "Was wurde während dieser Zeit erledigt?",
   "StopwatchModal.möchtest_du_diese_zeitmessung_wirkl": "Möchtest du diese Zeitmessung wirklich verwerfen?",
   "VoiceRecorderModal.sprachassistent_notiz": "Sprachassistent & Notiz",
-  "VoiceRecorderModal.whisper_deepseek": "Whisper + DeepSeek",
+  "VoiceRecorderModal.whisper_ai": "KI-Assistent",
   "VoiceRecorderModal.sprache": "Sprache:",
   "VoiceRecorderModal.sprachaufnahme_starten": "Sprachaufnahme starten",
   "VoiceRecorderModal.sprich_deine_aufgabe_notiz_oder_sta": "Sprich deine Aufgabe, Notiz oder Statusmeldung ein. Die KI erkennt Aufgabenname, Nummer oder Adresse und schlägt passende Aktionen vor.",

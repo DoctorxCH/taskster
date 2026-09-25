@@ -157,7 +157,7 @@ Antworte AUSSCHLIESSLICH als gültiges JSON-Objekt mit folgender Struktur:
           'X-Title': 'Taskster Voice Intent Analysis'
         },
         body: JSON.stringify({
-          model: config.model || 'deepseek/deepseek-v4-flash-0731',
+          model: config.model || 'google/gemini-2.5-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Hier ist die Sprachnotiz des Nutzers:\n"${text}"\n\nAnalysiere und gib ausschliesslich das JSON-Objekt zurück.` }

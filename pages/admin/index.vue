@@ -1851,10 +1851,10 @@
               <input
                 v-model="aiSettings.ai_model"
                 type="text"
-                placeholder="z.B. google/gemini-2.5-flash oder deepseek/deepseek-chat"
+                placeholder="z.B. google/gemini-2.5-flash"
                 class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-mono"
               />
-              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: <code>google/gemini-2.5-flash</code> oder <code>deepseek/deepseek-chat</code></p>
+              <p class="text-[11px] text-slate-500 mt-1">Empfohlen: <code>google/gemini-2.5-flash</code></p>
             </div>
 
             <div>

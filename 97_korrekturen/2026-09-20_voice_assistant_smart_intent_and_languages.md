@@ -5,7 +5,7 @@
 **Bereich:** Voice Assistant, AI Intent Recognition, Journal API, Settings, Whisper & Multi-Language  
 
 ## 1. Übersicht & Ziel
-1. **Intelligente Aufgabenerkennung & Handlungsvorschläge:** Nach Aufnahme einer Sprachnotiz analysiert die KI (DeepSeek V4 Flash) den Inhalt im Kontext aller aktiven Projekte und offenen Aufgaben des Nutzers. Erkennt sie Aufgabennamen, Nummern (#12), Räume/Adressen oder Checklisten-Punkte, bietet sie interaktive 1-Klick-Aktionen an:
+1. **Intelligente Aufgabenerkennung & Handlungsvorschläge:** Nach Aufnahme einer Sprachnotiz analysiert die KI den Inhalt im Kontext aller aktiven Projekte und offenen Aufgaben des Nutzers. Erkennt sie Aufgabennamen, Nummern (#12), Räume/Adressen oder Checklisten-Punkte, bietet sie interaktive 1-Klick-Aktionen an:
    - 📝 **Aufgabe ergänzen** (Hängt Notiz direkt an die erkannte Aufgabe an)
    - ✅ **Aufgabe abschliessen** (Setzt Status auf Erledigt + dokumentiert Notiz)
    - 📋 **Checkliste hinzufügen** (Ergänzt Unteraufgaben)

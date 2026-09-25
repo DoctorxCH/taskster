@@ -44,7 +44,7 @@ User können Kontakte für Baustellen, Gewerke und Projekte erfassen und pflegen
     - Echtzeit-Erkennung von Duplikaten bei Eingabe oder KI-Autofill anhand von E-Mail, Telefon/Mobilnummer (letzte 7 Ziffern) oder Vor-/Nachname.
     - Warnbanner im Modal mit 3 Schnellaktionen: "Bestehenden Kontakt bearbeiten", "Daten zusammenführen (Merge)" und "Trotzdem neu anlegen".
     - Backend-Schutz (HTTP 409 Conflict) verhindert versehentliches doppeltes Erfassen, außer `force_duplicate: true` wird explizit übergeben.
-  - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene DeepSeek V4 Flash API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Adresse, Webseite, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
+  - **KI-Autofill Assistent:** Im Kontakt-Erstellungsdialog integriert. Aus beliebigem unstrukturiertem Text (E-Mail-Signaturen, WhatsApp-Nachrichten, Notizen) extrahiert die angebundene KI-API automatisch Vorname, Nachname, Firma, Funktion, Telefonnummern, E-Mail, Adresse, Webseite, Kategorie/Gruppe, Tags und Notizen und befüllt das Formular zur Überprüfung.
   - Standard Taskster-Buttons: `taskster_button`, `taskster_button_light`, `taskster_button_accent` (`px-6 text-xs h-[42px] rounded-lg`).
 - **Projekt-Detailseite (`pages/projects/[id].vue`):**
   - Neuer Tab `📇 Kontakte (X)` im Projektheader.

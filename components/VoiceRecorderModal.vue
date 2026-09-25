@@ -14,7 +14,7 @@
             <div class="flex items-center gap-2">
               <h3 class="text-base font-bold text-slate-900 tracking-tight">Sprachassistent & Notiz</h3>
               <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
-                Whisper + DeepSeek
+                {{ $t('VoiceRecorderModal.whisper_ai') }}
               </span>
             </div>
             <p class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
@@ -140,8 +140,8 @@
           </h4>
           <p class="text-xs text-slate-500 max-w-xs mx-auto">
             {{ state === 'transcribing' 
-                ? 'OpenRouter Whisper Turbo wandelt die Aufnahme in Text um.' 
-                : 'DeepSeek erkennt Erwähnungen von Aufgaben, Adressen und Handlungsschritte.' }}
+                ? 'Die Sprachaufnahme wird in Text umgewandelt...' 
+                : 'Die KI analysiert Aufgaben, Adressen und Handlungsschritte.' }}
           </p>
         </div>
 

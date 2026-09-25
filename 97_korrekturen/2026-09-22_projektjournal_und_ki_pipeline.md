@@ -30,7 +30,7 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
   - E-Mail Ingestion Pipeline:
     1. Absender/Empfänger Regex-Extraktion.
     2. Prüft Tabelle `contacts` (Mandant `company_id`), legt fehlende Kontakte automatisch an.
-    3. KI-Verarbeitung (OpenRouter / DeepSeek Engine) mit Projektkontext (bestehende Abschnitte/Aufgaben).
+    3. KI-Verarbeitung (OpenRouter / KI-Engine) mit Projektkontext (bestehende Abschnitte/Aufgaben).
     4. Gibt striktes JSON zurück (`summary`, `action_items` mit `create_task`, `update_task`, `complete_task`).
     5. Persistiert E-Mail als Journalnotiz (`category = email`) mit KI-Metadaten.
 - `PUT /api/projects/:id/journal/:journalId`:
@@ -44,12 +44,12 @@ Implementierung des neuen Moduls "Projektjournal" auf Projektebene (`pages/proje
   - Segmented Control Wechsler neben dem Titel: `[Kanban]` vs. `[Projektjournal]`.
 - Timeline Feed:
   - Unterscheidung Bausitzung (strukturiertes Protokoll mit Anwesenheitsbadges) vs. E-Mail/Notiz.
-  - E-Mail Header & DeepSeek KI-Zusammenfassungs-Box.
+  - E-Mail Header & KI-Zusammenfassungs-Box.
   - Interaktive KI-Aktionskarten (`[Aufgabe anlegen]`, `[Aufgabe aktualisieren]`, `[Aufgabe abschliessen]`) mit Direktanwendung im Board und Metadaten-Persistierung.
   - Dateianhänge Galerie mit Download und Dateityp-Icons.
 - Modals:
   - `showNewEntryModal`: Bausitzung / Protokoll / Bautagebuch mit Teilnehmerverwaltung (Kontaktauswahl, Rolle, Anwesenheits-Checkbox) und Uploads.
-  - `showNewNoteModal`: Schnelle Notiz / E-Mail-Import mit `.eml` Dropzone (automatisches Auslesen von Betreff, Absender und Body) und DeepSeek KI-Schalter.
+  - `showNewNoteModal`: Schnelle Notiz / E-Mail-Import mit `.eml` Dropzone (automatisches Auslesen von Betreff, Absender und Body) und KI-Schalter.
 - Design-System:
   - Einhaltung der Vorgaben: `taskster_button`, `taskster_button_light`, `taskster_button_accent`, `px-6 text-xs h-[42px] rounded-lg`, Liquid Glass Styling.
 - i18n:

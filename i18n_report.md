@@ -111,7 +111,7 @@
 | Zeile | Typ | Kontext | Extrahierter Text |
 | :--- | :--- | :--- | :--- |
 | L15 | `template_text` | `tag_content` | Sprachassistent & Notiz |
-| L16 | `template_text` | `tag_content` | Whisper + DeepSeek |
+| L16 | `template_text` | `tag_content` | KI-Assistent |
 | L21 | `template_text` | `tag_content` | Sprache: |
 | L56 | `template_text` | `tag_content` | Sprachaufnahme starten |
 | L57 | `template_text` | `tag_content` | Sprich deine Aufgabe, Notiz oder Statusmeldung ein. Die KI erkennt Aufgabenname, Nummer oder Adresse und schlägt passende Aktionen vor. |
@@ -120,7 +120,7 @@
 | L85 | `template_text` | `tag_content` | Aufnahme starten |
 | L103 | `template_text` | `tag_content` | Aufnahme läuft... ( ) |
 | L127 | `template_text` | `tag_content` | Stoppen & Analysieren |
-| L141 | `template_text` | `tag_content` | {{ state === 'transcribing' ? 'OpenRouter Whisper Turbo wandelt die Aufnahme in Text um.' : 'DeepSeek erkennt Erwähnungen von Aufgaben, Adressen und Handlungsschritte.' }} |
+| L141 | `template_text` | `tag_content` | {{ state === 'transcribing' ? 'Die Sprachaufnahme wird in Text umgewandelt...' : 'Die KI analysiert Aufgaben, Adressen und Handlungsschritte.' }} |
 | L155 | `template_text` | `tag_content` | KI-Erkennung: |
 | L169 | `template_text` | `tag_content` | Zugeordnete Aufgabe |
 | L171 | `template_text` | `tag_content` | Projekt: |
