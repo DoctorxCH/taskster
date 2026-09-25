@@ -787,42 +787,90 @@
             </div>
           </div>
 
-          <!-- Journal Entries List -->
-          <div v-else class="space-y-3.5">
+          <!-- Journal Entries List (2-Column Grid matching Screenshot 2 / Project Journal) -->
+          <div v-else class="space-y-4">
             <div
               v-for="entry in filteredFolderJournals"
               :key="entry.id"
-              class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs hover:shadow-xs transition"
+              class="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative overflow-hidden"
+              :class="[
+                entry.type === 'entry' ? 'border-l-4 border-l-[#00A3C4]' : (entry.category === 'email' ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-indigo-400')
+              ]"
             >
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 pb-2.5 border-b border-slate-100">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-xs font-bold text-slate-900">{{ entry.author_name || entry.user_name || 'Benutzer' }}</span>
-                  <span class="text-slate-300">•</span>
-                  <span class="text-xs text-slate-500">{{ new Date(entry.entry_date || entry.created_at).toLocaleDateString('de-CH') }}</span>
-                  <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase"
-                    :class="entry.category === 'mangel' ? 'bg-rose-50 text-rose-700 border-rose-200' : (entry.category === 'baufortschritt' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (entry.category === 'email' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'))"
-                  >
-                    {{ entry.category || 'Notiz' }}
-                  </span>
+              <!-- Card Top Bar: Icon, Title, Badges, Author, Date, Quick Action Buttons -->
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <div class="flex items-start space-x-3 min-w-0">
+                  <div class="text-2xl shrink-0 mt-0.5">
+                    {{ getFolderCategoryIcon(entry.category, entry.type) }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <h4 class="text-base font-bold text-slate-900 leading-snug">{{ entry.title || 'Ohne Titel' }}</h4>
+                      <span
+                        class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border tracking-wider"
+                        :class="getFolderCategoryBadge(entry.category, entry.type).bg"
+                      >
+                        {{ getFolderCategoryBadge(entry.category, entry.type).label }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                      <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name || entry.user_name || 'Benutzer' }}</strong></span>
+                      <span>•</span>
+                      <span>{{ new Date(entry.entry_date || entry.created_at).toLocaleDateString('de-CH') }}</span>
+                      <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
+                        <span>• Verknüpft: {{ entry.task_title }}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="flex items-center gap-2 flex-wrap">
+                <!-- Top-Right Actions: Project Link, AI Trigger, Edit, Visibility, Delete -->
+                <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
                   <NuxtLink
                     v-if="entry.project_id"
                     :to="`/projects/${entry.project_id}`"
                     class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 flex items-center gap-1 transition"
+                    title="Zum Projekt springen"
                   >
-                    <Folder class="w-3 h-3" />
-                    <span>Projekt: {{ getProjectTitle(entry.project_id) }}</span>
+                    <Folder class="w-3 h-3 text-[#00A3C4]" />
+                    <span class="max-w-[120px] truncate">{{ getProjectTitle(entry.project_id) }}</span>
                   </NuxtLink>
                   <span v-else class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                     Ordner-Journal
                   </span>
+
+                  <!-- AI Trigger Button -->
+                  <button
+                    type="button"
+                    @click="triggerFolderAiAnalysis(entry)"
+                    :disabled="folderAnalyzingEntryId === entry.id"
+                    class="text-[11px] font-bold px-2.5 py-1 rounded-lg border flex items-center space-x-1 transition cursor-pointer"
+                    :class="entry.metadata?.ai_summary
+                      ? 'bg-slate-50 hover:bg-cyan-50 border-slate-200 text-slate-700 hover:text-[#00A3C4]'
+                      : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white shadow-xs border-transparent'"
+                    :title="entry.metadata?.ai_summary ? 'KI-Analyse erneut ausführen' : 'Mit KI analysieren'"
+                  >
+                    <Sparkles class="w-3 h-3" :class="{ 'animate-spin': folderAnalyzingEntryId === entry.id }" />
+                    <span>{{ folderAnalyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
+                  </button>
+
+                  <!-- Edit action -->
+                  <button
+                    v-if="entry.can_edit || user?.id === folder.owner_id || user?.is_superadmin || entry.author_id === user?.id"
+                    @click="openEditFolderJournal(entry)"
+                    type="button"
+                    class="p-1 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition cursor-pointer"
+                    title="Eintrag bearbeiten"
+                  >
+                    <Pencil class="w-3.5 h-3.5" />
+                  </button>
+
+                  <!-- Delete action -->
                   <button
                     v-if="entry.can_edit || user?.id === folder.owner_id || user?.is_superadmin || entry.author_id === user?.id"
                     @click="deleteFolderJournal(entry.id)"
-                    class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                    type="button"
+                    class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                     title="Eintrag löschen"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
@@ -830,53 +878,262 @@
                 </div>
               </div>
 
-              <h4 v-if="entry.title" class="text-sm font-bold text-slate-900 mb-1.5">
-                {{ entry.title }}
-              </h4>
+              <!-- Card Body Grid: 2 Spalten (Breit links für Inhalt & KI, Schmal rechts für Metadaten & Verknüpfung) -->
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                <!-- HAUPTBEREICH (BREIT - 8 Spalten): Fokus auf KI-Zusammenfassung, Aktionskarten, Inhalt/Notizen -->
+                <div class="lg:col-span-8 space-y-4">
+                  <!-- AI Summary Box -->
+                  <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                      <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
+                        <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                        <span>KI-Zusammenfassung</span>
+                        <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
+                      </div>
+                      <button
+                        type="button"
+                        @click="triggerFolderAiAnalysis(entry)"
+                        :disabled="folderAnalyzingEntryId === entry.id"
+                        class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Sparkles class="w-3 h-3" :class="{ 'animate-spin': folderAnalyzingEntryId === entry.id }" />
+                        <span>{{ folderAnalyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+                      </button>
+                    </div>
+                    <p class="text-xs text-slate-800 leading-relaxed font-sans">
+                      {{ entry.metadata.ai_summary }}
+                    </p>
+                  </div>
 
-              <p class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-                {{ entry.content }}
-              </p>
+                  <!-- Interactive AI Action Cards (falls vorhanden) -->
+                  <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                      <span>⚡</span>
+                      <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
+                    </div>
 
-              <!-- Attendees -->
-              <div v-if="entry.attendees && entry.attendees.length > 0" class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
-                <span class="text-[11px] font-bold text-slate-500 mr-1">Teilnehmer:</span>
-                <span
-                  v-for="(atd, atdIdx) in entry.attendees"
-                  :key="atdIdx"
-                  class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-medium"
-                  :class="atd.present ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-50 border-slate-200 text-slate-400 line-through'"
-                >
-                  {{ atd.name }}{{ atd.role ? ` (${atd.role})` : '' }}
-                </span>
-              </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div
+                        v-for="(item, idx) in entry.metadata.action_items"
+                        :key="idx"
+                        class="p-3 rounded-2xl border transition shadow-xs flex flex-col justify-between"
+                        :class="[
+                          item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
+                            item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200' :
+                            item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200' :
+                            'bg-purple-50/70 border-purple-200'
+                          )
+                        ]"
+                      >
+                        <div>
+                          <div class="flex items-center justify-between gap-1 mb-1">
+                            <span
+                              class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
+                              :class="[
+                                item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                'bg-purple-100 text-purple-800 border-purple-300'
+                              ]"
+                            >
+                              {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
+                            </span>
 
-              <!-- Attachments -->
-              <div v-if="entry.attachments && entry.attachments.length > 0" class="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-slate-100">
-                <div
-                  v-for="(att, attIdx) in entry.attachments"
-                  :key="attIdx"
-                  class="flex items-center space-x-1 text-xs px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium"
-                >
-                  <Paperclip class="w-3.5 h-3.5 text-slate-400" />
-                  <span>{{ att.file_name }}</span>
-                  <span class="text-[10px] text-slate-400">({{ Math.round(att.file_size / 1024) }} KB)</span>
+                            <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
+                              <CheckCircle2 class="w-3 h-3" />
+                              <span>Erledigt</span>
+                            </span>
+                          </div>
+
+                          <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
+                            {{ item.title }}
+                          </h5>
+
+                          <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
+                            {{ item.description || item.reason }}
+                          </p>
+
+                          <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-2">
+                            <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                              📅 {{ item.due_date || item.suggested_due_date }}
+                            </span>
+                            <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
+                              ⚡ {{ item.priority }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Text-Inhalt / Notizen (Cleaned & 5-Line Smooth Collapse) -->
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
+                    </div>
+
+                    <div class="relative">
+                      <div
+                        class="text-xs text-slate-800 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans transition-all duration-300 ease-in-out overflow-hidden"
+                        :style="isFolderJournalExpanded(entry.id) || !isLongFolderJournalContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+                      >
+                        {{ cleanFolderJournalContent(entry.content) }}
+                      </div>
+
+                      <!-- Soft gradient fade-out over 5th line when collapsed -->
+                      <div
+                        v-if="isLongFolderJournalContent(entry.content) && !isFolderJournalExpanded(entry.id)"
+                        class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-slate-100 via-slate-100/80 to-transparent pointer-events-none rounded-b-2xl"
+                      ></div>
+                    </div>
+
+                    <div v-if="isLongFolderJournalContent(entry.content)" class="mt-1.5">
+                      <button
+                        type="button"
+                        @click="toggleFolderJournalExpand(entry.id)"
+                        class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
+                      >
+                        <ChevronDown v-if="!isFolderJournalExpanded(entry.id)" class="w-3.5 h-3.5" />
+                        <ChevronUp v-else class="w-3.5 h-3.5" />
+                        <span>{{ isFolderJournalExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Linked Task -->
-              <div v-if="entry.task_id" class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 text-xs">
-                <span class="text-slate-600 flex items-center gap-1.5 font-medium">
-                  <span>📌 Verknüpfte Aufgabe:</span>
-                  <strong class="text-slate-900 font-bold">{{ entry.task_title || 'Aufgabe' }}</strong>
-                </span>
-                <NuxtLink
-                  v-if="entry.project_id"
-                  :to="`/projects/${entry.project_id}`"
-                  class="text-[11px] font-bold text-[#00A3C4] hover:underline"
-                >
-                  Im Projekt öffnen →
-                </NuxtLink>
+                <!-- METADATEN-SIDEBAR (SCHMAL - 4 Spalten): Verknüpfte Aufgabe, Teilnehmer, Anhänge -->
+                <div class="lg:col-span-4 space-y-3">
+                  <!-- 1. Prominentes Aufgaben-Verknüpfungs-Widget -->
+                  <div
+                    class="p-3.5 rounded-2xl border transition-all"
+                    :class="entry.task_id ? 'bg-cyan-50/70 border-cyan-200' : 'bg-slate-50/80 border-slate-200'"
+                  >
+                    <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                      <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
+                        <span>📌</span>
+                        <span>Verknüpfte Aufgabe</span>
+                      </span>
+                      <span
+                        class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
+                        :class="entry.task_id ? 'bg-white border-cyan-300 text-cyan-800' : 'bg-amber-50 border-amber-200 text-amber-800'"
+                      >
+                        {{ entry.task_id ? (getFolderTaskSectionTitle(entry.task_id) || 'Zugeordnet') : 'Offen' }}
+                      </span>
+                    </div>
+
+                    <!-- Zustand A: Aufgabe bereits verknüpft -->
+                    <div v-if="entry.task_id" class="space-y-2">
+                      <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                        {{ entry.task_title || getFolderTaskTitle(entry.task_id) }}
+                      </p>
+                      <NuxtLink
+                        v-if="entry.project_id"
+                        :to="`/projects/${entry.project_id}`"
+                        class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:underline transition cursor-pointer"
+                      >
+                        <ExternalLink class="w-3 h-3" />
+                        <span>Aufgabe im Projekt öffnen</span>
+                      </NuxtLink>
+
+                      <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
+                      <div class="pt-1.5 border-t border-cyan-200/70">
+                        <select
+                          :value="entry.task_id"
+                          :disabled="updatingFolderTaskId === entry.id"
+                          @change="updateFolderJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                          class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                        >
+                          <option value="">-- Verknüpfung lösen --</option>
+                          <option v-for="t in getAvailableTasksForFolderEntry(entry)" :key="t.id" :value="t.id">
+                            {{ t.title }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Zustand B: Keine Aufgabe verknüpft -->
+                    <div v-else class="space-y-1">
+                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe zuweisen:</label>
+                      <select
+                        :disabled="updatingFolderTaskId === entry.id"
+                        @change="updateFolderJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                        class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+                      >
+                        <option value="">-- Aufgabe auswählen --</option>
+                        <option v-for="t in getAvailableTasksForFolderEntry(entry)" :key="t.id" :value="t.id">
+                          {{ t.title }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 2. Absender-Details (bei E-Mails) -->
+                  <div v-if="entry.metadata?.email_sender || entry.metadata?.sender?.email" class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/70 text-xs text-amber-950 space-y-1">
+                    <div class="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center space-x-1">
+                      <span>✉️</span>
+                      <span>Absender</span>
+                    </div>
+                    <div class="font-bold text-slate-900 leading-tight">
+                      {{ entry.metadata?.sender?.name || entry.metadata?.email_sender || entry.metadata?.sender?.email }}
+                    </div>
+                    <div v-if="entry.metadata?.sender?.email" class="text-[11px] text-slate-500 font-mono truncate">
+                      &lt;{{ entry.metadata.sender.email }}&gt;
+                    </div>
+                  </div>
+
+                  <!-- 3. Teilnehmerliste (bei Protokollen) -->
+                  <div v-if="entry.attendees && entry.attendees.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                      <span class="flex items-center space-x-1">
+                        <Users class="w-3 h-3 text-[#00A3C4]" />
+                        <span>Teilnehmer</span>
+                      </span>
+                      <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-white border border-slate-200 text-slate-700">
+                        {{ entry.attendees.filter(a => a.present).length }} / {{ entry.attendees.length }}
+                      </span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                      <div
+                        v-for="atd in entry.attendees"
+                        :key="atd.id || atd.name"
+                        class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[11px] font-medium border"
+                        :class="atd.present ? 'bg-white border-emerald-300 text-slate-800' : 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="atd.present ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                        <span class="truncate max-w-[130px]">{{ atd.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 4. Dateianhänge -->
+                  <div v-if="entry.attachments && entry.attachments.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                      <Paperclip class="w-3 h-3 text-slate-400" />
+                      <span>Dateianhänge ({{ entry.attachments.length }})</span>
+                    </div>
+                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                      <div
+                        v-for="(att, attIdx) in entry.attachments"
+                        :key="attIdx"
+                        class="flex items-center justify-between p-2 rounded-xl bg-white hover:bg-cyan-50/60 border border-slate-200 hover:border-cyan-300 transition text-xs"
+                      >
+                        <div class="flex items-center space-x-2 min-w-0">
+                          <Paperclip class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <a
+                            v-if="att.file_path"
+                            :href="att.file_path"
+                            :download="att.file_name"
+                            target="_blank"
+                            class="font-medium text-slate-800 hover:text-[#00A3C4] truncate max-w-[150px]"
+                          >
+                            {{ att.file_name }}
+                          </a>
+                          <span v-else class="font-medium text-slate-800 truncate max-w-[150px]">{{ att.file_name }}</span>
+                        </div>
+                        <span v-if="att.file_size" class="text-[10px] text-slate-400 shrink-0">({{ Math.round(att.file_size / 1024) }} KB)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1103,116 +1360,123 @@
             </button>
           </div>
 
-          <!-- Unified Contact Cards Grid (1:1 with pages/contacts/index.vue) -->
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Unified Contact Cards Grid (Compact & Space-Efficient) -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
             <div
               v-for="c in folderContacts"
               :key="c.id"
-              class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition"
+              class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3.5 flex flex-col justify-between hover:border-[#00A3C4] hover:shadow-md transition-all shadow-2xs"
             >
               <div>
-                <!-- Card Top: Avatar, Name, Company, Function -->
-                <div class="flex items-start justify-between gap-3 mb-3">
-                  <div class="flex items-start gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-md bg-[#00A3C4] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                <!-- Card Top: Avatar, Name, Company/Function & Scope -->
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <div class="flex items-start gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-[#00A3C4] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                       {{ getContactInitials(c) }}
                     </div>
                     <div class="min-w-0">
-                      <h3 class="text-sm font-semibold text-slate-900 truncate leading-tight">
+                      <h3 class="text-xs font-bold text-slate-900 truncate leading-snug">
                         {{ formatContactFullName(c) }}
                       </h3>
-                      <p v-if="c.company_name" class="text-xs font-medium text-cyan-800 truncate mt-0.5 flex items-center gap-1">
-                        <Building2 class="w-3 h-3 text-cyan-600 shrink-0" />
-                        <span>{{ c.company_name }}</span>
-                      </p>
-                      <p v-if="c.role_function" class="text-xs text-slate-600 truncate mt-0.5 flex items-center gap-1">
-                        <HardHat class="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{{ c.role_function }}</span>
-                      </p>
+                      <div v-if="c.company_name || c.role_function" class="flex items-center gap-1.5 text-[11px] text-slate-600 truncate mt-0.5">
+                        <Building2 v-if="c.company_name" class="w-3 h-3 text-[#00A3C4] shrink-0" />
+                        <span v-if="c.company_name" class="truncate font-medium text-slate-700">{{ c.company_name }}</span>
+                        <span v-if="c.company_name && c.role_function" class="text-slate-300">•</span>
+                        <span v-if="c.role_function" class="text-slate-500 truncate">{{ c.role_function }}</span>
+                      </div>
                     </div>
                   </div>
 
                   <!-- Scope Badge -->
-                  <span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
-                    Ordner-Kontakt
+                  <span class="shrink-0 px-1.5 py-0.2 rounded-sm text-[10px] font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                    Ordner
                   </span>
                 </div>
 
                 <!-- Group & Tags Badges -->
-                <div v-if="c.category_group || (c.tags && c.tags.length > 0)" class="flex flex-wrap items-center gap-1.5 mb-3">
-                  <span v-if="c.category_group" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <div v-if="c.category_group || (c.tags && c.tags.length > 0)" class="flex flex-wrap items-center gap-1 mb-2">
+                  <span v-if="c.category_group" class="px-1.5 py-0.2 rounded-sm text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                     {{ c.category_group }}
                   </span>
                   <span
                     v-for="(tag, idx) in c.tags"
                     :key="idx"
-                    class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-cyan-800 border border-cyan-200"
+                    class="px-1.5 py-0.2 rounded-sm text-[10px] font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
                   >
                     #{{ tag }}
                   </span>
                 </div>
 
-                <!-- Contact Details (Phone, Mobile, Email, Address) -->
-                <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
-                  <div v-if="c.mobile" class="flex items-center gap-2">
-                    <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`tel:${c.mobile}`" class="font-medium text-[#00A3C4] hover:underline truncate">
-                      {{ c.mobile }}
-                    </a>
-                    <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold ml-auto" title="WhatsApp Chat öffnen">
+                <!-- Contact Details (Compact Single Container) -->
+                <div class="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1 mb-2 text-xs">
+                  <div v-if="c.mobile || c.phone" class="flex items-center justify-between gap-1 text-[11px]">
+                    <div class="flex items-center gap-1.5 truncate">
+                      <Phone class="w-3 h-3 text-slate-400 shrink-0" />
+                      <a :href="`tel:${c.mobile || c.phone}`" class="font-medium text-[#00A3C4] hover:underline truncate">
+                        {{ c.mobile || c.phone }}
+                      </a>
+                    </div>
+                    <a
+                      v-if="c.mobile"
+                      :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`"
+                      target="_blank"
+                      rel="noopener"
+                      class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold shrink-0 ml-1"
+                      title="WhatsApp Chat öffnen"
+                    >
                       WhatsApp
                     </a>
                   </div>
 
-                  <div v-if="c.phone && !c.mobile" class="flex items-center gap-2">
-                    <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`tel:${c.phone}`" class="font-medium text-[#00A3C4] hover:underline truncate">
-                      {{ c.phone }}
-                    </a>
-                  </div>
-
-                  <div v-if="c.email" class="flex items-center gap-2">
-                    <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a :href="`mailto:${c.email}`" class="font-medium text-slate-800 hover:text-[#00A3C4] hover:underline truncate">
+                  <div v-if="c.email" class="flex items-center gap-1.5 text-[11px] truncate">
+                    <Mail class="w-3 h-3 text-slate-400 shrink-0" />
+                    <a :href="`mailto:${c.email}`" class="font-medium text-slate-700 hover:text-[#00A3C4] hover:underline truncate">
                       {{ c.email }}
                     </a>
                   </div>
 
-                  <div v-if="c.address || c.city" class="flex items-center gap-2">
-                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div v-if="c.address || c.city" class="flex items-center justify-between gap-1 text-[11px] pt-1 border-t border-slate-200/50">
+                    <div class="flex items-center gap-1.5 truncate text-slate-600">
+                      <MapPin class="w-3 h-3 text-slate-400 shrink-0" />
+                      <span class="truncate">{{ [c.address, [c.zip_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') }}</span>
+                    </div>
                     <a
                       :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([c.address, c.zip_code, c.city].filter(Boolean).join(', '))}`"
                       target="_blank"
                       rel="noopener"
-                      class="text-slate-600 hover:text-[#00A3C4] hover:underline truncate"
+                      class="text-[10px] font-semibold text-[#00A3C4] hover:underline shrink-0"
                     >
-                      {{ [c.address, [c.zip_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') }}
+                      Maps
                     </a>
+                  </div>
+
+                  <div v-if="!c.mobile && !c.phone && !c.email && !c.address && !c.city" class="text-[11px] text-slate-400 italic">
+                    Keine Kontaktdaten hinterlegt
                   </div>
                 </div>
 
                 <!-- Notes -->
-                <p v-if="c.notes" class="text-xs text-slate-500 italic mb-3 line-clamp-2">
+                <p v-if="c.notes" class="text-[11px] text-slate-400 italic mb-2 line-clamp-1 px-1">
                   "{{ c.notes }}"
                 </p>
               </div>
 
               <!-- Footer: Actions -->
-              <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                 <button
                   @click="exportContactVCard(c)"
                   type="button"
-                  class="text-xs font-semibold text-slate-600 hover:text-[#00A3C4] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
+                  class="text-[11px] font-medium text-slate-500 hover:text-[#00A3C4] flex items-center gap-1 py-0.5 px-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
                   title="vCard herunterladen"
                 >
-                  <Download class="w-3.5 h-3.5" />
+                  <Download class="w-3 h-3" />
                   <span>vCard</span>
                 </button>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-0.5">
                   <button
                     @click="openEditContactModal(c)"
                     type="button"
-                    class="p-1.5 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
+                    class="p-1 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
                     title="Bearbeiten"
                   >
                     <Pencil class="w-3.5 h-3.5" />
@@ -1220,7 +1484,7 @@
                   <button
                     @click="deleteFolderContact(c)"
                     type="button"
-                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                    class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                     title="Löschen"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
@@ -2725,7 +2989,8 @@
       :projects="projects"
       :tasks="folderTasks"
       :contacts="folderContacts"
-      @close="showJournalEntryModal = false"
+      :entry-to-edit="folderEntryToEdit"
+      @close="showJournalEntryModal = false; folderEntryToEdit = null"
       @saved="onFolderJournalSaved"
     />
 
@@ -3425,7 +3690,9 @@ import {
   StickyNote,
   FileText,
   Sparkles,
-  Paperclip
+  Paperclip,
+  ExternalLink,
+  Eye
 } from 'lucide-vue-next'
 import * as XLSX from 'xlsx'
 import { CONSTRUCTION_TEMPLATES, TEMPLATE_CUSTOM_FIELDS } from '~/composables/useProjectTemplates'
@@ -3618,6 +3885,148 @@ const openJournalEntryModal = () => {
 
 const openJournalNoteModal = () => {
   showJournalNoteModal.value = true
+}
+
+const folderEntryToEdit = ref<any | null>(null)
+const openEditFolderJournal = (entry: any) => {
+  folderEntryToEdit.value = entry
+  showJournalEntryModal.value = true
+}
+
+const folderAnalyzingEntryId = ref<string | null>(null)
+const updatingFolderTaskId = ref<string | null>(null)
+
+const expandedFolderJournals = ref<Record<string, boolean>>({})
+const isFolderJournalExpanded = (id: string) => !!expandedFolderJournals.value[id]
+const toggleFolderJournalExpand = (id: string) => {
+  expandedFolderJournals.value[id] = !expandedFolderJournals.value[id]
+}
+
+const cleanFolderJournalContent = (text?: string) => {
+  if (!text) return ''
+  return text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+const isLongFolderJournalContent = (text?: string) => {
+  if (!text) return false
+  const c = cleanFolderJournalContent(text)
+  return c.split('\n').length > 5 || c.length > 250
+}
+
+const getFolderCategoryIcon = (category?: string, type?: string) => {
+  if (type === 'note' || category === 'notiz') return '📝'
+  if (category === 'email') return '✉️'
+  if (category === 'regie') return '⏱️'
+  if (category === 'bausitzung') return '🏛️'
+  if (category === 'bautagebuch') return '📋'
+  if (category === 'abnahmebegehung') return '🔍'
+  if (category === 'wetter_behinderung') return '⛈️'
+  if (category === 'mangel') return '⚠️'
+  return '📖'
+}
+
+const getFolderCategoryBadge = (category?: string, type?: string) => {
+  const cat = category || (type === 'note' ? 'notiz' : 'allgemein')
+  switch (cat) {
+    case 'mangel':
+    case 'wetter_behinderung':
+      return { bg: 'bg-rose-50 text-rose-700 border-rose-200', label: cat === 'mangel' ? 'Mangel' : 'Wetter / Behinderung' }
+    case 'baufortschritt':
+    case 'abnahmebegehung':
+      return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: cat === 'abnahmebegehung' ? 'Abnahme' : 'Baufortschritt' }
+    case 'regie':
+      return { bg: 'bg-cyan-50 text-cyan-800 border-cyan-200', label: 'Regiearbeit' }
+    case 'email':
+      return { bg: 'bg-amber-50 text-amber-800 border-amber-200', label: 'E-Mail' }
+    case 'bausitzung':
+      return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'Bausitzung' }
+    case 'bautagebuch':
+      return { bg: 'bg-teal-50 text-teal-700 border-teal-200', label: 'Bautagebuch' }
+    case 'notiz':
+      return { bg: 'bg-slate-50 text-slate-700 border-slate-200', label: 'Notiz' }
+    default:
+      return { bg: 'bg-cyan-50 text-cyan-700 border-cyan-200', label: 'Allgemein' }
+  }
+}
+
+const triggerFolderAiAnalysis = async (entry: any) => {
+  if (!entry.content?.trim() && !entry.title?.trim()) {
+    showToast('Eintrag hat keinen Text zum Analysieren.', 'info')
+    return
+  }
+  folderAnalyzingEntryId.value = entry.id
+  try {
+    const endpoint = entry.project_id
+      ? `/api/projects/${entry.project_id}/journal/parse-email`
+      : '/api/journals/parse-email'
+    const res = await $fetch<any>(endpoint, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: {
+        journal_id: entry.id,
+        folder_id: folderId,
+        project_id: entry.project_id || null,
+        task_id: entry.task_id || null,
+        subject: entry.title,
+        content: entry.content,
+        category: entry.category,
+        visibility: entry.visibility
+      }
+    })
+    if (res.metadata) {
+      entry.metadata = res.metadata
+    } else if (res.entry?.metadata) {
+      entry.metadata = res.entry.metadata
+    }
+    showToast('KI-Zusammenfassung erfolgreich aktualisiert!', 'success')
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || err.message || 'Fehler bei der KI-Analyse', 'error')
+  } finally {
+    folderAnalyzingEntryId.value = null
+  }
+}
+
+const updateFolderJournalTaskLink = async (entry: any, newTaskId: string) => {
+  updatingFolderTaskId.value = entry.id
+  try {
+    await $fetch(`/api/journals/${entry.id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: { task_id: newTaskId || null }
+    })
+    entry.task_id = newTaskId || null
+    if (newTaskId) {
+      const found = folderTasks.value.find(t => t.id === newTaskId)
+      entry.task_title = found ? found.title : ''
+    } else {
+      entry.task_title = ''
+    }
+    showToast('Aufgaben-Verknüpfung aktualisiert', 'success')
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren der Aufgabe', 'error')
+  } finally {
+    updatingFolderTaskId.value = null
+  }
+}
+
+const getFolderTaskTitle = (taskId?: string) => {
+  if (!taskId) return ''
+  const t = folderTasks.value.find(item => item.id === taskId)
+  return t ? t.title : taskId
+}
+
+const getFolderTaskSectionTitle = (taskId?: string) => {
+  if (!taskId) return ''
+  const t = folderTasks.value.find(item => item.id === taskId)
+  return t?.section_title || t?.status || 'Zugeordnet'
+}
+
+const getAvailableTasksForFolderEntry = (entry: any) => {
+  if (entry.project_id) {
+    const list = folderTasks.value.filter(t => t.project_id === entry.project_id)
+    return list.length > 0 ? list : folderTasks.value
+  }
+  return folderTasks.value
 }
 
 const onFolderJournalSaved = async () => {

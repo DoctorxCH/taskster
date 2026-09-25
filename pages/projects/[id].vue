@@ -2245,37 +2245,35 @@
           </button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 pt-4">
           <div
             v-for="c in projectContacts"
             :key="c.id"
-            class="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all"
+            class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3.5 flex flex-col justify-between hover:border-[#00A3C4] hover:shadow-md transition-all shadow-2xs"
           >
             <div>
-              <!-- Card Top: Avatar, Name, Company, Function -->
-              <div class="flex items-start justify-between gap-3 mb-3">
-                <div class="flex items-start gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-md bg-[#00A3C4] text-white flex items-center justify-center font-bold text-sm shrink-0">
+              <!-- Card Top: Avatar, Name, Company/Function & Scope -->
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex items-start gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-lg bg-[#00A3C4] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                     {{ (c.first_name?.charAt(0) || '') + (c.last_name?.charAt(0) || '') }}
                   </div>
                   <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-slate-900 truncate leading-tight">
+                    <h3 class="text-xs font-bold text-slate-900 truncate leading-snug">
                       {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }}
                     </h3>
-                    <p v-if="c.company_name" class="text-xs font-medium text-cyan-800 truncate mt-0.5 flex items-center gap-1">
-                      <Building2 class="w-3 h-3 text-cyan-600 shrink-0" />
-                      <span>{{ c.company_name }}</span>
-                    </p>
-                    <p v-if="c.role_function" class="text-xs text-slate-600 truncate mt-0.5 flex items-center gap-1">
-                      <HardHat class="w-3 h-3 text-slate-400 shrink-0" />
-                      <span>{{ c.role_function }}</span>
-                    </p>
+                    <div v-if="c.company_name || c.role_function" class="flex items-center gap-1.5 text-[11px] text-slate-600 truncate mt-0.5">
+                      <Building2 v-if="c.company_name" class="w-3 h-3 text-[#00A3C4] shrink-0" />
+                      <span v-if="c.company_name" class="truncate font-medium text-slate-700">{{ c.company_name }}</span>
+                      <span v-if="c.company_name && c.role_function" class="text-slate-300">•</span>
+                      <span v-if="c.role_function" class="text-slate-500 truncate">{{ c.role_function }}</span>
+                    </div>
                   </div>
                 </div>
 
                 <!-- Scope / Sharing Badge -->
                 <span
-                  class="shrink-0 px-2 py-0.5 rounded-sm text-xs font-medium border"
+                  class="shrink-0 px-1.5 py-0.2 rounded-sm text-[10px] font-semibold border"
                   :class="c.share_scope === 'company' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
                 >
                   {{ c.share_scope === 'company' ? 'Team' : 'Privat' }}
@@ -2283,96 +2281,90 @@
               </div>
 
               <!-- Group & Tags Badges -->
-              <div class="flex flex-wrap items-center gap-1.5 mb-3">
-                <span v-if="c.category_group" class="px-2 py-0.5 rounded-sm text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+              <div v-if="c.category_group || (c.tags && c.tags.length > 0)" class="flex flex-wrap items-center gap-1 mb-2">
+                <span v-if="c.category_group" class="px-1.5 py-0.2 rounded-sm text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                   {{ c.category_group }}
                 </span>
                 <span
                   v-for="(tag, idx) in c.tags"
                   :key="idx"
-                  class="px-2 py-0.5 rounded-sm text-xs font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
+                  class="px-1.5 py-0.2 rounded-sm text-[10px] font-medium bg-cyan-50 text-cyan-800 border border-cyan-200"
                 >
                   #{{ tag }}
                 </span>
               </div>
 
-              <!-- Contact Details (Phone, Mobile, Email) -->
-              <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
-                <div v-if="c.mobile" class="flex items-center gap-2">
-                  <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="`tel:${c.mobile}`" class="font-medium text-[#00A3C4] hover:underline truncate">
-                    {{ c.mobile }}
-                  </a>
-                  <a :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`" target="_blank" rel="noopener" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold ml-auto" title="WhatsApp Chat öffnen">
+              <!-- Contact Details (Compact Single Container) -->
+              <div class="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1 mb-2 text-xs">
+                <div v-if="c.mobile || c.phone" class="flex items-center justify-between gap-1 text-[11px]">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <Phone class="w-3 h-3 text-slate-400 shrink-0" />
+                    <a :href="`tel:${c.mobile || c.phone}`" class="font-medium text-[#00A3C4] hover:underline truncate">
+                      {{ c.mobile || c.phone }}
+                    </a>
+                  </div>
+                  <a
+                    v-if="c.mobile"
+                    :href="`https://wa.me/${cleanPhoneForWhatsApp(c.mobile)}`"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold shrink-0 ml-1"
+                    title="WhatsApp Chat öffnen"
+                  >
                     WhatsApp
                   </a>
                 </div>
 
-                <div v-if="c.phone" class="flex items-center gap-2">
-                  <Phone class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="`tel:${c.phone}`" class="font-medium text-slate-800 hover:underline truncate">
-                    {{ c.phone }}
-                  </a>
-                </div>
-
-                <div v-if="c.email" class="flex items-center gap-2">
-                  <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="`mailto:${c.email}`" class="font-medium text-cyan-800 hover:underline truncate">
+                <div v-if="c.email" class="flex items-center gap-1.5 text-[11px] truncate">
+                  <Mail class="w-3 h-3 text-slate-400 shrink-0" />
+                  <a :href="`mailto:${c.email}`" class="font-medium text-slate-700 hover:text-[#00A3C4] hover:underline truncate">
                     {{ c.email }}
                   </a>
                 </div>
 
-                <div v-if="!c.mobile && !c.phone && !c.email" class="text-xs text-slate-400 italic">
-                  Keine Kontaktdaten hinterlegt
-                </div>
-              </div>
-
-              <!-- Website & Address -->
-              <div v-if="c.website || c.address" class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200 mb-3">
-                <div v-if="c.website" class="flex items-center gap-2">
-                  <Globe class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <a :href="formatProjectContactUrl(c.website)" target="_blank" rel="noopener noreferrer" class="font-medium text-[#00A3C4] hover:underline truncate">
-                    {{ c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') }}
-                  </a>
-                </div>
-                <div v-if="c.address" class="flex items-start justify-between gap-1 pt-0.5">
-                  <div class="flex items-start gap-1.5 min-w-0">
-                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    <span class="text-slate-700 font-medium truncate">{{ c.address }}</span>
+                <div v-if="c.address" class="flex items-center justify-between gap-1 text-[11px] pt-1 border-t border-slate-200/50">
+                  <div class="flex items-center gap-1.5 truncate text-slate-600">
+                    <MapPin class="w-3 h-3 text-slate-400 shrink-0" />
+                    <span class="truncate">{{ c.address }}</span>
                   </div>
                   <a
                     :href="`https://www.openstreetmap.org/search?query=${encodeURIComponent(c.address)}`"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 hover:bg-emerald-100"
+                    class="text-[10px] font-semibold text-[#00A3C4] hover:underline shrink-0"
                     title="In OpenStreetMap öffnen"
                   >
                     Karte
                   </a>
                 </div>
+
+                <div v-if="!c.mobile && !c.phone && !c.email && !c.address" class="text-[11px] text-slate-400 italic">
+                  Keine Kontaktdaten hinterlegt
+                </div>
               </div>
 
-              <p v-if="c.notes" class="text-xs text-slate-500 line-clamp-2 italic mb-3">
+              <!-- Notes -->
+              <p v-if="c.notes" class="text-[11px] text-slate-400 italic mb-2 line-clamp-1 px-1">
                 "{{ c.notes }}"
               </p>
             </div>
 
             <!-- Footer: Actions -->
-            <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
               <button
                 @click="exportContactVCard(c)"
                 type="button"
-                class="text-xs font-semibold text-slate-600 hover:text-[#00A3C4] flex items-center gap-1 py-1 px-2 rounded hover:bg-cyan-50 cursor-pointer"
+                class="text-[11px] font-medium text-slate-500 hover:text-[#00A3C4] flex items-center gap-1 py-0.5 px-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
                 title="vCard herunterladen"
               >
-                <Download class="w-3.5 h-3.5" />
+                <Download class="w-3 h-3" />
                 <span>vCard</span>
               </button>
-              <div v-if="c.can_edit && userRole !== 'viewer'" class="flex items-center gap-1">
+              <div v-if="c.can_edit && userRole !== 'viewer'" class="flex items-center gap-0.5">
                 <button
                   @click="openEditProjectContactModal(c)"
                   type="button"
-                  class="p-1.5 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
+                  class="p-1 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
                   title="Bearbeiten"
                 >
                   <Pencil class="w-3.5 h-3.5" />
@@ -2380,7 +2372,7 @@
                 <button
                   @click="deleteProjectContact(c)"
                   type="button"
-                  class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                   title="Löschen"
                 >
                   <Trash2 class="w-3.5 h-3.5" />

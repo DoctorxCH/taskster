@@ -20,25 +20,29 @@
     </div>
 
     <template v-else>
-      <!-- Breadcrumb -->
-      <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
-        <NuxtLink to="/dashboard" class="hover:text-cyan-800 transition-colors flex items-center gap-1">
-          <LayoutDashboard class="w-3.5 h-3.5" />
-          <span>Dashboard</span>
-        </NuxtLink>
-        <span>/</span>
-        <span class="text-slate-800 font-medium flex items-center gap-1">
-          <Building2 class="w-3.5 h-3.5 text-[#0891B2]" />
-          <span>Firmen-Administration</span>
-        </span>
-      </div>
+      <!-- Header Card with integrated Breadcrumbs -->
+      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4 mb-6">
+        <!-- Breadcrumb inside white card -->
+        <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
+          <NuxtLink to="/dashboard" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1 font-medium">
+            <LayoutDashboard class="w-3.5 h-3.5" />
+            <span>Dashboard</span>
+          </NuxtLink>
+          <span>/</span>
+          <span class="text-slate-600 font-medium flex items-center gap-1">
+            <Building2 class="w-3.5 h-3.5 text-[#00A3C4]" />
+            <span>Firmen-Administration</span>
+          </span>
+          <span>/</span>
+          <span class="text-slate-800 font-semibold flex items-center gap-1">
+            <span>{{ company?.name || 'Mein Unternehmen' }}</span>
+          </span>
+        </div>
 
-      <!-- Header -->
-      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-semibold mb-2">
-              <Building2 class="w-3.5 h-3.5 text-[#0891B2]" />
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-cyan-50 border border-cyan-200 text-[#00A3C4] text-xs font-semibold mb-2">
+              <Building2 class="w-3.5 h-3.5 text-[#00A3C4]" />
               <span>Firmen-Administration</span>
             </div>
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight">

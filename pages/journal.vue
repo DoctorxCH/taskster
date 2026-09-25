@@ -211,39 +211,48 @@
       </div>
     </div>
 
-    <!-- Journal Entries Stream -->
+    <!-- Journal Entries Stream (2-Column Grid matching Screenshot 2 / Project Journal) -->
     <div v-else class="space-y-4">
       <div
         v-for="entry in filteredJournals"
         :key="entry.id"
-        class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition"
+        class="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative overflow-hidden"
+        :class="[
+          entry.type === 'entry' ? 'border-l-4 border-l-[#00A3C4]' : (entry.category === 'email' ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-indigo-400')
+        ]"
       >
-        <!-- Entry Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold text-slate-900">{{ entry.author_name || 'Benutzer' }}</span>
-            <span class="text-slate-300">•</span>
-            <span class="text-xs text-slate-500">{{ formatDate(entry.entry_date || entry.created_at) }}</span>
-            <span v-if="isEdited(entry)" class="text-[11px] font-medium text-slate-400 italic">
-              • bearbeitet {{ formatDateTime(entry.updated_at) }}
-            </span>
-
-            <!-- Category badge -->
-            <span
-              class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider"
-              :class="categoryBadgeClass(entry.category)"
-            >
-              {{ categoryLabel(entry.category) }}
-            </span>
-
-            <!-- Visibility badge -->
-            <span v-if="entry.visibility && entry.visibility !== 'all'" class="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-              {{ entry.visibility === 'only_me' ? '🔒 Privat' : (entry.visibility === 'company' ? '🏢 Firma' : '👥 Gruppe') }}
-            </span>
+        <!-- Card Top Bar: Icon, Title, Badges, Author, Date, Quick Action Buttons -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div class="flex items-start space-x-3 min-w-0">
+            <div class="text-2xl shrink-0 mt-0.5">
+              {{ getCategoryIcon(entry.category, entry.type) }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <h4 class="text-base font-bold text-slate-900 leading-snug">{{ entry.title || 'Ohne Titel' }}</h4>
+                <span
+                  class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border tracking-wider"
+                  :class="categoryBadgeClass(entry.category)"
+                >
+                  {{ categoryLabel(entry.category) }}
+                </span>
+              </div>
+              <div class="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                <span>Von <strong class="text-slate-700 font-semibold">{{ entry.author_name || 'Benutzer' }}</strong></span>
+                <span>•</span>
+                <span>{{ formatDate(entry.entry_date || entry.created_at) }}</span>
+                <span v-if="isEdited(entry)" class="text-[11px] font-medium text-slate-400 italic">
+                  • bearbeitet {{ formatDateTime(entry.updated_at) }}
+                </span>
+                <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
+                  <span>• Verknüpft: {{ entry.task_title }}</span>
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div class="flex items-center gap-2 flex-wrap">
-            <!-- Folder link badge -->
+          <!-- Top-Right Actions: Folder / Project link, AI Trigger, Edit, Visibility, Delete -->
+          <div class="flex items-center space-x-2 shrink-0 self-end sm:self-start">
             <NuxtLink
               v-if="entry.folder_id"
               :to="`/folders/${entry.folder_id}`"
@@ -251,23 +260,18 @@
               title="Zum Ordner springen"
             >
               <Folder class="w-3 h-3 text-slate-500" />
-              <span>{{ entry.folder_name || 'Ordner' }}</span>
+              <span class="max-w-[110px] truncate">{{ entry.folder_name || 'Ordner' }}</span>
             </NuxtLink>
 
-            <!-- Project link badge -->
             <NuxtLink
               v-if="entry.project_id"
               :to="`/projects/${entry.project_id}`"
               class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 flex items-center gap-1 transition"
               title="Zum Projekt springen"
             >
-              <span>📁 {{ entry.project_title || 'Projekt' }}</span>
+              <span class="max-w-[110px] truncate">📁 {{ entry.project_title || 'Projekt' }}</span>
             </NuxtLink>
-            <span v-else class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200">
-              Nur Ordner
-            </span>
 
-            <!-- AI Trigger Button -->
             <button
               type="button"
               @click="triggerAiAnalysis(entry)"
@@ -282,20 +286,29 @@
               <span>{{ analyzingEntryId === entry.id ? 'Analysiere...' : (entry.metadata?.ai_summary ? 'KI aktualisieren' : '⚡ KI-Analyse') }}</span>
             </button>
 
-            <!-- Edit action -->
             <button
               @click="openEditModal(entry)"
-              class="p-1.5 text-slate-400 hover:text-[#00A3C4] rounded-lg hover:bg-cyan-50 transition cursor-pointer"
+              type="button"
+              class="p-1 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition cursor-pointer"
               title="Eintrag bearbeiten"
             >
               <Pencil class="w-3.5 h-3.5" />
             </button>
 
-            <!-- Delete action -->
+            <span
+              class="text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center space-x-1"
+              :class="entry.visibility === 'only_me' ? 'bg-slate-100 border-slate-200 text-slate-700' : (entry.visibility === 'company' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-cyan-50 border-cyan-200 text-[#00A3C4]')"
+              :title="entry.visibility"
+            >
+              <span>{{ entry.visibility === 'only_me' ? '🔒' : (entry.visibility === 'company' ? '🏢' : '🔵') }}</span>
+              <span>{{ entry.visibility === 'only_me' ? 'Privat' : (entry.visibility === 'company' ? 'Firma' : 'Öffentlich (Projektleser)') }}</span>
+            </span>
+
             <button
               v-if="canDeleteEntry(entry)"
               @click="confirmDelete(entry)"
-              class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+              type="button"
+              class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
               title="Eintrag löschen"
             >
               <Trash2 class="w-3.5 h-3.5" />
@@ -303,177 +316,271 @@
           </div>
         </div>
 
-        <!-- Title -->
-        <h4 v-if="entry.title" class="text-sm font-bold text-slate-900 mt-3 mb-1.5">
-          {{ entry.title }}
-        </h4>
-
-        <!-- AI Summary Box (Taskster Standard) -->
-        <div v-if="entry.metadata?.ai_summary" class="mt-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
-          <div class="flex items-center justify-between gap-2 mb-1.5">
-            <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
-              <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
-              <span>KI-Zusammenfassung</span>
-              <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
-            </div>
-            <button
-              type="button"
-              @click="triggerAiAnalysis(entry)"
-              :disabled="analyzingEntryId === entry.id"
-              class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
-            >
-              <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
-              <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
-            </button>
-          </div>
-          <p class="text-xs text-slate-800 leading-relaxed font-sans">
-            {{ entry.metadata.ai_summary }}
-          </p>
-        </div>
-
-        <!-- Interactive AI Action Cards (if present) -->
-        <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="mt-3 space-y-2.5">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
-            <span>⚡</span>
-            <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div
-              v-for="(item, idx) in entry.metadata.action_items"
-              :key="idx"
-              class="p-3 rounded-2xl border transition shadow-xs flex flex-col justify-between"
-              :class="[
-                item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
-                  item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200' :
-                  item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200' :
-                  'bg-purple-50/70 border-purple-200'
-                )
-              ]"
-            >
-              <div>
-                <div class="flex items-center justify-between gap-1 mb-1">
-                  <span
-                    class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
-                    :class="[
-                      item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                      item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                      'bg-purple-100 text-purple-800 border-purple-300'
-                    ]"
-                  >
-                    {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
-                  </span>
-
-                  <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
-                    <CheckCircle2 class="w-3 h-3" />
-                    <span>Erledigt</span>
-                  </span>
+        <!-- Card Body Grid: 2 Spalten (Breit links für Inhalt & KI, Schmal rechts für Metadaten & Verknüpfung) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <!-- HAUPTBEREICH (BREIT - 8 Spalten): Fokus auf KI-Zusammenfassung, Aktionskarten, Inhalt/Notizen -->
+          <div class="lg:col-span-8 space-y-4">
+            <!-- AI Summary Box -->
+            <div v-if="entry.metadata?.ai_summary" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-teal-50/60 to-blue-50/80 border border-cyan-200/90 shadow-2xs">
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <div class="flex items-center space-x-1.5 text-xs font-black text-cyan-950">
+                  <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
+                  <span>KI-Zusammenfassung</span>
+                  <span class="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 ml-1">KI-Agent</span>
                 </div>
+                <button
+                  type="button"
+                  @click="triggerAiAnalysis(entry)"
+                  :disabled="analyzingEntryId === entry.id"
+                  class="text-[10px] font-bold text-cyan-800 hover:text-cyan-950 hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <Sparkles class="w-3 h-3" :class="{ 'animate-spin': analyzingEntryId === entry.id }" />
+                  <span>{{ analyzingEntryId === entry.id ? 'Aktualisiere...' : 'Neu analysieren' }}</span>
+                </button>
+              </div>
+              <p class="text-xs text-slate-800 leading-relaxed font-sans">
+                {{ entry.metadata.ai_summary }}
+              </p>
+            </div>
 
-                <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
-                  {{ item.title }}
-                </h5>
+            <!-- Interactive AI Action Cards (falls vorhanden) -->
+            <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                <span>⚡</span>
+                <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
+              </div>
 
-                <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
-                  {{ item.description || item.reason }}
-                </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div
+                  v-for="(item, idx) in entry.metadata.action_items"
+                  :key="idx"
+                  class="p-3 rounded-2xl border transition shadow-xs flex flex-col justify-between"
+                  :class="[
+                    item.applied ? 'bg-slate-50 border-slate-200 opacity-80' : (
+                      item.type === 'create_task' ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-400' :
+                      item.type === 'update_task' ? 'bg-amber-50/70 border-amber-200 hover:border-amber-400' :
+                      'bg-purple-50/70 border-purple-200 hover:border-purple-400'
+                    )
+                  ]"
+                >
+                  <div>
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                      <span
+                        class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border"
+                        :class="[
+                          item.type === 'create_task' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                          item.type === 'update_task' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                          'bg-purple-100 text-purple-800 border-purple-300'
+                        ]"
+                      >
+                        {{ item.type === 'create_task' ? '+ Neue Aufgabe' : (item.type === 'update_task' ? '✏️ Aktualisierung' : '✓ Abschliessen') }}
+                      </span>
 
-                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-1">
-                  <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
-                    📅 {{ item.due_date || item.suggested_due_date }}
-                  </span>
-                  <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
-                    ⚡ {{ item.priority }}
-                  </span>
+                      <span v-if="item.applied" class="text-[10px] font-bold text-emerald-700 flex items-center space-x-1">
+                        <CheckCircle2 class="w-3 h-3" />
+                        <span>Erledigt</span>
+                      </span>
+                    </div>
+
+                    <h5 class="text-xs font-bold text-slate-900 leading-snug mb-1">
+                      {{ item.title }}
+                    </h5>
+
+                    <p v-if="item.description || item.reason" class="text-[11px] text-slate-600 line-clamp-2 mb-2 leading-relaxed">
+                      {{ item.description || item.reason }}
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-2">
+                      <span v-if="item.due_date || item.suggested_due_date" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200">
+                        📅 {{ item.due_date || item.suggested_due_date }}
+                      </span>
+                      <span v-if="item.priority" class="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 uppercase">
+                        ⚡ {{ item.priority }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Content (Cleaned & 5-Line Smooth Collapse) -->
-        <div class="mt-3">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
-            <button
-              v-if="hasOriginalText(entry)"
-              type="button"
-              @click="openOriginalView(entry)"
-              class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer"
-              title="Vollständiges Original-Dokument / E-Mail ansehen"
-            >
-              <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
-              <span>Original-Ansicht</span>
-            </button>
+            <!-- Text-Inhalt / E-Mail Body (Cleaned & 5-Line Smooth Collapse) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
+                <button
+                  v-if="hasOriginalText(entry)"
+                  type="button"
+                  @click="openOriginalView(entry)"
+                  class="text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer flex items-center gap-1.5"
+                  title="Vollständiges Original-Dokument / E-Mail ansehen"
+                >
+                  <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
+                  <span>Original-Ansicht</span>
+                </button>
+              </div>
+
+              <div class="relative">
+                <div
+                  class="text-xs text-slate-800 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 whitespace-pre-wrap font-sans transition-all duration-300 ease-in-out overflow-hidden"
+                  :style="isExpanded(entry.id) || !isLongContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+                >
+                  {{ cleanContent(entry.content) }}
+                </div>
+
+                <!-- Soft gradient fade-out over 5th line when collapsed -->
+                <div
+                  v-if="isLongContent(entry.content) && !isExpanded(entry.id)"
+                  class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-slate-100 via-slate-100/80 to-transparent pointer-events-none rounded-b-2xl"
+                ></div>
+              </div>
+
+              <div v-if="isLongContent(entry.content)" class="mt-1.5">
+                <button
+                  type="button"
+                  @click="toggleExpand(entry.id)"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
+                >
+                  <ChevronDown v-if="!isExpanded(entry.id)" class="w-3.5 h-3.5" />
+                  <ChevronUp v-else class="w-3.5 h-3.5" />
+                  <span>{{ isExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div class="relative">
+          <!-- METADATEN-SIDEBAR (SCHMAL - 4 Spalten): Verknüpfte Aufgabe, Teilnehmer, Anhänge -->
+          <div class="lg:col-span-4 space-y-3">
+            <!-- 1. Prominentes Aufgaben-Verknüpfungs-Widget -->
             <div
-              class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed transition-all duration-300 ease-in-out overflow-hidden"
-              :style="isExpanded(entry.id) || !isLongContent(entry.content) ? { maxHeight: '3000px' } : { maxHeight: '6.75rem' }"
+              class="p-3.5 rounded-2xl border transition-all"
+              :class="entry.task_id ? 'bg-cyan-50/70 border-cyan-200' : 'bg-slate-50/80 border-slate-200'"
             >
-              {{ cleanContent(entry.content) }}
+              <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
+                  <span>📌</span>
+                  <span>Verknüpfte Aufgabe</span>
+                </span>
+                <span
+                  class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
+                  :class="entry.task_id ? 'bg-white border-cyan-300 text-cyan-800' : 'bg-amber-50 border-amber-200 text-amber-800'"
+                >
+                  {{ entry.task_id ? (getTaskSectionTitle(entry.task_id) || 'Zugeordnet') : 'Offen' }}
+                </span>
+              </div>
+
+              <!-- Zustand A: Aufgabe bereits verknüpft -->
+              <div v-if="entry.task_id" class="space-y-2">
+                <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                  {{ entry.task_title || getTaskTitle(entry.task_id) }}
+                </p>
+                <NuxtLink
+                  v-if="entry.project_id"
+                  :to="`/projects/${entry.project_id}`"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:underline transition cursor-pointer"
+                >
+                  <ExternalLink class="w-3 h-3" />
+                  <span>Aufgabe im Projekt öffnen</span>
+                </NuxtLink>
+
+                <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
+                <div class="pt-1.5 border-t border-cyan-200/70">
+                  <select
+                    :value="entry.task_id"
+                    :disabled="updatingTaskId === entry.id"
+                    @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                    class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                  >
+                    <option value="">-- Verknüpfung lösen --</option>
+                    <option v-for="t in getAvailableTasksForEntry(entry)" :key="t.id" :value="t.id">
+                      {{ t.title }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Zustand B: Keine Aufgabe verknüpft -->
+              <div v-else class="space-y-1">
+                <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe zuweisen:</label>
+                <select
+                  :disabled="updatingTaskId === entry.id"
+                  @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
+                >
+                  <option value="">-- Aufgabe auswählen --</option>
+                  <option v-for="t in getAvailableTasksForEntry(entry)" :key="t.id" :value="t.id">
+                    {{ t.title }}
+                  </option>
+                </select>
+              </div>
             </div>
 
-            <!-- Elegant soft gradient fade-out over 5th line when collapsed -->
-            <div
-              v-if="isLongContent(entry.content) && !isExpanded(entry.id)"
-              class="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none"
-            ></div>
-          </div>
+            <!-- 2. Absender-Details (bei E-Mails) -->
+            <div v-if="entry.metadata?.email_sender || entry.metadata?.sender?.email" class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/70 text-xs text-amber-950 space-y-1">
+              <div class="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center space-x-1">
+                <span>✉️</span>
+                <span>Absender</span>
+              </div>
+              <div class="font-bold text-slate-900 leading-tight">
+                {{ entry.metadata?.sender?.name || entry.metadata?.email_sender || entry.metadata?.sender?.email }}
+              </div>
+              <div v-if="entry.metadata?.sender?.email" class="text-[11px] text-slate-500 font-mono truncate">
+                &lt;{{ entry.metadata.sender.email }}&gt;
+              </div>
+            </div>
 
-          <!-- Expansion Toggle -->
-          <div v-if="isLongContent(entry.content)" class="mt-1.5">
-            <button
-              type="button"
-              @click="toggleExpand(entry.id)"
-              class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#008ba8] transition cursor-pointer"
-            >
-              <ChevronDown v-if="!isExpanded(entry.id)" class="w-3.5 h-3.5" />
-              <ChevronUp v-else class="w-3.5 h-3.5" />
-              <span>{{ isExpanded(entry.id) ? 'Weniger anzeigen' : 'Mehr anzeigen' }}</span>
-            </button>
-          </div>
-        </div>
+            <!-- 3. Teilnehmerliste (bei Protokollen) -->
+            <div v-if="entry.attendees && entry.attendees.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                <span class="flex items-center space-x-1">
+                  <Users class="w-3 h-3 text-[#00A3C4]" />
+                  <span>Teilnehmer</span>
+                </span>
+                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-white border border-slate-200 text-slate-700">
+                  {{ entry.attendees.filter(a => a.present).length }} / {{ entry.attendees.length }}
+                </span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                <div
+                  v-for="atd in entry.attendees"
+                  :key="atd.id || atd.name"
+                  class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-[11px] font-medium border"
+                  :class="atd.present ? 'bg-white border-emerald-300 text-slate-800' : 'bg-slate-100/70 border-slate-200 text-slate-400 line-through'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="atd.present ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                  <span class="truncate max-w-[130px]">{{ atd.name }}</span>
+                </div>
+              </div>
+            </div>
 
-        <!-- Linked Task -->
-        <div v-if="entry.task_id" class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 text-xs">
-          <span class="text-slate-600 flex items-center gap-1.5 font-medium">
-            <span>📌 Verknüpfte Aufgabe:</span>
-            <strong class="text-slate-900 font-bold">{{ entry.task_title || 'Aufgabe' }}</strong>
-          </span>
-          <NuxtLink
-            v-if="entry.project_id"
-            :to="`/projects/${entry.project_id}`"
-            class="text-[11px] font-bold text-[#00A3C4] hover:underline"
-          >
-            Im Projekt öffnen →
-          </NuxtLink>
-        </div>
-
-        <!-- Attendees badges -->
-        <div v-if="entry.attendees && entry.attendees.length > 0" class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
-          <span class="text-[11px] font-bold text-slate-500 mr-1">Teilnehmer:</span>
-          <span
-            v-for="(atd, atdIdx) in entry.attendees"
-            :key="atdIdx"
-            class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border font-medium"
-            :class="atd.present ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-50 border-slate-200 text-slate-400 line-through'"
-          >
-            {{ atd.name }}{{ atd.role ? ` (${atd.role})` : '' }}
-          </span>
-        </div>
-
-        <!-- Attachments badges -->
-        <div v-if="entry.attachments && entry.attachments.length > 0" class="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-slate-100">
-          <div
-            v-for="(att, attIdx) in entry.attachments"
-            :key="attIdx"
-            class="flex items-center space-x-1 text-xs px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium"
-          >
-            <Paperclip class="w-3 h-3 text-slate-400" />
-            <span>{{ att.file_name }}</span>
-            <span class="text-[10px] text-slate-400">({{ Math.round(att.file_size / 1024) }} KB)</span>
+            <!-- 4. Dateianhänge -->
+            <div v-if="entry.attachments && entry.attachments.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                <Paperclip class="w-3 h-3 text-slate-400" />
+                <span>Dateianhänge ({{ entry.attachments.length }})</span>
+              </div>
+              <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                <div
+                  v-for="(att, attIdx) in entry.attachments"
+                  :key="attIdx"
+                  class="flex items-center justify-between p-2 rounded-xl bg-white hover:bg-cyan-50/60 border border-slate-200 hover:border-cyan-300 transition text-xs"
+                >
+                  <div class="flex items-center space-x-2 min-w-0">
+                    <Paperclip class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <a
+                      v-if="att.file_path"
+                      :href="att.file_path"
+                      :download="att.file_name"
+                      target="_blank"
+                      class="font-medium text-slate-800 hover:text-[#00A3C4] truncate max-w-[150px]"
+                    >
+                      {{ att.file_name }}
+                    </a>
+                    <span v-else class="font-medium text-slate-800 truncate max-w-[150px]">{{ att.file_name }}</span>
+                  </div>
+                  <span v-if="att.file_size" class="text-[10px] text-slate-400 shrink-0">({{ Math.round(att.file_size / 1024) }} KB)</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -723,7 +830,9 @@ import {
   CheckCircle2,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ExternalLink,
+  Users
 } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 
@@ -1087,5 +1196,62 @@ const categoryBadgeClass = (cat?: string) => {
     default:
       return 'bg-cyan-50 text-cyan-700 border-cyan-200'
   }
+}
+
+const getCategoryIcon = (category?: string, type?: string) => {
+  if (type === 'note' || category === 'notiz') return '📝'
+  if (category === 'email') return '✉️'
+  if (category === 'regie') return '⏱️'
+  if (category === 'bausitzung') return '🏛️'
+  if (category === 'bautagebuch') return '📋'
+  if (category === 'abnahmebegehung') return '🔍'
+  if (category === 'wetter_behinderung') return '⛈️'
+  if (category === 'mangel') return '⚠️'
+  return '📖'
+}
+
+const updatingTaskId = ref<string | null>(null)
+
+const updateJournalTaskLink = async (entry: any, newTaskId: string) => {
+  updatingTaskId.value = entry.id
+  try {
+    await $fetch(`/api/journals/${entry.id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: { task_id: newTaskId || null }
+    })
+    entry.task_id = newTaskId || null
+    if (newTaskId) {
+      const found = allTasks.value.find(t => t.id === newTaskId)
+      entry.task_title = found ? found.title : ''
+    } else {
+      entry.task_title = ''
+    }
+    showToast('Aufgaben-Verknüpfung aktualisiert', 'success')
+  } catch (err: any) {
+    showToast(err.data?.statusMessage || 'Fehler beim Aktualisieren der Aufgabe', 'error')
+  } finally {
+    updatingTaskId.value = null
+  }
+}
+
+const getTaskTitle = (taskId?: string) => {
+  if (!taskId) return ''
+  const t = allTasks.value.find(item => item.id === taskId)
+  return t ? t.title : taskId
+}
+
+const getTaskSectionTitle = (taskId?: string) => {
+  if (!taskId) return ''
+  const t = allTasks.value.find(item => item.id === taskId)
+  return t?.section_title || t?.status || 'Zugeordnet'
+}
+
+const getAvailableTasksForEntry = (entry: any) => {
+  if (entry.project_id) {
+    const list = allTasks.value.filter(t => t.project_id === entry.project_id)
+    return list.length > 0 ? list : allTasks.value
+  }
+  return allTasks.value
 }
 </script>
