@@ -7,21 +7,21 @@
       </div>
 
       <div class="mb-6">
-        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Neues Passwort festlegen</h2>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ $t('reset.titel') }}</h2>
         <p v-if="userName" class="text-xs text-slate-500 mt-1">
-          Hallo {{ userName }}! Gib hier dein neues Passwort ein.
+          {{ $t('reset.hallo') }} {{ userName }}! {{ $t('reset.neues_passwort_eingeben') }}
         </p>
       </div>
 
       <!-- Initial token verification loading -->
       <div v-if="verifyingToken" class="p-6 text-center text-xs font-bold text-slate-500 space-y-2">
         <div class="w-6 h-6 border-2 border-[#00A3C4] border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p>Sicherheits-Link wird überprüft...</p>
+        <p>{{ $t('reset.link_pruefen') }}</p>
       </div>
 
       <!-- Error banner -->
       <div v-else-if="errorMessage" class="mb-5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium space-y-3">
-        <div class="font-bold text-sm text-rose-900">Link ungültig oder abgelaufen</div>
+        <div class="font-bold text-sm text-rose-900">{{ $t('reset.link_ungueltig') }}</div>
         <p>{{ errorMessage }}</p>
         <div>
           <NuxtLink to="/forgot-password" class="taskster_button inline-block px-4 py-2 text-xs rounded-lg">
@@ -34,7 +34,7 @@
       <div v-else-if="successMessage" class="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium space-y-3">
         <div class="font-bold text-sm text-emerald-900 flex items-center space-x-1.5">
           <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Passwort geändert!</span>
+          <span>{{ $t('reset.passwort_geaendert') }}</span>
         </div>
         <p>{{ successMessage }}</p>
         <div>
@@ -47,18 +47,18 @@
       <!-- Reset Form -->
       <form v-else @submit.prevent="handleReset" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Neues Passwort</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('reset.neues_passwort') }}</label>
           <input
             v-model="password"
             type="password"
             required
-            placeholder="Mindestens 8 Zeichen"
+            :placeholder="$t('reset.mindestens_8')"
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
           />
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Passwort wiederholen</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('reset.wiederholen') }}</label>
           <input
             v-model="passwordConfirm"
             type="password"
@@ -82,7 +82,7 @@
       <div class="mt-6 pt-6 border-t border-slate-100 text-center">
         <NuxtLink to="/login" class="text-xs font-bold text-[#00A3C4] hover:underline inline-flex items-center space-x-1">
           <ArrowLeft class="w-3.5 h-3.5" />
-          <span>Zurück zur Anmeldung</span>
+          <span>{{ $t('reset.zurueck') }}</span>
         </NuxtLink>
       </div>
 
@@ -93,6 +93,7 @@
 <script setup lang="ts">
 import { ArrowLeft, CheckCircle2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const route = useRoute()
 const token = ref((route.query.token as string) || '')
 
@@ -115,7 +116,7 @@ onMounted(async () => {
     const res = await $fetch<{ valid: boolean; email: string; user_name: string }>(`/api/auth/verify-reset-token?token=${encodeURIComponent(token.value)}`)
     userName.value = res.user_name || ''
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || 'Dieser Link ist ungültig oder abgelaufen.'
+    errorMessage.value = err.data?.statusMessage || t('reset.link_ungueltig_detail')
   } finally {
     verifyingToken.value = false
   }
@@ -129,7 +130,7 @@ const handleReset = async () => {
   }
 
   if (password.value !== passwordConfirm.value) {
-    errorMessage.value = 'Die Passwörter stimmen nicht überein.'
+    errorMessage.value = t('reset.nicht_uebereinstimmend')
     return
   }
 
@@ -145,7 +146,7 @@ const handleReset = async () => {
     })
     successMessage.value = res.message || 'Dein Passwort wurde erfolgreich aktualisiert.'
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || 'Passwort konnte nicht zurückgesetzt werden.'
+    errorMessage.value = err.data?.statusMessage || t('reset.fehler')
   } finally {
     loading.value = false
   }

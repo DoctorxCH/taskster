@@ -30,7 +30,7 @@
                 ref="inputRef"
                 v-model="query"
                 type="text"
-                placeholder="Aufgaben, Projekte, Ordner, Personen durchsuchen…"
+                :placeholder="t('command.suche_placeholder')"
                 class="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 autocomplete="off"
                 spellcheck="false"
@@ -75,7 +75,7 @@
                 <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
                   <SearchX class="w-6 h-6 text-slate-400" />
                 </div>
-                <p class="text-sm font-semibold text-slate-800">Keine Treffer</p>
+                <p class="text-sm font-semibold text-slate-800">{{ t('command.keine_treffer') }}</p>
                 <p class="text-xs text-slate-500 mt-1">
                   Nichts gefunden für „{{ query }}"
                 </p>
@@ -191,6 +191,8 @@ import {
   Upload, Paperclip, Lock, Zap, Sun, Columns3, LayoutTemplate, Plus, CircleDot
 } from 'lucide-vue-next'
 
+const { t } = useI18n()
+
 const emit = defineEmits<{ (e: 'navigate', url: string): void }>()
 
 const isOpen = ref(false)
@@ -224,13 +226,13 @@ const quickActions = computed(() => {
   // Free-/Single-User (ohne Company) haben keine Ordner-Ebene.
   const isFreeUser = !user.value?.is_pro && !user.value?.company_id && !user.value?.is_superadmin
   const actions = [
-    { title: 'Dashboard', hint: 'Startseite', url: '/dashboard', icon: LayoutDashboard },
-    { title: 'Zeitrapporte', hint: 'Zeiterfassung', url: '/time', icon: Clock }
+    { title: t('command.dashboard'), hint: 'Startseite', url: '/dashboard', icon: LayoutDashboard },
+    { title: t('command.zeitrapporte'), hint: 'Zeiterfassung', url: '/time', icon: Clock }
   ]
   if (!isFreeUser) {
-    actions.push({ title: 'Neuer Projektordner', hint: 'Erstellen', url: '/dashboard?new=folder', icon: Plus })
+    actions.push({ title: t('command.neuer_ordner'), hint: 'Erstellen', url: '/dashboard?new=folder', icon: Plus })
   }
-  actions.push({ title: 'Einstellungen', hint: 'Profil & Tarif', url: '/settings', icon: Settings })
+  actions.push({ title: t('command.einstellungen'), hint: 'Profil & Tarif', url: '/settings', icon: Settings })
   return actions
 })
 
@@ -282,7 +284,7 @@ const statusClass = (status: string) => ({
 })
 
 const statusLabel = (status: string) =>
-  ({ todo: 'Todo', in_progress: 'In Arbeit', review: 'Prüfung', done: 'Erledigt' } as any)[status] || status
+  ({ todo: 'Todo', in_progress: 'In Arbeit', review: t('command.pruefung'), done: 'Erledigt' } as any)[status] || status
 
 const priorityClass = (p: string) => ({
   'bg-rose-50 text-rose-700 border border-rose-200': p === 'dringend',

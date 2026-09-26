@@ -12,13 +12,13 @@
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="text-base font-bold text-slate-900 tracking-tight">Sprachassistent & Notiz</h3>
+              <h3 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('voice.sprachassistent_notiz') }}</h3>
               <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
                 {{ $t('VoiceRecorderModal.whisper_ai') }}
               </span>
             </div>
             <p class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-              <span>Sprache:</span>
+              <span>{{ t('voice.sprache') }}</span>
               <span class="font-semibold text-slate-700">{{ activeLanguageLabel }}</span>
             </p>
           </div>
@@ -53,7 +53,7 @@
             <Mic class="w-10 h-10" />
           </div>
           <div>
-            <h4 class="text-sm font-bold text-slate-900">Sprachaufnahme starten</h4>
+            <h4 class="text-sm font-bold text-slate-900">{{ $t('voice.aufnahme_starten_title') }}</h4>
             <p class="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
               Sprich deine Aufgabe, Notiz oder Statusmeldung ein. Die KI erkennt Aufgabenname, Nummer oder Adresse und schlägt passende Aktionen vor.
             </p>
@@ -61,15 +61,15 @@
 
           <!-- Language selector toggle -->
           <div class="flex items-center justify-center gap-2 pt-1">
-            <span class="text-[11px] font-semibold text-slate-500">Spracheingabe:</span>
+            <span class="text-[11px] font-semibold text-slate-500">{{ $t('voice.spracheingabe_label') }}</span>
             <select
               v-model="currentLanguage"
               class="px-2.5 py-1 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-md text-slate-700 focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="de">Deutsch</option>
+              <option value="de">{{ t('voice.deutsch') }}</option>
               <option value="de-CH">Schweizerdeutsch</option>
               <option value="en">English</option>
-              <option value="fr">Français</option>
+              <option value="fr">{{ t('voice.franzoesisch') }}</option>
               <option value="it">Italiano</option>
               <option value="auto">Automatisch</option>
             </select>
@@ -82,7 +82,7 @@
               class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2 cursor-pointer shadow-md"
             >
               <Mic class="w-4 h-4" />
-              <span>Aufnahme starten</span>
+              <span>{{ t('voice.aufnahme_starten') }}</span>
             </button>
           </div>
         </div>
@@ -124,7 +124,7 @@
               class="taskster_button_accent px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2 cursor-pointer shadow-md"
             >
               <Square class="w-4 h-4 fill-current" />
-              <span>Stoppen & Analysieren</span>
+              <span>{{ t('voice.stoppen_analysieren') }}</span>
             </button>
           </div>
         </div>
@@ -152,7 +152,7 @@
             <div class="flex items-start justify-between gap-2">
               <div class="flex items-center gap-2 text-xs font-bold text-cyan-900">
                 <Sparkles class="w-4 h-4 text-[#00A3C4] shrink-0" />
-                <span>KI-Erkennung:</span>
+                <span>{{ t('voice.ki_erkennung') }}</span>
               </div>
               <span v-if="aiAnalysis.intent" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-cyan-800 border border-cyan-200">
                 {{ intentLabel(aiAnalysis.intent) }}
@@ -166,7 +166,7 @@
             <!-- Detected Task/Project Pill -->
             <div v-if="aiAnalysis.matched_task" class="p-2.5 rounded-lg bg-white border border-cyan-100 flex items-center justify-between gap-2 text-xs">
               <div class="min-w-0">
-                <span class="text-[10px] font-bold uppercase text-slate-500 block">Zugeordnete Aufgabe</span>
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">{{ t('voice.zugeordnete_aufgabe') }}</span>
                 <span class="font-bold text-slate-900 truncate block">{{ aiAnalysis.matched_task.title }}</span>
                 <span v-if="aiAnalysis.matched_task.project_title" class="text-[11px] text-slate-500 truncate block">
                   Projekt: {{ aiAnalysis.matched_task.project_title }}
@@ -179,7 +179,7 @@
 
             <!-- Detected Checklist Items -->
             <div v-if="aiAnalysis.checklist_items && aiAnalysis.checklist_items.length > 0" class="p-2.5 rounded-lg bg-white border border-cyan-100 text-xs">
-              <span class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Erkannte Checklisten-Punkte:</span>
+              <span class="text-[10px] font-bold uppercase text-slate-500 block mb-1">{{ t('voice.checklisten_punkte') }}</span>
               <ul class="space-y-1 text-slate-800">
                 <li v-for="(item, idx) in aiAnalysis.checklist_items" :key="idx" class="flex items-center gap-1.5">
                   <CheckSquare class="w-3.5 h-3.5 text-[#00A3C4] shrink-0" />
@@ -229,14 +229,14 @@
           <!-- Transcribed Text (Editable) -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-              <span>Transkribierter Text (bearbeitbar):</span>
-              <span class="text-[10px] text-cyan-700 font-mono font-semibold">Whisper v3 Turbo</span>
+              <span>{{ t('voice.transkribierter_text') }}</span>
+              <span class="text-[10px] text-cyan-700 font-mono font-semibold">{{ t('voice.whisper_v3') }}</span>
             </label>
             <textarea
               v-model="transcribedText"
               rows="3"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] leading-relaxed"
-              placeholder="Erkannter Text..."
+              :placeholder="t('voice.erkannter_text_placeholder')"
             ></textarea>
           </div>
 
@@ -249,7 +249,7 @@
               v-model="selectedProjectId"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="">Kein Projekt (Allgemeine Notiz / Journal)</option>
+              <option value="">{{ t('voice.kein_projekt_notiz') }}</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">
                 {{ p.title }}
               </option>
@@ -276,7 +276,7 @@
                 class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <Plus class="w-4 h-4" />
-                <span>Als neue Aufgabe anlegen</span>
+                <span>{{ t('voice.als_aufgabe_anlegen') }}</span>
               </button>
             </div>
 
@@ -294,11 +294,11 @@
                 type="button"
                 @click="reanalyzeWithAi"
                 :disabled="actionExecuting || !transcribedText.trim()"
-                title="Erneut von KI analysieren lassen"
+                :title="t('voice.erneut_analysieren_title')"
                 class="px-3 py-2 text-xs font-semibold text-[#00A3C4] hover:bg-cyan-50 border border-cyan-200 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Sparkles class="w-3.5 h-3.5" />
-                <span>Neu analysieren</span>
+                <span>{{ t('voice.neu_analysieren') }}</span>
               </button>
             </div>
           </div>
@@ -314,6 +314,8 @@ import {
   Mic, Square, Loader2, X, FileText, Plus, Copy, Sparkles,
   CheckCircle2, CheckSquare, Edit3, Check, ListPlus, ChevronRight
 } from 'lucide-vue-next'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -490,7 +492,7 @@ const startRecording = async () => {
       recordingSeconds.value++
     }, 1000)
   } catch (err: any) {
-    errorMessage.value = 'Mikrofonzugriff verweigert oder nicht unterstützt. Bitte erteile Mikrofon-Berechtigung im Browser.'
+    errorMessage.value = t('voice.mikrofon_verweigert')
   }
 }
 
@@ -521,7 +523,7 @@ const processAudioForTranscription = async () => {
     stopMediaStream()
 
     if (audioBlob.size === 0 && !liveTranscript.value) {
-      errorMessage.value = 'Keine Audio-Daten aufgenommen.'
+      errorMessage.value = t('voice.keine_audiodaten')
       state.value = 'idle'
       return
     }
@@ -563,7 +565,7 @@ const processAudioForTranscription = async () => {
       state.value = 'analyzing'
       await analyzeVoiceIntent(finalText)
     } else {
-      errorMessage.value = 'Keine Sprache erkannt. Bitte lauter und deutlicher ins Mikrofon sprechen.'
+      errorMessage.value = t('voice.keine_sprache')
       state.value = 'idle'
     }
   } catch (err: any) {
@@ -612,7 +614,7 @@ const reanalyzeWithAi = async () => {
 const intentLabel = (intent: string) => {
   switch (intent) {
     case 'complete_task': return 'Aufgabe abschliessen'
-    case 'update_task': return 'Aufgabe ergänzen'
+    case 'update_task': return t('voice.aufgabe_ergaenzen')
     case 'add_checklist': return 'Checkliste'
     case 'create_task': return 'Neue Aufgabe'
     default: return 'Notiz / Journal'
@@ -723,7 +725,7 @@ const executeSmartAction = async (action: any) => {
       closeModal()
     }, 1200)
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.message || 'Fehler beim Ausführen der Aktion'
+    errorMessage.value = err.data?.statusMessage || err.message || t('voice.fehler_ausfuehren')
   } finally {
     actionExecuting.value = false
   }
@@ -769,7 +771,7 @@ const createTaskInternal = async (projectId?: string) => {
 
   const listId = projData.lists?.[0]?.id
   if (!listId) {
-      throw new Error('Das gewählte Projekt hat noch keine Abschnitte')
+      throw new Error(t('voice.projekt_keine_abschnitte'))
   }
 
   const taskTitle = aiAnalysis.value?.extracted_task_title || (
@@ -791,7 +793,7 @@ const createTaskInternal = async (projectId?: string) => {
       project_id: projId,
       list_id: listId,
       title: taskTitle,
-      description: 'Aus Sprachassistent (openai/whisper-large-v3-turbo):\n\n' + transcribedText.value,
+      description: t('voice.praefix_assistent') + transcribedText.value,
       checklist: checklistObj,
       status: 'todo'
     }

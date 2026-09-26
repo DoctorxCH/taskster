@@ -33,7 +33,7 @@
                   class="taskster_button px-6 text-xs h-[42px] rounded-lg"
                 >
                   <Plus class="w-4 h-4" />
-                  <span>Neuen Benutzer anlegen</span>
+                  <span>{{ $t('admin.neuen_benutzer_btn') }}</span>
                 </button>
 
                 <button
@@ -42,7 +42,7 @@
                   class="taskster_button px-6 text-xs h-[42px] rounded-lg"
                 >
                   <Plus class="w-4 h-4" />
-                  <span>Neues Unternehmen</span>
+                  <span>{{ $t('admin.neues_unternehmen_btn') }}</span>
                 </button>
 
                 <button
@@ -60,7 +60,7 @@
                   class="taskster_button px-6 text-xs h-[42px] rounded-lg"
                 >
                   <Plus class="w-4 h-4" />
-                  <span>Neue Vorlage</span>
+                  <span>{{ $t('admin.neue_vorlage_btn') }}</span>
                 </button>
 
                 <button
@@ -88,7 +88,7 @@
             <!-- USERS PILLS -->
             <div v-if="activeTab === 'users'" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5 pt-4 border-t border-slate-100">
               <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-center">
-                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Kunden & User</div>
+                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{{ $t('admin.kunden_user') }}</div>
                 <div class="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">{{ overview?.metrics?.users || 0 }}</div>
                 <div class="text-[10px] text-slate-400">Registriert</div>
               </div>
@@ -108,13 +108,13 @@
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
                 <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aufgaben</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ overview?.metrics?.tasks || 0 }}</div>
-                <div class="text-[10px] text-slate-400">In Abschnitten gepflegt</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.in_abschnitten_gepflegt') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-amber-50/50 border border-amber-200/60 text-center">
-                <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">Journal-Einträge</div>
+                <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">{{ $t('admin.journal_eintraege') }}</div>
                 <div class="text-xl font-bold text-amber-900 mt-0.5 tabular-nums">{{ overview?.metrics?.journals || 0 }}</div>
-                <div class="text-[10px] text-slate-400">Aktivitätsnotizen</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.aktivitaetsnotizen') }}</div>
               </div>
             </div>
 
@@ -123,11 +123,11 @@
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
                 <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Unternehmen</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ companies.length }}</div>
-                <div class="text-[10px] text-slate-400">Organisationen & Mandanten</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.organisationen_mandanten') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Mitarbeiter zugewiesen</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.mitarbeiter_zugewiesen') }}</div>
                 <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ totalCompanyUsers }}</div>
                 <div class="text-[10px] text-slate-400">Mitarbeiter-Accounts</div>
               </div>
@@ -135,55 +135,55 @@
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
                 <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Upload-Richtlinie</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ companiesWithUploadAllowed }} / {{ companies.length }}</div>
-                <div class="text-[10px] text-slate-400">Uploads freigegeben</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.uploads_freigegeben') }}</div>
               </div>
             </div>
 
             <!-- FINANCE PILLS -->
             <div v-else-if="activeTab === 'finance'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Monatlicher Umsatz (MRR)</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.mrr_titel') }}</div>
                 <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
                   {{ ordersSummary?.mrr ? ordersSummary.mrr.toLocaleString('de-CH') : '0' }} CHF
                 </div>
-                <div class="text-[10px] text-slate-400">Wiederkehrender monatlicher Umsatz</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.mrr_desc') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Aktive Abonnements</div>
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">{{ $t('admin.aktive_abos') }}</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">
                   {{ ordersSummary?.active_subscriptions || 0 }}
                 </div>
-                <div class="text-[10px] text-slate-400">Unternehmen & PRO-Nutzer</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.unternehmen_pro') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Kostenpflichtige Sitze</div>
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">{{ $t('admin.kostenpflichtige_sitze') }}</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">
                   {{ ordersSummary?.total_seats || 0 }}
                 </div>
-                <div class="text-[10px] text-slate-400">Zugewiesene Mitarbeiter-Lizenzen</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.zugewiesene_lizenzen') }}</div>
               </div>
             </div>
 
             <!-- TEMPLATES PILLS -->
             <div v-else-if="activeTab === 'templates'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Vorlagen Gesamt</div>
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">{{ $t('admin.vorlagen_gesamt') }}</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ templates.length }}</div>
-                <div class="text-[10px] text-slate-400">Systemweite Vorlagen</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.systemweite_vorlagen') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Job & Gewerblich</div>
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">{{ $t('admin.job_gewerblich') }}</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ jobTemplatesCount }}</div>
-                <div class="text-[10px] text-slate-400">Baufirmen & Business</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.baufirmen_business') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
                 <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Privat-Vorlagen</div>
                 <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">{{ privateTemplatesCount }}</div>
-                <div class="text-[10px] text-slate-400">Bauherren & Privatnutzer</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.bauherren_privat') }}</div>
               </div>
             </div>
 
@@ -198,63 +198,63 @@
               </div>
 
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Aktive Vorlagen</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.aktive_vorlagen') }}</div>
                 <div class="text-xl font-bold text-emerald-900 mt-0.5 tabular-nums">
                   {{ activeEmailTemplatesCount }} / {{ emailTemplates.length }}
                 </div>
-                <div class="text-[10px] text-slate-400">System-Trigger bereit</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.system_trigger_bereit') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Versendete E-Mails</div>
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">{{ $t('admin.versendete_emails') }}</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ emailOutbox.length }}</div>
-                <div class="text-[10px] text-slate-400">Protokollierte Einträge</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.protokollierte_eintraege') }}</div>
               </div>
             </div>
 
             <!-- WEBSITE PILLS -->
             <div v-else-if="activeTab === 'website'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Webseite Status</div>
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">{{ $t('admin.webseite_status') }}</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5">
                   {{ websiteSettings.website_maintenance_mode ? 'Wartungsmodus' : 'Online / Aktiv' }}
                 </div>
-                <div class="text-[10px] text-slate-400">Öffentliche Landingpage</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.oeffentliche_landingpage') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Ankündigung</div>
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">{{ $t('admin.ankuendigung') }}</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5">
                   {{ websiteSettings.website_announcement_active ? 'Banner Aktiv' : 'Kein Banner' }}
                 </div>
-                <div class="text-[10px] text-slate-400">Live In-App Hinweise</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.live_inapp_hinweise') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">SEO & Metadaten</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.seo_metadaten') }}</div>
                 <div class="text-xl font-bold text-emerald-900 mt-0.5">Konfiguriert</div>
-                <div class="text-[10px] text-slate-400">Google & OpenGraph</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.google_opengraph') }}</div>
               </div>
             </div>
 
             <!-- AUDIT PILLS -->
             <div v-else-if="activeTab === 'audit'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100">
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
-                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Audit Log-Einträge</div>
+                <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">{{ $t('admin.audit_log_eintraege') }}</div>
                 <div class="text-xl font-bold text-purple-900 mt-0.5 tabular-nums">{{ auditLogsTotal }}</div>
-                <div class="text-[10px] text-slate-400">Systemweit protokolliert</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.systemweit_protokolliert') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Aktivitäts-Typen</div>
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">{{ $t('admin.aktivitaets_typen') }}</div>
                 <div class="text-xl font-bold text-[#0891B2] mt-0.5 tabular-nums">{{ auditLogsActions.length }}</div>
-                <div class="text-[10px] text-slate-400">Verschiedene Event-Klassen</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.verschiedene_event_klassen') }}</div>
               </div>
 
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Security Standard</div>
-                <div class="text-xl font-bold text-emerald-900 mt-0.5">Zero-Trust Audit</div>
-                <div class="text-[10px] text-slate-400">Revisionssicher geloggt</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.security_standard') }}</div>
+                <div class="text-xl font-bold text-emerald-900 mt-0.5">{{ $t('admin.zerotrust_audit') }}</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.revisionssicher_geloggt') }}</div>
               </div>
             </div>
 
@@ -263,17 +263,17 @@
               <div class="p-3 rounded-lg bg-purple-50/50 border border-purple-200/60 text-center">
                 <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wide">Standard-Modell</div>
                 <div class="text-sm font-bold text-purple-900 mt-0.5 truncate">{{ aiSettings.ai_model }}</div>
-                <div class="text-[10px] text-slate-400">OpenRouter LLM</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.openrouter_llm') }}</div>
               </div>
               <div class="p-3 rounded-lg bg-cyan-50/50 border border-cyan-200/60 text-center">
-                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">Audio Transkriptor</div>
+                <div class="text-[11px] font-semibold text-cyan-700 uppercase tracking-wide">{{ $t('admin.audio_transkriptor') }}</div>
                 <div class="text-sm font-bold text-[#0891B2] mt-0.5 truncate">{{ aiSettings.ai_audio_model }}</div>
-                <div class="text-[10px] text-slate-400">Whisper Voice Engine</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.whisper_voice_engine') }}</div>
               </div>
               <div class="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 text-center">
-                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">Pro & Enterprise</div>
-                <div class="text-sm font-bold text-emerald-900 mt-0.5">Vollzugriff aktiv</div>
-                <div class="text-[10px] text-slate-400">Tarif-Gating aktiv</div>
+                <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{{ $t('admin.pro_enterprise') }}</div>
+                <div class="text-sm font-bold text-emerald-900 mt-0.5">{{ $t('admin.vollzugriff_aktiv') }}</div>
+                <div class="text-[10px] text-slate-400">{{ $t('admin.tarif_gating_aktiv') }}</div>
               </div>
             </div>
           </div>
@@ -282,14 +282,14 @@
     <div v-if="activeTab === 'users'" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
       <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="text-sm font-bold text-slate-900">Alle registrierten Kunden und Benutzer</h3>
-          <p class="text-xs text-slate-600 font-medium">Verwalte Berechtigungen, Pro-Status, Subrollen und Firmenzuweisungen.</p>
+          <h3 class="text-sm font-bold text-slate-900">{{ $t('admin.alle_reg_kunden') }}</h3>
+          <p class="text-xs text-slate-600 font-medium">{{ $t('admin.verwalte_rechte_desc') }}</p>
         </div>
         <button
           @click="openCreateUserModal"
           class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm shrink-0"
         >
-          <span>+ Neuen Benutzer anlegen</span>
+          <span>{{ $t('admin.neuen_benutzer_anlegen_btn') }}</span>
         </button>
       </div>
 
@@ -297,10 +297,10 @@
         <table class="w-full text-left text-xs">
           <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
             <tr>
-              <th class="py-3.5 px-4">Name & E-Mail</th>
-              <th class="py-3.5 px-4">Unternehmen / Organisation</th>
-              <th class="py-3.5 px-4">Plan & Status</th>
-              <th class="py-3.5 px-4">Rolle & Berechtigungen</th>
+              <th class="py-3.5 px-4">{{ $t('admin.th_name_email') }}</th>
+              <th class="py-3.5 px-4">{{ $t('admin.th_unternehmen_org') }}</th>
+              <th class="py-3.5 px-4">{{ $t('admin.th_plan_status') }}</th>
+              <th class="py-3.5 px-4">{{ $t('admin.th_rolle_rechte') }}</th>
               <th class="py-3.5 px-4 text-right">Aktionen</th>
             </tr>
           </thead>
@@ -315,7 +315,7 @@
                   {{ u.company_name }}
                   <span class="text-[10px] text-slate-600 font-medium">({{ u.company_role }})</span>
                 </span>
-                <span v-else class="text-slate-500 italic">Privatkunde (Einzelbenutzer)</span>
+                <span v-else class="text-slate-500 italic">{{ $t('admin.privatkunde_einzel') }}</span>
               </td>
               <td class="py-3.5 px-4">
                 <span
@@ -361,7 +361,7 @@
                 <button
                   @click="openEditUserModal(u)"
                   class="taskster_button_light px-4 text-xs h-[34px] rounded-lg shadow-xs"
-                  title="Benutzer-Einstellungen bearbeiten (Plan, Rolle, Subrollen, Firma)"
+                  :title="$t('admin.user_edit_title')"
                 >
                   <span>⚙️</span>
                   <span>Einstellungen</span>
@@ -378,14 +378,14 @@
       <div class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
         <div class="p-4 sm:p-6 border-b border-slate-200/80 flex items-center justify-between">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">Unternehmen, Mandanten & B2B-Kunden</h3>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('admin.unternehmen_b2b_titel') }}</h3>
             <p class="text-xs text-slate-600 font-medium">Verwalte Subscription-Pläne, Upload-Restriktionen und Sicherheitsrichtlinien.</p>
           </div>
           <button
             @click="showCreateCompanyModal = true"
             class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm"
           >
-            <span>+ Neues Unternehmen anlegen</span>
+            <span>{{ $t('admin.neues_unternehmen_anlegen_btn') }}</span>
           </button>
         </div>
 
@@ -395,8 +395,8 @@
               <tr>
                 <th class="py-3.5 px-4">Unternehmen</th>
                 <th class="py-3.5 px-4">Abo-Plan</th>
-                <th class="py-3.5 px-4">Nutzer & Ordner</th>
-                <th class="py-3.5 px-4">Dateiuploads (Zero Trust)</th>
+                <th class="py-3.5 px-4">{{ $t('admin.nutzer_ordner') }}</th>
+                <th class="py-3.5 px-4">{{ $t('admin.dateiuploads_zerotrust') }}</th>
                 <th class="py-3.5 px-4 text-right">Status</th>
               </tr>
             </thead>
@@ -412,9 +412,9 @@
                     @change="updateCompanyPlan(c)"
                     class="bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 font-semibold focus:outline-none focus:border-purple-500 shadow-xs"
                   >
-                    <option value="starter">Starter Plan</option>
-                    <option value="pro">Pro Plan</option>
-                    <option value="enterprise">Enterprise Plan</option>
+                    <option value="starter">{{ $t('admin.starter_plan') }}</option>
+                    <option value="pro">{{ $t('admin.pro_plan') }}</option>
+                    <option value="enterprise">{{ $t('admin.enterprise_plan') }}</option>
                   </select>
                 </td>
                 <td class="py-3.5 px-4">
@@ -446,7 +446,7 @@
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
           <div>
-            <h3 class="text-base font-bold text-slate-900">Abonnements & Bestellungen</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('admin.abos_bestellungen') }}</h3>
             <p class="text-xs text-slate-600 font-medium mt-1">
               Übersicht aller aktiven Firmenabos, Einzellizenzen und Zahlungsmodalitäten.
             </p>
@@ -474,8 +474,8 @@
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                <th class="py-3 px-4">Kunde / Organisation</th>
-                <th class="py-3 px-4">Plan / Tarif</th>
+                <th class="py-3 px-4">{{ $t('admin.kunde_org') }}</th>
+                <th class="py-3 px-4">{{ $t('admin.plan_tarif') }}</th>
                 <th class="py-3 px-4">Lizenzen</th>
                 <th class="py-3 px-4">Monatspreis</th>
                 <th class="py-3 px-4">Status</th>
@@ -560,13 +560,13 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Rolle im Unternehmen</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('admin.rolle_im_unternehmen') }}</label>
             <select
               v-model="inviteRole"
               class="w-full px-3.5 py-2.5 bg-white/80 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-purple-600 shadow-xs"
             >
-              <option value="member">Mitglied (Member)</option>
-              <option value="admin">Company Administrator</option>
+              <option value="member">{{ $t('admin.mitglied_member') }}</option>
+              <option value="admin">{{ $t('admin.company_admin') }}</option>
             </select>
           </div>
 
@@ -583,8 +583,8 @@
 
         <!-- Success link box -->
         <div v-if="lastInviteLink" class="p-4 rounded-2xl bg-purple-100/80 border border-purple-300 text-xs mb-6">
-          <div class="font-bold text-purple-900 mb-1">Einladung erfolgreich generiert!</div>
-          <div class="text-slate-700 mb-2">Für nicht registrierte Nutzer kann dieser direkte Registrierungslink weitergegeben werden:</div>
+          <div class="font-bold text-purple-900 mb-1">{{ $t('admin.einladung_generiert') }}</div>
+          <div class="text-slate-700 mb-2">{{ $t('admin.einladung_link_desc') }}</div>
           <div class="flex items-center space-x-2">
             <input
               readonly
@@ -602,7 +602,7 @@
         </div>
 
         <!-- Pending Invites List -->
-        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Offene Einladungen</h4>
+        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">{{ $t('admin.offene_einladungen') }}</h4>
         <div v-if="pendingInvites.length === 0" class="text-xs text-slate-600 font-medium py-6 text-center border border-dashed border-slate-300 rounded-2xl bg-white/40">
           Keine offenen Einladungen vorhanden.
         </div>
@@ -628,7 +628,7 @@
         <div>
           <h3 class="text-lg font-black text-slate-900 flex items-center space-x-2">
             <span>📋</span>
-            <span>Projekt-Vorlagen (Gewerbe, Jobs & Privat)</span>
+            <span>{{ $t('admin.projektvorlagen_full_title') }}</span>
           </h3>
           <p class="text-xs text-slate-600 font-medium mt-1 max-w-2xl">
             Verwalte strukturierte Vorlagen mit Standard-Abschnitten und benutzerdefinierten Feldern inklusive bedingter IF-THEN-Logik. Benutzer können diese beim Erstellen eines neuen Projekts auswählen.
@@ -639,7 +639,7 @@
           @click="openCreateTemplateModal"
           class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-sm"
         >
-          <span>+ Neue Vorlage erstellen</span>
+          <span>{{ $t('admin.neue_vorlage_erstellen_btn') }}</span>
         </button>
       </div>
 
@@ -675,7 +675,7 @@
           <input
             v-model="templateSearch"
             type="text"
-            placeholder="Vorlage suchen..."
+            :placeholder="$t('admin.vorlage_suchen_placeholder')"
             class="w-full px-3.5 py-2.5 bg-white/70 focus:bg-white border border-white/80 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-600 shadow-xs backdrop-blur-sm"
           />
         </div>
@@ -684,8 +684,8 @@
       <!-- Templates Grid -->
       <div v-if="filteredTemplates.length === 0" class="p-12 text-center liquid_glass rounded-3xl shadow-xl">
         <div class="text-4xl mb-3">🔍</div>
-        <h4 class="text-sm font-bold text-slate-900 mb-1">Keine Vorlagen gefunden</h4>
-        <p class="text-xs text-slate-600 mb-4">Erstelle deine erste Vorlage oder passe den Suchfilter an.</p>
+        <h4 class="text-sm font-bold text-slate-900 mb-1">{{ $t('admin.keine_vorlagen') }}</h4>
+        <p class="text-xs text-slate-600 mb-4">{{ $t('admin.keine_vorlagen_desc') }}</p>
         <button @click="openCreateTemplateModal" class="taskster_button px-6 text-xs h-[42px] rounded-lg">
           + Jetzt Vorlage anlegen
         </button>
@@ -723,7 +723,7 @@
             <!-- Pre-configured Lists -->
             <div class="mb-3">
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Vordefinierte Abschnitte ({{ tmpl.lists?.length || 0 }})</span>
+                <span>{{ $t('admin.vordefinierte_abschnitte') }} ({{ tmpl.lists?.length || 0 }})</span>
               </div>
               <div class="flex flex-wrap gap-1.5">
                 <span
@@ -739,7 +739,7 @@
             <!-- Custom Fields & Logic -->
             <div>
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Benutzerdefinierte Felder ({{ tmpl.fields?.length || 0 }})</span>
+                <span>{{ $t('admin.benutzerdefinierte_felder') }} ({{ tmpl.fields?.length || 0 }})</span>
               </div>
               <div class="space-y-1.5">
                 <div
@@ -802,7 +802,7 @@
             :class="emailSubTab === 'settings' ? 'bg-[#00A3C4] text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'"
           >
             <Server class="w-4 h-4" />
-            <span>E-Mail & Versand (Resend / SMTP)</span>
+            <span>{{ $t('admin.email_versand_titel') }}</span>
           </button>
           <button
             @click="emailSubTab = 'templates'"
@@ -829,7 +829,7 @@
             class="taskster_button_light px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-1.5 shadow-sm"
           >
             <Send class="w-3.5 h-3.5" />
-            <span>Test-E-Mail senden</span>
+            <span>{{ $t('admin.test_email_senden_btn') }}</span>
           </button>
         </div>
       </div>
@@ -838,7 +838,7 @@
       <div v-if="emailSubTab === 'settings'" class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 mb-6">
           <div>
-            <h3 class="text-base font-bold text-slate-900">Zentrale E-Mail-Einstellungen</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('admin.zentrale_email_einstellungen') }}</h3>
             <p class="text-xs text-slate-600 mt-0.5">
               Alle automatischen E-Mails, Kalendereinladungen und Benachrichtigungen werden über diesen Dienst versendet.
             </p>
@@ -857,7 +857,7 @@
         <form @submit.prevent="saveEmailSettings" class="space-y-6">
           <!-- Provider Selection Cards -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-2.5">E-Mail Versand-Methode</label>
+            <label class="block text-xs font-bold text-slate-800 mb-2.5">{{ $t('admin.email_versand_methode') }}</label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <!-- Resend Option -->
               <div
@@ -870,8 +870,8 @@
                 </div>
                 <div class="flex-1">
                   <div class="flex items-center space-x-2">
-                    <span class="text-xs font-black text-slate-900">Resend API</span>
-                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Empfohlen & Aktiv</span>
+                    <span class="text-xs font-black text-slate-900">{{ $t('admin.resend_api') }}</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">{{ $t('admin.empfohlen_aktiv') }}</span>
                   </div>
                   <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
                     100% Zustellrate zu Outlook, Gmail und Apple Mail mit kryptografischer DKIM/SPF-Signatur. Keine IP-Sperren.
@@ -890,7 +890,7 @@
                 </div>
                 <div class="flex-1">
                   <div class="flex items-center space-x-2">
-                    <span class="text-xs font-black text-slate-900">Eigener SMTP-Server</span>
+                    <span class="text-xs font-black text-slate-900">{{ $t('admin.eigener_smtp') }}</span>
                   </div>
                   <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
                     Manuelle SMTP-Verbindung über Postfix/Exim (z.B. mail.kurka.ch oder Firmen-Mailserver).
@@ -904,18 +904,18 @@
           <div v-if="smtpConfig.mail_provider === 'resend'" class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <span class="text-xs font-black text-slate-900 flex items-center space-x-1.5">
-                <span>Resend Konfiguration</span>
+                <span>{{ $t('admin.resend_konfig') }}</span>
               </span>
               <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">
                 <CheckCircle2 class="w-3 h-3 text-emerald-600" />
-                <span>Domain kurka.ch verifiziert</span>
+                <span>{{ $t('admin.domain_verifiziert') }}</span>
               </span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-xs font-bold text-slate-800">Resend API-Key *</label>
+                  <label class="text-xs font-bold text-slate-800">{{ $t('admin.resend_key_label') }}</label>
                   <button
                     type="button"
                     @click="showResendKey = !showResendKey"
@@ -935,7 +935,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.from_email_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_from_email"
                   type="email"
@@ -943,11 +943,11 @@
                   placeholder="noreply@kurka.ch"
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:bg-white focus:outline-none shadow-xs"
                 />
-                <p class="text-[11px] text-slate-500 mt-1">Muss eine Adresse der verifizierten Domain kurka.ch sein.</p>
+                <p class="text-[11px] text-slate-500 mt-1">{{ $t('admin.from_email_hint') }}</p>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.from_name_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_from_name"
                   type="text"
@@ -962,7 +962,7 @@
             <div class="pt-4 border-t border-slate-200/80">
               <div class="flex items-center justify-between mb-3">
                 <div>
-                  <h4 class="text-xs font-black text-slate-900">Dedizierte Absender-Identitäten (@kurka.ch)</h4>
+                  <h4 class="text-xs font-black text-slate-900">{{ $t('admin.dedizierte_identitaeten') }}</h4>
                   <p class="text-[11px] text-slate-600 mt-0.5">
                     Dank verifizierter Domain sofort einsatzbereit ohne separate Postfächer.
                   </p>
@@ -1065,12 +1065,12 @@
           <!-- SMTP Settings Section -->
           <div v-else class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
             <div class="pb-3 border-b border-slate-100">
-              <span class="text-xs font-black text-slate-900">Manuelle SMTP-Server Konfiguration</span>
+              <span class="text-xs font-black text-slate-900">{{ $t('admin.manuelle_smtp_konfig') }}</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Host / Server *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.smtp_host_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_host"
                   type="text"
@@ -1082,7 +1082,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">Port & Verschlüsselung *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.smtp_port_enc_label') }}</label>
                 <div class="grid grid-cols-2 gap-3">
                   <input
                     v-model.number="smtpConfig.smtp_port"
@@ -1095,16 +1095,16 @@
                     v-model="smtpConfig.smtp_secure"
                     class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
                   >
-                    <option value="ssl">SSL / TLS (Port 465)</option>
-                    <option value="tls">STARTTLS (Port 587)</option>
-                    <option value="none">Keine Verschlüsselung (Port 25)</option>
+                    <option value="ssl">{{ $t('admin.enc_ssl_tls') }}</option>
+                    <option value="tls">{{ $t('admin.enc_starttls') }}</option>
+                    <option value="none">{{ $t('admin.enc_none') }}</option>
                   </select>
                 </div>
                 <p class="text-[11px] text-slate-500 mt-1">Empfohlen: SSL (465) oder STARTTLS (587)</p>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">SMTP Benutzername *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.smtp_user_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_user"
                   type="text"
@@ -1116,26 +1116,26 @@
 
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-xs font-bold text-slate-800">SMTP Passwort *</label>
+                  <label class="text-xs font-bold text-slate-800">{{ $t('admin.smtp_pass_label') }}</label>
                   <button
                     type="button"
                     @click="showSmtpPassword = !showSmtpPassword"
                     class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center space-x-1 cursor-pointer"
                   >
-                    <span v-if="showSmtpPassword">Passwort verbergen</span>
-                    <span v-else>Passwort anzeigen</span>
+                    <span v-if="showSmtpPassword">{{ $t('admin.passwort_verbergen') }}</span>
+                    <span v-else>{{ $t('admin.passwort_anzeigen') }}</span>
                   </button>
                 </div>
                 <input
                   v-model="smtpConfig.smtp_password"
                   :type="showSmtpPassword ? 'text' : 'password'"
-                  placeholder="SMTP Kennwort"
+                  :placeholder="$t('admin.smtp_passwort_placeholder')"
                   class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:border-[#00A3C4] focus:outline-none shadow-xs"
                 />
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-E-Mail (From Address) *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.from_email_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_from_email"
                   type="email"
@@ -1146,7 +1146,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Name (From Name) *</label>
+                <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.from_name_label') }}</label>
                 <input
                   v-model="smtpConfig.smtp_from_name"
                   type="text"
@@ -1172,8 +1172,8 @@
               :disabled="savingSmtp"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span v-if="savingSmtp">Wird gespeichert...</span>
-              <span v-else>Einstellungen speichern</span>
+              <span v-if="savingSmtp">{{ $t('admin.wird_gespeichert') }}</span>
+              <span v-else>{{ $t('admin.einstellungen_speichern_btn') }}</span>
             </button>
           </div>
         </form>
@@ -1183,7 +1183,7 @@
       <div v-if="emailSubTab === 'templates'" class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white border border-slate-200 rounded-xl">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">E-Mail Trigger & Vorlagen</h3>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('admin.email_trigger_vorlagen') }}</h3>
             <p class="text-xs text-slate-600 mt-0.5">
               Automatische Benachrichtigungen für Aktionen wie Zuweisungen, Fristen, Kommentare, Einladungen und Budget-Warnungen.
             </p>
@@ -1238,7 +1238,7 @@
               </div>
 
               <div>
-                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Verfügbare Variablen</div>
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{{ $t('admin.verfuegbare_variablen') }}</div>
                 <div class="flex flex-wrap gap-1">
                   <span
                     v-for="v in tmpl.variables"
@@ -1273,8 +1273,8 @@
       <div v-if="emailSubTab === 'outbox'" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
         <div class="p-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">E-Mail Versand-Protokoll (Outbox)</h3>
-            <p class="text-xs text-slate-600 font-medium">Verlauf der letzten E-Mail-Sendungen und Status.</p>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('admin.email_outbox_titel') }}</h3>
+            <p class="text-xs text-slate-600 font-medium">{{ $t('admin.email_outbox_desc') }}</p>
           </div>
           <button
             @click="loadEmailOutbox"
@@ -1289,15 +1289,15 @@
             <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
               <tr>
                 <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4">Empfänger</th>
+                <th class="py-3 px-4">{{ $t('admin.th_empfaenger') }}</th>
                 <th class="py-3 px-4">Betreff</th>
                 <th class="py-3 px-4">Erstellt am</th>
-                <th class="py-3 px-4">Gesendet am / Fehler</th>
+                <th class="py-3 px-4">{{ $t('admin.th_gesendet_fehler') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200/60 text-slate-800">
               <tr v-if="emailOutbox.length === 0">
-                <td colspan="5" class="py-8 text-center text-slate-500 italic">Noch keine E-Mails im Protokoll vorhanden.</td>
+                <td colspan="5" class="py-8 text-center text-slate-500 italic">{{ $t('admin.noch_keine_emails_log') }}</td>
               </tr>
               <tr v-for="item in emailOutbox" :key="item.id" class="hover:bg-white/60 transition">
                 <td class="py-3 px-4">
@@ -1343,7 +1343,7 @@
       <div class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
         <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">Sicherheits- & Revisionsprotokoll (Audit Trail)</h3>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('admin.audit_trail_desc') }}</h3>
             <p class="text-xs text-slate-600 font-medium">Vollständige Aufzeichnung aller Benutzeraktionen, Berechtigungsänderungen und System-Events.</p>
           </div>
 
@@ -1354,7 +1354,7 @@
                 v-model="auditSearch"
                 @input="fetchAuditLogs"
                 type="text"
-                placeholder="Suche (Aktion, User, IP...)"
+                :placeholder="$t('admin.suche_placeholder')"
                 class="w-full pl-9 pr-3 py-2 bg-white/80 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
               />
             </div>
@@ -1364,7 +1364,7 @@
               @change="fetchAuditLogs"
               class="w-full sm:w-48 py-2 px-3 bg-white/80 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
             >
-              <option value="">Alle Aktionen</option>
+              <option value="">{{ $t('admin.filter_alle_aktionen') }}</option>
               <option v-for="act in auditLogsActions" :key="act" :value="act">{{ act }}</option>
             </select>
 
@@ -1373,7 +1373,7 @@
               class="taskster_button_light px-4 text-xs h-[38px] rounded-lg shadow-xs flex items-center gap-1.5 shrink-0"
             >
               <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loadingAuditLogs }" />
-              <span>Neu laden</span>
+              <span>{{ $t('admin.neu_laden_btn') }}</span>
             </button>
           </div>
         </div>
@@ -1384,9 +1384,9 @@
               <tr>
                 <th class="py-3.5 px-4">Zeitstempel</th>
                 <th class="py-3.5 px-4">Aktion</th>
-                <th class="py-3.5 px-4">Benutzer & Organisation</th>
-                <th class="py-3.5 px-4">Entität</th>
-                <th class="py-3.5 px-4">IP-Adresse & Client</th>
+                <th class="py-3.5 px-4">{{ $t('admin.th_benutzer_org') }}</th>
+                <th class="py-3.5 px-4">{{ $t('admin.th_entitaet') }}</th>
+                <th class="py-3.5 px-4">{{ $t('admin.th_ip_client') }}</th>
                 <th class="py-3.5 px-4 text-right">Details</th>
               </tr>
             </thead>
@@ -1415,7 +1415,7 @@
                   <div v-if="log.user_name" class="font-bold text-slate-900">{{ log.user_name }}</div>
                   <div v-if="log.user_email" class="text-[10px] text-slate-500 font-mono">{{ log.user_email }}</div>
                   <div v-if="log.company_name" class="text-[10px] text-emerald-700 font-semibold">{{ log.company_name }}</div>
-                  <div v-if="!log.user_name && !log.user_email" class="text-slate-400 italic">System / Anonym</div>
+                  <div v-if="!log.user_name && !log.user_email" class="text-slate-400 italic">{{ $t('admin.system_anonym') }}</div>
                 </td>
                 <td class="py-3.5 px-4">
                   <div v-if="log.entity_type" class="font-semibold text-slate-700">
@@ -1451,7 +1451,7 @@
             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
               {{ selectedAuditLog.action }}
             </span>
-            <h3 class="text-base font-bold text-slate-900 mt-1">Audit Log Details</h3>
+            <h3 class="text-base font-bold text-slate-900 mt-1">{{ $t('admin.audit_details_title') }}</h3>
           </div>
           <button @click="selectedAuditLog = null" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
             <X class="w-5 h-5" />
@@ -1461,25 +1461,25 @@
         <div class="py-4 space-y-3 text-xs">
           <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200/80">
             <div>
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">Log-ID:</span>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">{{ $t('admin.log_id_label') }}</span>
               <span class="font-mono font-bold text-slate-900">{{ selectedAuditLog.id }}</span>
             </div>
             <div>
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">Zeitstempel:</span>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">{{ $t('admin.zeitstempel_label') }}</span>
               <span class="font-bold text-slate-900">{{ new Date(selectedAuditLog.created_at).toLocaleString('de-CH') }}</span>
             </div>
             <div>
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">Benutzer:</span>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">{{ $t('admin.benutzer_label') }}</span>
               <span class="font-bold text-slate-900">{{ selectedAuditLog.user_name || 'System' }} ({{ selectedAuditLog.user_email || '-' }})</span>
             </div>
             <div>
-              <span class="text-slate-500 block text-[10px] uppercase font-bold">IP-Adresse:</span>
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">{{ $t('admin.ip_adresse_label') }}</span>
               <span class="font-mono font-bold text-slate-900">{{ selectedAuditLog.ip_address || 'Unbekannt' }}</span>
             </div>
           </div>
 
           <div>
-            <span class="text-slate-700 font-bold block mb-1">Details & Payload:</span>
+            <span class="text-slate-700 font-bold block mb-1">{{ $t('admin.details_payload_label') }}</span>
             <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg text-[11px] font-mono overflow-x-auto max-h-60">{{ JSON.stringify(selectedAuditLog.details, null, 2) }}</pre>
           </div>
         </div>
@@ -1497,7 +1497,7 @@
       <div class="liquid_glass rounded-3xl p-6 shadow-xl space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
           <div>
-            <h3 class="text-base font-bold text-slate-900">Webseiten-Verwaltung & CMS</h3>
+            <h3 class="text-base font-bold text-slate-900">{{ $t('admin.cms_titel') }}</h3>
             <p class="text-xs text-slate-600 font-medium">Steuere Inhalte der öffentlichen Webseite, Preismodelle, Ankündigungs-Banner und SEO.</p>
           </div>
           <button
@@ -1512,33 +1512,33 @@
 
         <div v-if="websiteSettingsSavedNotice" class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2">
           <CheckCircle2 class="w-4 h-4 text-emerald-600" />
-          <span>Webseiten-Einstellungen erfolgreich aktualisiert!</span>
+          <span>{{ $t('admin.cms_gespeichert') }}</span>
         </div>
 
         <!-- 1. Hero & Kontakt Section -->
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Globe class="w-4 h-4 text-cyan-600" />
-            <span>Landingpage & Allgemeine Webseiten-Informationen</span>
+            <span>{{ $t('admin.landingpage_allg') }}</span>
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <!-- Webseiten- & Browser-Titel (<title>) -->
             <div class="md:col-span-2">
               <div class="flex items-center justify-between mb-1">
-                <label class="block font-bold text-slate-800">Webseiten- & Browser-Titel (&lt;title&gt;)</label>
-                <span class="text-[11px] text-cyan-700 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">Browser-Tab & HTML &lt;title&gt;</span>
+                <label class="block font-bold text-slate-800">{{ $t('admin.browser_title_label') }}</label>
+                <span class="text-[11px] text-cyan-700 font-semibold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">{{ $t('admin.browser_title_desc') }}</span>
               </div>
               <input
                 v-model="websiteSettings.website_title"
                 type="text"
-                placeholder="z. B. Taskster – Professionelles Projekt- & Bauleitermanagement"
+                :placeholder="$t('admin.browser_title_placeholder')"
                 class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
               />
               <p class="text-[11px] text-slate-500 mt-1">Dieser globale Titel erscheint oben im Browser-Tab, in Bookmarks sowie als Haupttitel bei Google / Social Media.</p>
             </div>
 
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Hero Hauptüberschrift</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.hero_ueberschrift') }}</label>
               <input
                 v-model="websiteSettings.website_hero_title"
                 type="text"
@@ -1546,7 +1546,7 @@
               />
             </div>
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Hero Untertitel / Beschreibung</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.hero_untertitel') }}</label>
               <input
                 v-model="websiteSettings.website_hero_subtitle"
                 type="text"
@@ -1554,7 +1554,7 @@
               />
             </div>
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Support E-Mail Adresse</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.support_email') }}</label>
               <input
                 v-model="websiteSettings.website_contact_email"
                 type="email"
@@ -1562,7 +1562,7 @@
               />
             </div>
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Support Telefonnummer</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.support_telefon') }}</label>
               <input
                 v-model="websiteSettings.website_contact_phone"
                 type="text"
@@ -1574,7 +1574,7 @@
           <!-- Live Browser-Tab Vorschau -->
           <div class="mt-3 p-3.5 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <span>Live-Vorschau: Browser-Tab</span>
+              <span>{{ $t('admin.live_vorschau_tab') }}</span>
             </div>
             <div class="inline-flex items-center gap-2 bg-slate-800/90 px-3.5 py-1.5 rounded-lg border border-slate-700/80 max-w-full">
               <span class="w-3.5 h-3.5 rounded-full bg-[#00A3C4] text-[9px] font-black text-slate-950 flex items-center justify-center shrink-0">T</span>
@@ -1588,11 +1588,11 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <CreditCard class="w-4 h-4 text-purple-600" />
-            <span>Preismodelle & Tarife auf der Webseite</span>
+            <span>{{ $t('admin.preise_tarife_titel') }}</span>
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <span class="font-bold text-slate-800 block text-[11px] uppercase">Free / Basic Plan</span>
+              <span class="font-bold text-slate-800 block text-[11px] uppercase">{{ $t('admin.plan_free') }}</span>
               <input
                 v-model="websiteSettings.website_pricing_basic_price"
                 type="text"
@@ -1601,7 +1601,7 @@
               />
             </div>
             <div class="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2">
-              <span class="font-bold text-amber-900 block text-[11px] uppercase">PRO Plan</span>
+              <span class="font-bold text-amber-900 block text-[11px] uppercase">{{ $t('admin.plan_pro') }}</span>
               <input
                 v-model="websiteSettings.website_pricing_pro_price"
                 type="text"
@@ -1610,11 +1610,11 @@
               />
             </div>
             <div class="p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl space-y-2">
-              <span class="font-bold text-purple-900 block text-[11px] uppercase">ENTERPRISE Plan</span>
+              <span class="font-bold text-purple-900 block text-[11px] uppercase">{{ $t('admin.plan_enterprise') }}</span>
               <input
                 v-model="websiteSettings.website_pricing_enterprise_price"
                 type="text"
-                placeholder="Auf Anfrage"
+                :placeholder="$t('admin.auf_anfrage_placeholder')"
                 class="w-full px-3 py-2 bg-white border border-purple-300 rounded-lg text-xs font-bold"
               />
             </div>
@@ -1625,7 +1625,7 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <AlertCircle class="w-4 h-4 text-amber-600" />
-            <span>In-App Ankündigungs-Banner & Wartungsmodus</span>
+            <span>{{ $t('admin.banner_wartung_titel') }}</span>
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div class="space-y-3">
@@ -1636,13 +1636,13 @@
                   class="sr-only peer"
                 />
                 <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-900"></div>
-                <span class="text-xs font-bold text-slate-900">Ankündigung-Banner auf der Webseite anzeigen</span>
+                <span class="text-xs font-bold text-slate-900">{{ $t('admin.banner_anzeigen_toggle') }}</span>
               </label>
 
               <input
                 v-model="websiteSettings.website_announcement_text"
                 type="text"
-                placeholder="Banner-Nachricht eingeben..."
+                :placeholder="$t('admin.banner_msg_placeholder')"
                 class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
               />
             </div>
@@ -1651,7 +1651,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                   <Lock class="w-4 h-4 text-rose-700" />
-                  <span class="font-bold text-rose-900 text-xs">Wartungsmodus (Maintenance Switch)</span>
+                  <span class="font-bold text-rose-900 text-xs">{{ $t('admin.wartungsmodus_titel') }}</span>
                 </div>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -1662,7 +1662,7 @@
                   <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
                 </label>
               </div>
-              <p class="text-[11px] text-rose-700">Wenn aktiviert, können sich nur Superadmins in die Plattform einloggen. Normale Nutzer sehen einen Wartungshinweis.</p>
+              <p class="text-[11px] text-rose-700">{{ $t('admin.wartungsmodus_desc') }} Normale Nutzer sehen einen Wartungshinweis.</p>
             </div>
           </div>
         </div>
@@ -1671,11 +1671,11 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <FileText class="w-4 h-4 text-emerald-600" />
-            <span>SEO & Suchmaschinen-Optimierung</span>
+            <span>{{ $t('admin.seo_titel') }}</span>
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Globaler Meta-Titel</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.globaler_meta_titel') }}</label>
               <input
                 v-model="websiteSettings.website_seo_title"
                 type="text"
@@ -1683,7 +1683,7 @@
               />
             </div>
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Globaler Meta-Beschreibungstext</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.globaler_meta_desc') }}</label>
               <textarea
                 v-model="websiteSettings.website_seo_description"
                 rows="2"
@@ -1694,7 +1694,7 @@
 
           <!-- Google SERP Vorschau -->
           <div class="mt-2 p-3.5 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Google Suchergebnis-Vorschau</div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ $t('admin.google_vorschau') }}</div>
             <div class="text-[11px] text-emerald-700 font-mono">https://taskster.ch</div>
             <div class="text-sm font-bold text-blue-700 hover:underline cursor-pointer">
               {{ websiteSettings.website_title || websiteSettings.website_seo_title || 'Taskster - Professionelles Projekt- & Bauleitermanagement' }}
@@ -1718,7 +1718,7 @@
               <Sparkles class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-sm font-black text-slate-900">Taskster AI-Engine & Tarif-Berechtigungen</h3>
+              <h3 class="text-sm font-black text-slate-900">{{ $t('admin.ai_engine_titel') }}</h3>
               <p class="text-xs text-slate-600 mt-0.5 font-medium">
                 Steuere hier die KI-Funktionen für Bautagebuch, Aufgaben-Generierung, Sprachnotizen und welche Features für welche Tarife freigeschaltet sind.
               </p>
@@ -1739,9 +1739,9 @@
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
               <ShieldCheck class="w-4 h-4 text-purple-600" />
-              <span>Tarif-Freischaltung & Quotas (Was ist in welchem Plan freigeschaltet?)</span>
+              <span>{{ $t('admin.tarif_freischaltung_titel') }}</span>
             </h4>
-            <span class="text-[11px] font-semibold text-slate-500">Zero-Trust serverseitig erzwungen</span>
+            <span class="text-[11px] font-semibold text-slate-500">{{ $t('admin.zero_trust_erzwungen') }}</span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1754,11 +1754,11 @@
                   <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
               </div>
-              <p class="text-xs text-slate-600 font-medium mb-3">Kostenlose Accounts & Probe-Nutzer</p>
+              <p class="text-xs text-slate-600 font-medium mb-3">{{ $t('admin.free_accounts_probe') }}</p>
               
               <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <label class="block font-bold text-slate-700 mb-1">{{ $t('admin.max_anfragen_monat') }}</label>
                   <input
                     v-model.number="aiSettings.ai_plan_basic_monthly_limit"
                     type="number"
@@ -1768,7 +1768,7 @@
                   />
                 </div>
                 <div class="flex items-center justify-between pt-1">
-                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <span class="font-bold text-slate-700">{{ $t('admin.whisper_audio_toggle') }}</span>
                   <input type="checkbox" v-model="aiSettings.ai_plan_basic_audio_enabled" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer" />
                 </div>
               </div>
@@ -1777,17 +1777,17 @@
             <!-- Pro Plan -->
             <div class="p-4 rounded-2xl border-2 transition-all border-[#00A3C4]/60 bg-cyan-50/20">
               <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#00A3C4] text-white">Pro Plan</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#00A3C4] text-white">{{ $t('admin.pro_plan') }}</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" v-model="aiSettings.ai_plan_pro_enabled" class="sr-only peer" />
                   <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00A3C4]"></div>
                 </label>
               </div>
-              <p class="text-xs text-slate-600 font-medium mb-3">Handwerker, Bauleiter & Einzelfirmen</p>
+              <p class="text-xs text-slate-600 font-medium mb-3">{{ $t('admin.handwerker_einzel') }}</p>
               
               <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <label class="block font-bold text-slate-700 mb-1">{{ $t('admin.max_anfragen_monat') }}</label>
                   <input
                     v-model.number="aiSettings.ai_plan_pro_monthly_limit"
                     type="number"
@@ -1797,7 +1797,7 @@
                   />
                 </div>
                 <div class="flex items-center justify-between pt-1">
-                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <span class="font-bold text-slate-700">{{ $t('admin.whisper_audio_toggle') }}</span>
                   <input type="checkbox" v-model="aiSettings.ai_plan_pro_audio_enabled" class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-4 h-4 cursor-pointer" />
                 </div>
               </div>
@@ -1806,17 +1806,17 @@
             <!-- Enterprise Plan -->
             <div class="p-4 rounded-2xl border-2 transition-all border-purple-400 bg-purple-50/20">
               <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-900 text-white">Enterprise Plan</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-900 text-white">{{ $t('admin.enterprise_plan') }}</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_enabled" class="sr-only peer" />
                   <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-900"></div>
                 </label>
               </div>
-              <p class="text-xs text-slate-600 font-medium mb-3">Großunternehmen & Generalunternehmer</p>
+              <p class="text-xs text-slate-600 font-medium mb-3">{{ $t('admin.grossunternehmen_gu') }}</p>
               
               <div class="space-y-3 pt-3 border-t border-slate-200/60 text-xs">
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1">Max. Anfragen / Monat</label>
+                  <label class="block font-bold text-slate-700 mb-1">{{ $t('admin.max_anfragen_monat') }}</label>
                   <input
                     v-model.number="aiSettings.ai_plan_enterprise_monthly_limit"
                     type="number"
@@ -1826,11 +1826,11 @@
                   />
                 </div>
                 <div class="flex items-center justify-between pt-1">
-                  <span class="font-bold text-slate-700">Audio-Transkription (Whisper)</span>
+                  <span class="font-bold text-slate-700">{{ $t('admin.whisper_audio_toggle') }}</span>
                   <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_audio_enabled" class="rounded text-purple-700 focus:ring-purple-700 w-4 h-4 cursor-pointer" />
                 </div>
                 <div class="flex items-center justify-between pt-1">
-                  <span class="font-bold text-slate-700">Eigene API-Keys erlauben (BYOK)</span>
+                  <span class="font-bold text-slate-700">{{ $t('admin.byok_erlauben') }}</span>
                   <input type="checkbox" v-model="aiSettings.ai_plan_enterprise_custom_key_allowed" class="rounded text-purple-700 focus:ring-purple-700 w-4 h-4 cursor-pointer" />
                 </div>
               </div>
@@ -1842,12 +1842,12 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Bot class="w-4 h-4 text-[#00A3C4]" />
-            <span>Globale KI-Modelle & Parameter</span>
+            <span>{{ $t('admin.globale_ki_modelle') }}</span>
           </h4>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Standard LLM Modell (OpenRouter Identifier)</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.standard_llm_modell') }}</label>
               <input
                 v-model="aiSettings.ai_model"
                 type="text"
@@ -1858,7 +1858,7 @@
             </div>
 
             <div>
-              <label class="block font-bold text-slate-800 mb-1">Audio Transkriptions-Modell</label>
+              <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.audio_transkriptions_modell') }}</label>
               <input
                 v-model="aiSettings.ai_audio_model"
                 type="text"
@@ -1894,7 +1894,7 @@
           </div>
 
           <div>
-            <label class="block font-bold text-slate-800 mb-1">Globaler System-Prompt (Rolle für Bau- & Projektassistenten)</label>
+            <label class="block font-bold text-slate-800 mb-1">{{ $t('admin.globaler_system_prompt') }}</label>
             <textarea
               v-model="aiSettings.ai_system_prompt"
               rows="3"
@@ -1907,13 +1907,13 @@
         <div class="bg-white/80 rounded-2xl p-5 border border-slate-200/80 space-y-4">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Cpu class="w-4 h-4 text-purple-600" />
-            <span>Live KI-Testkonsole</span>
+            <span>{{ $t('admin.live_ki_testkonsole') }}</span>
           </h4>
           <div class="flex flex-col sm:flex-row gap-3">
             <input
               v-model="testPrompt"
               type="text"
-              placeholder="Test-Prompt eingeben..."
+              :placeholder="$t('admin.test_prompt_placeholder')"
               class="flex-1 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:border-[#00A3C4] focus:outline-none shadow-xs font-medium"
               @keydown.enter.prevent="runAiTest"
             />
@@ -1948,7 +1948,7 @@
         <form @submit.prevent="saveTemplate" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-800 mb-1">Vorlagen-Name *</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">{{ $t('admin.vorlage_name_label') }}</label>
               <input
                 v-model="tmplForm.name"
                 type="text"
@@ -1959,7 +1959,7 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-800 mb-1">Kategorie *</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">{{ $t('admin.kategorie_label') }}</label>
               <select
                 v-model="tmplForm.category"
                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
@@ -1972,7 +1972,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-800 mb-1">Unterkategorie / Branche</label>
+              <label class="block text-xs font-medium text-slate-800 mb-1">{{ $t('admin.unterkategorie_label') }}</label>
               <input
                 v-model="tmplForm.subcategory"
                 type="text"
@@ -1986,7 +1986,7 @@
               <input
                 v-model="tmplForm.description"
                 type="text"
-                placeholder="Kurze Zusammenfassung des Einsatzbereichs"
+                :placeholder="$t('admin.vorlage_desc_placeholder')"
                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -2016,7 +2016,7 @@
               <input
                 v-model="newTmplListInput"
                 type="text"
-                placeholder="Neuen Abschnitt eingeben (z.B. In Prüfung)..."
+                :placeholder="$t('admin.neuer_abschnitt_placeholder')"
                 class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-purple-500"
                 @keydown.enter.prevent="addTmplList"
               />
@@ -2079,7 +2079,7 @@
 
             <!-- New field inputs -->
             <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3">
-              <h5 class="text-xs font-bold text-slate-300">+ Neues Feld zur Vorlage hinzufügen</h5>
+              <h5 class="text-xs font-bold text-slate-300">{{ $t('admin.neues_feld_zur_vorlage') }}</h5>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label class="block text-[10px] text-slate-500 mb-1">Feldbezeichnung</label>
@@ -2096,13 +2096,13 @@
                     v-model="newField.field_type"
                     class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 cursor-pointer"
                   >
-                    <option value="text">Textzeile (kurz)</option>
-                    <option value="textarea">Längerer Text / Notizfeld</option>
-                    <option value="number">Zahl / Währung / Messwert</option>
-                    <option value="select">Auswahlliste (Dropdown)</option>
+                    <option value="text">{{ $t('admin.ftyp_textzeile') }}</option>
+                    <option value="textarea">{{ $t('admin.ftyp_laengerer_text') }}</option>
+                    <option value="number">{{ $t('admin.ftyp_zahl_waehrung') }}</option>
+                    <option value="select">{{ $t('admin.ftyp_auswahlliste') }}</option>
                     <option value="date">Datum</option>
-                    <option value="checkbox">Checkbox (Ja / Nein)</option>
-                    <option value="url">Weblink / URL</option>
+                    <option value="checkbox">{{ $t('admin.ftyp_checkbox') }}</option>
+                    <option value="url">{{ $t('admin.ftyp_weblink') }}</option>
                     <option value="email">E-Mail-Adresse</option>
                     <option value="phone">Telefonnummer</option>
                   </select>
@@ -2120,11 +2120,11 @@
               </div>
 
               <div v-if="newField.field_type === 'select'">
-                <label class="block text-[10px] text-slate-500 mb-1">Dropdown-Optionen (Komma-getrennt)</label>
+                <label class="block text-[10px] text-slate-500 mb-1">{{ $t('admin.dropdown_optionen_label') }}</label>
                 <input
                   v-model="newFieldOptionsInput"
                   type="text"
-                  placeholder="Ja, Nein, Ausstehend"
+                  :placeholder="$t('admin.dropdown_optionen_placeholder')"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                 />
               </div>
@@ -2137,24 +2137,24 @@
                     v-model="newFieldHasLogic"
                     class="rounded border-slate-300 text-purple-600 focus:ring-0"
                   />
-                  <span class="text-xs text-amber-800 font-semibold">⚡ Bedingte Sichtbarkeit (Abhängig von anderem Feld)</span>
+                  <span class="text-xs text-amber-800 font-semibold">{{ $t('admin.bedingte_sichtbarkeit_titel') }}</span>
                 </label>
 
                 <div v-if="newFieldHasLogic" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-lg bg-amber-950/20 border border-amber-900/40">
                   <div>
-                    <label class="block text-[10px] text-amber-200 mb-1">Abhängig von Feld-Key</label>
+                    <label class="block text-[10px] text-amber-200 mb-1">{{ $t('admin.abhaengig_von_feld_key') }}</label>
                     <select
                       v-model="newFieldLogicDepField"
                       class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800"
                     >
-                      <option value="">-- Feld auswählen --</option>
+                      <option value="">{{ $t('admin.feld_auswaehlen_opt') }}</option>
                       <option v-for="f in tmplForm.fields" :key="f.field_key" :value="f.field_key">
                         {{ f.label }} ({{ f.field_key }})
                       </option>
                     </select>
                   </div>
                   <div>
-                    <label class="block text-[10px] text-amber-200 mb-1">Erwarteter Wert</label>
+                    <label class="block text-[10px] text-amber-200 mb-1">{{ $t('admin.erwarteter_wert_label') }}</label>
                     <input
                       v-model="newFieldLogicExpectedVal"
                       type="text"
@@ -2201,7 +2201,7 @@
     <div v-if="showCreateCompanyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/80">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-black text-slate-900">Neues Unternehmen anlegen</h3>
+          <h3 class="text-lg font-black text-slate-900">{{ $t('admin.neues_unternehmen_titel') }}</h3>
           <button @click="showCreateCompanyModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
         <p class="text-xs text-slate-600 font-medium mb-4">
@@ -2210,7 +2210,7 @@
 
         <form @submit.prevent="createCompany" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Name des Unternehmens</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.name_des_unternehmens') }}</label>
             <input
               v-model="newCompanyName"
               type="text"
@@ -2226,28 +2226,28 @@
               v-model="newCompanyPlan"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option value="starter">Starter Plan</option>
-              <option value="pro">Pro Plan</option>
-              <option value="enterprise">Enterprise Plan</option>
+              <option value="starter">{{ $t('admin.starter_plan') }}</option>
+              <option value="pro">{{ $t('admin.pro_plan') }}</option>
+              <option value="enterprise">{{ $t('admin.enterprise_plan') }}</option>
             </select>
           </div>
 
           <div class="pt-2 border-t border-slate-200/80">
-            <h4 class="text-xs font-bold text-purple-900 mb-2">Company Admin Zugangsdaten</h4>
+            <h4 class="text-xs font-bold text-purple-900 mb-2">{{ $t('admin.company_admin_zugangsdaten') }}</h4>
             <div class="space-y-3">
               <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Name des Admins</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('admin.name_des_admins') }}</label>
                 <input
                   v-model="newCompanyAdminName"
                   type="text"
                   required
-                  placeholder="Beat Meier"
+                  :placeholder="$t('admin.admin_name_placeholder')"
                   class="w-full px-3.5 py-2 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
                 />
               </div>
 
               <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">E-Mail des Admins</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('admin.email_des_admins') }}</label>
                 <input
                   v-model="newCompanyAdminEmail"
                   type="email"
@@ -2288,7 +2288,7 @@
           <div>
             <div class="inline-flex items-center space-x-1 text-xs font-bold text-emerald-800 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 mb-1">
               <span>👤</span>
-              <span>Neuer Benutzer</span>
+              <span>{{ $t('admin.neuer_benutzer_titel') }}</span>
             </div>
             <h3 class="text-lg font-black text-slate-900">
               Benutzerkonto manuell erstellen
@@ -2305,7 +2305,7 @@
 
         <form @submit.prevent="createUser" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Name *</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.name_pflicht') }}</label>
             <input
               v-model="newUserForm.name"
               type="text"
@@ -2316,7 +2316,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">E-Mail-Adresse *</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.email_pflicht') }}</label>
             <input
               v-model="newUserForm.email"
               type="email"
@@ -2328,7 +2328,7 @@
 
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-800">Passwort *</label>
+              <label class="text-xs font-bold text-slate-800">{{ $t('admin.passwort_pflicht') }}</label>
               <button
                 type="button"
                 @click="generateRandomPassword('new')"
@@ -2343,33 +2343,33 @@
               type="text"
               required
               minlength="6"
-              placeholder="Initiales Login-Passwort (mind. 6 Zeichen)"
+              :placeholder="$t('admin.passwort_initial_placeholder')"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
             />
           </div>
 
           <!-- Plan Selection -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.benutzer_plan_tarif') }}</label>
             <select
               v-model="newUserForm.plan"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option value="basic">Taskster Free / Basic Plan (Basis: max. 1 Ordner, 3 Projekte)</option>
-              <option value="pro">Taskster PRO Plan (30 Projekte, Zeitersparnis & Vorlagen)</option>
-              <option value="enterprise">Taskster ENTERPRISE Plan (Unbegrenzte Projekte & Export)</option>
+              <option value="basic">{{ $t('admin.plan_free_desc') }}</option>
+              <option value="pro">{{ $t('admin.plan_pro_desc') }}</option>
+              <option value="enterprise">{{ $t('admin.plan_enterprise_desc') }}</option>
             </select>
           </div>
 
           <!-- Company Assignment -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Unternehmen zuweisen</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.unternehmen_zuweisen_label') }}</label>
             <select
               v-model="newUserForm.company_id"
               :disabled="!user?.is_superadmin && Boolean(user?.company_id)"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium disabled:opacity-60"
             >
-              <option v-if="user?.is_superadmin" value="">Keine (Privatkunde / Einzelnutzer)</option>
+              <option v-if="user?.is_superadmin" value="">{{ $t('admin.keine_firma_privat') }}</option>
               <option v-for="c in companies" :key="c.id" :value="c.id">
                 {{ c.name }} ({{ c.subscription_plan ? c.subscription_plan.toUpperCase() : 'STANDARD' }})
               </option>
@@ -2378,13 +2378,13 @@
 
           <!-- Company Role -->
           <div v-if="newUserForm.company_id">
-            <label class="block text-xs font-bold text-slate-800 mb-1">Rolle im Unternehmen</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.rolle_im_unternehmen') }}</label>
             <select
               v-model="newUserForm.company_role"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option value="member">Mitarbeiter (member)</option>
-              <option value="admin">Administrator (admin)</option>
+              <option value="member">{{ $t('admin.rolle_mitarbeiter_member') }}</option>
+              <option value="admin">{{ $t('admin.rolle_admin_system') }}</option>
             </select>
           </div>
 
@@ -2393,7 +2393,7 @@
             <div class="flex items-center justify-between mb-2">
               <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                 <span>🛡️</span>
-                <span>Admin-Berechtigungen & Subrollen</span>
+                <span>{{ $t('admin.admin_rechte_subrollen') }}</span>
               </label>
               <div class="flex items-center space-x-1">
                 <button
@@ -2536,7 +2536,7 @@
 
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-800">Neues Passwort (optional)</label>
+              <label class="text-xs font-bold text-slate-800">{{ $t('admin.neues_passwort_opt') }}</label>
               <button
                 type="button"
                 @click="generateRandomPassword('edit')"
@@ -2549,21 +2549,21 @@
             <input
               v-model="editUserForm.new_password"
               type="text"
-              placeholder="Leer lassen, falls Passwort unverändert bleiben soll"
+              :placeholder="$t('admin.passwort_unveraendert_placeholder')"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs"
             />
           </div>
 
           <!-- Plan Selection -->
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Benutzer-Plan (Tarif)</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.benutzer_plan_tarif') }}</label>
             <select
               v-model="editUserForm.plan"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option value="basic">Taskster Free / Basic Plan (Basis: max. 1 Ordner, 3 Projekte)</option>
-              <option value="pro">Taskster PRO Plan (30 Projekte, Zeitersparnis & Vorlagen)</option>
-              <option value="enterprise">Taskster ENTERPRISE Plan (Unbegrenzte Projekte & Export)</option>
+              <option value="basic">{{ $t('admin.plan_free_desc') }}</option>
+              <option value="pro">{{ $t('admin.plan_pro_desc') }}</option>
+              <option value="enterprise">{{ $t('admin.plan_enterprise_desc') }}</option>
             </select>
           </div>
 
@@ -2575,7 +2575,7 @@
               :disabled="!user?.is_superadmin && Boolean(user?.company_id)"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium disabled:opacity-60"
             >
-              <option v-if="user?.is_superadmin" value="">Keine (Privatkunde / Einzelnutzer)</option>
+              <option v-if="user?.is_superadmin" value="">{{ $t('admin.keine_firma_privat') }}</option>
               <option v-for="c in companies" :key="c.id" :value="c.id">
                 {{ c.name }} ({{ c.subscription_plan ? c.subscription_plan.toUpperCase() : 'STANDARD' }})
               </option>
@@ -2584,12 +2584,12 @@
 
           <!-- Company Role (only visible if company assigned) -->
           <div v-if="editUserForm.company_id">
-            <label class="block text-xs font-bold text-slate-800 mb-1">Rolle im Unternehmen</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.rolle_im_unternehmen') }}</label>
             <select
               v-model="editUserForm.company_role"
               class="w-full px-3.5 py-2.5 bg-white/90 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 shadow-xs font-medium"
             >
-              <option value="member">Mitarbeiter (member)</option>
+              <option value="member">{{ $t('admin.rolle_mitarbeiter_member') }}</option>
               <option value="admin">Unternehmens-Administrator (admin)</option>
             </select>
           </div>
@@ -2599,7 +2599,7 @@
             <div class="flex items-center justify-between mb-2">
               <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                 <span>🛡️</span>
-                <span>Admin-Berechtigungen & Subrollen</span>
+                <span>{{ $t('admin.admin_rechte_subrollen') }}</span>
               </label>
               <div class="flex items-center space-x-1">
                 <button
@@ -2699,7 +2699,7 @@
       <div class="liquid_glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl my-8 border border-white/80">
         <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-5">
           <div>
-            <h3 class="text-base font-black text-slate-900">E-Mail Verbindung testen</h3>
+            <h3 class="text-base font-black text-slate-900">{{ $t('admin.email_verbindung_testen') }}</h3>
             <p class="text-xs text-slate-600">
               Versand über <strong class="text-slate-900">{{ smtpConfig.mail_provider === 'resend' ? 'Resend API (noreply@kurka.ch)' : (smtpConfig.smtp_host + ':' + smtpConfig.smtp_port) }}</strong>
             </p>
@@ -2709,7 +2709,7 @@
 
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1.5">Absender-Identität (@kurka.ch)</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.absender_identitaet') }}</label>
             <select
               v-model="testEmailSender"
               class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:border-[#00A3C4] focus:outline-none shadow-xs"
@@ -2727,7 +2727,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1.5">Empfänger-E-Mail-Adresse *</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1.5">{{ $t('admin.empfaenger_email_pflicht') }}</label>
             <input
               v-model="testEmailTo"
               type="email"
@@ -2762,8 +2762,8 @@
               :disabled="testingEmail || !testEmailTo"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              <span v-if="testingEmail">Wird gesendet...</span>
-              <span v-else>Jetzt Test-Mail senden</span>
+              <span v-if="testingEmail">{{ $t('admin.wird_gesendet') }}</span>
+              <span v-else>{{ $t('admin.jetzt_test_mail_senden') }}</span>
             </button>
           </div>
         </div>
@@ -2778,7 +2778,7 @@
             <div class="inline-flex items-center space-x-1 text-[11px] font-mono font-bold text-[#00A3C4] px-2 py-0.5 rounded bg-cyan-50 border border-cyan-200 mb-1">
               <span>Trigger: {{ editingEmailTemplate.trigger_event }}</span>
             </div>
-            <h3 class="text-base font-black text-slate-900">E-Mail-Vorlage anpassen</h3>
+            <h3 class="text-base font-black text-slate-900">{{ $t('admin.email_vorlage_anpassen') }}</h3>
           </div>
           <button @click="showEmailTemplateModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
         </div>
@@ -2802,13 +2802,13 @@
                   type="checkbox"
                   class="w-4 h-4 rounded text-[#00A3C4] focus:ring-[#00A3C4] border-slate-300"
                 />
-                <span class="text-xs font-bold text-slate-800">Vorlage aktiv (E-Mails für diesen Trigger versenden)</span>
+                <span class="text-xs font-bold text-slate-800">{{ $t('admin.vorlage_aktiv_toggle') }}</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">E-Mail-Betreff *</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('admin.email_betreff_pflicht') }}</label>
             <input
               v-model="editingEmailTemplate.subject"
               type="text"
@@ -2819,7 +2819,7 @@
 
           <!-- Variable chips helper -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Klick zum Einfügen einer Variable in Betreff / Body:</label>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">{{ $t('admin.variablen_hinweis') }}</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="v in editingEmailTemplate.variables"
@@ -2909,7 +2909,7 @@
       <div class="liquid_glass rounded-3xl p-8 shadow-xl">
         <div class="text-4xl mb-3">🔒</div>
         <h2 class="text-lg font-black text-slate-900 mb-1">Zugriff verweigert</h2>
-        <p class="text-xs text-slate-600 mb-5 leading-relaxed">Dieser Bereich ist ausschließlich autorisierten Taskster-Plattformadministratoren vorbehalten.</p>
+        <p class="text-xs text-slate-600 mb-5 leading-relaxed">{{ $t('admin.superadmin_only_desc') }}</p>
         <NuxtLink to="/dashboard" class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center justify-center">
           Zurück zum Dashboard
         </NuxtLink>
@@ -3078,7 +3078,7 @@ interface ConfirmDialogOptions {
 
 const confirmDialog = ref({
   isOpen: false,
-  title: 'Bestätigung erforderlich',
+  title: t('admin.bestaetigung_erforderlich'),
   message: '',
   confirmText: 'Bestätigen',
   cancelText: 'Abbrechen',
@@ -3091,7 +3091,7 @@ function showConfirm(options: ConfirmDialogOptions | string): Promise<boolean> {
     if (typeof options === 'string') {
       confirmDialog.value = {
         isOpen: true,
-        title: 'Bestätigung erforderlich',
+        title: t('admin.bestaetigung_erforderlich'),
         message: options,
         confirmText: 'Fortfahren',
         cancelText: 'Abbrechen',
@@ -3101,7 +3101,7 @@ function showConfirm(options: ConfirmDialogOptions | string): Promise<boolean> {
     } else {
       confirmDialog.value = {
         isOpen: true,
-        title: options.title || 'Bestätigung erforderlich',
+        title: options.title || t('admin.bestaetigung_erforderlich'),
         message: options.message,
         confirmText: options.confirmText || 'Fortfahren',
         cancelText: options.cancelText || 'Abbrechen',

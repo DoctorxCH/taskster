@@ -8,7 +8,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold text-slate-900 tracking-tight">Kalender</h1>
-          <p class="text-xs text-slate-500">Termine planen, einladen und mit Projekten verknüpfen</p>
+          <p class="text-xs text-slate-500">{{ $t('calendar.beschreibung') }}</p>
         </div>
       </div>
 
@@ -29,13 +29,13 @@
 
         <!-- Navigation -->
         <div class="flex items-center bg-white border border-slate-300 rounded-md">
-          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-l-md" title="Zurück" @click="shift(-1)">
+          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-l-md" :title="$t('common.zurueck')" @click="shift(-1)">
             <ChevronLeft class="w-4 h-4" />
           </button>
           <button type="button" class="h-9 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 border-x border-slate-200" @click="goToday">
             Heute
           </button>
-          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-r-md" title="Weiter" @click="shift(1)">
+          <button type="button" class="h-9 w-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-r-md" :title="$t('calendar.weiter_title')" @click="shift(1)">
             <ChevronRight class="w-4 h-4" />
           </button>
         </div>
@@ -78,10 +78,10 @@
               {{ c.name }}
             </button>
             <div v-if="c.owner_id === user?.id || !c.owner_id || (c.company_id === user?.company_id && user?.company_role === 'admin') || user?.is_superadmin" class="absolute -top-2 -right-2 hidden group-hover:flex space-x-0.5 bg-white border border-slate-200 rounded shadow-sm z-10 p-0.5">
-              <button @click="editCategory(c)" class="p-1 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 rounded" title="Bearbeiten">
+              <button @click="editCategory(c)" class="p-1 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 rounded" :title="$t('common.bearbeiten')">
                 ✏️
               </button>
-              <button @click="deleteCategory(c)" class="p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded" title="Löschen">
+              <button @click="deleteCategory(c)" class="p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded" :title="$t('common.loeschen')">
                 ✕
               </button>
             </div>
@@ -102,7 +102,7 @@
     <!-- Ladezustand -->
     <div v-if="loading" class="bg-white border border-slate-200 rounded-lg p-16 text-center">
       <Loader2 class="w-6 h-6 text-slate-400 animate-spin mx-auto mb-3" />
-      <p class="text-sm text-slate-500">Termine werden geladen…</p>
+      <p class="text-sm text-slate-500">{{ $t('calendar.wird_geladen') }}</p>
     </div>
 
     <!-- MONATSANSICHT -->
@@ -158,7 +158,7 @@
             <button
               type="button"
               class="opacity-0 group-hover/cell:opacity-100 w-5 h-5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-opacity"
-              title="Termin an diesem Tag"
+              :title="$t('calendar.termin_an_tag')"
               @click="openCreate(cell.key)"
             >
               <Plus class="w-3 h-3 mx-auto" />
@@ -184,7 +184,7 @@
               @dragend="onDragEnd"
               @click.stop="openEdit(ev)"
             >
-              <span v-if="ev.my_status === 'pending'" class="font-bold text-cyan-700 mr-0.5" title="Noch nicht beantwortet">?</span>
+              <span v-if="ev.my_status === 'pending'" class="font-bold text-cyan-700 mr-0.5" :title="$t('calendar.nicht_beantwortet')">?</span>
               <span v-if="!ev.allDay" class="font-mono text-[10px] opacity-70">{{ timeOf(ev.start) }}</span>
               {{ ev.title }}
             </button>
@@ -1351,7 +1351,7 @@ async function confirmDeleteCategory() {
     await loadCategories()
     await loadEvents()
   } catch (err: any) {
-    categoryErrorMessage.value = err?.data?.statusMessage || err?.data?.message || 'Kategorie konnte nicht gelöscht werden'
+    categoryErrorMessage.value = err?.data?.statusMessage || err?.data?.message || t('calendar.kategorie_loeschen_fehler')
   } finally {
     isDeletingCategory.value = false
   }

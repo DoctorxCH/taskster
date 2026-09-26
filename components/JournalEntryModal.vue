@@ -37,7 +37,7 @@
             <div class="flex items-center space-x-2">
               <span class="text-lg">⚡</span>
               <div>
-                <h4 class="text-xs font-black text-amber-950">E-Mail / Dokument importieren & mit KI analysieren</h4>
+                <h4 class="text-xs font-black text-amber-950">{{ t('journal.email_importieren') }}</h4>
                 <p class="text-[11px] text-amber-900 leading-tight">
                   Füge Text ein oder ziehe eine .eml, .msg oder .pdf Datei hinein.
                 </p>
@@ -88,18 +88,17 @@
               </div>
 
               <div class="flex items-center justify-center gap-1.5 text-xs font-black text-slate-800">
-                <span>.eml, Outlook .msg oder .pdf Datei hierher ziehen</span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">Drag & Drop</span>
+                <span>{{ t('journal.datei_hierher_ziehen') }}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 border border-amber-300/50">{{ t('journal.drag_drop') }}</span>
               </div>
 
               <p class="text-[11px] text-slate-500 mt-1">
-                oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span> • Betreff, Absender, Kontakte & Text werden automatisch übernommen
-              </p>
+                oder <span class="text-[#00A3C4] font-bold underline underline-offset-2">klicken zum Durchsuchen</span>{{ t('journal.betreff_automatisch') }}</p>
 
               <!-- Confirmation if a file was loaded -->
               <div v-if="loadedEmailFileName" class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
                 <Check class="w-3.5 h-3.5 text-emerald-600" />
-                <span>Geladen: {{ loadedEmailFileName }}</span>
+                <span>{{ $t('journal.email_geladen') }} {{ loadedEmailFileName }}</span>
               </div>
             </div>
           </div>
@@ -107,7 +106,7 @@
           <!-- Sender Fields (if category is email or sender extracted) -->
           <div v-if="form.category === 'email' || form.sender_name || form.sender_email" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <div>
-              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender Name</label>
+              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">{{ t('journal.absender_name') }}</label>
               <input
                 v-model="form.sender_name"
                 type="text"
@@ -116,7 +115,7 @@
               />
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">Absender E-Mail</label>
+              <label class="block text-[11px] font-bold text-amber-950 mb-0.5">{{ t('journal.absender_email') }}</label>
               <input
                 v-model="form.sender_email"
                 type="email"
@@ -134,8 +133,8 @@
               class="w-4 h-4 mt-0.5 rounded border-amber-300 text-[#00A3C4] focus:ring-[#00A3C4]"
             />
             <div class="text-[11px]">
-              <span class="font-bold text-amber-950">Mit KI analysieren & Aufgaben / Termine synchronisieren</span>
-              <p class="text-amber-900/80">Generiert kompakte Zusammenfassung, übernimmt Signatur-Kontaktdaten und schlägt Aktionskarten vor.</p>
+              <span class="font-bold text-amber-950">{{ t('journal.ki_analysieren') }}</span>
+              <p class="text-amber-900/80">{{ t('journal.ki_zusammenfassung') }}, übernimmt Signatur-Kontaktdaten und schlägt Aktionskarten vor.</p>
             </div>
           </label>
         </div>
@@ -143,12 +142,12 @@
         <!-- 2. Folder & Project Selection (Unterhalb dem Drag & Drop Fenster) -->
         <div v-if="!fixedProjectId" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
           <div v-if="!fixedFolderId && folderOptions.length > 0">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Ordner wählen</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ t('journal.ordner_waehlen') }}</label>
             <select
               v-model="selectedFolderId"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="">Alle Ordner / Ordnerübergreifend</option>
+              <option value="">{{ t('journal.alle_ordner') }}</option>
               <option v-for="f in folderOptions" :key="f.id" :value="f.id">📁 {{ f.name }}</option>
             </select>
           </div>
@@ -170,7 +169,7 @@
               >
                 <div class="flex items-center gap-1.5 truncate">
                   <span v-if="selectedProjectId === 'auto'" class="text-[#00A3C4]">✨ Automatisch zuweisen (anhand Text/Titel)</span>
-                  <span v-else-if="!selectedProjectId" class="text-slate-600">📂 Nur Ordner-Journal (Kein spezifisches Projekt)</span>
+                  <span v-else-if="!selectedProjectId" class="text-slate-600">{{ t('journal.nur_ordnerjournal') }}</span>
                   <span v-else class="text-slate-900 font-bold">📁 {{ getProjectDisplay(selectedProjectId) }}</span>
                 </div>
                 <ChevronDown class="w-4 h-4 text-slate-400 shrink-0 ml-1" />
@@ -187,7 +186,7 @@
                   <input
                     v-model="projectSearchTerm"
                     type="text"
-                    placeholder="Projekt suchen (z.B. Name, Adresse, ID)..."
+                    :placeholder="t('journal.projekt_suchen')"
                     class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                     @click.stop
                   />
@@ -202,7 +201,7 @@
                     :class="selectedProjectId === 'auto' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700'"
                   >
                     <span>✨</span>
-                    <span>Automatisch zuweisen (anhand Text/Titel)</span>
+                    <span>{{ t('journal.automatisch_zuweisen') }}</span>
                     <Check v-if="selectedProjectId === 'auto'" class="w-3.5 h-3.5 ml-auto text-[#00A3C4]" />
                   </button>
 
@@ -214,7 +213,7 @@
                     :class="!selectedProjectId ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600'"
                   >
                     <span>📂</span>
-                    <span>Nur Ordner-Journal (Allgemein)</span>
+                    <span>{{ t('journal.nur_ordnerjournal_allgemein') }}</span>
                     <Check v-if="!selectedProjectId" class="w-3.5 h-3.5 ml-auto text-slate-700" />
                   </button>
 
@@ -242,7 +241,7 @@
             <div v-if="autoMatchedProjectInfo" class="mt-1.5 p-2 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-950 flex items-center justify-between animate-fade-in shadow-2xs">
               <div class="flex items-center gap-1.5 truncate">
                 <span class="text-sm">✨</span>
-                <span class="font-bold truncate">Projekt erkannt: {{ autoMatchedProjectInfo.title }}</span>
+                <span class="font-bold truncate">{{ $t('journal.projekt_erkannt_label') }} {{ autoMatchedProjectInfo.title }}</span>
               </div>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-200/70 text-cyan-900 border border-cyan-300/50 shrink-0 ml-2">
                 {{ autoMatchedProjectInfo.reasons.join(' • ') }}
@@ -264,7 +263,7 @@
             v-model="form.title"
             type="text"
             required
-            placeholder="z. B. 14. Bausitzung Los 3 oder Bauabnahme Keller..."
+            :placeholder="$t('journal.betreff_placeholder')"
             class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
           />
         </div>
@@ -272,7 +271,7 @@
         <!-- 4. Category & Date/Time -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Kategorie</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ t('journal.kategorie') }}</label>
             <select
               v-model="form.category"
               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
@@ -300,24 +299,24 @@
         <!-- 5. Visibility & Allowed Group -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Sichtbarkeit</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ t('journal.sichtbarkeit') }}</label>
             <select
               v-model="form.visibility"
               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option value="all">🌐 Öffentlich (Projektleser)</option>
+              <option value="all">{{ $t('journal.oeffentlich_leser') }}</option>
               <option value="company">🏢 Nur eigenes Unternehmen</option>
-              <option value="group">👥 Nur ausgewählte Gruppe</option>
+              <option value="group">{{ $t('journal.nur_gruppe') }}</option>
               <option value="only_me">🔒 Nur ich (Vertraulich)</option>
             </select>
           </div>
           <div v-if="form.visibility === 'group'">
-            <label class="block text-xs font-bold text-slate-800 mb-1">Berechtigte Gruppe</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('journal.berechtigte_gruppe') }}</label>
             <select
               v-model="form.allowed_group_id"
               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option :value="null">-- Gruppe auswählen --</option>
+              <option :value="null">{{ $t('journal.gruppe_waehlen_opt') }}</option>
               <option v-for="g in userGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
             </select>
           </div>
@@ -326,7 +325,7 @@
         <!-- 6. Linked Task (with live search filter) -->
         <div class="space-y-1">
           <div class="flex items-center justify-between mb-0.5">
-            <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
+            <label class="block text-xs font-bold text-slate-800">{{ $t('journal.verknuepfte_aufgabe_opt') }}</label>
             <div class="flex items-center gap-1.5">
               <span v-if="autoTaskMatch" class="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
                 ✨ Erkannt: {{ autoTaskMatch }}
@@ -343,7 +342,7 @@
               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between cursor-pointer hover:bg-white hover:border-[#00A3C4] transition"
             >
               <div class="flex items-center gap-1.5 truncate">
-                <span v-if="!form.task_id" class="text-slate-500">-- Keine Verknüpfung --</span>
+                <span v-if="!form.task_id" class="text-slate-500">{{ $t('journal.keine_verknuepfung_opt') }}</span>
                 <span v-else-if="form.task_id === 'auto'" class="text-[#00A3C4] font-bold">✨ Automatisch zuweisen (anhand Text)</span>
                 <span v-else class="text-slate-900 font-bold truncate">☑️ {{ getTaskDisplay(form.task_id) }}</span>
               </div>
@@ -360,7 +359,7 @@
                 <input
                   v-model="taskSearchTerm"
                   type="text"
-                  placeholder="Aufgabe suchen..."
+                  :placeholder="$t('journal.aufgabe_suchen_placeholder')"
                   class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                   @click.stop
                 />
@@ -374,7 +373,7 @@
                   :class="!form.task_id ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600'"
                 >
                   <span>--</span>
-                  <span>Keine Verknüpfung</span>
+                  <span>{{ $t('journal.keine_verknuepfung_label') }}</span>
                   <Check v-if="!form.task_id" class="w-3.5 h-3.5 ml-auto text-slate-700" />
                 </button>
 
@@ -385,7 +384,7 @@
                   :class="form.task_id === 'auto' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700'"
                 >
                   <span>✨</span>
-                  <span>Automatisch zuweisen (anhand Text)</span>
+                  <span>{{ $t('journal.auto_zuweisen_text') }}</span>
                   <Check v-if="form.task_id === 'auto'" class="w-3.5 h-3.5 ml-auto text-[#00A3C4]" />
                 </button>
 
@@ -416,8 +415,8 @@
         <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
           <div class="flex items-center justify-between">
             <div>
-              <label class="block text-xs font-black text-slate-900">Teilnehmer & Anwesenheit</label>
-              <p class="text-[11px] text-slate-500">Wähle bestehende Projektkontakte aus oder füge neue Teilnehmer hinzu.</p>
+              <label class="block text-xs font-black text-slate-900">{{ $t('journal.teilnehmer_anwesenheit') }}</label>
+              <p class="text-[11px] text-slate-500">{{ $t('journal.teilnehmer_desc') }}</p>
             </div>
             <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">
               {{ form.attendees.length }} Teilnehmer
@@ -432,7 +431,7 @@
                 @change="addContactToAttendees"
                 class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
               >
-                <option value="">Kontakt auswählen... ({{ contactOptions.length }})</option>
+                <option value="">{{ $t('journal.kontakt_waehlen_opt') }} ({{ contactOptions.length }})</option>
                 <option v-for="c in contactOptions" :key="c.id" :value="c.id">
                   {{ (c.first_name ? c.first_name + ' ' : '') + c.last_name }}{{ c.company_name ? ` (${c.company_name})` : '' }}
                 </option>
@@ -442,7 +441,7 @@
               <input
                 v-model="newAttendeeName"
                 type="text"
-                placeholder="Name"
+                :placeholder="$t('journal.name_placeholder')"
                 class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
@@ -503,7 +502,7 @@
             @paste="handleContentPaste"
             rows="5"
             required
-            placeholder="Besprochene Punkte, Beschlüsse, Sachverhalt oder Notizen..."
+            :placeholder="$t('journal.protokoll_placeholder')"
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4] resize-y"
           ></textarea>
         </div>
@@ -522,7 +521,7 @@
             />
             <div class="flex flex-col items-center justify-center space-y-1">
               <UploadCloud class="w-5 h-5 text-slate-400" />
-              <p class="text-xs text-slate-600 font-medium">Dateien hier ablegen oder zum Auswählen klicken (max. 10 MB)</p>
+              <p class="text-xs text-slate-600 font-medium">{{ $t('journal.dateien_ablegen_info') }}</p>
             </div>
           </div>
 
@@ -583,6 +582,8 @@ import {
 import { parseEmailFile, parseRawEml, readFileAsDataUrl, cleanOleResidue } from '~/utils/emailParser'
 import { matchProjectByText } from '~/utils/projectMatcher'
 import { useAuth } from '~/composables/useAuth'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   show: boolean

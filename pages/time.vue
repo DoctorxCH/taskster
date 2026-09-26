@@ -11,15 +11,15 @@
           <span>/</span>
           <span class="text-slate-800 font-semibold flex items-center gap-1">
             <Clock class="w-3.5 h-3.5 text-[#00A3C4]" />
-            <span>Zeitrapportierung</span>
+            <span>{{ $t('time.zeitrapportierung') }}</span>
           </span>
         </div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
           <Clock class="w-6 h-6 text-[#00A3C4]" />
-          <span>Zeitrapportierung & Controlling</span>
+          <span>{{ $t('time.zeitrapportierung_controlling') }}</span>
         </h1>
         <p class="text-xs text-slate-500 mt-1">
-          Alle erfassten Arbeitszeiten, Budgets und abrechenbaren Leistungen im Gesamtüberblick.
+          {{ $t('time.alle_arbeitszeiten') }}
         </p>
       </div>
 
@@ -30,10 +30,10 @@
           :disabled="filteredEntries.length === 0"
           type="button"
           class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
-          title="Als CSV-Datei herunterladen"
+          :title="$t('time.csv_herunterladen')"
         >
           <Download class="w-3.5 h-3.5 text-slate-600" />
-          <span>CSV Export</span>
+          <span>{{ $t('time.csv_export') }}</span>
         </button>
 
         <button
@@ -41,10 +41,10 @@
           :disabled="filteredEntries.length === 0"
           type="button"
           class="taskster_button_light px-4 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5"
-          title="Druckansicht öffnen"
+          :title="$t('time.druckansicht')"
         >
           <Printer class="w-3.5 h-3.5 text-slate-600" />
-          <span class="hidden sm:inline">Drucken</span>
+          <span class="hidden sm:inline">{{ $t('time.drucken') }}</span>
         </button>
 
         <button
@@ -53,7 +53,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
         >
           <Plus class="w-3.5 h-3.5" />
-          <span>Zeit erfassen</span>
+          <span>{{ $t('time.zeit_erfassen') }}</span>
         </button>
       </div>
     </div>
@@ -64,13 +64,13 @@
       <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
         <div class="flex items-center gap-2 text-slate-500">
           <Clock class="w-4 h-4 text-[#00A3C4]" />
-          <span class="text-xs font-semibold uppercase tracking-wide">Erfasste Zeit</span>
+          <span class="text-xs font-semibold uppercase tracking-wide">{{ $t('time.erfasste_zeit') }}</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
           {{ formatHoursAndMinutes(summary.totalMinutes) }}
         </div>
         <div class="text-xs text-slate-500 mt-0.5">
-          {{ (summary.totalMinutes / 60).toFixed(2) }} Dezimalstunden
+          {{ (summary.totalMinutes / 60).toFixed(2) }} {{ $t('time.dezimalstunden') }}
         </div>
       </div>
 
@@ -78,13 +78,13 @@
       <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
         <div class="flex items-center gap-2 text-slate-500">
           <Coins class="w-4 h-4 text-emerald-600" />
-          <span class="text-xs font-semibold uppercase tracking-wide">Abrechenbarer Wert</span>
+          <span class="text-xs font-semibold uppercase tracking-wide">{{ $t('time.abrechenbarer_wert') }}</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
           {{ formatCurrency(summary.totalCost) }}
         </div>
         <div class="text-xs text-slate-500 mt-0.5">
-          nach hinterlegten Stundensätzen
+          {{ $t('time.nach_stundensaetzen') }}
         </div>
       </div>
 
@@ -92,13 +92,13 @@
       <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
         <div class="flex items-center gap-2 text-slate-500">
           <TrendingUp class="w-4 h-4 text-cyan-600" />
-          <span class="text-xs font-semibold uppercase tracking-wide">Ø Stundensatz</span>
+          <span class="text-xs font-semibold uppercase tracking-wide">{{ $t('time.durchschnitt_stundensatz') }}</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
           {{ averageRate.toFixed(2) }} <span class="text-sm font-normal text-slate-500">CHF/h</span>
         </div>
         <div class="text-xs text-slate-500 mt-0.5">
-          Mischsatz aller Einträge
+          {{ $t('time.mischsatz') }}
         </div>
       </div>
 
@@ -106,13 +106,13 @@
       <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
         <div class="flex items-center gap-2 text-slate-500">
           <FileText class="w-4 h-4 text-slate-600" />
-          <span class="text-xs font-semibold uppercase tracking-wide">Buchungen</span>
+          <span class="text-xs font-semibold uppercase tracking-wide">{{ $t('time.buchungen') }}</span>
         </div>
         <div class="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
           {{ filteredEntries.length }}
         </div>
         <div class="text-xs text-slate-500 mt-0.5">
-          {{ stopwatchEntriesCount }} Stoppuhr, {{ manualEntriesCount }} manuell
+          {{ stopwatchEntriesCount }} {{ $t('time.stoppuhr') }}, {{ manualEntriesCount }} {{ $t('time.manuell') }}
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@
       <!-- Quick Range Switcher -->
       <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide mr-1">Zeitraum:</span>
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide mr-1">{{ $t('time.zeitraum') }}</span>
           <button
             v-for="preset in presets"
             :key="preset.id"
@@ -136,7 +136,7 @@
         </div>
 
         <div class="text-xs font-semibold text-slate-500">
-          {{ filteredEntries.length }} von {{ allEntries.length }} Einträgen angezeigt
+          {{ filteredEntries.length }} {{ $t('time.von_eintraegen', { total: allEntries.length }) }}
         </div>
       </div>
 
@@ -148,7 +148,7 @@
           <input
             v-model="searchFilter"
             type="text"
-            placeholder="Suche nach Text, Aufgabe..."
+            :placeholder="$t('time.suche_placeholder')"
             class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
           />
         </div>
@@ -160,7 +160,7 @@
             @change="loadTimeEntries"
             class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
           >
-            <option value="">Alle Projekte ({{ availableProjects.length }})</option>
+            <option value="">{{ $t('time.alle_projekte') }} ({{ availableProjects.length }})</option>
             <option v-for="p in availableProjects" :key="p.id" :value="p.id">
               {{ p.title }}
             </option>
@@ -169,7 +169,7 @@
 
         <!-- Date From -->
         <div class="flex items-center space-x-2">
-          <span class="text-xs font-semibold text-slate-500 shrink-0">Von:</span>
+          <span class="text-xs font-semibold text-slate-500 shrink-0">{{ $t('time.von') }}</span>
           <input
             v-model="dateFrom"
             @change="onCustomDateChange"
@@ -180,7 +180,7 @@
 
         <!-- Date To -->
         <div class="flex items-center space-x-2">
-          <span class="text-xs font-semibold text-slate-500 shrink-0">Bis:</span>
+          <span class="text-xs font-semibold text-slate-500 shrink-0">{{ $t('time.bis') }}</span>
           <input
             v-model="dateTo"
             @change="onCustomDateChange"
@@ -196,7 +196,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="py-16 text-center">
         <Clock class="w-8 h-8 text-[#00A3C4] animate-spin mx-auto mb-2" />
-        <p class="text-xs font-semibold text-slate-600">Zeitrapporte werden geladen...</p>
+        <p class="text-xs font-semibold text-slate-600">{{ $t('time.wird_geladen') }}</p>
       </div>
 
       <!-- Empty State -->
@@ -204,16 +204,16 @@
         <div class="w-12 h-12 rounded-lg bg-cyan-50 text-[#00A3C4] flex items-center justify-center mx-auto mb-3 border border-cyan-200">
           <Clock class="w-6 h-6" />
         </div>
-        <h3 class="text-sm font-bold text-slate-900">Keine Zeiteinträge gefunden</h3>
+        <h3 class="text-sm font-bold text-slate-900">{{ $t('time.keine_eintraege') }}</h3>
         <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
-          Im ausgewählten Zeitraum liegen keine Buchungen vor. Starte die Live-Stoppuhr oben oder trage eine Zeit manuell nach.
+          {{ $t('time.keine_buchungen') }}
         </p>
         <button
           @click="openCreateModal"
           class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-1.5"
         >
           <Plus class="w-3.5 h-3.5" />
-          <span>Zeit manuell eintragen</span>
+          <span>{{ $t('time.manuell_eintragen') }}</span>
         </button>
       </div>
 
@@ -222,15 +222,15 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              <th class="py-3 px-4 sm:px-6">Datum</th>
-              <th class="py-3 px-4">Mitarbeiter</th>
-              <th class="py-3 px-4">Projekt & Aufgabe</th>
-              <th class="py-3 px-4">Erfassung</th>
-              <th class="py-3 px-4">Beschreibung</th>
-              <th class="py-3 px-4 text-right">Dauer</th>
-              <th class="py-3 px-4 text-right">Ansatz</th>
-              <th class="py-3 px-4 text-right">Betrag</th>
-              <th class="py-3 px-4 sm:px-6 text-right">Aktionen</th>
+              <th class="py-3 px-4 sm:px-6">{{ $t('time.datum') }}</th>
+              <th class="py-3 px-4">{{ $t('time.mitarbeiter') }}</th>
+              <th class="py-3 px-4">{{ $t('time.projekt_aufgabe') }}</th>
+              <th class="py-3 px-4">{{ $t('time.erfassung') }}</th>
+              <th class="py-3 px-4">{{ $t('time.beschreibung') }}</th>
+              <th class="py-3 px-4 text-right">{{ $t('time.dauer') }}</th>
+              <th class="py-3 px-4 text-right">{{ $t('time.ansatz') }}</th>
+              <th class="py-3 px-4 text-right">{{ $t('time.betrag') }}</th>
+              <th class="py-3 px-4 sm:px-6 text-right">{{ $t('common.aktionen') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-xs">
@@ -273,18 +273,18 @@
                 <span
                   v-if="!entry.is_manual"
                   class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 text-[#00A3C4] border border-cyan-200"
-                  title="Über Live-Stoppuhr gestoppt"
+                  :title="$t('time.stoppuhr_gestoppt')"
                 >
                   <Clock class="w-3 h-3 text-[#00A3C4]" />
-                  <span>Stoppuhr</span>
+                  <span>{{ $t('time.stoppuhr') }}</span>
                 </span>
                 <span
                   v-else
                   class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"
-                  title="Manuelle Zeiterfassung"
+                  :title="$t('time.manuelle_zeiterfassung')"
                 >
                   <Pencil class="w-3 h-3 text-slate-500" />
-                  <span>Manuell</span>
+                  <span>{{ $t('time.manuell') }}</span>
                 </span>
               </td>
 
@@ -317,14 +317,14 @@
                   <button
                     @click="openEditModal(entry)"
                     class="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-[#00A3C4] transition cursor-pointer"
-                    title="Eintrag bearbeiten"
+                    :title="$t('time.eintrag_bearbeiten')"
                   >
                     <Pencil class="w-3.5 h-3.5" />
                   </button>
                   <button
                     @click="deleteEntry(entry.id)"
                     class="p-1 rounded hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition cursor-pointer"
-                    title="Eintrag löschen"
+                    :title="$t('time.eintrag_loeschen')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -337,7 +337,7 @@
           <tfoot>
             <tr class="bg-slate-50 font-bold text-xs text-slate-900 border-t-2 border-slate-200">
               <td colspan="5" class="py-3 px-4 sm:px-6 uppercase tracking-wider text-slate-600">
-                Summe der gefilterten Auswahl
+                {{ $t('time.summe_gefiltert') }}
               </td>
               <td class="py-3 px-4 text-right text-[#00A3C4]">
                 {{ formatHoursAndMinutes(summary.totalMinutes) }}
@@ -364,7 +364,7 @@
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
           <div class="flex items-center space-x-2">
             <span class="text-xl">⏱️</span>
-            <h3 class="text-base font-black text-slate-900">Arbeitszeit manuell erfassen</h3>
+            <h3 class="text-base font-black text-slate-900">{{ $t('time.arbeitszeit_erfassen') }}</h3>
           </div>
           <button @click="showCreateModal = false" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
         </div>
@@ -372,15 +372,14 @@
         <form @submit.prevent="submitCreateTime" class="space-y-4">
           <!-- Project Selection -->
           <div>
-            <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-              Projekt <span class="text-rose-500">*</span>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">{{ $t('common.projekt') }} <span class="text-rose-500">*</span>
             </label>
             <select
               v-model="createForm.project_id"
               required
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option value="" disabled>Projekt auswählen...</option>
+              <option value="" disabled>{{ $t('time.projekt_auswaehlen') }}</option>
               <option v-for="p in availableProjects" :key="p.id" :value="p.id">
                 {{ p.title }}
               </option>
@@ -391,7 +390,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-                Datum <span class="text-rose-500">*</span>
+                {{ $t('time.datum') }} <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model="createForm.entry_date"
@@ -402,18 +401,18 @@
             </div>
             <div>
               <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-                Dauer (Minuten) <span class="text-rose-500">*</span>
+                {{ $t('time.dauer_minuten') }} <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model.number="createForm.duration_minutes"
                 type="number"
                 min="1"
                 required
-                placeholder="z.B. 90 (für 1.5h)"
+                :placeholder="$t('time.placeholder_minuten')"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-[#00A3C4]"
               />
               <span class="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                = {{ (createForm.duration_minutes / 60 || 0).toFixed(2) }} Stunden
+                = {{ (createForm.duration_minutes / 60 || 0).toFixed(2) }} {{ $t('time.stunden') }}
               </span>
             </div>
           </div>
@@ -421,7 +420,7 @@
           <!-- Hourly Rate -->
           <div>
             <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-              Stundensatz (CHF / EUR)
+              {{ $t('time.stundensatz') }}
             </label>
             <input
               v-model.number="createForm.hourly_rate"
@@ -435,12 +434,12 @@
           <!-- Description -->
           <div>
             <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-              Tätigkeitsbeschreibung / Notiz
+              {{ $t('time.taetigkeit_notiz') }}
             </label>
             <textarea
               v-model="createForm.description"
               rows="3"
-              placeholder="Welche Arbeiten wurden ausgeführt?"
+              :placeholder="$t('time.arbeiten_ausgefuehrt')"
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:ring-2 focus:ring-[#00A3C4]"
             ></textarea>
           </div>
@@ -452,14 +451,14 @@
               type="button"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
-              Abbrechen
+              {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="submittingTime"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              {{ submittingTime ? 'Speichert...' : 'Zeit erfassen' }}
+              {{ submittingTime ? $t('time.speichert') : $t('time.zeit_erfassen') }}
             </button>
           </div>
         </form>
@@ -475,7 +474,7 @@
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
           <div class="flex items-center space-x-2">
             <span class="text-xl">✏️</span>
-            <h3 class="text-base font-black text-slate-900">Zeiteintrag bearbeiten</h3>
+            <h3 class="text-base font-black text-slate-900">{{ $t('time.zeiteintrag_bearbeiten') }}</h3>
           </div>
           <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
         </div>
@@ -484,7 +483,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-                Datum <span class="text-rose-500">*</span>
+                {{ $t('time.datum') }} <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model="editForm.entry_date"
@@ -495,7 +494,7 @@
             </div>
             <div>
               <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-                Dauer (Minuten) <span class="text-rose-500">*</span>
+                {{ $t('time.dauer_minuten') }} <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model.number="editForm.duration_minutes"
@@ -505,14 +504,14 @@
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-[#00A3C4]"
               />
               <span class="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                = {{ (editForm.duration_minutes / 60 || 0).toFixed(2) }} Stunden
+                = {{ (editForm.duration_minutes / 60 || 0).toFixed(2) }} {{ $t('time.stunden') }}
               </span>
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-              Stundensatz (CHF / EUR)
+              {{ $t('time.stundensatz') }}
             </label>
             <input
               v-model.number="editForm.hourly_rate"
@@ -525,7 +524,7 @@
 
           <div>
             <label class="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
-              Tätigkeitsbeschreibung / Notiz
+              {{ $t('time.taetigkeit_notiz') }}
             </label>
             <textarea
               v-model="editForm.description"
@@ -540,14 +539,14 @@
               type="button"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg"
             >
-              Abbrechen
+              {{ $t('common.abbrechen') }}
             </button>
             <button
               type="submit"
               :disabled="submittingTime"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              {{ submittingTime ? 'Speichert...' : 'Änderungen speichern' }}
+              {{ submittingTime ? $t('time.speichert') : $t('time.aenderungen_speichern') }}
             </button>
           </div>
         </form>
@@ -583,7 +582,7 @@
             :disabled="confirmModal.loading"
             class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
           >
-            Abbrechen
+              {{ $t('common.abbrechen') }}
           </button>
           <button
             type="button"
@@ -640,6 +639,7 @@ import {
   Target
 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const { user, token } = useAuth()
 
 // ---------------------------------------------------------------------------
@@ -660,7 +660,7 @@ const confirmModal = ref<{
   title: '',
   subtitle: '',
   message: '',
-  confirmText: 'Bestätigen',
+  confirmText: t('common.bestaetigen'),
   danger: true,
   loading: false
 })
@@ -699,7 +699,7 @@ const triggerConfirmModal = (opts: {
     title: opts.title,
     subtitle: opts.subtitle,
     message: opts.message,
-    confirmText: opts.confirmText || 'Löschen',
+    confirmText: opts.confirmText || t('common.loeschen'),
     danger: opts.danger !== false,
     loading: false,
     error: '',
@@ -715,7 +715,7 @@ const executeConfirmModalAction = async () => {
     await confirmModal.value.action()
     confirmModal.value.show = false
   } catch (err: any) {
-    confirmModal.value.error = err?.data?.statusMessage || err?.message || 'Fehler beim Ausführen der Aktion'
+    confirmModal.value.error = err?.data?.statusMessage || err?.message || t('time.fehler_aktion')
   } finally {
     confirmModal.value.loading = false
   }
@@ -755,11 +755,11 @@ const editForm = ref({
 })
 
 const presets = [
-  { id: 'today', label: 'Heute' },
-  { id: 'this_week', label: 'Diese Woche' },
-  { id: 'this_month', label: 'Dieser Monat' },
-  { id: 'all', label: 'Gesamt' },
-  { id: 'custom', label: 'Benutzerdefiniert' }
+  { id: 'today', label: t('time.heute') },
+  { id: 'this_week', label: t('time.diese_woche') },
+  { id: 'this_month', label: t('time.dieser_monat') },
+  { id: 'all', label: t('time.gesamt') },
+  { id: 'custom', label: t('time.benutzerdefiniert') }
 ]
 
 const selectPreset = (presetId: string) => {
@@ -960,10 +960,10 @@ const submitEditTime = async () => {
 
 const deleteEntry = async (id: string) => {
   triggerConfirmModal({
-    title: 'Zeiteintrag löschen',
-    subtitle: 'Dieser Vorgang kann nicht rückgängig gemacht werden',
-    message: 'Möchtest du diesen Zeiteintrag wirklich unwiderruflich löschen?',
-    confirmText: 'Eintrag löschen',
+    title: t('time.zeiteintrag_loeschen'),
+    subtitle: t('time.vorgang_nicht_rueckgaengig'),
+    message: t('time.wirklich_loeschen'),
+    confirmText: t('time.eintrag_loeschen'),
     danger: true,
     action: async () => {
       await $fetch(`/api/time-entries/${id}`, {
@@ -971,7 +971,7 @@ const deleteEntry = async (id: string) => {
         headers: authHeaders()
       })
       allEntries.value = allEntries.value.filter(e => e.id !== id)
-      showToast('Zeiteintrag erfolgreich gelöscht', 'success')
+      showToast(t('time.erfolgreich_geloescht'), 'success')
     }
   })
 }

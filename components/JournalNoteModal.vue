@@ -10,10 +10,10 @@
         <div>
           <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
             <span class="text-xl">📝</span>
-            <span>Neuen Journaleintrag erfassen</span>
+            <span>{{ $t('journal_note.titel') }}</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            Schneller Journaleintrag mit automatischer Projekt- und Aufgabenzuweisung.
+            {{ $t('journal_note.desc') }}
           </p>
         </div>
         <button
@@ -41,7 +41,7 @@
             required
             rows="5"
             autofocus
-            placeholder="Schreibe deinen Journaleintrag, Feststellung, Mangel oder Notiz hier rein..."
+            :placeholder="$t('journal_note.placeholder')"
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4] resize-y"
           ></textarea>
         </div>
@@ -79,7 +79,7 @@
                 <input
                   v-model="projectSearchTerm"
                   type="text"
-                  placeholder="Projekt suchen (z.B. Balmstr, Name)..."
+                  :placeholder="$t('journal_note.projekt_suchen_placeholder')"
                   class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                   @click.stop
                 />
@@ -94,7 +94,7 @@
                   :class="selectedProjectId === 'auto' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700'"
                 >
                   <span>✨</span>
-                  <span>Automatisch zuweisen (anhand Text)</span>
+                  <span>{{ $t('journal.auto_zuweisen_text') }}</span>
                   <Check v-if="selectedProjectId === 'auto'" class="w-3.5 h-3.5 ml-auto text-[#00A3C4]" />
                 </button>
 
@@ -106,7 +106,7 @@
                   :class="!selectedProjectId ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600'"
                 >
                   <span>📂</span>
-                  <span>Nur Ordner-Journal (Kein Projekt)</span>
+                  <span>{{ $t('journal_note.nur_ordner_journal') }}</span>
                   <Check v-if="!selectedProjectId" class="w-3.5 h-3.5 ml-auto text-slate-700" />
                 </button>
 
@@ -136,7 +136,7 @@
               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between cursor-pointer hover:bg-white hover:border-[#00A3C4] transition"
             >
               <div class="flex items-center gap-1.5 truncate">
-                <span v-if="!selectedTaskId" class="text-slate-500">-- Keine Verknüpfung --</span>
+                <span v-if="!selectedTaskId" class="text-slate-500">{{ $t('journal.keine_verknuepfung_opt') }}</span>
                 <span v-else class="text-slate-900 font-bold">☑️ {{ getTaskDisplay(selectedTaskId) }}</span>
               </div>
               <ChevronDown class="w-4 h-4 text-slate-400 shrink-0 ml-1" />
@@ -152,7 +152,7 @@
                 <input
                   v-model="taskSearchTerm"
                   type="text"
-                  placeholder="Aufgabe suchen..."
+                  :placeholder="t('journal.aufgabe_suchen')"
                   class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                   @click.stop
                 />
@@ -166,7 +166,7 @@
                   :class="!selectedTaskId ? 'text-slate-900 font-bold bg-slate-100' : 'text-slate-600'"
                 >
                   <span>--</span>
-                  <span>Keine Verknüpfung</span>
+                  <span>{{ $t('journal.keine_verknuepfung_label') }}</span>
                   <Check v-if="!selectedTaskId" class="w-3.5 h-3.5 ml-auto text-slate-700" />
                 </button>
 
@@ -189,7 +189,7 @@
           <div v-if="suggestedTasks.length > 0 && !selectedTaskId" class="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-1.5 mt-1.5">
             <div class="text-[10px] font-bold text-amber-900 flex items-center gap-1">
               <span>✨</span>
-              <span>Passende Aufgabe erkannt (Klick zum Zuweisen):</span>
+              <span>{{ $t('journal_note.passende_aufgabe') }}</span>
             </div>
             <div class="flex flex-wrap gap-1.5">
               <button
@@ -214,7 +214,7 @@
               v-model="category"
               class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="notiz">📝 Notiz</option>
+              <option value="notiz">{{ $t('journal.kat_notiz') }}</option>
               <option value="telefonat">📞 Telefonat</option>
               <option value="baufortschritt">📋 Baufortschritt</option>
               <option value="mangel">⚠️ Mangel / Behinderung</option>
@@ -248,7 +248,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
         >
           <span v-if="saving">Speichern...</span>
-          <span v-else>Eintrag speichern</span>
+          <span v-else>{{ $t('journal_note.speichern_btn') }}</span>
         </button>
       </div>
     </div>
@@ -260,6 +260,8 @@ import { ref, computed, watch } from 'vue'
 import { ChevronDown, Search, Check } from 'lucide-vue-next'
 import { useAuth } from '~/composables/useAuth'
 import { cleanOleResidue } from '~/utils/emailParser'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   show: boolean

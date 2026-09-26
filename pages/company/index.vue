@@ -6,9 +6,9 @@
         <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
           <Lock class="w-6 h-6" />
         </div>
-        <h2 class="text-base font-semibold text-slate-900 mb-1">Zugriff verweigert</h2>
+        <h2 class="text-base font-semibold text-slate-900 mb-1">{{ $t('company.zugriff_verweigert') }}</h2>
         <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-          Dieser Bereich ist ausschließlich Firmen-Administratoren des eigenen Unternehmens vorbehalten.
+          {{ $t('company.nur_firmen_admins') }}
         </p>
         <NuxtLink
           :to="isSuperadminWithoutCompany ? '/admin' : '/dashboard'"
@@ -49,7 +49,7 @@
               {{ company?.name || 'Mein Unternehmen' }}
             </h1>
             <p class="text-sm text-slate-600 mt-1">
-              Mitarbeiter, Firmenvorlagen, Plan &amp; Lizenzen, Richtlinien und Support – alles an einem Ort.
+              {{ $t('company.portal_subtitle') }}
             </p>
           </div>
 
@@ -65,7 +65,7 @@
               class="taskster_button"
             >
               <UserPlus class="w-4 h-4" />
-              <span>Mitarbeiter einladen</span>
+              <span>{{ $t('company.mitarbeiter_einladen') }}</span>
             </button>
           </div>
         </div>
@@ -90,7 +90,7 @@
         <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
           <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Co-Admins</div>
           <div class="text-xl font-bold text-emerald-900 mt-1 tabular-nums">{{ stats.admins || 0 }}</div>
-          <div class="text-xs text-slate-500">mit Vollzugriff</div>
+          <div class="text-xs text-slate-500">{{ $t('company.mit_vollzugriff') }}</div>
         </div>
 
         <div class="p-4 rounded-lg bg-white border border-slate-200 text-center">
@@ -108,7 +108,7 @@
         <div class="p-4 rounded-2xl liquid_glass_card text-center">
           <div class="text-[11px] font-bold text-amber-700 uppercase">Firmenvorlagen</div>
           <div class="text-2xl font-black text-amber-900 mt-1">{{ stats.templates || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium">nur für diese Firma</div>
+          <div class="text-[10px] text-slate-500 font-medium">{{ $t('company.nur_fuer_diese_firma') }}</div>
         </div>
       </div>
 
@@ -134,15 +134,15 @@
             <div>
               <div class="flex items-center space-x-2">
                 <span class="text-lg">💳</span>
-                <h3 class="text-sm font-bold text-slate-900">Lizenzen &amp; Monatliche Gesamtkosten</h3>
+                <h3 class="text-sm font-bold text-slate-900">{{ $t('company.lizenzen_gesamtkosten') }}</h3>
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">Live-Kalkulation</span>
               </div>
               <p class="text-xs text-slate-600 font-medium mt-0.5">
-                Übersicht der aktiven Arbeitsplatzlizenzen deines Unternehmens.
+                {{ $t('company.uebersicht_lizenzen') }}
               </p>
             </div>
             <div class="text-right">
-              <div class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Monatlicher Gesamtbetrag</div>
+              <div class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">{{ $t('company.monatlicher_gesamtbetrag') }}</div>
               <div class="text-2xl font-black text-cyan-700">
                 {{ Number(calculatedBreakdown.monthly_total || 0).toFixed(2) }} €
                 <span class="text-xs font-normal text-slate-500">/ Monat</span>
@@ -158,7 +158,7 @@
                   <span>Firmen-Admin</span>
                   <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Enterprise</span>
                 </div>
-                <div class="text-xs text-slate-500 mt-0.5">19 € / Monat pro Sitz</div>
+                <div class="text-xs text-slate-500 mt-0.5">{{ $t('company.pro_monat_pro_sitz') }}</div>
               </div>
               <div class="text-right">
                 <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.admin_count }}×</div>
@@ -170,10 +170,10 @@
             <div class="p-3.5 rounded-2xl bg-white/80 border border-cyan-200/70 shadow-xs flex items-center justify-between">
               <div>
                 <div class="text-[11px] font-bold text-cyan-900 flex items-center space-x-1.5">
-                  <span>Mitarbeiter Pro</span>
+                  <span>{{ $t('company.mitarbeiter_pro') }}</span>
                   <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">Pro</span>
                 </div>
-                <div class="text-xs text-slate-500 mt-0.5">8 € / Monat pro Sitz</div>
+                <div class="text-xs text-slate-500 mt-0.5">{{ $t('company.pro_preis') }}</div>
               </div>
               <div class="text-right">
                 <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.pro_count }}×</div>
@@ -185,10 +185,10 @@
             <div class="p-3.5 rounded-2xl bg-white/80 border border-purple-200/70 shadow-xs flex items-center justify-between">
               <div>
                 <div class="text-[11px] font-bold text-purple-900 flex items-center space-x-1.5">
-                  <span>Mitarbeiter Enterprise</span>
+                  <span>{{ $t('company.mitarbeiter_enterprise') }}</span>
                   <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Enterprise</span>
                 </div>
-                <div class="text-xs text-slate-500 mt-0.5">15 € / Monat pro Sitz</div>
+                <div class="text-xs text-slate-500 mt-0.5">{{ $t('company.enterprise_preis') }}</div>
               </div>
               <div class="text-right">
                 <div class="text-base font-black text-slate-900">{{ calculatedBreakdown.enterprise_count }}×</div>
@@ -201,9 +201,9 @@
         <div class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
           <div class="p-4 sm:p-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 class="text-sm font-bold text-slate-900">Mitarbeiter &amp; Co-Administratoren</h3>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('company.mitarbeiter_co_admins') }}</h3>
               <p class="text-xs text-slate-600 font-medium">
-                Co-Admins dürfen dieses Firmen-Portal ebenfalls verwalten.
+                {{ $t('company.co_admins_info') }}
               </p>
             </div>
             <button
@@ -218,8 +218,8 @@
             <table class="w-full text-left text-xs">
               <thead class="bg-white/60 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200/80">
                 <tr>
-                  <th class="py-3.5 px-4">Name &amp; E-Mail</th>
-                  <th class="py-3.5 px-4">Rolle &amp; Lizenz</th>
+                  <th class="py-3.5 px-4">{{ $t('company.name_email') }}</th>
+                  <th class="py-3.5 px-4">{{ $t('company.rolle_lizenz') }}</th>
                   <th class="py-3.5 px-4">Seit</th>
                   <th class="py-3.5 px-4 text-right">Aktionen</th>
                 </tr>
@@ -288,7 +288,7 @@
                         v-else
                         @click="changeRole(m, 'admin')"
                         class="taskster_button px-4 text-xs h-[34px] rounded-lg shadow-xs"
-                        title="Zum Co-Admin ernennen"
+                        :title="$t('company.zum_co_admin')"
                       >
                         Zum Co-Admin
                       </button>
@@ -306,7 +306,7 @@
                 </tr>
                 <tr v-if="members.length === 0">
                   <td colspan="4" class="py-10 text-center text-slate-500 text-xs font-medium">
-                    Noch keine Mitarbeiter im Unternehmen.
+                    {{ $t('company.noch_keine_mitarbeiter') }}
                   </td>
                 </tr>
               </tbody>
@@ -317,8 +317,8 @@
         <!-- Offene Einladungen -->
         <div v-if="invitations.length > 0" class="liquid_glass rounded-3xl overflow-hidden shadow-xl">
           <div class="p-4 sm:p-6 border-b border-slate-200/80">
-            <h3 class="text-sm font-bold text-slate-900">Offene Einladungen</h3>
-            <p class="text-xs text-slate-600 font-medium">Diese Personen wurden eingeladen und haben sich noch nicht registriert.</p>
+            <h3 class="text-sm font-bold text-slate-900">{{ $t('company.offene_einladungen') }}</h3>
+            <p class="text-xs text-slate-600 font-medium">{{ $t('company.einladungen_info') }}</p>
           </div>
           <div class="divide-y divide-slate-200/60">
             <div v-for="inv in invitations" :key="inv.id" class="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -335,7 +335,7 @@
                 class="taskster_button_light px-4 text-xs h-[34px] rounded-lg shadow-xs shrink-0"
               >
                 <span>🔗</span>
-                <span>Link kopieren</span>
+                <span>{{ $t('company.link_kopieren') }}</span>
               </button>
             </div>
           </div>
@@ -347,13 +347,13 @@
         <div class="liquid_glass rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 class="text-sm font-bold text-slate-900">Zugriffsmatrix &amp; Berechtigungsübersicht</h3>
-              <p class="text-xs text-slate-600 font-medium">Wer wurde wo eingeladen, wer hat Zugriff auf welche Ordner und Projekte.</p>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('company.zugriffsmatrix_titel') }}</h3>
+              <p class="text-xs text-slate-600 font-medium">{{ $t('company.zugriffsmatrix_desc') }}</p>
             </div>
             <input
               v-model="matrixSearch"
               type="text"
-              placeholder="Nach Name oder E-Mail filtern..."
+              :placeholder="$t('company.filter_placeholder')"
               class="w-full sm:w-64 px-3.5 py-2 bg-white/80 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-600"
             />
           </div>
@@ -365,7 +365,7 @@
                   <th class="py-3 px-4">Mitarbeiter</th>
                   <th class="py-3 px-4">Status</th>
                   <th class="py-3 px-4">Gruppen</th>
-                  <th class="py-3 px-4">Zugriff (Ordner &amp; Projekte)</th>
+                  <th class="py-3 px-4">{{ $t('company.zugriff_ordner_projekte') }}</th>
                   <th class="py-3 px-4 text-right">Aktionen</th>
                 </tr>
               </thead>
@@ -961,7 +961,7 @@
       <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
           <div>
-            <h3 class="text-lg font-black text-slate-900">Mitarbeiter einladen</h3>
+            <h3 class="text-lg font-black text-slate-900">{{ $t('company.mitarbeiter_einladen') }}</h3>
             <p class="text-xs text-slate-500 mt-0.5">Bestehende Nutzer werden sofort hinzugefügt, neue erhalten einen Einladungslink.</p>
           </div>
           <button @click="showInviteModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 rounded-lg">✕</button>
@@ -1436,15 +1436,15 @@ const { user, authHeaders, initAuth } = useAuth()
 
 type TabKey = 'members' | 'matrix' | 'groups' | 'templates' | 'billing' | 'settings' | 'support'
 
-const tabs: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'members', label: 'Mitarbeiter & Co-Admins', icon: '👥' },
-  { key: 'matrix', label: 'Zugriffsmatrix', icon: '🛡️' },
-  { key: 'groups', label: 'Gruppen & Berechtigungen', icon: '🏷️' },
-  { key: 'templates', label: 'Firmenvorlagen', icon: '📋' },
-  { key: 'billing', label: 'Plan & Lizenzen', icon: '💳' },
-  { key: 'settings', label: 'Firmen-Einstellungen', icon: '⚙️' },
-  { key: 'support', label: 'Support', icon: '💬' }
-]
+const tabs = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
+  { key: 'members', label: t('company.tab_members'), icon: '👥' },
+  { key: 'matrix', label: t('company.tab_matrix'), icon: '🛡️' },
+  { key: 'groups', label: t('company.tab_groups'), icon: '🏷️' },
+  { key: 'templates', label: t('company.tab_templates'), icon: '📋' },
+  { key: 'billing', label: t('company.tab_billing'), icon: '💳' },
+  { key: 'settings', label: t('company.tab_settings'), icon: '⚙️' },
+  { key: 'support', label: t('company.tab_support'), icon: '💬' }
+])
 
 const activeTab = ref<TabKey>('members')
 
@@ -1715,14 +1715,14 @@ const planBadgeClass = computed(() => {
   return 'bg-slate-200 text-slate-700 border-slate-300'
 })
 
-const plans = [
-  { key: 'starter', name: 'Starter Plan', monthly: 0, seats: 5 },
-  { key: 'pro', name: 'Pro Business Plan', monthly: 49, seats: 25 },
-  { key: 'enterprise', name: 'Enterprise Custom', monthly: 189, seats: 100 }
-]
+const plans = computed(() => [
+  { key: 'starter', name: t('company.plan_starter'), monthly: 0, seats: 5 },
+  { key: 'pro', name: t('company.plan_pro'), monthly: 49, seats: 25 },
+  { key: 'enterprise', name: t('company.plan_enterprise'), monthly: 189, seats: 100 }
+])
 
-const planLabel = (key: string) => plans.find(p => p.key === key)?.name || key
-const priorityLabel = (key: string) => ({ low: 'Niedrig', normal: 'Normal', high: 'Hoch', urgent: 'Dringend' } as any)[key] || key
+const planLabel = (key: string) => plans.value.find(p => p.key === key)?.name || key
+const priorityLabel = (key: string) => ({ low: t('common.niedrig'), normal: t('common.normal'), high: t('common.hoch'), urgent: t('common.dringend') } as any)[key] || key
 
 const formatDate = (value: string) => {
   if (!value) return '—'

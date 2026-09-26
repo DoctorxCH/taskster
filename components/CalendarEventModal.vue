@@ -17,7 +17,7 @@
         <div v-if="isEdit && !event?.is_organizer && event?.my_status" class="p-3 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-between text-xs text-cyan-900">
           <div class="flex items-center gap-2">
             <Users class="w-4 h-4 text-[#0891B2] shrink-0" />
-            <span>Organisiert von <strong>{{ event?.owner_name || 'Organisator' }}</strong> · Dein Status: <span class="font-semibold px-2 py-0.5 rounded text-[11px]" :class="statusClass(event?.my_status)">{{ statusLabel(event?.my_status) }}</span></span>
+            <span>{{ t('calendar.organisiert_von') }} <strong>{{ event?.owner_name || 'Organisator' }}</strong> · {{ $t('calendar.dein_status') }} <span class="font-semibold px-2 py-0.5 rounded text-[11px]" :class="statusClass(event?.my_status)">{{ statusLabel(event?.my_status) }}</span></span>
           </div>
         </div>
 
@@ -69,7 +69,7 @@
             v-model="form.location"
             v-model:latitude="form.latitude"
             v-model:longitude="form.longitude"
-            placeholder="z.B. Baustelle Zürcherstrasse 45"
+            :placeholder="t('calendar.ort_placeholder')"
           />
 
           <!-- Karte & Route -->
@@ -101,7 +101,7 @@
               <button
                 type="button"
                 class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
-                title="Route ab meinem Standort"
+                :title="t('calendar.route_ab_standort')"
                 @click="openRoute"
               >
                 Route
@@ -121,7 +121,7 @@
                 :src="mapEmbedUrl"
                 class="w-full h-full border-0"
                 loading="lazy"
-                title="OpenStreetMap Karte"
+                :title="t('calendar.openstreetmap_karte')"
               />
               <div v-else-if="!mapLoading" class="p-3 text-center text-[11px] text-slate-500">
                 Standort konnte nicht ermittelt werden.
@@ -143,7 +143,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Priorität</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ t('calendar.prioritaet') }}</label>
             <select
               v-model="form.priority"
               class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
@@ -159,12 +159,12 @@
         <!-- Projekt + Sichtbarkeit -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Projekt (optional)</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">{{ t('calendar.projekt_optional') }}</label>
             <select
               v-model="form.project_id"
               class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
             >
-              <option :value="null">Kein Projekt</option>
+              <option :value="null">{{ t('calendar.kein_projekt') }}</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.title }}</option>
             </select>
           </div>
@@ -174,8 +174,8 @@
               v-model="form.visibility"
               class="w-full h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
             >
-              <option value="private">Privat (nur ich & Eingeladene)</option>
-              <option v-if="user?.company_id" value="company">Für Firma sichtbar</option>
+              <option value="private">{{ t('calendar.privat_nur_ich') }}</option>
+              <option v-if="user?.company_id" value="company">{{ t('calendar.fuer_firma_sichtbar') }}</option>
             </select>
           </div>
         </div>
@@ -186,7 +186,7 @@
           <textarea
             v-model="form.description"
             rows="3"
-            placeholder="Agenda, Notizen, Anforderungen…"
+            :placeholder="t('calendar.agenda_placeholder')"
             class="w-full px-3 py-2 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15 resize-y"
           />
         </div>
@@ -198,7 +198,7 @@
               <Users class="w-3.5 h-3.5" />
               Teilnehmer ({{ form.attendees.length }})
             </label>
-            <span class="text-[11px] text-slate-400">Eingeladene erhalten eine Benachrichtigung</span>
+            <span class="text-[11px] text-slate-400">{{ t('calendar.eingeladene_benachrichtigung') }}</span>
           </div>
 
           <!-- Ausgewählte -->
@@ -223,7 +223,7 @@
             <input
               v-model="attendeeInput"
               type="email"
-              placeholder="E-Mail-Adresse eingeben…"
+              :placeholder="t('calendar.email_eingeben')"
               class="flex-1 h-9 px-3 text-sm rounded-md bg-white border border-slate-300 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
               @keydown.enter.prevent="addAttendee"
             />
@@ -234,7 +234,7 @@
 
           <!-- Team-Vorschläge -->
           <div v-if="availableMembers.length > 0" class="mt-2">
-            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Aus dem Team</div>
+            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">{{ t('calendar.aus_dem_team') }}</div>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="m in availableMembers.slice(0, 8)"
@@ -347,6 +347,8 @@
 
 <script setup lang="ts">
 import { X, MapPin, Users, Plus, Download, Loader2 } from 'lucide-vue-next'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   event?: any
@@ -605,7 +607,7 @@ async function remove() {
     })
     emit('deleted')
   } catch (err: any) {
-    alert(err?.data?.statusMessage || 'Termin konnte nicht gelöscht werden')
+    alert(err?.data?.statusMessage || t('calendar.termin_nicht_geloescht'))
   }
 }
 
@@ -642,7 +644,7 @@ async function downloadIcs() {
     a.remove()
     URL.revokeObjectURL(url)
   } catch {
-    alert('ICS-Datei konnte nicht geladen werden.')
+    alert(t('calendar.ics_fehler'))
   }
 }
 

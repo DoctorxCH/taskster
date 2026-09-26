@@ -22,7 +22,7 @@
         <div class="relative z-10 pt-6 border-t border-white/20">
           <div class="flex items-center space-x-2 text-xs text-cyan-100 font-medium">
             <Sparkles class="w-4 h-4 text-cyan-200" />
-            <span>Zero-Trust Architektur & Schweizer Präzision</span>
+            <span>{{ $t('login.zero_trust_claim') }}</span>
           </div>
         </div>
       </div>
@@ -62,8 +62,8 @@
 
         <!-- Invitation Banner if token is present -->
         <div v-if="invitationInfo" class="mb-5 p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-800 text-xs">
-          <div class="font-bold text-sm text-purple-900 mb-0.5">Einladung zu {{ invitationInfo.company_name }}</div>
-          <div>Du wurdest eingeladen, diesem Unternehmen beizutreten.</div>
+          <div class="font-bold text-sm text-purple-900 mb-0.5">{{ $t('login.einladung_zu') }} {{ invitationInfo.company_name }}</div>
+          <div>{{ $t('login.einladung_desc') }}</div>
         </div>
 
         <!-- Error banner -->
@@ -79,7 +79,7 @@
         <!-- Login Form -->
         <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('login.email_label') }}</label>
             <input
               v-model="loginEmail"
               type="email"
@@ -91,7 +91,7 @@
 
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-bold text-slate-700">Passwort</label>
+              <label class="block text-xs font-bold text-slate-700">{{ $t('login.passwort') }}</label>
               <NuxtLink to="/forgot-password" class="text-xs font-medium text-[#00A3C4] hover:underline cursor-pointer">
                 Passwort vergessen?
               </NuxtLink>
@@ -119,18 +119,18 @@
         <!-- Register Form -->
         <form v-else @submit.prevent="handleRegister" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Vollständiger Name</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('login.vollstaendiger_name') }}</label>
             <input
               v-model="regName"
               type="text"
               required
-              placeholder="Max Mustermann"
+              :placeholder="$t('login.name_placeholder')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('login.email_label') }}</label>
             <input
               v-model="regEmail"
               type="email"
@@ -141,12 +141,12 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Passwort</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('login.passwort') }}</label>
             <input
               v-model="regPassword"
               type="password"
               required
-              placeholder="Mindestens 6 Zeichen"
+              :placeholder="$t('login.pw_min_6')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 transition"
             />
           </div>

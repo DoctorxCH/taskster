@@ -20,7 +20,7 @@
         v-else-if="modelValue"
         type="button"
         class="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-        title="Adresse leeren"
+        :title="t('address.adresse_leeren')"
         @click="clear"
       >
         <X class="w-3.5 h-3.5" />
@@ -51,7 +51,7 @@
       v-else-if="open && !loading && query.length >= 3 && !suggestions.length"
       class="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-md shadow-lg px-3 py-2.5"
     >
-      <p class="text-xs text-slate-500">Keine Adresse gefunden.</p>
+      <p class="text-xs text-slate-500">{{ t('address.keine_adresse_gefunden') }}</p>
       <a
         :href="`https://www.openstreetmap.org/search?query=${encodeURIComponent(query)}`"
         target="_blank"
@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { MapPin, Loader2, X, CheckCircle2 } from 'lucide-vue-next'
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -89,7 +90,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   latitude: null,
   longitude: null,
-  placeholder: 'Strasse, Nr., PLZ Ort'
+  placeholder: t('address.strasse_plz_ort')
 })
 
 const emit = defineEmits<{

@@ -7,7 +7,7 @@
       </div>
 
       <div class="mb-6">
-        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Passwort vergessen?</h2>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ $t('auth.passwort_vergessen') }}</h2>
         <p class="text-xs text-slate-500 mt-1">
           Gib deine E-Mail-Adresse ein. Wir senden dir einen sicheren Link zum Zurücksetzen deines Passworts.
         </p>
@@ -22,7 +22,7 @@
       <div v-if="successMessage" class="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium space-y-2">
         <div class="font-bold flex items-center space-x-1.5 text-emerald-900">
           <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>E-Mail gesendet</span>
+          <span>{{ $t('auth.email_gesendet') }}</span>
         </div>
         <p class="leading-relaxed">{{ successMessage }}</p>
       </div>
@@ -53,7 +53,7 @@
       <div class="mt-6 pt-6 border-t border-slate-100 text-center">
         <NuxtLink to="/login" class="text-xs font-bold text-[#00A3C4] hover:underline inline-flex items-center space-x-1">
           <ArrowLeft class="w-3.5 h-3.5" />
-          <span>Zurück zur Anmeldung</span>
+          <span>{{ $t('forgot.zurueck') }}</span>
         </NuxtLink>
       </div>
 
@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { ArrowLeft, CheckCircle2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const email = ref('')
 const loading = ref(false)
 const errorMessage = ref('')

@@ -7,7 +7,7 @@
       <div class="text-center max-w-3xl mx-auto">
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs font-semibold mb-6">
           <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>Taskster Modern Work Management</span>
+          <span>{{ $t('index.modern_work') }}</span>
         </div>
 
         <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
@@ -40,7 +40,7 @@
           <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 font-bold text-xl mb-4">
             <Folder class="w-6 h-6" />
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Mehrstufige Struktur</h3>
+          <h3 class="text-lg font-bold text-white mb-2">{{ $t('index.mehrstufige_struktur_titel') }}</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
             Ordner → Projekte → Abschnitte → Aufgaben. Logische Organisation über Ebenen hinweg statt unübersichtlicher flacher Boards.
           </p>
@@ -50,7 +50,7 @@
           <div class="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-800/60 flex items-center justify-center text-teal-400 font-bold text-xl mb-4">
             <Shield class="w-6 h-6" />
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Präzise Rollen & Rechte</h3>
+          <h3 class="text-lg font-bold text-white mb-2">{{ $t('index.praezise_rollen_titel') }}</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
             Granulare Zugriffssteuerung auf Projekt- und Abschnittsebene. Jeder sieht und bearbeitet nur das, wofür er ausdrücklich berechtigt ist.
           </p>
@@ -60,7 +60,7 @@
           <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
             <Building2 class="w-6 h-6" />
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Flexible Team-Verwaltung</h3>
+          <h3 class="text-lg font-bold text-white mb-2">{{ $t('index.flexible_team_titel') }}</h3>
           <p class="text-slate-400 text-sm leading-relaxed">
             Nahtlose Mandantenverwaltung, flexible Pläne, Mitarbeiter-Einladungen und anpassbare Felddefinitionen für verschiedenste Branchen.
           </p>

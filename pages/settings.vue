@@ -1375,7 +1375,7 @@ const active = ref('profile')
 // Zeitzonen
 // ---------------------------------------------------------------------------
 const timezones = [
-  { value: 'Europe/Zurich', label: 'Zürich, Bern, Genf (MEZ/MESZ)' },
+  { value: 'Europe/Zurich', label: t('settings.zuerich_zeitzone') },
   { value: 'Europe/Berlin', label: 'Berlin, Wien (MEZ/MESZ)' },
   { value: 'Europe/London', label: 'London, Dublin (GMT/BST)' },
   { value: 'Europe/Paris', label: 'Paris, Madrid, Rom (MEZ/MESZ)' },
@@ -1859,7 +1859,7 @@ async function confirmDeleteAccount() {
     logout()
     navigateTo('/login?deleted=1')
   } catch (err: any) {
-    errorMsg.value = err?.data?.statusMessage || 'Konto konnte nicht gelöscht werden. Bitte Passwort prüfen.'
+    errorMsg.value = err?.data?.statusMessage || t('settings.konto_loeschen_fehler')
   } finally {
     deletingAccount.value = false
   }
@@ -2002,7 +2002,7 @@ async function saveGroup() {
 }
 
 async function deleteGroup(groupId: string) {
-  if (!confirm('Möchtest du diese Gruppe wirklich löschen?')) return
+  if (!confirm(t('settings.gruppe_loeschen_frage'))) return
   try {
     await $fetch(`/api/groups/${groupId}`, {
       method: 'DELETE',
@@ -2010,7 +2010,7 @@ async function deleteGroup(groupId: string) {
     })
     await loadTeamData()
   } catch (err: any) {
-    errorMsg.value = err?.data?.statusMessage || 'Fehler beim Löschen der Gruppe.'
+    errorMsg.value = err?.data?.statusMessage || t('settings.gruppe_loeschen_fehler')
   }
 }
 

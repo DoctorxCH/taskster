@@ -6301,10 +6301,10 @@ const deleteCustomField = async (fieldId: string) => {
   }
 
   triggerConfirmModal({
-    title: 'Zusatzfeld löschen',
+    title: t('projects.zusatzfeld_loeschen_title'),
     subtitle: f.label,
     message: `Möchtest du das Zusatzfeld "${f.label}" wirklich löschen?`,
-    confirmText: 'Feld löschen',
+    confirmText: t('projects.feld_loeschen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
@@ -7342,7 +7342,7 @@ const saveProjectContact = async () => {
 const deleteProjectContact = async (c: any) => {
   const name = (c.first_name ? c.first_name + ' ' : '') + c.last_name
   triggerConfirmModal({
-    title: 'Kontakt entfernen',
+    title: t('projects.kontakt_entfernen_title'),
     subtitle: name,
     message: `Möchtest du den Kontakt "${name}" wirklich löschen?`,
     confirmText: 'Kontakt löschen',
@@ -7483,9 +7483,9 @@ const saveEditTime = async () => {
 
 const deleteTimeEntry = async (id: string) => {
   triggerConfirmModal({
-    title: 'Zeiteintrag löschen',
-    subtitle: 'Dieser Vorgang kann nicht rückgängig gemacht werden',
-    message: 'Möchtest du diesen Zeiteintrag wirklich löschen?',
+    title: t('projects.zeiteintrag_loeschen_title'),
+    subtitle: t('projects.vorgang_unwiderruflich'),
+    message: t('projects.zeiteintrag_loeschen_confirm'),
     confirmText: 'Zeiteintrag löschen',
     danger: true,
     action: async () => {
@@ -7673,9 +7673,9 @@ const saveField = async () => {
 
 const deleteField = async (fieldId: string) => {
   triggerConfirmModal({
-    title: 'Feld löschen',
-    message: 'Möchtest du dieses benutzerdefinierte Feld wirklich löschen?',
-    confirmText: 'Feld löschen',
+    title: t('projects.feld_loeschen_title'),
+    message: t('projects.feld_loeschen_confirm'),
+    confirmText: t('projects.feld_loeschen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/folders/${project.value.folder_id}/fields/${fieldId}`, {
@@ -7803,7 +7803,7 @@ const deleteSectionInModal = async (idx: number) => {
     ? `Abschnitt "${sec.title}" enthält ${count} Aufgabe(n). Möchtest du diesen Abschnitt und alle darin enthaltenen Aufgaben wirklich unwiderruflich löschen?`
     : `Möchtest du den Abschnitt "${sec.title}" wirklich löschen?`
   triggerConfirmModal({
-    title: 'Abschnitt löschen',
+    title: t('projects.abschnitt_loeschen_title'),
     subtitle: sec.title,
     message: msg,
     confirmText: 'Abschnitt löschen',
@@ -7930,9 +7930,9 @@ const checkAndCascadeProjectCompletion = async () => {
 
   if (openCount === 0) {
     triggerConfirmModal({
-      title: 'Projekt abschließen',
-      subtitle: 'Alle Aufgaben erledigt!',
-      message: 'Alle Aufgaben in diesem Projekt sind erledigt! Möchtest du das gesamte Projekt abschließen?',
+      title: t('projects.projekt_abschliessen_title'),
+      subtitle: t('projects.alle_aufgaben_erledigt'),
+      message: t('projects.projekt_abschliessen_confirm'),
       confirmText: 'Projekt abschließen',
       danger: false,
       action: async () => {
@@ -8230,9 +8230,9 @@ const checkAndCascadeTaskCompletion = async () => {
 
   if (allChecklistDone && allSubtasksDone) {
     triggerConfirmModal({
-      title: 'Aufgabe abschließen',
-      subtitle: 'Alle Unterpunkte erledigt',
-      message: 'Alle Unterpunkte und Checklistenpunkte sind erledigt. Möchtest du diese Aufgabe als erledigt markieren?',
+      title: t('projects.aufgabe_abschliessen_title'),
+      subtitle: t('projects.alle_unterpunkte_erledigt'),
+      message: t('projects.aufgabe_abschliessen_confirm'),
       confirmText: 'Aufgabe abschließen',
       danger: false,
       action: async () => {
@@ -8344,9 +8344,9 @@ const deleteTaskFromDrawer = async () => {
     return
   }
   triggerConfirmModal({
-    title: 'Aufgabe löschen',
+    title: t('projects.aufgabe_loeschen_title'),
     subtitle: drawerTask.value?.title,
-    message: 'Möchtest du diese Aufgabe wirklich unwiderruflich löschen?',
+    message: t('projects.aufgabe_loeschen_unwiderruflich_confirm'),
     confirmText: 'Aufgabe löschen',
     danger: true,
     action: async () => {
@@ -8441,8 +8441,8 @@ const readFileAsDataUrl = (file: File): Promise<string> => {
 
 const deleteDocument = async (docId: string) => {
   triggerConfirmModal({
-    title: 'Datei entfernen',
-    message: 'Möchtest du diese Datei wirklich entfernen?',
+    title: t('projects.datei_entfernen_title'),
+    message: t('projects.datei_entfernen_confirm'),
     confirmText: 'Datei entfernen',
     danger: true,
     action: async () => {
@@ -8832,8 +8832,8 @@ const deleteTask = async () => {
     return
   }
   triggerConfirmModal({
-    title: 'Aufgabe löschen',
-    message: 'Möchtest du diese Aufgabe wirklich löschen?',
+    title: t('projects.aufgabe_loeschen_title'),
+    message: t('projects.aufgabe_loeschen_confirm'),
     confirmText: 'Aufgabe löschen',
     danger: true,
     action: async () => {
@@ -9247,7 +9247,7 @@ const createJournalEntry = saveNewEntry
 
 const deleteJournalEntry = async (entry: any) => {
   triggerConfirmModal({
-    title: 'Journaleintrag löschen',
+    title: t('projects.journaleintrag_loeschen_title'),
     subtitle: entry.title,
     message: (te && te('journal.delete_entry_confirm') ? t('journal.delete_entry_confirm') : '') || 'Möchtest du diesen Journaleintrag wirklich unwiderruflich löschen?',
     confirmText: 'Eintrag löschen',

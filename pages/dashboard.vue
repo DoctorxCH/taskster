@@ -1339,31 +1339,31 @@ const editFolderVisibility = ref('private')
 const savingFolder = ref(false)
 const editFolderError = ref('')
 
-const availableFolderIcons = [
+const availableFolderIcons = computed(() => [
   // Job & Gewerbe
-  { icon: '📁', label: 'Standard Ordner' },
-  { icon: '🏗️', label: 'Bau & Tiefbau' },
-  { icon: '💻', label: 'IT & Software' },
-  { icon: '📐', label: 'Architektur & Planung' },
-  { icon: '⚡', label: 'Elektro & Energie' },
-  { icon: '🔧', label: 'Montage & Service' },
-  { icon: '🚚', label: 'Logistik & Transport' },
-  { icon: '📊', label: 'Finanzen & Controlling' },
-  { icon: '⚖️', label: 'Recht & Notariat' },
-  { icon: '🏥', label: 'Gesundheit & Praxis' },
-  { icon: '🏢', label: 'Immobilien & Liegenschaften' },
+  { icon: '📁', label: t('folders.tpl_standard') },
+  { icon: '🏗️', label: t('folders.tpl_bau_tiefbau') },
+  { icon: '💻', label: t('folders.tpl_it_software') },
+  { icon: '📐', label: t('folders.tpl_architektur_planung') },
+  { icon: '⚡', label: t('folders.tpl_elektro_energie') },
+  { icon: '🔧', label: t('folders.tpl_montage_service') },
+  { icon: '🚚', label: t('folders.tpl_logistik_transport') },
+  { icon: '📊', label: t('folders.tpl_finanzen_controlling') },
+  { icon: '⚖️', label: t('folders.tpl_recht_notariat') },
+  { icon: '🏥', label: t('folders.tpl_gesundheit_praxis') },
+  { icon: '🏢', label: t('folders.tpl_immobilien') },
   // Privat & Haushalt
-  { icon: '🏠', label: 'Haus & Umbau' },
-  { icon: '🏡', label: 'Garten & Aussen' },
-  { icon: '🛋️', label: 'Wohnen & Interior' },
-  { icon: '🎂', label: 'Event & Feier' },
-  { icon: '✈️', label: 'Reisen & Urlaub' },
-  { icon: '🚗', label: 'Fahrzeuge & Garage' },
-  { icon: '📑', label: 'Privat & Steuern' },
-  { icon: '🎯', label: 'Ziele & Pläne' },
-  { icon: '📦', label: 'Umzug & Lager' },
-  { icon: '🎨', label: 'Kreativ & Hobby' }
-]
+  { icon: '🏠', label: t('folders.tpl_haus_umbau') },
+  { icon: '🏡', label: t('folders.tpl_garten_aussen') },
+  { icon: '🛋️', label: t('folders.tpl_wohnen_interior') },
+  { icon: '🎂', label: t('folders.tpl_event_feier') },
+  { icon: '✈️', label: t('folders.tpl_reisen_urlaub') },
+  { icon: '🚗', label: t('folders.tpl_fahrzeuge_garage') },
+  { icon: '📑', label: t('folders.tpl_privat_steuern') },
+  { icon: '🎯', label: t('folders.tpl_ziele_plaene') },
+  { icon: '📦', label: t('folders.tpl_umzug_lager') },
+  { icon: '🎨', label: t('folders.tpl_kreativ_hobby') }
+])
 
 const totalProjects = computed(() => {
   if (isFreeUser.value) return projects.value.length

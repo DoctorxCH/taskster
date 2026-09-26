@@ -420,7 +420,7 @@
                     <span
                       v-if="project.is_default"
                       class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900 flex items-center space-x-1"
-                      title="Standard-Projekt dieses Ordners"
+                      :title="$t('folders.standard_projekt_title')"
                     >
                       <Star class="w-3 h-3 text-amber-600" />
                       <span>{{ $t('folders.standard') }}</span>
@@ -743,7 +743,7 @@
                 <option value="wetter_behinderung">⛈️ Wetter & Behinderung</option>
                 <option value="regie">⏱️ Regiearbeit</option>
                 <option value="email">✉️ E-Mail Import</option>
-                <option value="notiz">📝 Notiz</option>
+                <option value="notiz">{{ $t('folders.notiz_badge') }}</option>
                 <option value="mangel">⚠️ Mangel</option>
                 <option value="allgemein">📖 Allgemein</option>
               </select>
@@ -830,7 +830,7 @@
                     v-if="entry.project_id"
                     :to="`/projects/${entry.project_id}`"
                     class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 flex items-center gap-1 transition"
-                    title="Zum Projekt springen"
+                    :title="$t('folders.zum_projekt_title')"
                   >
                     <Folder class="w-3 h-3 text-[#00A3C4]" />
                     <span class="max-w-[120px] truncate">{{ getProjectTitle(entry.project_id) }}</span>
@@ -860,7 +860,7 @@
                     @click="openEditFolderJournal(entry)"
                     type="button"
                     class="p-1 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition cursor-pointer"
-                    title="Eintrag bearbeiten"
+                    :title="$t('folders.eintrag_bearbeiten_title')"
                   >
                     <Pencil class="w-3.5 h-3.5" />
                   </button>
@@ -871,7 +871,7 @@
                     @click="deleteFolderJournal(entry.id)"
                     type="button"
                     class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Eintrag löschen"
+                    :title="$t('folders.eintrag_loeschen_title')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -909,7 +909,7 @@
                   <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
                       <span>⚡</span>
-                      <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
+                      <span>{{ $t('folders.vorgeschlagene_aktionen') }} ({{ entry.metadata.action_items.length }}):</span>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1042,7 +1042,7 @@
                           @change="updateFolderJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                           class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
                         >
-                          <option value="">-- Verknüpfung lösen --</option>
+                          <option value="">{{ $t('folders.verknuepfung_loesen') }}</option>
                           <option v-for="t in getAvailableTasksForFolderEntry(entry)" :key="t.id" :value="t.id">
                             {{ t.title }}
                           </option>
@@ -1052,13 +1052,13 @@
 
                     <!-- Zustand B: Keine Aufgabe verknüpft -->
                     <div v-else class="space-y-1">
-                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe zuweisen:</label>
+                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">{{ $t('folders.aufgabe_zuweisen_label') }}</label>
                       <select
                         :disabled="updatingFolderTaskId === entry.id"
                         @change="updateFolderJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                         class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
                       >
-                        <option value="">-- Aufgabe auswählen --</option>
+                        <option value="">{{ $t('folders.aufgabe_auswaehlen_opt') }}</option>
                         <option v-for="t in getAvailableTasksForFolderEntry(entry)" :key="t.id" :value="t.id">
                           {{ t.title }}
                         </option>
@@ -1166,7 +1166,7 @@
               <div>
                 <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <span>⚙️</span>
-                  <span>Standard-Aufgabenfelder &amp; Sichtbarkeits-Logik</span>
+                  <span>{{ $t('folders.standard_felder_logik') }}</span>
                 </h4>
                 <p class="text-[11px] text-slate-500 mt-0.5">
                   Steuere die Sichtbarkeit und Abhängigkeiten der vorkonfektionierten Standardfelder für alle Aufgaben in diesem Ordner.
@@ -1205,7 +1205,7 @@
                   >
                     ⚡ {{ getLogicDescription(getStandardFieldRule(sf.field_key)) }}
                   </span>
-                  <span v-else class="text-[10px] text-slate-400">Immer sichtbar</span>
+                  <span v-else class="text-[10px] text-slate-400">{{ $t('folders.immer_sichtbar') }}</span>
 
                   <button
                     type="button"
@@ -1300,7 +1300,7 @@
                         type="button"
                         @click="openEditFieldModal(f)"
                         class="taskster_button_light px-2.5 text-xs h-7 rounded-md inline-flex items-center space-x-1 cursor-pointer"
-                        title="Feld bearbeiten"
+                        :title="$t('folders.feld_bearbeiten_title')"
                       >
                         <Pencil class="w-3 h-3 text-[#00A3C4]" />
                         <span>{{ $t('common.bearbeiten') }}</span>
@@ -1309,7 +1309,7 @@
                         type="button"
                         @click="deleteFolderField(f.id)"
                         class="p-1.5 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition cursor-pointer"
-                        title="Feld löschen"
+                        :title="$t('folders.feld_loeschen_title')"
                       >
                         <Trash2 class="w-3.5 h-3.5" />
                       </button>
@@ -1422,7 +1422,7 @@
                       target="_blank"
                       rel="noopener"
                       class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold shrink-0 ml-1"
-                      title="WhatsApp Chat öffnen"
+                      :title="$t('folders.whatsapp_title')"
                     >
                       WhatsApp
                     </a>
@@ -1477,7 +1477,7 @@
                     @click="openEditContactModal(c)"
                     type="button"
                     class="p-1 text-slate-400 hover:text-[#00A3C4] hover:bg-slate-100 rounded transition cursor-pointer"
-                    title="Bearbeiten"
+                    :title="$t('folders.bearbeiten_title')"
                   >
                     <Pencil class="w-3.5 h-3.5" />
                   </button>
@@ -1485,7 +1485,7 @@
                     @click="deleteFolderContact(c)"
                     type="button"
                     class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
-                    title="Löschen"
+                    :title="$t('folders.loeschen_title')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -1505,7 +1505,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-xl">📁</span>
-              <h3 class="text-lg font-black text-slate-900">Neues Projekt erstellen</h3>
+              <h3 class="text-lg font-black text-slate-900">{{ $t('folders.neues_projekt_erstellen') }}</h3>
             </div>
             <p class="text-xs text-slate-500 mt-1">
               Erstelle ein Projekt im Ordner <span class="text-slate-800 font-bold">«{{ folder?.name }}»</span>
@@ -1537,7 +1537,7 @@
               :class="projectCreationMode === 'template' ? 'bg-white text-[#00A3C4] shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             >
               <span>📋</span>
-              <span class="truncate">Aus Vorlage (Empfohlen)</span>
+              <span class="truncate">{{ $t('folders.aus_vorlage_empfohlen') }}</span>
             </button>
             <button
               type="button"
@@ -1546,7 +1546,7 @@
               :class="projectCreationMode === 'import' ? 'bg-white text-[#00A3C4] shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             >
               <span>📊</span>
-              <span class="truncate">Excel / CSV Import</span>
+              <span class="truncate">{{ $t('folders.excel_csv_import') }}</span>
             </button>
             <button
               type="button"
@@ -1555,7 +1555,7 @@
               :class="projectCreationMode === 'blank' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             >
               <span>📝</span>
-              <span class="truncate">Leeres Projekt (Blanko)</span>
+              <span class="truncate">{{ $t('folders.leeres_projekt_blanko') }}</span>
             </button>
           </div>
 
@@ -1580,7 +1580,7 @@
                   :class="templateFilterCategory === 'job' ? 'bg-[#00A3C4] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:text-cyan-700'"
                 >
                   <span>💼</span>
-                  <span>Job & Gewerbe ({{ templates.filter(t => t.category === 'job').length }})</span>
+                  <span>{{ $t('folders.job_gewerbe') }} ({{ templates.filter(t => t.category === 'job').length }})</span>
                 </button>
                 <button
                   type="button"
@@ -1589,7 +1589,7 @@
                   :class="templateFilterCategory === 'private' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:text-purple-700'"
                 >
                   <span>🏡</span>
-                  <span>Privat & Familie ({{ templates.filter(t => t.category === 'private').length }})</span>
+                  <span>{{ $t('folders.privat_familie') }} ({{ templates.filter(t => t.category === 'private').length }})</span>
                 </button>
               </div>
 
@@ -1598,7 +1598,7 @@
                 <input
                   v-model="templateSearchQuery"
                   type="text"
-                  placeholder="🔍 Vorlage suchen..."
+                  :placeholder="$t('folders.suche_vorlage_placeholder')"
                   class="w-full px-3.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 />
               </div>
@@ -1668,10 +1668,10 @@
             <div v-if="selectedTemplate" class="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-200 space-y-4">
               <div class="flex items-center justify-between border-b border-cyan-200/60 pb-2.5">
                 <div class="flex items-center space-x-2">
-                  <span class="text-cyan-700 font-bold text-sm">✓ Gewählte Vorlage:</span>
+                  <span class="text-cyan-700 font-bold text-sm">{{ $t('folders.gewaehlte_vorlage') }}</span>
                   <span class="text-slate-900 font-black text-sm">{{ selectedTemplate.name_key ? $t(selectedTemplate.name_key) : selectedTemplate.name }}</span>
                 </div>
-                <span class="text-[11px] font-medium text-slate-500">Konfiguration anpassen</span>
+                <span class="text-[11px] font-medium text-slate-500">{{ $t('folders.konfiguration_anpassen') }}</span>
               </div>
 
               <!-- Included Lists with Interactive Adjustments -->
@@ -1680,7 +1680,7 @@
                   <span class="text-xs font-bold text-slate-800">
                     Projektphasen / Abschnitte ({{ selectedTemplateLists.length }}):
                   </span>
-                  <span class="text-[10px] text-slate-500">Du kannst Phasen vor der Erstellung anpassen oder entfernen</span>
+                  <span class="text-[10px] text-slate-500">{{ $t('folders.phasen_anpassen_info') }}</span>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-1.5 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
@@ -1696,7 +1696,7 @@
                       type="button"
                       @click="removeTemplatePhase(idx)"
                       class="text-cyan-600 hover:text-rose-600 ml-1 font-bold text-xs"
-                      title="Phase entfernen"
+                      :title="$t('folders.phase_entfernen_title')"
                     >
                       ✕
                     </button>
@@ -1708,7 +1708,7 @@
                       v-model="newTemplatePhaseInput"
                       @keydown.enter.prevent="addTemplatePhase"
                       type="text"
-                      placeholder="+ Phase hinzufügen..."
+                      :placeholder="$t('folders.phase_hinzufuegen_placeholder')"
                       class="px-2.5 py-1 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-[#00A3C4] w-36"
                     />
                     <button
@@ -1729,7 +1729,7 @@
                   <span class="text-xs font-bold text-slate-800 block">
                     Zusatzfelder dieser Vorlage ({{ selectedTemplateFields.length }}):
                   </span>
-                  <span class="text-[10px] text-slate-500">Felder und Logikregeln können vor Projektstart angepasst werden</span>
+                  <span class="text-[10px] text-slate-500">{{ $t('folders.felder_anpassen_info') }}</span>
                 </div>
 
                 <div v-if="selectedTemplateFields.length === 0" class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-slate-200 text-center">
@@ -1753,7 +1753,7 @@
                             type="button"
                             @click="removeTemplateField(fIdx)"
                             class="text-slate-400 hover:text-rose-600 p-0.5 rounded font-bold cursor-pointer"
-                            title="Feld entfernen"
+                            :title="$t('folders.feld_entfernen_title')"
                           >
                             ✕
                           </button>
@@ -1764,7 +1764,7 @@
                       <div v-if="cf.logic_rules && cf.logic_rules.depends_on_field" class="mt-1.5 text-[10px] text-amber-900 flex items-center justify-between bg-amber-50 px-2 py-1 rounded border border-amber-200">
                         <div class="flex items-center gap-1 font-semibold truncate mr-1">
                           <span>⚡</span>
-                          <span>Sichtbar wenn: {{ getLogicDescription(cf.logic_rules) }}</span>
+                          <span>{{ $t('folders.sichtbar_wenn') }} {{ getLogicDescription(cf.logic_rules) }}</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                           <button
@@ -1778,7 +1778,7 @@
                             type="button"
                             @click="removeTemplateFieldLogic(fIdx)"
                             class="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
-                            title="Logik entfernen"
+                            :title="$t('folders.logik_entfernen_title')"
                           >
                             ✕
                           </button>
@@ -1786,14 +1786,14 @@
                       </div>
 
                       <div v-else class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                        <span>Immer sichtbar</span>
+                        <span>{{ $t('folders.immer_sichtbar') }}</span>
                         <button
                           type="button"
                           @click="openEditTemplateFieldLogic(fIdx)"
                           class="text-[10px] text-amber-700 hover:text-amber-800 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
                         >
                           <span>⚡</span>
-                          <span>+ Logik hinzufügen</span>
+                          <span>{{ $t('folders.logik_hinzufuegen') }}</span>
                         </button>
                       </div>
                     </div>
@@ -1844,7 +1844,7 @@
                 :class="importInputMode === 'file' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
               >
                 <span>📁</span>
-                <span>Datei hochladen / ablegen</span>
+                <span>{{ $t('folders.datei_hochladen_ablegen') }}</span>
               </button>
               <button
                 type="button"
@@ -1853,7 +1853,7 @@
                 :class="importInputMode === 'text' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
               >
                 <span>📋</span>
-                <span>Text / CSV einfügen (Strg+V)</span>
+                <span>{{ $t('folders.text_csv_einfuegen') }}</span>
               </button>
             </div>
 
@@ -1889,7 +1889,7 @@
                   class="taskster_button_light px-4 text-xs h-[36px] rounded-lg shadow-xs flex items-center space-x-1.5"
                 >
                   <span>📥</span>
-                  <span>Muster-Excel herunterladen</span>
+                  <span>{{ $t('folders.muster_excel_herunterladen') }}</span>
                 </button>
               </div>
             </div>
@@ -1899,7 +1899,7 @@
               <div class="flex items-center justify-between">
                 <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <span>📋</span>
-                  <span>CSV- oder aus Excel kopierte Tabellendaten hier einfügen:</span>
+                  <span>{{ $t('folders.csv_oder_excel_einfuegen') }}</span>
                 </label>
                 <button
                   type="button"
@@ -1927,7 +1927,7 @@
                   :disabled="!importRawText.trim()"
                 >
                   <span>⚡</span>
-                  <span>Daten jetzt analysieren</span>
+                  <span>{{ $t('folders.daten_jetzt_analysieren') }}</span>
                 </button>
               </div>
             </div>
@@ -1941,7 +1941,7 @@
               <div class="p-3 bg-cyan-50/80 border border-cyan-200 rounded-2xl flex items-center justify-between text-xs">
                 <span class="text-cyan-950 font-bold flex items-center gap-1.5">
                   <span>📄</span>
-                  <span>Datenquelle: <strong>{{ importFileName || 'Direkt eingefügter Text' }}</strong> ({{ importParsedRows.length }} Projekt(e) gefunden, {{ importHeaders.length }} Spalten)</span>
+                  <span>{{ $t('folders.datenquelle') }} <strong>{{ importFileName || $t('folders.direkt_eingefuegter_text') }}</strong> ({{ importParsedRows.length }} {{ $t('folders.projekte_gefunden') }}, {{ importHeaders.length }} {{ $t('folders.spalten') }})</span>
                 </span>
                 <button
                   type="button"
@@ -1958,7 +1958,7 @@
                 class="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-amber-900 text-xs font-semibold flex items-center gap-2"
               >
                 <span>⚠️</span>
-                <span>Bitte weise mindestens einer Spalte das Feld <strong>«📌 Projekttitel (Pflicht)»</strong> zu, um den Import durchzuführen.</span>
+                <span>{{ $t('folders.bitte_weise_mindestens_hinweis') }} <strong>{{ $t('folders.projekttitel_pflicht_hinweis') }}</strong> {{ $t('folders.zu_um_import_hinweis') }}</span>
               </div>
 
               <!-- Optionale Vorlage für Phasen & Felder im Import -->
@@ -1966,16 +1966,16 @@
                 <div class="flex items-center justify-between">
                   <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <span>📋</span>
-                    <span>Workflow-Vorlage anwenden (optional):</span>
+                    <span>{{ $t('folders.workflow_vorlage_anwenden') }}</span>
                   </label>
-                  <span class="text-[10px] text-slate-500">Übernimmt Phasen &amp; Vorlagen-Zusatzfelder inkl. Logik</span>
+                  <span class="text-[10px] text-slate-500">{{ $t('folders.uebernimmt_phasen_info') }}</span>
                 </div>
                 <select
                   v-model="selectedImportTemplateId"
                   @change="onImportTemplateChange"
                   class="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                 >
-                  <option value="">-- Keine Vorlage (Eigene Phasen &amp; Standard nutzen) --</option>
+                  <option value="">{{ $t('folders.keine_vorlage_option') }}</option>
                   <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">
                     {{ tpl.name_key && $te(tpl.name_key) ? $t(tpl.name_key) : tpl.name }} ({{ (tpl.lists || []).length }} Phasen, {{ (tpl.fields || []).length }} Zusatzfelder)
                   </option>
@@ -1988,16 +1988,16 @@
                   <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
                     Spaltenzuweisung (Mapping):
                   </label>
-                  <span class="text-[11px] text-slate-500 font-medium">Projekttitel ist Pflichtfeld</span>
+                  <span class="text-[11px] text-slate-500 font-medium">{{ $t('folders.projekttitel_pflicht') }}</span>
                 </div>
 
                 <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
                   <table class="w-full text-left text-xs">
                     <thead class="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
                       <tr>
-                        <th class="py-2.5 px-4">Spalte in Excel / CSV</th>
-                        <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
-                        <th class="py-2.5 px-4">Zuweisung an Taskster Projekt-Feld</th>
+                        <th class="py-2.5 px-4">{{ $t('folders.spalte_in_excel_csv') }}</th>
+                        <th class="py-2.5 px-4">{{ $t('folders.beispielwert_zeile1') }}</th>
+                        <th class="py-2.5 px-4">{{ $t('folders.zuweisung_an_taskster') }}</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
@@ -2012,17 +2012,17 @@
                             class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#00A3C4]"
                             :class="importColumnMapping[hIdx] === 'title' ? 'border-[#00A3C4] bg-cyan-50/50 text-cyan-950 font-bold' : (importColumnMapping[hIdx] === 'action:create_task' ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : ''))"
                           >
-                            <option value="">-- Nicht importieren --</option>
+                            <option value="">{{ $t('folders.nicht_importieren') }}</option>
                             <optgroup label="Aktionen & Aufgaben">
-                              <option value="action:create_task">✅ [Aktion] Neue Aufgabe erstellen</option>
+                              <option value="action:create_task">{{ $t('folders.aktion_neue_aufgabe') }}</option>
                             </optgroup>
                             <optgroup label="Standard Projekt-Felder">
                               <option value="title">📌 Projekttitel (Pflicht)</option>
-                              <option value="due_date">📅 Fälligkeitsdatum</option>
-                              <option value="status">🔄 Status (active/archived/completed)</option>
+                              <option value="due_date">{{ $t('folders.faelligkeitsdatum_opt') }}</option>
+                              <option value="status">{{ $t('folders.status_opt') }}</option>
                               <option value="visibility">🔒 Sichtbarkeit (private/company)</option>
-                              <option value="currency">💰 Währung (CHF, EUR, USD)</option>
-                              <option value="budget_hours">⏱️ Budget Stunden</option>
+                              <option value="currency">{{ $t('folders.waehrung_opt') }}</option>
+                              <option value="budget_hours">{{ $t('folders.budget_stunden_opt') }}</option>
                               <option value="budget_amount">💵 Budget Betrag</option>
                             </optgroup>
 
@@ -2096,7 +2096,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <span>📋</span>
-                    <span>Workflow-Abschnitte (Phasen) für importierte Projekte:</span>
+                    <span>{{ $t('folders.workflow_abschnitte_import') }}</span>
                   </label>
                   <button
                     type="button"
@@ -2127,7 +2127,7 @@
                       type="button"
                       @click="removeImportSection(sIdx)"
                       class="text-slate-400 hover:text-rose-600 ml-1 font-bold text-xs cursor-pointer"
-                      title="Abschnitt entfernen"
+                      :title="$t('folders.abschnitt_entfernen_title')"
                     >
                       ✕
                     </button>
@@ -2166,7 +2166,7 @@
                 v-model="newProjectTitle"
                 type="text"
                 required
-                placeholder="z.B. FTTH Ausbau Bern Süd oder Wohnzimmer Renovation"
+                :placeholder="$t('folders.projekt_name_placeholder')"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
               />
               <p class="text-[11px] text-slate-500 mt-1">
@@ -2190,14 +2190,14 @@
 
             <!-- Sichtbarkeit des Projekts im Unternehmen (Default: Privat) -->
             <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Projekts</label>
+              <label class="block text-xs font-bold text-slate-800">{{ $t('folders.sichtbarkeit_projekts') }}</label>
               <div class="grid grid-cols-2 gap-2">
                 <label
                   class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
                   :class="newProjectVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
                 >
                   <input type="radio" value="private" v-model="newProjectVisibility" class="sr-only" />
-                  <span>🔒 Privat (Standard)</span>
+                  <span>{{ $t('folders.privat_standard') }}</span>
                 </label>
                 <label
                   class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
@@ -2226,7 +2226,7 @@
                   v-model="newProjectCustomData[f.field_key]"
                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Nicht ausgewählt --</option>
+                  <option value="">{{ $t('folders.nicht_ausgewaehlt') }}</option>
                   <option
                     v-for="opt in f.options"
                     :key="typeof opt === 'object' ? opt.value : opt"
@@ -2241,7 +2241,7 @@
                   v-else-if="f.field_type === 'textarea'"
                   v-model="newProjectCustomData[f.field_key]"
                   rows="3"
-                  placeholder="Details, Notizen oder Beschreibung..."
+                  :placeholder="$t('folders.projekt_details_placeholder')"
                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 resize-y"
                 ></textarea>
 
@@ -2344,7 +2344,7 @@
         <!-- Sticky Header -->
         <div class="p-6 pb-4 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
           <div>
-            <h3 class="text-lg font-black text-slate-900">Projektordner anpassen</h3>
+            <h3 class="text-lg font-black text-slate-900">{{ $t('folders.projektordner_anpassen') }}</h3>
             <p class="text-xs text-slate-500 mt-1">
               Passe den Namen, das Icon, die Vorlage und die Phasen dieses Projektordners an.
             </p>
@@ -2360,7 +2360,7 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Name des Projektordners</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.name_des_projektordners') }}</label>
               <input
                 v-model="editFolderName"
                 type="text"
@@ -2372,7 +2372,7 @@
 
           <!-- Icon Selector -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Icon aus Liste auswählen</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">{{ $t('folders.icon_aus_liste') }}</label>
             <div class="grid grid-cols-7 gap-2 max-h-40 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200">
               <button
                 v-for="item in availableFolderIcons"
@@ -2386,7 +2386,7 @@
                 {{ item.icon }}
               </button>
             </div>
-            <p class="text-[11px] text-slate-500 mt-1 font-medium">Ausgewähltes Icon: <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
+            <p class="text-[11px] text-slate-500 mt-1 font-medium">{{ $t('folders.ausgewaehltes_icon') }} <span class="text-slate-900 text-base font-bold mr-1">{{ editFolderIcon }}</span></p>
           </div>
 
           <!-- Standard-Projektvorlage & Abschnitte für den gesamten Ordner -->
@@ -2394,7 +2394,7 @@
             <div class="flex items-center justify-between">
               <label class="block text-xs font-bold text-slate-900 flex items-center gap-1.5">
                 <BookOpen class="w-4 h-4 text-[#00A3C4]" />
-                <span>Projektvorlage für diesen Ordner</span>
+                <span>{{ $t('folders.projektvorlage_fuer_ordner') }}</span>
               </label>
               <span v-if="editFolderTemplateId" class="text-[10px] font-bold text-[#00A3C4] px-2 py-0.5 bg-white rounded-full border border-cyan-200 shadow-2xs">
                 Aktiv
@@ -2405,13 +2405,13 @@
               @change="onEditFolderTemplateChange"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] font-medium cursor-pointer"
             >
-              <option value="">Keine Vorlage (Freie / Manuelle Abschnitte)</option>
+              <option value="">{{ $t('folders.keine_vorlage_freie_abschnitte') }}</option>
               <option v-for="tpl in CONSTRUCTION_TEMPLATES" :key="tpl.id" :value="tpl.id">
                 {{ tpl.name }} — {{ tpl.subcategory }}
               </option>
             </select>
             <div v-if="selectedEditTemplate" class="text-[11px] text-slate-600 bg-white p-3 rounded-xl border border-cyan-100 leading-relaxed space-y-1 shadow-2xs">
-              <p><strong>Info:</strong> {{ selectedEditTemplate.description }}</p>
+              <p><strong>{{ $t('folders.info_label') }}</strong> {{ selectedEditTemplate.description }}</p>
             </div>
             <p v-else class="text-[11px] text-slate-500">
               Wähle eine Branchen-Vorlage (z. B. Hochbau, Tiefbau, FTTH, Gebäudeautomation) oder passe die Abschnitte unten manuell an.
@@ -2421,7 +2421,7 @@
             <div class="pt-2 border-t border-cyan-100/80 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
-                  <span>Workflow-Phasen / Abschnitte ({{ editFolderSections.length }})</span>
+                  <span>{{ $t('folders.workflow_phasen_abschnitte') }} ({{ editFolderSections.length }})</span>
                 </span>
                 <button
                   type="button"
@@ -2457,7 +2457,7 @@
                     v-model="sec.title"
                     type="text"
                     required
-                    placeholder="Phasenname"
+                    :placeholder="$t('folders.phasenname_placeholder')"
                     class="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
                   />
 
@@ -2481,7 +2481,7 @@
                       @click="moveEditFolderSectionUp(sIdx)"
                       :disabled="sIdx === 0"
                       class="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs"
-                      title="Nach oben verschieben"
+                      :title="$t('folders.nach_oben_title')"
                     >
                       ▲
                     </button>
@@ -2490,7 +2490,7 @@
                       @click="moveEditFolderSectionDown(sIdx)"
                       :disabled="sIdx === editFolderSections.length - 1"
                       class="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs"
-                      title="Nach unten verschieben"
+                      :title="$t('folders.nach_unten_title')"
                     >
                       ▼
                     </button>
@@ -2499,7 +2499,7 @@
                       @click="removeEditFolderSection(sIdx)"
                       :disabled="editFolderSections.length <= 1"
                       class="p-1 rounded hover:bg-rose-50 text-rose-500 hover:text-rose-700 disabled:opacity-20 disabled:cursor-not-allowed transition text-xs ml-0.5"
-                      title="Abschnitt entfernen"
+                      :title="$t('folders.abschnitt_entfernen_title')"
                     >
                       ✕
                     </button>
@@ -2513,7 +2513,7 @@
                   v-model="newFolderSectionTitle"
                   @keydown.enter.prevent="addEditFolderSection"
                   type="text"
-                  placeholder="+ Neuer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
+                  :placeholder="$t('folders.neuer_abschnitt_placeholder')"
                   class="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#00A3C4] font-medium"
                 />
                 <button
@@ -2530,14 +2530,14 @@
 
           <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
           <div v-if="user?.company_id || folder?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Ordners</label>
+            <label class="block text-xs font-bold text-slate-800">{{ $t('folders.sichtbarkeit_ordners') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <label
                 class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
                 :class="editFolderVisibility === 'private' ? 'bg-white border-[#00A3C4] text-[#00A3C4] ring-1 ring-[#00A3C4]' : 'bg-white/60 border-slate-200 text-slate-700'"
               >
                 <input type="radio" value="private" v-model="editFolderVisibility" class="sr-only" />
-                <span>🔒 Privat (Standard)</span>
+                <span>{{ $t('folders.privat_standard') }}</span>
               </label>
               <label
                 class="flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition text-xs font-semibold"
@@ -2552,12 +2552,12 @@
             </p>
           </div>
           <div v-else class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900">
-            <span class="font-bold">💡 Einzelnutzer-Konto:</span> Dieser Ordner ist standardmäßig privat. Nutze den Button <strong>"👥 Ordner teilen"</strong>, um Kollegen oder Partner gezielt per E-Mail einzuladen.
+            <span class="font-bold">💡 Einzelnutzer-Konto:</span> {{ $t('folders.dieser_ordner_standard_privat') }} <strong>"👥 Ordner teilen"</strong>, um Kollegen oder Partner gezielt per E-Mail einzuladen.
           </div>
 
           <!-- Standard-Projekt festlegen (1 Projekt muss Standard sein) -->
           <div v-if="projects.length > 0" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-            <label class="block text-xs font-bold text-slate-800">⭐ Standard-Projekt festlegen (1 Projekt muss Standard sein)</label>
+            <label class="block text-xs font-bold text-slate-800">{{ $t('folders.standard_projekt_festlegen') }}</label>
             <select
               v-model="editFolderDefaultProjectId"
               class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#00A3C4]"
@@ -2576,7 +2576,7 @@
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <span>⚙️</span>
-                <span>Zusatzfelder in diesem Ordner ({{ fields.length }})</span>
+                <span>{{ $t('folders.zusatzfelder_in_diesem_ordner') }} ({{ fields.length }})</span>
               </span>
               <button
                 type="button"
@@ -2596,7 +2596,7 @@
                 <div>
                   <span class="font-bold text-slate-900">{{ getFieldLabel(f) }}</span>
                   <span class="text-[10px] text-slate-500 ml-1.5 font-mono">({{ f.field_type }})</span>
-                  <span v-if="f.options && (Array.isArray(f.options) ? f.options.length : true)" class="text-[10px] text-cyan-700 block italic">Optionen: {{ formatFieldOptions(f.options) }}</span>
+                  <span v-if="f.options && (Array.isArray(f.options) ? f.options.length : true)" class="text-[10px] text-cyan-700 block italic">{{ $t('folders.optionen_label') }} {{ formatFieldOptions(f.options) }}</span>
                 </div>
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                   {{ f.entity_type === 'project' ? 'Projekt' : 'Aufgabe' }}
@@ -2612,7 +2612,7 @@
           <div class="p-3.5 bg-cyan-50/70 border border-cyan-200 rounded-xl flex items-center justify-between">
             <div>
               <span class="text-xs font-black text-cyan-950 block">👥 Teammitglieder & Berechtigungen</span>
-              <span class="text-[11px] text-cyan-800">Kollegen zu diesem Ordner einladen (Editor oder Viewer)</span>
+              <span class="text-[11px] text-cyan-800">{{ $t('folders.kollegen_einladen_info') }}</span>
             </div>
             <button
               type="button"
@@ -2663,7 +2663,7 @@
           <div class="flex items-center space-x-2.5">
             <span class="text-2xl">👥</span>
             <div>
-              <h3 class="text-base font-black text-slate-900">Projektordner teilen</h3>
+              <h3 class="text-base font-black text-slate-900">{{ $t('folders.projektordner_teilen') }}</h3>
               <p class="text-xs text-slate-500 font-medium">{{ folder?.name }}</p>
             </div>
           </div>
@@ -2675,7 +2675,7 @@
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
               <span>🏢</span>
-              <span>Sichtbarkeit im Unternehmen</span>
+              <span>{{ $t('folders.sichtbarkeit_im_unternehmen') }}</span>
             </label>
             <span
               class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase"
@@ -2703,18 +2703,18 @@
         <div class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-5">
           <h4 class="text-xs font-bold text-slate-900 mb-2 flex items-center space-x-1.5">
             <span>➕</span>
-            <span>Mitglied zum Ordner hinzufügen</span>
+            <span>{{ $t('folders.mitglied_hinzufuegen') }}</span>
           </h4>
 
           <form @submit.prevent="addFolderMember" class="space-y-3">
             <div v-if="folderMembersData.companyUsers && folderMembersData.companyUsers.length > 0">
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Kollege aus Unternehmen auswählen</label>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('folders.kollege_auswaehlen') }}</label>
               <select
                 v-model="newMemberUserId"
                 @change="onSelectCompanyUser"
                 class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
               >
-                <option value="">-- Oder per E-Mail unten eingeben --</option>
+                <option value="">{{ $t('folders.oder_per_email') }}</option>
                 <option v-for="cu in folderMembersData.companyUsers" :key="cu.user_id" :value="cu.user_id">
                   {{ cu.name }} ({{ cu.email }})
                 </option>
@@ -2739,8 +2739,8 @@
                   v-model="newMemberRole"
                   class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
                 >
-                  <option value="editor">Editor (Bearbeiten)</option>
-                  <option value="viewer">Viewer (Nur Lesen)</option>
+                  <option value="editor">{{ $t('folders.rolle_editor') }}</option>
+                  <option value="viewer">{{ $t('folders.rolle_viewer') }}</option>
                 </select>
               </div>
               <div class="flex items-end">
@@ -2760,32 +2760,32 @@
         <div class="p-4 rounded-2xl bg-white/70 border border-slate-200/80 mb-5">
           <h4 class="text-xs font-bold text-slate-900 mb-2 flex items-center space-x-1.5">
             <span>🏷️</span>
-            <span>Gruppe zum Ordner berechtigen</span>
+            <span>{{ $t('folders.gruppe_berechtigen') }}</span>
           </h4>
           <form @submit.prevent="assignGroupToFolder" class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Gruppe auswählen</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('folders.gruppe_auswaehlen') }}</label>
                 <select
                   v-model="selectedAssignGroupId"
                   class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
                 >
-                  <option value="">-- Gruppe wählen --</option>
+                  <option value="">{{ $t('folders.gruppe_waehlen_opt') }}</option>
                   <option v-for="g in availableGroups" :key="g.id" :value="g.id">
                     {{ g.name }} ({{ g.members?.length || 0 }} Mitglieder)
                   </option>
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Rolle für die Gruppe</label>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('folders.rolle_fuer_gruppe') }}</label>
                 <div class="flex items-center space-x-2">
                   <select
                     v-model="selectedAssignGroupRole"
                     class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-cyan-600 shadow-xs"
                   >
-                    <option value="editor">Editor (Bearbeiten)</option>
-                    <option value="viewer">Viewer (Nur Lesen)</option>
-                    <option value="admin">Admin (Vollzugriff)</option>
+                    <option value="editor">{{ $t('folders.rolle_editor') }}</option>
+                    <option value="viewer">{{ $t('folders.rolle_viewer') }}</option>
+                    <option value="admin">{{ $t('folders.rolle_admin') }}</option>
                   </select>
                   <button
                     type="submit"
@@ -2801,7 +2801,7 @@
 
           <!-- Assigned Groups List -->
           <div v-if="assignedGroupsForFolder.length > 0" class="mt-3 pt-3 border-t border-slate-200 space-y-1.5">
-            <div class="text-[11px] font-bold text-slate-600">Zugewiesene Gruppen:</div>
+            <div class="text-[11px] font-bold text-slate-600">{{ $t('folders.zugewiesene_gruppen') }}</div>
             <div
               v-for="ag in assignedGroupsForFolder"
               :key="ag.id"
@@ -2820,7 +2820,7 @@
                   type="button"
                   @click="removeGroupFromFolder(ag.id)"
                   class="text-rose-600 hover:text-rose-800 p-1 text-xs cursor-pointer font-bold"
-                  title="Gruppe entfernen"
+                  :title="$t('folders.gruppe_entfernen_title')"
                 >
                   ✕
                 </button>
@@ -2834,7 +2834,7 @@
           <h4 class="text-xs font-bold text-slate-900 mb-2.5 flex items-center justify-between">
             <span class="flex items-center space-x-1.5">
               <span>📋</span>
-              <span>Personen mit Zugriff ({{ folderMembers.length }})</span>
+              <span>{{ $t('folders.personen_mit_zugriff') }} ({{ folderMembers.length }})</span>
             </span>
           </h4>
 
@@ -2873,7 +2873,7 @@
                   v-if="m.role !== 'owner' && (user?.id === folder?.owner_id)"
                   @click="removeFolderMember(m.user_id)"
                   class="text-rose-500 hover:text-rose-700 font-bold p-1 text-xs cursor-pointer"
-                  title="Mitglied entfernen"
+                  :title="$t('folders.mitglied_entfernen_title')"
                 >
                   ✕
                 </button>
@@ -3031,7 +3031,7 @@
         <form @submit.prevent="saveFolderField" class="space-y-4">
           <!-- Gültigkeitsbereich: Projekt vs Aufgabe (Nur bei Custom Fields) -->
           <div v-if="!isStandardFieldModal">
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Gültigkeitsbereich</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">{{ $t('folders.gueltigkeitsbereich') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -3073,13 +3073,13 @@
               v-model="newFieldType"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="text">Textzeile (kurz)</option>
-              <option value="textarea">Mehrzeiliger Text / Notizfeld</option>
-              <option value="select">Auswahlliste (Dropdown)</option>
+              <option value="text">{{ $t('folders.typ_textzeile') }}</option>
+              <option value="textarea">{{ $t('folders.typ_mehrzeilig') }}</option>
+              <option value="select">{{ $t('folders.typ_auswahlliste') }}</option>
               <option value="number">Zahl</option>
               <option value="date">Datum</option>
-              <option value="checkbox">Ja / Nein (Checkbox)</option>
-              <option value="url">Link / URL</option>
+              <option value="checkbox">{{ $t('folders.typ_checkbox') }}</option>
+              <option value="url">{{ $t('folders.typ_link') }}</option>
               <option value="email">E-Mail</option>
               <option value="phone">Telefon</option>
             </select>
@@ -3087,7 +3087,7 @@
 
           <!-- Select Options if select -->
           <div v-if="!isStandardFieldModal && newFieldType === 'select'" class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-            <label class="block text-xs font-bold text-slate-700">Optionen für Auswahlliste</label>
+            <label class="block text-xs font-bold text-slate-700">{{ $t('folders.optionen_fuer_auswahlliste') }}</label>
             <div class="flex flex-wrap gap-1.5 mb-2">
               <span
                 v-for="(opt, oIdx) in newFieldOptions"
@@ -3103,7 +3103,7 @@
                 v-model="newFieldOptionInput"
                 @keydown.enter.prevent="addSelectOption"
                 type="text"
-                placeholder="+ Option eingeben und Enter drücken"
+                :placeholder="$t('folders.option_eingeben_placeholder')"
                 class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-[#00A3C4]"
               />
               <button
@@ -3124,7 +3124,7 @@
                 type="checkbox"
                 class="w-4 h-4 rounded border-slate-300 text-[#00A3C4] focus:ring-0 cursor-pointer"
               />
-              <span class="text-xs font-semibold text-slate-700">Pflichtfeld (Eingabe erforderlich)</span>
+              <span class="text-xs font-semibold text-slate-700">{{ $t('folders.pflichtfeld_eingabe') }}</span>
             </label>
           </div>
 
@@ -3134,8 +3134,8 @@
               <div class="flex items-center space-x-2">
                 <span class="text-amber-600">⚡</span>
                 <div>
-                  <span class="text-xs font-bold text-slate-800">Bedingte Sichtbarkeit (Logik)</span>
-                  <p class="text-[11px] text-slate-500">Dieses Feld nur anzeigen, wenn eine Bedingung erfüllt ist.</p>
+                  <span class="text-xs font-bold text-slate-800">{{ $t('folders.bedingte_sichtbarkeit') }}</span>
+                  <p class="text-[11px] text-slate-500">{{ $t('folders.nur_anzeigen_wenn_erfuellt') }}</p>
                 </div>
               </div>
               <input
@@ -3154,12 +3154,12 @@
                   v-model="logicDependsOnField"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="">-- Feld auswählen --</option>
+                  <option value="">{{ $t('folders.feld_auswaehlen_opt') }}</option>
                   <optgroup label="Standard Aufgabenfelder">
-                    <option value="status">🔄 Status</option>
-                    <option value="priority">⚡ Priorität</option>
+                    <option value="status">{{ $t('folders.status_field') }}</option>
+                    <option value="priority">{{ $t('folders.prioritaet_field') }}</option>
                     <option value="assigned_to">👥 Zuweisung</option>
-                    <option value="due_date">📅 Fälligkeitsdatum</option>
+                    <option value="due_date">{{ $t('folders.faelligkeitsdatum_opt') }}</option>
                     <option value="color">🎨 Farbmarkierung</option>
                     <option value="tags">🏷️ Tags</option>
                   </optgroup>
@@ -3185,10 +3185,10 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="todo">Zu erledigen (todo)</option>
-                  <option value="in_progress">In Bearbeitung (in_progress)</option>
-                  <option value="review">In Prüfung (review)</option>
-                  <option value="done">Abgeschlossen (done)</option>
+                  <option value="todo">{{ $t('folders.status_todo') }}</option>
+                  <option value="in_progress">{{ $t('folders.status_in_progress') }}</option>
+                  <option value="review">{{ $t('folders.status_review') }}</option>
+                  <option value="done">{{ $t('folders.status_done') }}</option>
                 </select>
 
                 <!-- Priority Options -->
@@ -3209,8 +3209,8 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="assigned">Jemand zugewiesen</option>
-                  <option value="unassigned">Niemand zugewiesen (Offen)</option>
+                  <option value="assigned">{{ $t('folders.jemand_zugewiesen') }}</option>
+                  <option value="unassigned">{{ $t('folders.niemand_zugewiesen') }}</option>
                 </select>
 
                 <!-- Due Date Options -->
@@ -3219,10 +3219,10 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="set">Datum ist gesetzt</option>
-                  <option value="not_set">Kein Datum gesetzt</option>
-                  <option value="today">Heute fällig</option>
-                  <option value="overdue">Überfällig</option>
+                  <option value="set">{{ $t('folders.datum_gesetzt') }}</option>
+                  <option value="not_set">{{ $t('folders.kein_datum_gesetzt') }}</option>
+                  <option value="today">{{ $t('folders.heute_faellig') }}</option>
+                  <option value="overdue">{{ $t('folders.ueberfaellig') }}</option>
                 </select>
 
                 <!-- Color Options -->
@@ -3231,8 +3231,8 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="set">Farbe ist gesetzt</option>
-                  <option value="not_set">Keine Farbe gesetzt</option>
+                  <option value="set">{{ $t('folders.farbe_gesetzt') }}</option>
+                  <option value="not_set">{{ $t('folders.keine_farbe_gesetzt') }}</option>
                 </select>
 
                 <!-- Tags Options -->
@@ -3241,8 +3241,8 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="set">Mindestens ein Tag vorhanden</option>
-                  <option value="not_set">Keine Tags vorhanden</option>
+                  <option value="set">{{ $t('folders.tag_vorhanden') }}</option>
+                  <option value="not_set">{{ $t('folders.keine_tags') }}</option>
                 </select>
 
                 <!-- Custom Select Field Options -->
@@ -3251,7 +3251,7 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="">-- Option wählen --</option>
+                  <option value="">{{ $t('folders.option_waehlen_opt') }}</option>
                   <option v-for="opt in selectedDepCustomField.options" :key="opt" :value="opt">
                     {{ opt }}
                   </option>
@@ -3262,7 +3262,7 @@
                   v-else
                   v-model="logicDependsOnValue"
                   type="text"
-                  placeholder="Erwarteter Wert..."
+                  :placeholder="$t('folders.erwarteter_wert_placeholder')"
                   class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
                 />
               </div>
@@ -3307,7 +3307,7 @@
           <div>
             <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
               <span>⚡</span>
-              <span>Bedingte Logik festlegen</span>
+              <span>{{ $t('folders.bedingte_logik_festlegen') }}</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
               Feld nur anzeigen, wenn eine Bedingung erfüllt ist.
@@ -3318,16 +3318,16 @@
 
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Abhängig von Feld:</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.abhaengig_von_feld') }}</label>
             <select
               v-model="templateLogicField"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
               <optgroup label="Standard Aufgabenfelder">
-                <option value="status">🔄 Status</option>
-                <option value="priority">⚡ Priorität</option>
+                <option value="status">{{ $t('folders.status_field') }}</option>
+                <option value="priority">{{ $t('folders.prioritaet_field') }}</option>
                 <option value="assigned_to">👥 Zuweisung</option>
-                <option value="due_date">📅 Fälligkeitsdatum</option>
+                <option value="due_date">{{ $t('folders.faelligkeitsdatum_opt') }}</option>
                 <option value="color">🎨 Farbmarkierung</option>
                 <option value="tags">🏷️ Tags</option>
               </optgroup>
@@ -3344,17 +3344,17 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Bedingungswert (Muss übereinstimmen):</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.bedingungswert_label') }}</label>
             <!-- Status Options -->
             <select
               v-if="templateLogicField === 'status'"
               v-model="templateLogicValue"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="todo">Zu erledigen (todo)</option>
-              <option value="in_progress">In Bearbeitung (in_progress)</option>
-              <option value="review">In Prüfung (review)</option>
-              <option value="done">Abgeschlossen (done)</option>
+              <option value="todo">{{ $t('folders.status_todo') }}</option>
+              <option value="in_progress">{{ $t('folders.status_in_progress') }}</option>
+              <option value="review">{{ $t('folders.status_review') }}</option>
+              <option value="done">{{ $t('folders.status_done') }}</option>
             </select>
 
             <!-- Priority Options -->
@@ -3375,8 +3375,8 @@
               v-model="templateLogicValue"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="assigned">Jemand zugewiesen</option>
-              <option value="unassigned">Niemand zugewiesen</option>
+              <option value="assigned">{{ $t('folders.jemand_zugewiesen') }}</option>
+              <option value="unassigned">{{ $t('folders.niemand_zugewiesen_opt') }}</option>
             </select>
 
             <!-- Due Date Options -->
@@ -3385,10 +3385,10 @@
               v-model="templateLogicValue"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="set">Datum gesetzt</option>
-              <option value="not_set">Kein Datum gesetzt</option>
-              <option value="today">Heute fällig</option>
-              <option value="overdue">Überfällig</option>
+              <option value="set">{{ $t('folders.datum_gesetzt_opt') }}</option>
+              <option value="not_set">{{ $t('folders.kein_datum_gesetzt') }}</option>
+              <option value="today">{{ $t('folders.heute_faellig') }}</option>
+              <option value="overdue">{{ $t('folders.ueberfaellig') }}</option>
             </select>
 
             <!-- Color Options -->
@@ -3397,8 +3397,8 @@
               v-model="templateLogicValue"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             >
-              <option value="set">Farbe gesetzt</option>
-              <option value="not_set">Keine Farbe gesetzt</option>
+              <option value="set">{{ $t('folders.farbe_gesetzt_opt') }}</option>
+              <option value="not_set">{{ $t('folders.keine_farbe_gesetzt') }}</option>
             </select>
 
             <!-- Tags Options -->
@@ -3415,7 +3415,7 @@
               v-else
               v-model="templateLogicValue"
               type="text"
-              placeholder="Erwarteter Wert..."
+              :placeholder="$t('folders.erwarteter_wert_placeholder')"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
             />
           </div>
@@ -3484,7 +3484,7 @@
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Firma / Unternehmen</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.firma_unternehmen') }}</label>
               <input
                 v-model="contactForm.company_name"
                 type="text"
@@ -3493,7 +3493,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Funktion / Rolle</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.funktion_rolle') }}</label>
               <input
                 v-model="contactForm.role_function"
                 type="text"
@@ -3505,7 +3505,7 @@
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Mobiltelefon (WhatsApp)</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.mobiltelefon_wa') }}</label>
               <input
                 v-model="contactForm.mobile"
                 type="tel"
@@ -3514,7 +3514,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Telefon Festnetz</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.telefon_festnetz') }}</label>
               <input
                 v-model="contactForm.phone"
                 type="tel"
@@ -3536,16 +3536,16 @@
 
           <div class="grid grid-cols-3 gap-2">
             <div class="col-span-2">
-              <label class="block text-xs font-bold text-slate-700 mb-1">Strasse & Hausnr.</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.strasse_hausnr') }}</label>
               <input
                 v-model="contactForm.address"
                 type="text"
-                placeholder="Hauptstrasse 12"
+                :placeholder="$t('folders.strasse_placeholder')"
                 class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">PLZ & Ort</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.plz_ort') }}</label>
               <input
                 v-model="contactForm.city"
                 type="text"
@@ -3556,11 +3556,11 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Notizen / Bemerkungen</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('folders.notizen_bemerkungen') }}</label>
             <textarea
               v-model="contactForm.notes"
               rows="2"
-              placeholder="Wichtige Hinweise oder Erreichbarkeit..."
+              :placeholder="$t('folders.hinweise_placeholder')"
               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#00A3C4] resize-y"
             ></textarea>
           </div>
@@ -3935,17 +3935,17 @@ const getFolderCategoryBadge = (category?: string, type?: string) => {
     case 'abnahmebegehung':
       return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: cat === 'abnahmebegehung' ? 'Abnahme' : 'Baufortschritt' }
     case 'regie':
-      return { bg: 'bg-cyan-50 text-cyan-800 border-cyan-200', label: 'Regiearbeit' }
+      return { bg: 'bg-cyan-50 text-cyan-800 border-cyan-200', label: t('folders.kat_regiearbeit') }
     case 'email':
-      return { bg: 'bg-amber-50 text-amber-800 border-amber-200', label: 'E-Mail' }
+      return { bg: 'bg-amber-50 text-amber-800 border-amber-200', label: t('folders.kat_email') }
     case 'bausitzung':
-      return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'Bausitzung' }
+      return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: t('folders.kat_bausitzung') }
     case 'bautagebuch':
-      return { bg: 'bg-teal-50 text-teal-700 border-teal-200', label: 'Bautagebuch' }
+      return { bg: 'bg-teal-50 text-teal-700 border-teal-200', label: t('folders.kat_bautagebuch') }
     case 'notiz':
-      return { bg: 'bg-slate-50 text-slate-700 border-slate-200', label: 'Notiz' }
+      return { bg: 'bg-slate-50 text-slate-700 border-slate-200', label: t('folders.kat_notiz') }
     default:
-      return { bg: 'bg-cyan-50 text-cyan-700 border-cyan-200', label: 'Allgemein' }
+      return { bg: 'bg-cyan-50 text-cyan-700 border-cyan-200', label: t('folders.kat_allgemein') }
   }
 }
 
@@ -4108,10 +4108,10 @@ const getProjectTitle = (pId?: string) => {
 
 const deleteFolderJournal = async (journalId: string) => {
   triggerConfirmModal({
-    title: 'Journal-Eintrag löschen',
-    subtitle: 'Dieser Vorgang kann nicht rückgängig gemacht werden',
-    message: 'Möchtest du diesen Journal-Eintrag wirklich unwiderruflich löschen?',
-    confirmText: 'Eintrag löschen',
+    title: t('folders.journal_loeschen_title'),
+    subtitle: t('folders.vorgang_unwiderruflich'),
+    message: t('folders.journal_loeschen_confirm'),
+    confirmText: t('folders.eintrag_loeschen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/journals/${journalId}`, {
@@ -4324,10 +4324,10 @@ const saveFolderField = async () => {
 
 const deleteFolderField = async (fieldId: string) => {
   triggerConfirmModal({
-    title: 'Benutzerdefiniertes Feld löschen',
-    subtitle: 'Auswirkung auf Projekte',
-    message: 'Dieses benutzerdefinierte Feld wirklich löschen? Alle zugewiesenen Werte in den Projekten dieses Ordners gehen dabei verloren.',
-    confirmText: 'Feld löschen',
+    title: t('folders.feld_loeschen_title'),
+    subtitle: t('folders.auswirkung_projekte'),
+    message: t('folders.feld_loeschen_confirm'),
+    confirmText: t('folders.feld_loeschen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/folders/${folderId}/fields/${fieldId}`, {
@@ -4458,10 +4458,10 @@ const saveFolderContact = async () => {
 
 const deleteFolderContact = async (c: any) => {
   triggerConfirmModal({
-    title: 'Kontakt entfernen',
+    title: t('folders.kontakt_entfernen_title'),
     subtitle: formatContactFullName(c),
     message: `Möchtest du den Kontakt "${formatContactFullName(c)}" wirklich aus diesem Ordner entfernen?`,
-    confirmText: 'Kontakt entfernen',
+    confirmText: t('folders.kontakt_entfernen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/contacts/${c.id}`, {
@@ -4619,28 +4619,28 @@ const selectedEditTemplate = computed(() => {
 
 const availableFolderIcons = [
   // Job & Gewerbe
-  { icon: '📁', label: 'Standard Ordner' },
-  { icon: '🏗️', label: 'Bau & Tiefbau' },
-  { icon: '💻', label: 'IT & Software' },
-  { icon: '📐', label: 'Architektur & Planung' },
-  { icon: '⚡', label: 'Elektro & Energie' },
-  { icon: '🔧', label: 'Montage & Service' },
-  { icon: '🚚', label: 'Logistik & Transport' },
-  { icon: '📊', label: 'Finanzen & Controlling' },
-  { icon: '⚖️', label: 'Recht & Notariat' },
-  { icon: '🏥', label: 'Gesundheit & Praxis' },
-  { icon: '🏢', label: 'Immobilien & Liegenschaften' },
+  { icon: '📁', label: t('folders.tpl_standard') },
+  { icon: '🏗️', label: t('folders.tpl_bau_tiefbau') },
+  { icon: '💻', label: t('folders.tpl_it_software') },
+  { icon: '📐', label: t('folders.tpl_architektur_planung') },
+  { icon: '⚡', label: t('folders.tpl_elektro_energie') },
+  { icon: '🔧', label: t('folders.tpl_montage_service') },
+  { icon: '🚚', label: t('folders.tpl_logistik_transport') },
+  { icon: '📊', label: t('folders.tpl_finanzen_controlling') },
+  { icon: '⚖️', label: t('folders.tpl_recht_notariat') },
+  { icon: '🏥', label: t('folders.tpl_gesundheit_praxis') },
+  { icon: '🏢', label: t('folders.tpl_immobilien') },
   // Privat & Haushalt
-  { icon: '🏠', label: 'Haus & Umbau' },
-  { icon: '🏡', label: 'Garten & Aussen' },
-  { icon: '🛋️', label: 'Wohnen & Interior' },
-  { icon: '🎂', label: 'Event & Feier' },
-  { icon: '✈️', label: 'Reisen & Urlaub' },
-  { icon: '🚗', label: 'Fahrzeuge & Garage' },
-  { icon: '📑', label: 'Privat & Steuern' },
-  { icon: '🎯', label: 'Ziele & Pläne' },
-  { icon: '📦', label: 'Umzug & Lager' },
-  { icon: '🎨', label: 'Kreativ & Hobby' }
+  { icon: '🏠', label: t('folders.tpl_haus_umbau') },
+  { icon: '🏡', label: t('folders.tpl_garten_aussen') },
+  { icon: '🛋️', label: t('folders.tpl_wohnen_interior') },
+  { icon: '🎂', label: t('folders.tpl_event_feier') },
+  { icon: '✈️', label: t('folders.tpl_reisen_urlaub') },
+  { icon: '🚗', label: t('folders.tpl_fahrzeuge_garage') },
+  { icon: '📑', label: t('folders.tpl_privat_steuern') },
+  { icon: '🎯', label: t('folders.tpl_ziele_plaene') },
+  { icon: '📦', label: t('folders.tpl_umzug_lager') },
+  { icon: '🎨', label: t('folders.tpl_kreativ_hobby') }
 ]
 
 const openEditFolderModal = () => {
@@ -4950,10 +4950,10 @@ const addFolderMember = async () => {
 
 const removeFolderMember = async (userId: string) => {
   triggerConfirmModal({
-    title: 'Mitglied entfernen',
-    subtitle: 'Zugriffsrechte entziehen',
-    message: 'Möchtest du dieses Mitglied wirklich aus dem Projektordner entfernen?',
-    confirmText: 'Mitglied entfernen',
+    title: t('folders.mitglied_entfernen_title'),
+    subtitle: t('folders.zugriffsrechte_entziehen'),
+    message: t('folders.mitglied_entfernen_confirm'),
+    confirmText: t('folders.mitglied_entfernen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/folders/${folderId}/members/${userId}`, {
@@ -5022,10 +5022,10 @@ const assignGroupToFolder = async () => {
 
 const removeGroupFromFolder = async (groupId: string) => {
   triggerConfirmModal({
-    title: 'Gruppe entfernen',
-    subtitle: 'Gruppenzuweisung aufheben',
-    message: 'Möchtest du diese Gruppe wirklich von diesem Ordner entfernen?',
-    confirmText: 'Gruppe entfernen',
+    title: t('folders.gruppe_entfernen_title'),
+    subtitle: t('folders.gruppenzuweisung_aufheben'),
+    message: t('folders.gruppe_entfernen_confirm'),
+    confirmText: t('folders.gruppe_entfernen_btn'),
     danger: true,
     action: async () => {
       await $fetch(`/api/groups/${groupId}/assign`, {

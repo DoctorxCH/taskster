@@ -4,7 +4,7 @@
     <div v-if="currentWallpaper" class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       <img
         :src="currentWallpaper"
-        alt="Taskster Wallpaper"
+        :alt="$t('app.wallpaper_alt')"
         class="w-full h-full object-cover object-center filter brightness-[0.95]"
       />
       <div class="absolute inset-0 bg-white/92"></div>
@@ -26,7 +26,7 @@
         <div class="fixed inset-0 bg-slate-900/40" @click="mobileMenuOpen = false"></div>
         <aside class="relative z-10 w-64 max-w-[80vw] bg-white h-full border-r border-slate-200 flex flex-col p-4 shadow-xl">
           <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Menü</span>
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $t('app.menu') }}</span>
             <button
               @click="mobileMenuOpen = false"
               class="w-8 h-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
@@ -165,7 +165,7 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Einladungen"
+                :title="$t('app.einladungen')"
               >
                 <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
                 <span>Einladungen</span>
@@ -177,10 +177,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Webseiten-Verwaltung"
+                :title="$t('app.webseite_cms')"
               >
                 <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Webseite & CMS</span>
+                <span>{{ $t('app.webseite_cms') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -189,10 +189,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="KI & AI-Pläne"
+                :title="$t('app.ai_plaene')"
               >
                 <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>KI & AI-Pläne</span>
+                <span>{{ $t('app.ai_plaene') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -201,10 +201,10 @@
                 @click="mobileMenuOpen = false"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Security & Audit Logs"
+                :title="$t('app.security_audit')"
               >
                 <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Audit Logs</span>
+                <span>{{ $t('app.audit_logs') }}</span>
               </NuxtLink>
             </div>
 
@@ -374,7 +374,7 @@
                 to="/admin?tab=invites"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Einladungen"
+                :title="$t('app.einladungen')"
               >
                 <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
                 <span>Einladungen</span>
@@ -385,10 +385,10 @@
                 to="/admin?tab=website"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Webseiten-Verwaltung"
+                :title="$t('app.webseite_cms')"
               >
                 <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Webseite & CMS</span>
+                <span>{{ $t('app.webseite_cms') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -396,10 +396,10 @@
                 to="/admin?tab=ai"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="KI & AI-Pläne"
+                :title="$t('app.ai_plaene')"
               >
                 <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>KI & AI-Pläne</span>
+                <span>{{ $t('app.ai_plaene') }}</span>
               </NuxtLink>
 
               <NuxtLink
@@ -407,10 +407,10 @@
                 to="/admin?tab=audit"
                 class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
                 :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Security & Audit Logs"
+                :title="$t('app.security_audit')"
               >
                 <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Audit Logs</span>
+                <span>{{ $t('app.audit_logs') }}</span>
               </NuxtLink>
             </div>
 

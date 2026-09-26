@@ -6,9 +6,9 @@
         <div class="flex items-center space-x-2.5">
           <span class="text-2xl">📖</span>
           <div>
-            <h1 class="text-xl font-black text-slate-900">Projektjournal & Logbuch</h1>
+            <h1 class="text-xl font-black text-slate-900">{{ $t('journal.projektjournal_logbuch') }}</h1>
             <p class="text-xs text-slate-500 mt-0.5">
-              Zentrale Übersicht aller Bausitzungen, Notizen und Journaleinträge über alle Ordner und Projekte.
+              {{ $t('journal.zentrale_uebersicht') }}
             </p>
           </div>
         </div>
@@ -21,7 +21,7 @@
           class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
         >
           <Plus class="w-3.5 h-3.5" />
-          <span>+ Journaleintrag</span>
+          <span>{{ $t('journal.neuer_eintrag') }}</span>
         </button>
         <button
           @click="openJournalEntryModal"
@@ -29,7 +29,7 @@
           class="taskster_button_light px-6 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
         >
           <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
-          <span>+ Dokument / Protokoll (KI)</span>
+          <span>{{ $t('journal.dokument_ki') }}</span>
         </button>
       </div>
     </div>
@@ -40,15 +40,14 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
         <!-- Ordner wählen Dropdown -->
         <div class="md:col-span-5">
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Ordner wählen
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ $t('journal.ordner_waehlen_label') }}
           </label>
           <div class="relative">
             <select
               v-model="selectedFolderId"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option value="">📁 Alle Ordner anzeigen (Gesamtübersicht)</option>
+              <option value="">{{ $t('journal.alle_ordner_anzeigen') }}</option>
               <option v-for="f in folders" :key="f.id" :value="f.id">
                 📁 {{ f.name }} ({{ getFolderProjectCount(f.id) }} Projekte)
               </option>
@@ -58,15 +57,14 @@
 
         <!-- Project Filter within Folder (if folder selected) -->
         <div :class="selectedFolderId ? 'md:col-span-3' : 'hidden'">
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Projekt filtern
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ $t('journal.projekt_filtern') }}
           </label>
           <select
             v-model="selectedProjectId"
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
           >
-            <option value="">Alle Projekte im Ordner</option>
-            <option value="none">Nur reine Ordner-Einträge (ohne Projekt)</option>
+            <option value="">{{ $t('journal.alle_projekte_ordner') }}</option>
+            <option value="none">{{ $t('journal.nur_ordner_eintraege') }}</option>
             <option v-for="p in currentFolderProjects" :key="p.id" :value="p.id">
               {{ p.title }}
             </option>
@@ -75,15 +73,14 @@
 
         <!-- Full-text Search -->
         <div :class="selectedFolderId ? 'md:col-span-4' : 'md:col-span-7'">
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Journal durchsuchen
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ $t('journal.durchsuchen') }}
           </label>
           <div class="relative w-full">
             <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-3" />
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Im Journal, Text, Titel, Autor oder Projekt suchen..."
+              :placeholder="$t('journal.suche_placeholder')"
               class="w-full pl-9 pr-7 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             />
             <button
@@ -107,7 +104,7 @@
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
             :class="filterType === 'all' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
           >
-            <span>Alle Einträge</span>
+            <span>{{ $t('journal.alle_eintraege') }}</span>
             <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">
               {{ allJournals.length }}
             </span>
@@ -118,7 +115,7 @@
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
             :class="filterType === 'entry' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
           >
-            <span>🏛️ Bausitzungen & Protokolle</span>
+            <span>{{ $t('journal.bausitzungen_protokolle') }}</span>
             <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">
               {{ entriesCount }}
             </span>
@@ -129,7 +126,7 @@
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 shrink-0"
             :class="filterType === 'note' ? 'bg-white text-[#00A3C4] shadow-xs' : 'text-slate-600 hover:text-slate-900'"
           >
-            <span>✉️ Notizen & E-Mails</span>
+            <span>{{ $t('journal.notizen_emails') }}</span>
             <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-200/80 text-slate-700 font-extrabold">
               {{ notesCount }}
             </span>
@@ -139,34 +136,34 @@
         <!-- Category & Sort Dropdowns -->
         <div class="flex items-center gap-2.5 flex-wrap">
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Kategorie:</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ $t('journal.kategorie_label') }}</span>
             <select
               v-model="categoryFilter"
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="">Alle Kategorien</option>
-              <option value="bausitzung">🏛️ Bausitzung</option>
-              <option value="bautagebuch">📋 Bautagebuch</option>
-              <option value="abnahmebegehung">🔍 Abnahmebegehung</option>
-              <option value="wetter_behinderung">⛈️ Wetter & Behinderung</option>
-              <option value="regie">⏱️ Regiearbeit</option>
-              <option value="email">✉️ E-Mail Import</option>
-              <option value="notiz">📝 Notiz</option>
-              <option value="mangel">⚠️ Mangel / Behinderung</option>
-              <option value="allgemein">📖 Allgemein</option>
+              <option value="">{{ $t('journal.alle_kategorien') }}</option>
+              <option value="bausitzung">{{ $t('journal.kat_bausitzung') }}</option>
+              <option value="bautagebuch">{{ $t('journal.kat_bautagebuch') }}</option>
+              <option value="abnahmebegehung">{{ $t('journal.kat_abnahme') }}</option>
+              <option value="wetter_behinderung">{{ $t('journal.kat_wetter') }}</option>
+              <option value="regie">{{ $t('journal.kat_regie') }}</option>
+              <option value="email">{{ $t('journal.kat_email') }}</option>
+              <option value="notiz">{{ $t('journal.kat_notiz') }}</option>
+              <option value="mangel">{{ $t('journal.kat_mangel') }}</option>
+              <option value="allgemein">{{ $t('journal.kat_allgemein') }}</option>
             </select>
           </div>
 
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Sortierung:</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ $t('journal.sortierung') }}</span>
             <select
               v-model="journalSortBy"
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="date_desc">📅 Datum (Neueste zuerst)</option>
-              <option value="date_asc">📅 Datum (Älteste zuerst)</option>
-              <option value="project">📁 Auftrag / Projekt (A-Z)</option>
-              <option value="category">🏷️ Kategorie</option>
+              <option value="date_desc">{{ $t('journal.sort_datum_neu') }}</option>
+              <option value="date_asc">{{ $t('journal.sort_datum_alt') }}</option>
+              <option value="project">{{ $t('journal.sort_projekt') }}</option>
+              <option value="category">{{ $t('journal.sort_kategorie') }}</option>
             </select>
           </div>
         </div>
@@ -176,7 +173,7 @@
     <!-- Loading State -->
     <div v-if="loading" class="text-center py-16">
       <div class="inline-block w-8 h-8 border-4 border-[#00A3C4] border-t-transparent rounded-full animate-spin"></div>
-      <p class="text-xs text-slate-500 mt-2 font-medium">Journaleinträge werden geladen...</p>
+      <p class="text-xs text-slate-500 mt-2 font-medium">{{ $t('journal.wird_geladen') }}</p>
     </div>
 
     <!-- Empty State -->
@@ -187,9 +184,9 @@
       <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center mb-4 border border-cyan-200 shadow-2xs">
         <BookOpen class="w-7 h-7" />
       </div>
-      <h3 class="text-base font-bold text-slate-900">Keine passenden Journaleinträge gefunden</h3>
+      <h3 class="text-base font-bold text-slate-900">{{ $t('journal.keine_eintraege') }}</h3>
       <p class="text-xs text-slate-500 mt-1.5 mb-6 leading-relaxed">
-        Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.
+        {{ $t('journal.empty_desc') }}
       </p>
       <div class="flex items-center justify-center gap-3">
         <button
@@ -198,7 +195,7 @@
           class="taskster_button px-5 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer shadow-xs"
         >
           <Plus class="w-3.5 h-3.5" />
-          <span>+ Journaleintrag</span>
+          <span>{{ $t('journal.neuer_eintrag') }}</span>
         </button>
         <button
           @click="openJournalEntryModal"
@@ -206,7 +203,7 @@
           class="taskster_button_light px-5 text-xs h-[40px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
         >
           <Sparkles class="w-3.5 h-3.5 text-[#00A3C4]" />
-          <span>+ Dokument / Protokoll (KI)</span>
+          <span>{{ $t('journal.dokument_ki') }}</span>
         </button>
       </div>
     </div>
@@ -245,7 +242,7 @@
                   • bearbeitet {{ formatDateTime(entry.updated_at) }}
                 </span>
                 <span v-if="entry.task_title" class="text-[#00A3C4] font-semibold flex items-center space-x-1">
-                  <span>• Verknüpft: {{ entry.task_title }}</span>
+                  <span>• {{ $t('journal.aufgabe_verknuepft') }} {{ entry.task_title }}</span>
                 </span>
               </div>
             </div>
@@ -257,7 +254,7 @@
               v-if="entry.folder_id"
               :to="`/folders/${entry.folder_id}`"
               class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 transition"
-              title="Zum Ordner springen"
+              :title="$t('journal.zum_ordner_springen')"
             >
               <Folder class="w-3 h-3 text-slate-500" />
               <span class="max-w-[110px] truncate">{{ entry.folder_name || 'Ordner' }}</span>
@@ -267,7 +264,7 @@
               v-if="entry.project_id"
               :to="`/projects/${entry.project_id}`"
               class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-[#00A3C4] border border-cyan-200 flex items-center gap-1 transition"
-              title="Zum Projekt springen"
+              :title="$t('journal.zum_projekt_springen')"
             >
               <span class="max-w-[110px] truncate">📁 {{ entry.project_title || 'Projekt' }}</span>
             </NuxtLink>
@@ -290,7 +287,7 @@
               @click="openEditModal(entry)"
               type="button"
               class="p-1 rounded text-slate-400 hover:text-[#00A3C4] hover:bg-cyan-50 transition cursor-pointer"
-              title="Eintrag bearbeiten"
+              :title="$t('journal.eintrag_bearbeiten')"
             >
               <Pencil class="w-3.5 h-3.5" />
             </button>
@@ -309,7 +306,7 @@
               @click="confirmDelete(entry)"
               type="button"
               class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-              title="Eintrag löschen"
+              :title="$t('journal.eintrag_loeschen')"
             >
               <Trash2 class="w-3.5 h-3.5" />
             </button>
@@ -347,7 +344,7 @@
             <div v-if="entry.metadata?.action_items && entry.metadata.action_items.length > 0" class="space-y-2.5">
               <div class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
                 <span>⚡</span>
-                <span>Vorgeschlagene Aktionen (KI-Agent) ({{ entry.metadata.action_items.length }}):</span>
+                <span>{{ $t('journal.vorgeschlagene_aktionen') }} ({{ entry.metadata.action_items.length }}):</span>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -406,13 +403,13 @@
             <!-- Text-Inhalt / E-Mail Body (Cleaned & 5-Line Smooth Collapse) -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inhalt / Notizen</span>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $t('journal.inhalt_notizen') }}</span>
                 <button
                   v-if="hasOriginalText(entry)"
                   type="button"
                   @click="openOriginalView(entry)"
                   class="text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer flex items-center gap-1.5"
-                  title="Vollständiges Original-Dokument / E-Mail ansehen"
+                  :title="$t('journal.original_ansehen_title')"
                 >
                   <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
                   <span>Original-Ansicht</span>
@@ -458,7 +455,7 @@
               <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
                 <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
                   <span>📌</span>
-                  <span>Verknüpfte Aufgabe</span>
+                  <span>{{ $t('journal.aufgabe_verknuepft') }}</span>
                 </span>
                 <span
                   class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
@@ -479,7 +476,7 @@
                   class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:underline transition cursor-pointer"
                 >
                   <ExternalLink class="w-3 h-3" />
-                  <span>Aufgabe im Projekt öffnen</span>
+                  <span>{{ $t('journal.aufgabe_im_projekt_oeffnen') }}</span>
                 </NuxtLink>
 
                 <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
@@ -490,7 +487,7 @@
                     @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                     class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
                   >
-                    <option value="">-- Verknüpfung lösen --</option>
+                    <option value="">{{ $t('journal.keine_verknuepfung_label') }}</option>
                     <option v-for="t in getAvailableTasksForEntry(entry)" :key="t.id" :value="t.id">
                       {{ t.title }}
                     </option>
@@ -500,13 +497,13 @@
 
               <!-- Zustand B: Keine Aufgabe verknüpft -->
               <div v-else class="space-y-1">
-                <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe zuweisen:</label>
+                <label class="text-[10px] text-slate-400 font-semibold block uppercase">{{ $t('journal.aufgabe_zuweisen_label') }}</label>
                 <select
                   :disabled="updatingTaskId === entry.id"
                   @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
                 >
-                  <option value="">-- Aufgabe auswählen --</option>
+                  <option value="">{{ $t('journal.aufgabe_auswaehlen_opt') }}</option>
                   <option v-for="t in getAvailableTasksForEntry(entry)" :key="t.id" :value="t.id">
                     {{ t.title }}
                   </option>
@@ -556,7 +553,7 @@
             <div v-if="entry.attachments && entry.attachments.length > 0" class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
               <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
                 <Paperclip class="w-3 h-3 text-slate-400" />
-                <span>Dateianhänge ({{ entry.attachments.length }})</span>
+                <span>{{ $t('journal.dateianhaenge_label') }} ({{ entry.attachments.length }})</span>
               </div>
               <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                 <div
@@ -656,19 +653,19 @@
             class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-1.5"
           >
             <div v-if="originalEntry.metadata?.email_sender" class="flex items-start gap-2">
-              <span class="font-bold text-slate-500 w-20 shrink-0">Absender:</span>
+              <span class="font-bold text-slate-500 w-20 shrink-0">{{ $t('common.absender') }}:</span>
               <span class="text-slate-900 font-medium select-all">{{ originalEntry.metadata.email_sender }}</span>
             </div>
             <div v-if="originalEntry.metadata?.email_recipients" class="flex items-start gap-2">
-              <span class="font-bold text-slate-500 w-20 shrink-0">Empfänger:</span>
+              <span class="font-bold text-slate-500 w-20 shrink-0">{{ $t('common.empfaenger') }}:</span>
               <span class="text-slate-700 select-all">{{ originalEntry.metadata.email_recipients }}</span>
             </div>
             <div v-if="originalEntry.metadata?.email_subject" class="flex items-start gap-2">
-              <span class="font-bold text-slate-500 w-20 shrink-0">Betreff:</span>
+              <span class="font-bold text-slate-500 w-20 shrink-0">{{ $t('common.betreff') }}:</span>
               <span class="text-slate-900 font-semibold select-all">{{ originalEntry.metadata.email_subject }}</span>
             </div>
             <div class="flex items-start gap-2">
-              <span class="font-bold text-slate-500 w-20 shrink-0">Datum:</span>
+              <span class="font-bold text-slate-500 w-20 shrink-0">{{ $t('common.datum') }}:</span>
               <span class="text-slate-600">{{ formatDateTime(originalEntry.metadata?.email_date || originalEntry.entry_date || originalEntry.created_at) }}</span>
             </div>
           </div>
@@ -677,7 +674,7 @@
           <div v-if="originalEntry.metadata?.contacts && originalEntry.metadata.contacts.length > 0" class="space-y-2">
             <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <span>👤</span>
-              <span>Erkannte Kontakte (in Kontakte synchronisiert):</span>
+              <span>{{ $t('journal.erkannte_kontakte_synced') }}</span>
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div
@@ -728,7 +725,7 @@
           >
             <Check v-if="copiedText" class="w-3.5 h-3.5 text-emerald-600" />
             <Copy v-else class="w-3.5 h-3.5" />
-            <span>{{ copiedText ? 'Text kopiert!' : 'Originaltext kopieren' }}</span>
+            <span>{{ copiedText ? t('journal.text_kopiert') : 'Originaltext kopieren' }}</span>
           </button>
 
           <button
@@ -837,6 +834,8 @@ import {
 import { useAuth } from '~/composables/useAuth'
 
 const { user, token } = useAuth()
+const { t } = useI18n()
+
 const authHeaders = () => ({
   Authorization: token.value ? `Bearer ${token.value}` : ''
 })
