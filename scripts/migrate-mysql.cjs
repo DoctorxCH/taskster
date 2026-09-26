@@ -834,6 +834,41 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  // --- PHASE 4: I18N & CMS BACKEND ---
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS i18n_translations (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        locale VARCHAR(10) NOT NULL,
+        \`key\` VARCHAR(255) NOT NULL,
+        value TEXT NOT NULL,
+        company_id VARCHAR(64) NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_i18n_translation (locale, \`key\`, company_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  // Basic System Translations Seeding
+  const defaultTranslations = [
+    { locale: 'de', key: 'error.company.not_found', value: 'Firma nicht gefunden' },
+    { locale: 'en', key: 'error.company.not_found', value: 'Company not found' },
+    { locale: 'de', key: 'error.auth.forbidden', value: 'Zugriff verweigert' },
+    { locale: 'en', key: 'error.auth.forbidden', value: 'Access denied' },
+    { locale: 'de', key: 'error.custom_fields.not_found', value: 'Feld nicht gefunden' },
+    { locale: 'en', key: 'error.custom_fields.not_found', value: 'Field not found' },
+    { locale: 'de', key: 'success.company.updated', value: 'Firma erfolgreich aktualisiert' },
+    { locale: 'en', key: 'success.company.updated', value: 'Company successfully updated' }
+  ];
+
+  for (const t of defaultTranslations) {
+    await conn.query(`
+      INSERT INTO i18n_translations (locale, \`key\`, value, is_system) 
+      VALUES (?, ?, ?, 1)
+      ON DUPLICATE KEY UPDATE value=VALUES(value);
+    `, [t.locale, t.key, t.value]);
+  }
+  
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))

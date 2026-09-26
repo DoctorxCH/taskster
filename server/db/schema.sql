@@ -555,3 +555,19 @@ CREATE TABLE IF NOT EXISTS task_priorities (
   UNIQUE(`key`, company_id)
 );
 
+-- ===========================================================================
+-- I18N & CMS (Phase 4)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS i18n_translations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  locale TEXT NOT NULL,
+  `key` TEXT NOT NULL,
+  value TEXT NOT NULL,
+  company_id TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(locale, `key`, company_id)
+);
+

@@ -30,10 +30,15 @@ class SystemController {
         
         $tokens = $this->tokenService->getResolvedTokens($companyId);
         
+        // Determine user's requested locale or default to 'de'
+        $locale = $_GET['locale'] ?? 'de';
+        $translationService = new TranslationService();
+        $localesDelta = $translationService->getTranslationsWithFallback($locale, $companyId);
+        
         $payload = [
             'design_tokens' => $tokens,
             'features' => [],
-            'locales_delta' => []
+            'locales_delta' => $localesDelta
         ];
         
         if ($user) {

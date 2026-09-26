@@ -2678,6 +2678,12 @@ $router->put('/admin/workflow/statuses/:id', ['WorkflowController', 'updateStatu
 $router->get('/admin/custom-fields', ['CustomFieldController', 'index']);
 $router->put('/admin/custom-fields/:id', ['CustomFieldController', 'update']);
 
+// Admin I18n / CMS Routes
+$router->get('/admin/i18n', ['I18nController', 'index']);
+$router->post('/admin/i18n', ['I18nController', 'upsert']);
+$router->delete('/admin/i18n/:id', ['I18nController', 'delete']);
+
+
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
 $path = trim($path, '/');
