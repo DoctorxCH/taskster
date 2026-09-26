@@ -604,6 +604,86 @@ async function migrate() {
     1
   ])
 
+  // --- PHASE 1: RBAC & Company Migration ---
+  
+  // Idempotente ALTER TABLE für companies
+  const companyAlters = [
+    "ALTER TABLE companies ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'",
+    "ALTER TABLE companies ADD COLUMN max_users INT NOT NULL DEFAULT 100",
+    "ALTER TABLE companies ADD COLUMN max_storage_gb INT NOT NULL DEFAULT 10",
+    "ALTER TABLE companies ADD COLUMN max_tasks_per_month INT NOT NULL DEFAULT 10000",
+    "ALTER TABLE companies ADD COLUMN api_rate_limit_per_minute INT NOT NULL DEFAULT 60",
+    "ALTER TABLE companies ADD COLUMN auth_policy JSON NULL",
+    "ALTER TABLE companies ADD COLUMN sso_config JSON NULL"
+  ];
+  for (const query of companyAlters) {
+    try {
+      await conn.query(query);
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.warn('Warning during company alter:', e.message);
+      }
+    }
+  }
+
+  // RBAC Tabellen anlegen
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS roles (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`key\` VARCHAR(50) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        level ENUM('system', 'company', 'project') NOT NULL DEFAULT 'company',
+        description TEXT NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_role_key (\`key\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS permissions (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`key\` VARCHAR(100) NOT NULL,
+        entity VARCHAR(30) NOT NULL,
+        action VARCHAR(30) NOT NULL,
+        description TEXT NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_permission_key (\`key\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS role_permissions (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        role_id BIGINT UNSIGNED NOT NULL,
+        permission_id BIGINT UNSIGNED NOT NULL,
+        scope ENUM('all', 'company', 'project', 'assigned') NOT NULL DEFAULT 'all',
+        conditions JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_role_perm_scope (role_id, permission_id, scope),
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+        FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS user_company_roles (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        company_id VARCHAR(64) NOT NULL,
+        project_id VARCHAR(64) NULL,
+        role_id BIGINT UNSIGNED NOT NULL,
+        assigned_by VARCHAR(64) NULL,
+        expires_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_user_company_role (user_id, company_id, project_id, role_id),
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))

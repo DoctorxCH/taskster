@@ -1,9 +1,16 @@
 CREATE TABLE IF NOT EXISTS companies (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
   subscription_plan TEXT NOT NULL DEFAULT 'starter',
   billing_email TEXT,
   stripe_customer_id TEXT,
+  max_users INTEGER NOT NULL DEFAULT 100,
+  max_storage_gb INTEGER NOT NULL DEFAULT 10,
+  max_tasks_per_month INTEGER NOT NULL DEFAULT 10000,
+  api_rate_limit_per_minute INTEGER NOT NULL DEFAULT 60,
+  auth_policy TEXT NULL,
+  sso_config TEXT NULL,
   settings TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -441,3 +448,50 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ===========================================================================
+-- RBAC (Phase 1)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  level TEXT NOT NULL DEFAULT 'company',
+  description TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS permissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL UNIQUE,
+  entity TEXT NOT NULL,
+  action TEXT NOT NULL,
+  description TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL DEFAULT 'all',
+  conditions TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(role_id, permission_id, scope)
+);
+
+CREATE TABLE IF NOT EXISTS user_company_roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  project_id TEXT,
+  role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  assigned_by TEXT,
+  expires_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, company_id, project_id, role_id)
+);
