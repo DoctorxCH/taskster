@@ -6,9 +6,6 @@ class CompanyController {
     public function __construct() {
         $this->permissionService = new PermissionService();
     }
-        // Just a mock for now, returning a dummy user. Real implementation would decode JWT
-        return ['id' => 'mock-user-id', 'is_superadmin' => true];
-    }
 
     public function index(): array {
         $user = requireAuth();

@@ -6,8 +6,6 @@ class RoleController {
     public function __construct() {
         $this->permissionService = new PermissionService();
     }
-        return ['id' => 'mock-user-id', 'is_superadmin' => true];
-    }
 
     public function index(): array {
         $user = requireAuth();

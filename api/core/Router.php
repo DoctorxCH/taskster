@@ -92,8 +92,11 @@ class Router {
         exit;
     }
 
-    public function errorResponse(string $message, int $statusCode = 400): void {
-        http_response_code($statusCode === 0 ? 500 : $statusCode);
+    public function errorResponse(string $message, $statusCode = 400): void {
+        if (!is_numeric($statusCode) || (int)$statusCode < 100 || (int)$statusCode > 599) {
+            $statusCode = 500;
+        }
+        http_response_code((int)$statusCode);
         echo json_encode(['error' => $message]);
         exit;
     }
