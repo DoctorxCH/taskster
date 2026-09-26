@@ -2700,7 +2700,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $body = getJsonBody();
 
 // Versuche, die Route über den neuen Router abzuwickeln
-if ($router->dispatch($method, $path, $body)) {
+if ($router->dispatch($method, '/' . $path, $body)) {
     exit; // Route wurde erfolgreich vom neuen Router behandelt
 }
 
