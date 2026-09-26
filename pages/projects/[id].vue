@@ -2,7 +2,7 @@
   <div class="w-full max-w-[1920px] 2xl:max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
     <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-slate-600 font-medium text-sm bg-white border border-slate-200 rounded-lg max-w-sm mx-auto">
-      Lade Projektdaten...
+      {{ $t('projects.lade_projektdaten') }}
     </div>
 
     <div v-else-if="project" class="space-y-6">
@@ -15,7 +15,7 @@
         <div class="flex items-center gap-1.5 text-xs text-slate-500 pb-3 border-b border-slate-100">
           <NuxtLink to="/dashboard" class="hover:text-[#00A3C4] transition-colors flex items-center gap-1">
             <LayoutDashboard class="w-3.5 h-3.5" />
-            <span>Dashboard</span>
+            <span>{{ $t('common.dashboard') }}</span>
           </NuxtLink>
           <span>/</span>
           <template v-if="!isFreeUser">
@@ -25,14 +25,14 @@
               <span class="text-slate-800 font-semibold flex items-center gap-1">
             <span v-if="folder?.icon" class="text-sm">{{ folder.icon }}</span>
             <Folder v-else class="w-3.5 h-3.5 text-[#00A3C4]" />
-            <span>{{ folder?.name || 'Ordner' }}</span>
+            <span>{{ folder?.name || $t('common.ordner') }}</span>
           </span>
             </NuxtLink>
             <span>/</span>
           </template>
           <span class="text-slate-800 font-semibold flex items-center gap-1">
             <ClipboardList class="w-3.5 h-3.5 text-[#00A3C4]" />
-            <span>{{ project?.title || 'Projekt' }}</span>
+            <span>{{ project?.title || $t('common.projekt') }}</span>
           </span>
         </div>
 
@@ -83,14 +83,14 @@
               >
                 <Building2 v-if="project.visibility === 'company'" class="w-3 h-3 text-emerald-600 inline mr-0.5" />
                 <Lock v-else class="w-3 h-3 text-slate-500 inline mr-0.5" />
-                <span>{{ project.visibility === 'company' ? 'Unternehmen' : 'Privat' }}</span>
+                <span>{{ project.visibility === 'company' ? $t('common.unternehmen') : $t('projects.privat') }}</span>
               </span>
               <span
                 class="px-2.5 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1"
                 :class="project.status === 'completed' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold shadow-xs' : 'bg-slate-100 text-slate-700 border-slate-200'"
               >
                 <span v-if="project.status === 'completed'" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {{ project.status === 'completed' ? '✓ Abgeschlossen' : 'Status: ' + project.status }}
+                {{ project.status === 'completed' ? ('✓ ' + $t('projects.abgeschlossen')) : ($t('projects.status') + ' ' + project.status) }}
               </span>
               <span
                 class="px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase"
@@ -99,7 +99,7 @@
               </span>
               <span
                 class="px-2.5 py-0.5 rounded text-xs font-semibold bg-cyan-50 text-[#00A3C4] border border-cyan-200 flex items-center space-x-1"
-                :title="`Erfasste Zeit: ${project.tracked_hours || 0} Std. ${project.budget_hours ? `/ Budget: ${project.budget_hours} Std.` : ''}`"
+                :title="`${$t('projects.erfasste_zeit')}: ${project.tracked_hours || 0} ${$t('projects.std')} ${project.budget_hours ? `/ ${$t('projects.budget')}: ${project.budget_hours} ${$t('projects.std')}` : ''}`"
               >
                 <Clock class="w-3.5 h-3.5 text-[#00A3C4]" />
                 <span>{{ project.tracked_hours || 0 }}h</span>
@@ -115,16 +115,16 @@
                 v-if="project.due_date"
                 class="px-2.5 py-0.5 rounded text-xs font-semibold border flex items-center space-x-1"
                 :class="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10) ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' : 'bg-amber-50 text-amber-800 border-amber-200'"
-                :title="`Fälligkeitsdatum: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
+                :title="`${$t('projects.faelligkeitsdatum')}: ${new Date(project.due_date).toLocaleDateString('de-CH')}`"
               >
                 <span>📅</span>
-                <span>Fällig: {{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
-                <span v-if="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10)" class="text-[10px] uppercase font-bold text-rose-600 ml-0.5">(Überfällig)</span>
+                <span>{{ $t('projects.faellig') }}: {{ new Date(project.due_date).toLocaleDateString('de-CH') }}</span>
+                <span v-if="project.status !== 'completed' && String(project.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10)" class="text-[10px] uppercase font-bold text-rose-600 ml-0.5">({{ $t('projects.ueberfaellig') }})</span>
               </span>
             </div>
 
             <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span v-if="!isFreeUser">Ordner: <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#00A3C4] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
+              <span v-if="!isFreeUser">{{ $t('projects.ordner') }} <NuxtLink :to="`/folders/${project.folder_id}`" class="text-[#00A3C4] font-semibold hover:underline">{{ project.folder_name }}</NuxtLink></span>
               <span v-if="project.company_name" class="text-slate-700 font-medium">• {{ project.company_name }}</span>
             </p>
 
@@ -180,7 +180,7 @@
                 @click="openStopModal"
                 type="button"
                 class="ml-1 px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold cursor-pointer"
-                title="Stoppuhr stoppen & buchen"
+                :title="$t('projects.stoppuhr_stoppen_buchen')"
               >
                 Stopp
               </button>
@@ -191,10 +191,10 @@
               type="button"
               @click="showQuickJournalDrawer = true; loadJournals()"
               class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
-              title="Projektjournal Seitenleiste öffnen"
+              :title="$t('projects.journal_sidebar_title')"
             >
               <BookOpen class="w-4 h-4 text-slate-600" />
-              <span class="hidden sm:inline">Journal</span>
+              <span class="hidden sm:inline">{{ $t('projects.journal') }}</span>
               <span v-if="journalEntries.length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-cyan-100 text-[#00A3C4]">
                 {{ journalEntries.length }}
               </span>
@@ -206,22 +206,22 @@
                 @click="showActionsMenu = !showActionsMenu"
                 class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-1.5 cursor-pointer"
                 :class="showActionsMenu ? 'ring-2 ring-cyan-200' : ''"
-                title="Weitere Aktionen"
+                :title="$t('projects.weitere_aktionen')"
               >
                 <MoreVertical class="w-4 h-4 text-slate-600" />
-                <span class="hidden sm:inline">Mehr</span>
+                <span class="hidden sm:inline">{{ $t('projects.mehr') }}</span>
               </button>
               <div v-if="showActionsMenu" class="fixed inset-0 z-40" @click="showActionsMenu = false"></div>
               <div v-if="showActionsMenu" class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
                 <!-- Ansicht -->
-                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Ansicht</div>
+                <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ $t('projects.ansicht') }}</div>
                 <button
                   @click="taskViewMode = 'board'; showActionsMenu = false"
                   class="w-full text-left px-3 py-2 text-xs font-semibold flex items-center space-x-2 cursor-pointer"
                   :class="taskViewMode === 'board' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <LayoutGrid class="w-4 h-4" />
-                  <span>Kacheln</span>
+                  <span>{{ $t('projects.kacheln') }}</span>
                   <Check v-if="taskViewMode === 'board'" class="w-3.5 h-3.5 ml-auto" />
                 </button>
                 <button
@@ -230,7 +230,7 @@
                   :class="taskViewMode === 'table' ? 'text-[#00A3C4] bg-cyan-50' : 'text-slate-700 hover:bg-slate-50'"
                 >
                   <List class="w-4 h-4" />
-                  <span>Liste</span>
+                  <span>{{ $t('projects.liste') }}</span>
                   <Check v-if="taskViewMode === 'table'" class="w-3.5 h-3.5 ml-auto" />
                 </button>
 
@@ -243,32 +243,32 @@
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Clock class="w-4 h-4 text-slate-500" />
-                  <span>Projekt-Stoppuhr starten</span>
+                  <span>{{ $t('projects.projekt_stoppuhr_starten') }}</span>
                 </button>
                 <button
                   @click="showActionsMenu = false; openImportModal()"
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Upload class="w-4 h-4 text-slate-500" />
-                  <span>Aufgaben importieren</span>
+                  <span>{{ $t('projects.aufgaben_importieren') }}</span>
                 </button>
                 <button
                   @click="showActionsMenu = false; showVoiceModal = true"
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Mic class="w-4 h-4 text-slate-500" />
-                  <span>Sprachnotiz</span>
+                  <span>{{ $t('projects.sprachnotiz') }}</span>
                 </button>
                 <button
                   @click="showActionsMenu = false; showNewListModal = true"
                   class="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <Plus class="w-4 h-4 text-slate-500" />
-                  <span>Neuer Abschnitt</span>
+                  <span>{{ $t('projects.neuer_abschnitt') }}</span>
                 </button>
 
                 <div class="my-1 border-t border-slate-100"></div>
-                <div class="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Export (Enterprise)</div>
+                <div class="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ $t('projects.export_enterprise') }}</div>
                 <button
                   type="button"
                   @click="showActionsMenu = false; triggerProjectExport('csv')"
@@ -276,7 +276,7 @@
                 >
                   <div class="flex items-center space-x-2">
                     <Download class="w-4 h-4 text-slate-500" />
-                    <span>Projekt als CSV</span>
+                    <span>{{ $t('projects.projekt_als_csv') }}</span>
                   </div>
                   <span v-if="!canExportProject" class="text-[9px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">PRO</span>
                 </button>
@@ -287,7 +287,7 @@
                 >
                   <div class="flex items-center space-x-2">
                     <FileText class="w-4 h-4 text-slate-500" />
-                    <span>Projekt als JSON</span>
+                    <span>{{ $t('projects.projekt_als_json') }}</span>
                   </div>
                   <span v-if="!canExportProject" class="text-[9px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">PRO</span>
                 </button>
@@ -312,7 +312,7 @@
               class="taskster_button px-6 text-xs h-[42px] rounded-lg cursor-pointer flex items-center space-x-1.5 font-medium"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Aufgabe erfassen</span>
+              <span>{{ $t('projects.aufgabe_erfassen') }}</span>
             </button>
           </div>
         </div>
@@ -343,7 +343,7 @@
             :class="currentView === 'time' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Clock class="w-4 h-4" />
-            <span>Zeiterfassung ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
+            <span>{{ $t('projects.tab_zeiterfassung') }} ({{ projectTimeEntries.length || project.time_entry_count || 0 }})</span>
           </button>
 
           <button
@@ -352,7 +352,7 @@
             :class="currentView === 'team' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Users class="w-4 h-4" />
-            <span>Team & Berechtigungen ({{ members.length + 1 }})</span>
+            <span>{{ $t('projects.tab_team') }} ({{ members.length + 1 }})</span>
           </button>
 
           <button
@@ -361,7 +361,7 @@
             :class="currentView === 'contacts' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Contact class="w-4 h-4" />
-            <span>Kontakte ({{ projectContacts.length }})</span>
+            <span>{{ $t('common.kontakte') }} ({{ projectContacts.length }})</span>
           </button>
 
           <button
@@ -371,7 +371,7 @@
             :class="currentView === 'settings' ? 'border-[#00A3C4] text-[#00A3C4] font-bold' : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'"
           >
             <Settings class="w-4 h-4" />
-            <span>Projekt-Einstellungen</span>
+            <span>{{ $t('projects.tab_einstellungen') }}</span>
           </button>
         </div>
       </div>
@@ -384,20 +384,20 @@
           class="mb-6 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center space-x-2"
         >
           <span>👁️</span>
-          <span><strong>Viewer-Modus:</strong> Du besitzt Leserechte für dieses Projekt.</span>
+          <span><strong>{{ $t('projects.viewermodus') }}</strong> {{ $t('projects.du_besitzt_leserechte_für_dieses_pr') }}</span>
         </div>
 
         <!-- Empty state -->
         <div v-if="lists.length === 0" class="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm max-w-lg mx-auto">
           <span class="text-3xl">📋</span>
-          <h3 class="text-base font-bold text-slate-800 mt-2">Noch keine Abschnitte in diesem Projekt</h3>
-          <p class="text-xs text-slate-500 mt-1 mb-5">Erstelle den ersten Abschnitt (z.B. "Geplant", "In Bearbeitung", "Abgeschlossen").</p>
+          <h3 class="text-base font-bold text-slate-800 mt-2">{{ $t('projects.noch_keine_abschnitte_in_diesem_pro') }}</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">{{ $t('projects.erstelle_den_ersten_abschnitt_zb_ge') }}</p>
           <button
             v-if="userRole !== 'viewer'"
             @click="showNewListModal = true"
             class="taskster_button px-6 text-xs h-[42px] rounded-lg"
           >
-            + Ersten Abschnitt erstellen
+            {{ $t('projects.ersten_abschnitt_erstellen') }}
           </button>
         </div>
 
@@ -411,7 +411,7 @@
               <input
                 v-model="taskSearchQuery"
                 type="text"
-                placeholder="Aufgaben durchsuchen (Titel, Notizen, Tags)..."
+                :placeholder="$t('projects.search_tasks_placeholder')"
                 class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
               <button
@@ -428,11 +428,11 @@
               v-model="taskPriorityFilter"
               class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="">Alle Prioritäten</option>
-              <option value="urgent">🔴 Dringend</option>
-              <option value="high">🟠 Hoch</option>
-              <option value="medium">🟡 Mittel</option>
-              <option value="low">🟢 Niedrig</option>
+              <option value="">{{ $t('projects.alle_prioritaeten') }}</option>
+              <option value="urgent">{{ $t('projects.prio_urgent') }}</option>
+              <option value="high">{{ $t('projects.prio_high') }}</option>
+              <option value="medium">{{ $t('projects.prio_medium') }}</option>
+              <option value="low">{{ $t('projects.prio_low') }}</option>
             </select>
 
             <!-- Assignee Filter -->
@@ -440,8 +440,8 @@
               v-model="taskAssigneeFilter"
               class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="">Alle Zuständigen</option>
-              <option value="unassigned">Nicht zugewiesen</option>
+              <option value="">{{ $t('projects.alle_zustaendigen') }}</option>
+              <option value="unassigned">{{ $t('projects.nicht_zugewiesen') }}</option>
               <option v-for="m in allProjectAssignees" :key="m.id" :value="m.id">
                 {{ m.name }}
               </option>
@@ -454,7 +454,7 @@
               type="button"
               class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-md font-semibold cursor-pointer"
             >
-              Filter zurücksetzen
+              {{ $t('projects.filter_zuruecksetzen') }}
             </button>
           </div>
 
@@ -465,20 +465,20 @@
               @click="taskViewMode = 'board'"
               class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
               :class="taskViewMode === 'board' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-              title="Kanban Board"
+              :title="$t('projects.kanban_board')"
             >
               <LayoutGrid class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Board</span>
+              <span class="hidden sm:inline">{{ $t('projects.board') }}</span>
             </button>
             <button
               type="button"
               @click="taskViewMode = 'table'"
               class="flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition"
               :class="taskViewMode === 'table' ? 'bg-white text-[#00A3C4] shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
-              title="Tabellen-Ansicht"
+              :title="$t('projects.tabellen_ansicht')"
             >
               <List class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Tabelle</span>
+              <span class="hidden sm:inline">{{ $t('projects.tabelle') }}</span>
             </button>
           </div>
         </div>
@@ -511,7 +511,7 @@
                 <span
                   v-if="userRole !== 'viewer'"
                   class="text-slate-400 hover:text-cyan-600 cursor-grab active:cursor-grabbing text-xs transition"
-                  title="Abschnitt ziehen, um Spalte zu verschieben"
+                  :title="$t('projects.abschnitt_ziehen_um_spalte_zu_versc')"
                 >
                   ⋮⋮
                 </span>
@@ -560,7 +560,7 @@
                       @click.stop="toggleTaskCompleted(task)"
                       class="w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0 mt-0.5"
                       :class="task.status === 'done' ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs' : 'border-slate-300 hover:border-cyan-500 bg-white'"
-                      title="Aufgabe abhaken / Status ändern"
+                      :title="$t('projects.aufgabe_abhaken_status_ändern')"
                     >
                       <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
                     </button>
@@ -569,13 +569,13 @@
                     <Clock
                       v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
                       class="w-3.5 h-3.5 text-rose-500 animate-pulse shrink-0 mt-0.5"
-                      title="Zeiterfassung läuft..."
+                      :title="$t('projects.zeiterfassung_laeuft')"
                     />
 
                     <span
                       v-if="userRole !== 'viewer'"
                       class="text-slate-300 group-hover:text-slate-500 text-xs mt-0.5 cursor-grab"
-                      title="Ziehen zum Verschieben"
+                      :title="$t('projects.ziehen_zum_verschieben')"
                     >
                       ⋮⋮
                     </span>
@@ -656,7 +656,7 @@
                       v-if="(task.tracked_hours || 0) > 0 || (task.budget_hours || 0) > 0"
                       class="inline-flex items-center space-x-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border"
                       :class="(task.tracked_hours || 0) > (task.budget_hours || 0) && task.budget_hours > 0 ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'"
-                      :title="`Erfasst: ${task.tracked_hours || 0} Std. ${task.budget_hours ? `/ Budget: ${task.budget_hours} Std.` : ''}`"
+                      :title="`${$t('projects.erfasst')}: ${task.tracked_hours || 0} ${$t('projects.std')} ${task.budget_hours ? `/ ${$t('projects.budget')}: ${task.budget_hours} ${$t('projects.std')}` : ''}`"
                     >
                       <span>⏱️</span>
                       <span>{{ task.tracked_hours || 0 }}h</span>
@@ -669,12 +669,12 @@
                       type="button"
                       @click.stop="startTaskTimer(task)"
                       class="text-slate-400 hover:text-cyan-700 font-bold flex items-center space-x-1 px-1.5 py-0.5 rounded hover:bg-cyan-50 transition"
-                      title="Stoppuhr auf diese Aufgabe starten"
+                      :title="$t('projects.stoppuhr_auf_diese_aufgabe_starten')"
                     >
                       <span>⏱️</span>
-                      <span class="text-[10px]">Start</span>
+                      <span class="text-[10px]">{{ $t('projects.start') }}</span>
                     </button>
-                    <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">Details →</span>
+                    <span class="text-cyan-600 font-bold group-hover:translate-x-0.5 transition-transform">{{ $t('projects.details') }}</span>
                   </div>
                 </div>
 
@@ -690,7 +690,7 @@
                 v-if="!list.tasks || list.tasks.length === 0"
                 class="p-6 text-center text-xs font-semibold text-slate-400 border-2 border-dashed border-slate-200/90 rounded-2xl bg-white/70"
               >
-                Noch keine Aufgaben
+                {{ $t('projects.noch_keine_aufgaben') }}
               </div>
             </div>
 
@@ -700,7 +700,7 @@
               @click="openNewTaskModal(list.id)"
               class="mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-cyan-500 bg-white/70 hover:bg-white text-xs font-black text-slate-700 hover:text-cyan-800 transition text-center shadow-xs"
             >
-              + Aufgabe hinzufügen
+              {{ $t('projects.aufgabe_hinzufügen') }}
             </button>
           </div>
         </div>
@@ -725,24 +725,24 @@
                 @click="openNewTaskModal(list.id)"
                 class="text-xs font-bold text-[#00A3C4] hover:text-[#008ba8] hover:underline"
               >
-                + Aufgabe erfassen
+                {{ $t('projects.aufgabe_erfassen_1') }}
               </button>
             </div>
 
             <div v-if="!getFilteredTasks(list.tasks) || getFilteredTasks(list.tasks).length === 0" class="p-4 text-center text-xs text-slate-400">
-              Keine Aufgaben gefunden.
+              {{ $t('projects.keine_aufgaben_gefunden') }}
             </div>
 
             <div v-else class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
-                    <th class="py-2.5 px-4">Titel & Beschreibung</th>
-                    <th class="py-2.5 px-4">Status</th>
-                    <th class="py-2.5 px-4">Aufwand & Budget</th>
-                    <th class="py-2.5 px-4">Fälligkeit</th>
-                    <th class="py-2.5 px-4">Felder</th>
-                    <th class="py-2.5 px-4 text-right">Aktion</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.titel_beschreibung') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('common.status') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.aufwand_budget') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.fälligkeit') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.felder') }}</th>
+                    <th class="py-2.5 px-4 text-right">{{ $t('common.aktionen') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -759,7 +759,7 @@
                           @click.stop="toggleTaskCompleted(task)"
                           class="w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0"
                           :class="task.status === 'done' ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs' : 'border-slate-300 hover:border-cyan-500 bg-white'"
-                          title="Aufgabe abhaken / Status ändern"
+                          :title="$t('projects.aufgabe_abhaken_status_ändern')"
                         >
                           <span v-if="task.status === 'done'" class="text-[10px] font-black leading-none">✓</span>
                         </button>
@@ -767,7 +767,7 @@
                         <Clock
                           v-if="stopwatchState.isRunning && stopwatchState.taskId === task.id"
                           class="w-3.5 h-3.5 text-rose-500 animate-pulse shrink-0"
-                          title="Zeiterfassung läuft..."
+                          :title="$t('projects.zeiterfassung_laeuft')"
                         />
                         <div class="min-w-0">
                           <div class="font-bold truncate" :class="task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900'">
@@ -794,8 +794,8 @@
                     </td>
                     <td class="py-3 px-4">
                       <div class="flex items-center space-x-1.5">
-                        <span class="font-bold text-slate-900">⏱️ {{ task.tracked_hours || 0 }} Std.</span>
-                        <span v-if="task.budget_hours" class="text-[10px] text-slate-500 font-medium">/ {{ task.budget_hours }} Std.</span>
+                        <span class="font-bold text-slate-900">⏱️ {{ task.tracked_hours || 0 }} {{ $t('projects.std') }}</span>
+                        <span v-if="task.budget_hours" class="text-[10px] text-slate-500 font-medium">/ {{ task.budget_hours }} {{ $t('projects.std') }}</span>
                       </div>
                       <div v-if="task.budget_hours > 0" class="w-20 bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
                         <div
@@ -835,20 +835,20 @@
                           type="button"
                           @click.stop="openStopModal"
                           class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[10px] font-bold shadow-xs transition"
-                          title="Stoppuhr anhalten & Zeit buchen"
+                          :title="$t('projects.stoppuhr_anhalten_zeit_buchen')"
                         >
-                          ⏹️ Stoppen
+                          {{ $t('projects.stoppen') }}
                         </button>
                         <button
                           v-else-if="userRole !== 'viewer'"
                           type="button"
                           @click.stop="startTaskTimer(task)"
                           class="p-1 rounded text-slate-400 hover:text-cyan-700 hover:bg-cyan-50 text-xs font-bold transition"
-                          title="Stoppuhr auf diese Aufgabe starten"
+                          :title="$t('projects.stoppuhr_auf_diese_aufgabe_starten')"
                         >
                           ⏱️
                         </button>
-                        <span class="text-xs text-cyan-700 font-bold hover:underline">Öffnen →</span>
+                        <span class="text-xs text-cyan-700 font-bold hover:underline">{{ $t('projects.öffnen') }}</span>
                       </div>
                     </td>
                   </tr>
@@ -931,7 +931,7 @@
               <input
                 v-model="journalSearchQuery"
                 type="text"
-                placeholder="Im Journal, E-Mails & Aufgaben suchen..."
+                :placeholder="$t('projects.journal_search_placeholder')"
                 class="w-full pl-9 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00A3C4]"
               />
               <button
@@ -966,8 +966,8 @@
               v-model="journalFilterTask"
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
-              <option value="all">🔗 Aufgaben: Alle Zuordnungen</option>
-              <option value="assigned">📌 Nur verknüpfte Einträge</option>
+              <option value="all">{{ $t('projects.aufgaben_alle_zuordnungen') }}</option>
+              <option value="assigned">{{ $t('projects.nur_verknuepfte_eintraege') }}</option>
               <option value="unassigned">⚠️ Ohne verknüpfte Aufgabe ({{ unassignedEntriesCount }})</option>
               <optgroup label="Spezifische Aufgabe filtern" v-if="allProjectTasks.length > 0">
                 <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
@@ -993,7 +993,7 @@
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
             >
               <option value="date_desc">📅 Datum (Neueste zuerst)</option>
-              <option value="date_asc">📅 Datum (Älteste zuerst)</option>
+              <option value="date_asc">{{ $t('projects.datum_aelteste_zuerst') }}</option>
               <option value="category">🏷️ Kategorie</option>
             </select>
 
@@ -1032,7 +1032,7 @@
         <!-- Empty State -->
         <div v-if="filteredJournals.length === 0" class="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 shadow-xs max-w-lg mx-auto">
           <span class="text-4xl">📖</span>
-          <h3 class="text-base font-bold text-slate-800 mt-2">Keine passenden Journaleinträge gefunden</h3>
+          <h3 class="text-base font-bold text-slate-800 mt-2">{{ $t('projects.keine_passenden_journaleintraege') }}</h3>
           <p class="text-xs text-slate-500 mt-1 mb-5">
             {{ journalEntries.length === 0 ? 'Erfasse eine Bausitzung, ein Bautagebuch oder importiere eine E-Mail mit automatischer KI-Aktionserkennung.' : 'Keine Einträge für die aktuellen Filtereinstellungen vorhanden.' }}
           </p>
@@ -1042,7 +1042,7 @@
               @click="resetJournalFilters"
               class="taskster_button_light px-6 text-xs h-[42px] rounded-lg cursor-pointer"
             >
-              Filter zurücksetzen
+              {{ $t('projects.filter_zuruecksetzen') }}
             </button>
           </div>
           <div v-else-if="userRole !== 'viewer'" class="flex items-center justify-center gap-3">
@@ -1129,7 +1129,7 @@
                   @click="applyAllTaskActions(entry)"
                   :disabled="isApplyingAllId === entry.id"
                   class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center space-x-1 transition cursor-pointer"
-                  title="Alle erkannten Aufgaben ins Kanban-Board übertragen"
+                  :title="$t('projects.alle_erkannten_aufgaben_uebertragen')"
                 >
                   <CheckCircle2 class="w-3 h-3" :class="{ 'animate-spin': isApplyingAllId === entry.id }" />
                   <span>{{ isApplyingAllId === entry.id ? 'Synchronisiere...' : '⚡ Aktionen ins Board (' + entry.metadata.action_items.filter(it => !it.applied).length + ')' }}</span>
@@ -1160,7 +1160,7 @@
                   @click="deleteJournalEntry(entry)"
                   type="button"
                   class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                  title="Eintrag löschen"
+                  :title="$t('projects.eintrag_loeschen')"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
                 </button>
@@ -1314,7 +1314,7 @@
                       type="button"
                       @click="openOriginalJournalView(entry)"
                       class="text-[11px] font-semibold text-slate-700 hover:text-[#00A3C4] bg-slate-100 hover:bg-cyan-50 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-cyan-200 transition cursor-pointer flex items-center gap-1.5"
-                      title="Vollständiges Original-Dokument / E-Mail ansehen"
+                      :title="$t('projects.original_ansehen')"
                     >
                       <Eye class="w-3.5 h-3.5 text-[#00A3C4]" />
                       <span>Original-Ansicht</span>
@@ -1360,7 +1360,7 @@
                   <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
                     <span class="flex items-center space-x-1" :class="entry.task_id ? 'text-cyan-900' : 'text-slate-600'">
                       <span>📌</span>
-                      <span>Verknüpfte Aufgabe</span>
+                      <span>{{ $t('projects.verknuepfte_aufgabe') }}</span>
                     </span>
                     <span
                       class="text-[10px] font-bold uppercase px-2 py-0.2 rounded-md border"
@@ -1381,7 +1381,7 @@
                       class="inline-flex items-center gap-1 text-[11px] font-bold text-[#00A3C4] hover:text-[#00A3C4] hover:underline transition cursor-pointer"
                     >
                       <ExternalLink class="w-3 h-3" />
-                      <span>Aufgabe öffnen</span>
+                      <span>{{ $t('projects.aufgabe_oeffnen') }}</span>
                     </button>
 
                     <!-- Schnellauswahl zum Ändern oder Lösen der Verknüpfung -->
@@ -1392,7 +1392,7 @@
                         @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                         class="w-full px-2.5 py-1.5 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
                       >
-                        <option value="">-- Verknüpfung lösen --</option>
+                        <option value="">{{ $t('projects.verknuepfung_loesen') }}</option>
                         <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                           {{ t.title }}
                         </option>
@@ -1439,13 +1439,13 @@
 
                     <!-- Manuelle Schnellauswahl aus Aufgabenliste -->
                     <div v-if="userRole !== 'viewer'" class="space-y-1">
-                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">Aufgabe manuell zuweisen:</label>
+                      <label class="text-[10px] text-slate-400 font-semibold block uppercase">{{ $t('projects.aufgabe_manuell_zuweisen') }}</label>
                       <select
                         :disabled="updatingJournalTaskId === entry.id"
                         @change="updateJournalTaskLink(entry, ($event.target as HTMLSelectElement).value)"
                         class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#00A3C4] cursor-pointer"
                       >
-                        <option value="">-- Aufgabe auswählen --</option>
+                        <option value="">{{ $t('projects.aufgabe_auswaehlen') }}</option>
                         <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                           {{ t.title }}
                         </option>
@@ -1533,7 +1533,7 @@
       <div v-else-if="currentView === 'team'" class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-black text-slate-900">Projektteam & Berechtigungen</h3>
+            <h3 class="text-base font-black text-slate-900">{{ $t('projects.projektteam_berechtigungen') }}</h3>
             <p class="text-xs text-slate-500 mt-0.5">
               Steuerung von Editor- und Viewer-Rollen für dieses Projekt.
             </p>
@@ -1555,7 +1555,7 @@
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-900">{{ project.folder_name }} Owner</div>
-                <div class="text-[11px] text-slate-500">Projektinhaber (Voller administrativer Zugriff)</div>
+                <div class="text-[11px] text-slate-500">{{ $t('projects.projektinhaber_zugriff') }}</div>
               </div>
             </div>
             <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200">
@@ -1593,14 +1593,14 @@
         <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
           <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
             <div>
-              <h3 class="text-base font-black text-slate-900">Allgemeine Projekt-Einstellungen</h3>
-              <p class="text-xs text-slate-500">Passe den Projektnamen, den Status und projektweite Eigenschaften an.</p>
+              <h3 class="text-base font-black text-slate-900">{{ $t('projects.settings_general_title') }}</h3>
+              <p class="text-xs text-slate-500">{{ $t('projects.settings_general_desc') }}</p>
             </div>
           </div>
 
           <form @submit.prevent="saveProjectSettings" class="space-y-4 max-w-xl">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Projekttitel</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.projekttitel') }}</label>
               <input
                 v-model="settingsForm.title"
                 type="text"
@@ -1610,19 +1610,19 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Projekt-Status</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.projekt_status') }}</label>
               <select
                 v-model="settingsForm.status"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
               >
                 <option value="active">Aktiv (Active)</option>
                 <option value="on_hold">Pausiert (On Hold)</option>
-                <option value="completed">Abgeschlossen (Completed)</option>
+                <option value="completed">{{ $t('projects.status_completed_option') }}</option>
               </select>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">📅 Fälligkeitsdatum</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.faelligkeitsdatum_label') }}</label>
               <input
                 v-model="settingsForm.due_date"
                 type="date"
@@ -1635,7 +1635,7 @@
 
             <!-- Sichtbarkeit im Unternehmen (Default: Privat) -->
             <div v-if="user?.company_id" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <label class="block text-xs font-bold text-slate-800">Sichtbarkeit des Projekts</label>
+              <label class="block text-xs font-bold text-slate-800">{{ $t('projects.sichtbarkeit_des_projekts') }}</label>
               <div class="grid grid-cols-2 gap-2">
                 <label
                   class="flex items-center space-x-2 p-2.5 rounded-lg border cursor-pointer transition text-xs font-semibold"
@@ -1660,7 +1660,7 @@
             <!-- Währung & Budget-Einstellungen -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Projekt-Währung</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.projekt_waehrung') }}</label>
                 <select
                   v-model="settingsForm.currency"
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
@@ -1672,7 +1672,7 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Budget (Stunden)</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.budget_stunden') }}</label>
                 <input
                   v-model="settingsForm.budget_hours"
                   type="number"
@@ -1683,7 +1683,7 @@
                 />
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Budget (Betrag)</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.budget_betrag') }}</label>
                 <input
                   v-model="settingsForm.budget_amount"
                   type="number"
@@ -1709,7 +1709,7 @@
                   v-model="settingsForm.custom_data[f.field_key]"
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Nicht ausgewählt --</option>
+                  <option value="">{{ $t('projects.nicht_ausgewaehlt') }}</option>
                   <option
                     v-for="opt in f.options"
                     :key="typeof opt === 'object' ? opt.value : opt"
@@ -1724,7 +1724,7 @@
                   v-else-if="f.field_type === 'textarea'"
                   v-model="settingsForm.custom_data[f.field_key]"
                   rows="3"
-                  placeholder="Details, Notizen oder Beschreibung..."
+                  :placeholder="$t('projects.details_notizen_placeholder')"
                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 resize-y"
                 ></textarea>
 
@@ -1815,7 +1815,7 @@
             <div>
               <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
                 <span>⚙️</span>
-                <span>Benutzerdefinierte Felder & Logik</span>
+                <span>{{ $t('projects.benutzerdefinierte_felder_logik') }}</span>
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">
                 Definiere eigene Attribute für Aufgaben oder für Projekte mit bedingter Sichtbarkeit.
@@ -1833,8 +1833,8 @@
           <div class="mb-6 pb-5 border-b border-slate-100">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">Sichtbarkeit Standard-Felder</h4>
-                <p class="text-[11px] text-slate-400 mt-0.5">Hier kannst du Standard-Felder unter bestimmten Bedingungen ausblenden.</p>
+                <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">{{ $t('projects.sichtbarkeit_standard_felder') }}</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ $t('projects.sichtbarkeit_standard_desc') }}</p>
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -1889,10 +1889,10 @@
               <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                 <tr>
                   <th class="py-2.5 px-4">Feld-Bezeichnung</th>
-                  <th class="py-2.5 px-4">Schlüssel (Key)</th>
+                  <th class="py-2.5 px-4">{{ $t('projects.schluessel_key') }}</th>
                   <th class="py-2.5 px-4">Bereich / Typ</th>
                   <th class="py-2.5 px-4">Bedingte Logik</th>
-                  <th class="py-2.5 px-4 text-right">Aktion</th>
+                  <th class="py-2.5 px-4 text-right">{{ $t('common.aktionen') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -1999,7 +1999,7 @@
                 @click="openStopModal"
                 type="button"
                 class="ml-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-black shadow-xs transition"
-                title="Stoppuhr stoppen & buchen"
+                :title="$t('projects.stoppuhr_stoppen_buchen')"
               >
                 ⏹️ Stoppen
               </button>
@@ -2010,10 +2010,10 @@
               type="button"
               @click="startProjectTimer"
               class="taskster_button_light px-4 text-xs h-[42px] rounded-lg flex items-center space-x-2"
-              title="Stoppuhr für dieses Projekt starten"
+              :title="$t('projects.stoppuhr_projekt_starten_title')"
             >
               <span>⏱️</span>
-              <span>Stoppuhr starten</span>
+              <span>{{ $t('projects.stoppuhr_starten') }}</span>
             </button>
 
             <button
@@ -2029,7 +2029,7 @@
         <!-- KPI Summary Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <div class="p-4 rounded-2xl bg-cyan-50/50 border border-cyan-100">
-            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-800">Gesamtaufwand</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-800">{{ $t('projects.gesamtaufwand') }}</span>
             <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {{ projectTimeSummary.totalHours || 0 }} <span class="text-xs font-bold text-slate-500">Std.</span>
             </div>
@@ -2039,7 +2039,7 @@
           </div>
 
           <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">Stunden-Budget</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">{{ $t('projects.stunden_budget') }}</span>
             <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {{ project?.budget_hours ? project.budget_hours + ' Std.' : 'Kein Limit' }}
             </div>
@@ -2056,7 +2056,7 @@
           </div>
 
           <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
-            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">Gesamtkosten</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">{{ $t('projects.gesamtkosten') }}</span>
             <div class="text-xl sm:text-2xl font-black text-emerald-900 mt-1">
               {{ projectTimeSummary.totalCost?.toFixed(2) || '0.00' }} <span class="text-xs font-bold text-emerald-700">{{ project?.currency || 'CHF' }}</span>
             </div>
@@ -2066,7 +2066,7 @@
           </div>
 
           <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">Kosten-Budget</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-600">{{ $t('projects.kosten_budget') }}</span>
             <div class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
               {{ project?.budget_amount ? project.budget_amount.toFixed(2) + ' ' + (project.currency || 'CHF') : 'Kein Limit' }}
             </div>
@@ -2094,8 +2094,8 @@
               v-model="timeFilterTask"
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-cyan-600"
             >
-              <option value="">Alle Buchungen (Projekt & Aufgaben)</option>
-              <option value="__project__">Nur Gesamtprojekt (ohne Aufgabe)</option>
+              <option value="">{{ $t('projects.alle_buchungen') }}</option>
+              <option value="__project__">{{ $t('projects.nur_gesamtprojekt') }}</option>
               <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                 Aufgabe: {{ t.title }}
               </option>
@@ -2105,7 +2105,7 @@
               v-model="timeFilterUser"
               class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-cyan-600"
             >
-              <option value="">Alle Mitarbeiter</option>
+              <option value="">{{ $t('projects.alle_mitarbeiter') }}</option>
               <option :value="user?.id">Ich ({{ user?.name || user?.email }})</option>
               <option v-for="m in members" :key="m.user_id" :value="m.user_id">
                 {{ m.name || m.email }}
@@ -2131,11 +2131,11 @@
               <tr>
                 <th class="py-3 px-4">Datum</th>
                 <th class="py-3 px-4">Wer</th>
-                <th class="py-3 px-4">Rapportiert auf</th>
+                <th class="py-3 px-4">{{ $t('projects.rapportiert_auf') }}</th>
                 <th class="py-3 px-4">Dauer</th>
                 <th class="py-3 px-4">Stundensatz</th>
                 <th class="py-3 px-4">Kosten</th>
-                <th class="py-3 px-4">Tätigkeit / Notiz</th>
+                <th class="py-3 px-4">{{ $t('projects.taetigkeit_notiz') }}</th>
                 <th v-if="userRole !== 'viewer'" class="py-3 px-4 text-right">Aktionen</th>
               </tr>
             </thead>
@@ -2204,7 +2204,7 @@
           <div>
             <h3 class="text-base font-black text-slate-900 flex items-center space-x-2">
               <span>📇</span>
-              <span>Kontakte & Ansprechpartner für dieses Projekt</span>
+              <span>{{ $t('projects.kontakte_fuer_projekt') }}</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
               Handwerker, Bauleiter, Behörden und Planer, die diesem Projekt zugeordnet sind. Alle Projekt- und Ordnermitglieder haben automatisch Zugriff.
@@ -2217,7 +2217,7 @@
               type="button"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg shadow-md"
             >
-              <span>+ Kontakt anlegen</span>
+              <span>{{ $t('projects.kontakt_anlegen_btn') }}</span>
             </button>
           </div>
         </div>
@@ -2225,14 +2225,14 @@
         <!-- Contact List / Cards -->
         <div v-if="loadingProjectContacts" class="py-16 text-center">
           <div class="inline-block animate-spin text-2xl mb-2">📇</div>
-          <p class="text-xs font-bold text-slate-500">Lade Projektkontakte...</p>
+          <p class="text-xs font-bold text-slate-500">{{ $t('projects.lade_projektkontakte') }}</p>
         </div>
 
         <div v-else-if="projectContacts.length === 0" class="py-16 px-6 text-center">
           <div class="w-14 h-14 rounded-2xl bg-cyan-50 text-[#00A3C4] flex items-center justify-center text-2xl font-black mx-auto mb-3 shadow-xs">
             📇
           </div>
-          <h4 class="text-sm font-black text-slate-800">Noch keine Kontakte für dieses Projekt</h4>
+          <h4 class="text-sm font-black text-slate-800">{{ $t('projects.noch_keine_kontakte') }}</h4>
           <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
             Hinterlege Poliere, Architekten oder Subunternehmer direkt für dieses Projekt. Sobald du das Projekt teilst, sehen alle Projektmitglieder diese Kontakte.
           </p>
@@ -2241,7 +2241,7 @@
             @click="openAddProjectContactModal"
             class="taskster_button px-6 text-xs h-[42px] rounded-lg inline-flex items-center space-x-2"
           >
-            <span>+ Kontakt anlegen</span>
+            <span>{{ $t('projects.kontakt_anlegen_btn') }}</span>
           </button>
         </div>
 
@@ -2309,7 +2309,7 @@
                     target="_blank"
                     rel="noopener"
                     class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold shrink-0 ml-1"
-                    title="WhatsApp Chat öffnen"
+                    :title="$t('projects.whatsapp_chat_oeffnen')"
                   >
                     WhatsApp
                   </a>
@@ -2332,7 +2332,7 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-[10px] font-semibold text-[#00A3C4] hover:underline shrink-0"
-                    title="In OpenStreetMap öffnen"
+                    :title="$t('projects.osm_oeffnen')"
                   >
                     Karte
                   </a>
@@ -2355,7 +2355,7 @@
                 @click="exportContactVCard(c)"
                 type="button"
                 class="text-[11px] font-medium text-slate-500 hover:text-[#00A3C4] flex items-center gap-1 py-0.5 px-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                title="vCard herunterladen"
+                :title="$t('projects.vcard_herunterladen')"
               >
                 <Download class="w-3 h-3" />
                 <span>vCard</span>
@@ -2373,7 +2373,7 @@
                   @click="deleteProjectContact(c)"
                   type="button"
                   class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
-                  title="Löschen"
+                  :title="$t('projects.loeschen')"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
                 </button>
@@ -2388,31 +2388,31 @@
     <!-- Modal: New Section (Abschnitt) -->
     <div v-if="showNewListModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-black text-slate-900 mb-1">Neuen Abschnitt anlegen</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">{{ $t('projects.abschnitt_anlegen_title') }}</h3>
         <p class="text-xs text-slate-500 mb-4">
           Abschnitte gliedern dein Projekt in Phasen, Kategorien oder Workflow-Schritte.
         </p>
 
         <form @submit.prevent="createList" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Titel des Abschnitts</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.abschnitt_titel_label') }}</label>
             <input
               v-model="newListTitle"
               type="text"
               required
-              placeholder="z.B. Vorbereitung, In Bearbeitung oder Abnahme"
+              :placeholder="$t('projects.abschnitt_titel_placeholder')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Sichtbarkeits-Modus</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.sichtbarkeits_modus') }}</label>
             <select
               v-model="newListAccessMode"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
-              <option value="inherit">Standard (Alle Projektmitglieder haben Zugriff)</option>
-              <option value="custom">Eingeschränkt (Nur Owner & explizit berechtigte Personen)</option>
+              <option value="inherit">{{ $t('projects.sichtbarkeit_standard') }}</option>
+              <option value="custom">{{ $t('projects.sichtbarkeit_eingeschraenkt') }}</option>
             </select>
           </div>
 
@@ -2444,7 +2444,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-xl">📋</span>
-              <h3 class="text-lg font-black text-slate-900">Projekt-Abschnitte verwalten</h3>
+              <h3 class="text-lg font-black text-slate-900">{{ $t('projects.abschnitte_verwalten_title') }}</h3>
             </div>
             <p class="text-xs text-slate-500 mt-1">
               Passe die Reihenfolge per Drag & Drop oder Pfeiltasten an, benenne Abschnitte um oder entferne Phasen.
@@ -2478,7 +2478,7 @@
             >
               <!-- Drag Handle & Index -->
               <div class="flex items-center space-x-3">
-                <span class="text-slate-400 hover:text-cyan-600 cursor-grab active:cursor-grabbing text-sm select-none" title="Ziehen zum Verschieben">⋮⋮</span>
+                <span class="text-slate-400 hover:text-cyan-600 cursor-grab active:cursor-grabbing text-sm select-none" :title="$t('projects.ziehen_zum_verschieben')">⋮⋮</span>
                 <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center select-none">
                   {{ idx + 1 }}
                 </span>
@@ -2490,7 +2490,7 @@
                   v-model="sec.title"
                   type="text"
                   required
-                  placeholder="Abschnittsbezeichnung"
+                  :placeholder="$t('projects.abschnittsbezeichnung')"
                   class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
                 />
 
@@ -2511,7 +2511,7 @@
                     type="button"
                     @click="sec.color = null"
                     class="text-[10px] text-slate-400 hover:text-slate-700 px-1"
-                    title="Farbe zurücksetzen"
+                    :title="$t('projects.farbe_zuruecksetzen')"
                   >
                     ✕
                   </button>
@@ -2543,7 +2543,7 @@
                   @click="moveSectionUp(idx)"
                   :disabled="idx === 0"
                   class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition"
-                  title="Nach oben verschieben"
+                  :title="$t('projects.nach_oben')"
                 >
                   ⬆️
                 </button>
@@ -2552,7 +2552,7 @@
                   @click="moveSectionDown(idx)"
                   :disabled="idx === managingSections.length - 1"
                   class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition"
-                  title="Nach unten verschieben"
+                  :title="$t('projects.nach_unten')"
                 >
                   ⬇️
                 </button>
@@ -2560,7 +2560,7 @@
                   type="button"
                   @click="deleteSectionInModal(idx)"
                   class="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition ml-1"
-                  title="Abschnitt löschen"
+                  :title="$t('projects.abschnitt_loeschen_title')"
                 >
                   🗑️
                 </button>
@@ -2573,7 +2573,7 @@
             <input
               v-model="newSectionTitleInModal"
               type="text"
-              placeholder="+ Weiterer Abschnitt (z.B. Zwischenprüfung, Abnahme)..."
+              :placeholder="$t('projects.weiterer_abschnitt_placeholder')"
               class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600"
               @keyup.enter="addSectionInModal"
             />
@@ -2614,54 +2614,54 @@
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-black text-slate-900">
-            {{ isEditingTask ? 'Aufgabe bearbeiten' : 'Neue Aufgabe erfassen' }}
+            {{ isEditingTask ? $t('projects.aufgabe_bearbeiten') : $t('projects.neue_aufgabe_erfassen') }}
           </h3>
           <span v-if="userRole === 'viewer'" class="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-            Viewer Read-Only
+            {{ $t('projects.viewer_readonly') }}
           </span>
         </div>
 
         <form @submit.prevent="saveTask" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Aufgabentitel</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.aufgabentitel') }}</label>
             <input
               v-model="taskForm.title"
               :disabled="userRole === 'viewer'"
               type="text"
               required
-              placeholder="z.B. Konzeptentwurf finalisieren"
+              :placeholder="$t('projects.aufgabentitel_placeholder')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Beschreibung</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.beschreibung') }}</label>
             <textarea
               v-model="taskForm.description"
               :disabled="userRole === 'viewer'"
               rows="3"
-              placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
+              :placeholder="$t('projects.beschreibung_placeholder')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
             ></textarea>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-show="isStandardFieldVisible('status', taskForm) || isStandardFieldVisible('due_date', taskForm)">
             <div v-show="isStandardFieldVisible('status', taskForm)" :class="{'sm:col-span-2': !isStandardFieldVisible('due_date', taskForm)}">
-              <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('common.status') }}</label>
               <select
                 v-model="taskForm.status"
                 :disabled="userRole === 'viewer'"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               >
-                <option value="todo">Zu erledigen (Todo)</option>
-                <option value="in_progress">In Arbeit (In Progress)</option>
-                <option value="review">In Prüfung (Review)</option>
-                <option value="done">Abgeschlossen (Done)</option>
+                <option value="todo">{{ $t('projects.status_todo') }}</option>
+                <option value="in_progress">{{ $t('projects.status_in_progress') }}</option>
+                <option value="review">{{ $t('projects.status_review') }}</option>
+                <option value="done">{{ $t('projects.status_done') }}</option>
               </select>
             </div>
 
             <div v-show="isStandardFieldVisible('due_date', taskForm)" :class="{'sm:col-span-2': !isStandardFieldVisible('status', taskForm)}">
-              <label class="block text-xs font-bold text-slate-700 mb-1">Fälligkeitsdatum</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.faelligkeitsdatum') }}</label>
               <input
                 v-model="taskForm.due_date"
                 :disabled="userRole === 'viewer'"
@@ -2674,7 +2674,7 @@
           <!-- Dynamic Task Custom Fields with Conditional Logic -->
           <div v-if="taskCustomFields.length > 0" class="pt-4 border-t border-slate-100 space-y-3">
             <h4 class="text-xs font-bold text-cyan-800 uppercase tracking-wider">
-              Zusatzfelder
+              {{ $t('projects.zusatzfelder') }}
             </h4>
             <div
               v-for="f in taskCustomFields"
@@ -2691,7 +2691,7 @@
                 :disabled="userRole === 'viewer'"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60"
               >
-                <option value="">-- Nicht ausgewählt --</option>
+                <option value="">{{ $t('projects.nicht_ausgewaehlt') }}</option>
                 <option
                   v-for="opt in f.options"
                   :key="typeof opt === 'object' ? opt.value : opt"
@@ -2707,7 +2707,7 @@
                 v-model="taskForm.custom_data[f.field_key]"
                 :disabled="userRole === 'viewer'"
                 rows="3"
-                placeholder="Längeren Text / Notizen eingeben..."
+                :placeholder="$t('projects.laengeren_text_eingeben')"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 disabled:opacity-60 resize-y"
               ></textarea>
 
@@ -2853,7 +2853,7 @@
                   🏷️ {{ getTaskSectionTitle(drawerTask?.list_id) }}
                 </span>
                 <span v-if="isCreatingTaskInDrawer" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">
-                  Neu
+                  {{ $t('projects.neu') }}
                 </span>
               </div>
 
@@ -2865,7 +2865,7 @@
                 @keyup.enter="autoSaveDrawer"
                 :disabled="userRole === 'viewer'"
                 class="w-full text-xl sm:text-2xl font-black text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white rounded-xl px-2 -mx-2 py-1 placeholder-slate-400 border border-transparent focus:border-[#00A3C4] focus:outline-none transition disabled:cursor-default"
-                placeholder="Aufgabentitel eingeben..."
+                :placeholder="$t('projects.aufgabentitel_inline_placeholder')"
               />
             </div>
 
@@ -2875,10 +2875,10 @@
               <div
                 v-if="drawerTask"
                 class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-2xs select-none"
-                title="Bisher erfasster Gesamtaufwand auf dieser Aufgabe"
+                :title="$t('projects.gesamtaufwand_title')"
               >
                 <span>⏱️</span>
-                <span>{{ drawerTask.tracked_hours || 0 }} Std.</span>
+                <span>{{ drawerTask.tracked_hours || 0 }} {{ $t('projects.std') }}</span>
                 <span v-if="drawerTask.budget_hours" class="text-slate-400 font-normal">/ {{ drawerTask.budget_hours }}h</span>
               </div>
 
@@ -2895,16 +2895,16 @@
                     type="button"
                     @click="openStopModal"
                     class="taskster_button_accent px-2.5 text-[11px] h-[28px] rounded-lg ml-1 font-bold shadow-xs flex items-center gap-1"
-                    title="Stoppen & Buchen"
+                    :title="$t('projects.stoppen_und_buchen')"
                   >
                     <span>⏹️</span>
-                    <span>Stopp</span>
+                    <span>{{ $t('projects.stopp') }}</span>
                   </button>
                   <button
                     type="button"
                     @click="discardTimer"
                     class="text-slate-400 hover:text-rose-400 p-1 text-xs transition"
-                    title="Timer verwerfen"
+                    :title="$t('projects.timer_verwerfen')"
                   >
                     ✕
                   </button>
@@ -2916,11 +2916,11 @@
                   type="button"
                   @click="startTaskTimer(drawerTask)"
                   class="px-3 text-xs h-[38px] rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1.5 shadow-2xs transition"
-                  title="Stoppuhr auf diese Aufgabe umschalten"
+                  :title="$t('projects.timer_umschalten_title')"
                 >
                   <span>⚠️</span>
-                  <span class="hidden sm:inline">Hierher wechseln</span>
-                  <span class="sm:hidden">Wechseln</span>
+                  <span class="hidden sm:inline">{{ $t('projects.hierher_wechseln') }}</span>
+                  <span class="sm:hidden">{{ $t('projects.wechseln') }}</span>
                 </button>
 
                 <!-- Stoppuhr inaktiv: Start-Button -->
@@ -2929,10 +2929,10 @@
                   type="button"
                   @click="startTaskTimer(drawerTask)"
                   class="taskster_button px-3.5 text-xs h-[38px] rounded-xl flex items-center gap-1.5 shadow-xs"
-                  title="Stoppuhr für diese Aufgabe starten"
+                  :title="$t('projects.stoppuhr_starten_title')"
                 >
                   <span>⏱️</span>
-                  <span>Start</span>
+                  <span>{{ $t('projects.start') }}</span>
                 </button>
               </div>
 
@@ -2941,7 +2941,7 @@
                 type="button"
                 @click="closeTaskDrawer"
                 class="text-slate-400 hover:text-slate-800 w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center shrink-0 transition text-lg font-bold ml-1"
-                title="Schliessen"
+                :title="$t('projects.schliessen')"
               >
                 ✕
               </button>
@@ -2960,7 +2960,7 @@
             <div v-if="drawerTask && visibleDrawerFields.length > 0" class="p-4 rounded-2xl bg-cyan-50/40 border border-cyan-100">
               <div class="text-[10px] font-black text-cyan-800 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <span>⚙️</span>
-                <span>Zusatzfelder</span>
+                <span>{{ $t('projects.zusatzfelder') }}</span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div
@@ -2981,7 +2981,7 @@
                     :disabled="userRole === 'viewer'"
                     class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs"
                   >
-                    <option value="">-- Keine Auswahl --</option>
+                    <option value="">{{ $t('projects.keine_auswahl') }}</option>
                     <option
                       v-for="opt in f.options"
                       :key="typeof opt === 'object' ? opt.value : opt"
@@ -2998,7 +2998,7 @@
                     @blur="autoSaveDrawer"
                     rows="3"
                     :disabled="userRole === 'viewer'"
-                    placeholder="Details, Notizen oder Beschreibung..."
+                    :placeholder="$t('projects.details_notizen_placeholder')"
                     class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#00A3C4] disabled:cursor-default shadow-2xs resize-y"
                   ></textarea>
 
@@ -3056,7 +3056,7 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       class="p-1.5 rounded-lg bg-cyan-50 text-[#00A3C4] hover:bg-cyan-100 transition shrink-0"
-                      title="Link öffnen"
+                      :title="$t('projects.link_oeffnen')"
                     >
                       <ExternalLink class="w-3.5 h-3.5" />
                     </a>
@@ -3119,14 +3119,14 @@
             <div>
               <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
                 <span>📋</span>
-                <span>Beschreibung</span>
+                <span>{{ $t('projects.beschreibung') }}</span>
               </label>
               <textarea
                 v-model="drawerTask.description"
                 @blur="autoSaveDrawer"
                 :disabled="userRole === 'viewer'"
                 rows="4"
-                placeholder="Detaillierte Aufgabenbeschreibung, Anforderungen oder Zwischenziele..."
+                :placeholder="$t('projects.beschreibung_placeholder')"
                 class="w-full px-4 py-3 bg-slate-50 hover:bg-slate-50/80 focus:bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20 transition resize-none disabled:cursor-default"
               ></textarea>
             </div>
@@ -3136,11 +3136,11 @@
               <div class="flex items-center justify-between">
                 <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
                   <span>✅</span>
-                  <span>Checkliste & Unteraufgaben</span>
+                  <span>{{ $t('projects.checkliste_unteraufgaben') }}</span>
                 </label>
                 <span v-if="drawerTask.checklist?.length || drawerSubtasks?.length" class="text-xs font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-xs">
                   {{ (drawerTask.checklist || []).filter((c:any) => c.done).length + (drawerSubtasks || []).filter((s:any) => s.is_done).length }} /
-                  {{ (drawerTask.checklist || []).length + (drawerSubtasks || []).length }} erledigt
+                  {{ (drawerTask.checklist || []).length + (drawerSubtasks || []).length }} {{ $t('projects.erledigt_count') }}
                 </span>
               </div>
 
@@ -3160,7 +3160,7 @@
               <!-- Checklist Items & nested Subtasks -->
               <div class="space-y-2">
                 <div v-if="!drawerTask.checklist?.length && !drawerSubtasks?.length" class="text-xs text-slate-400 italic text-center py-3 border border-dashed border-slate-200 rounded-xl">
-                  Keine Checklisten-Punkte oder Unteraufgaben vorhanden.
+                  {{ $t('projects.keine_checklisten_punkte') }}
                 </div>
 
                 <div
@@ -3188,7 +3188,7 @@
                       v-if="userRole !== 'viewer'"
                       @click="removeChecklistItem(i)"
                       class="opacity-0 group-hover/cl:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition text-xs"
-                      title="Hauptpunkt löschen"
+                      :title="$t('projects.hauptpunkt_loeschen')"
                     >
                       ✕
                     </button>
@@ -3219,7 +3219,7 @@
                         v-if="userRole !== 'viewer'"
                         @click="deleteSubtask(sub.id)"
                         class="opacity-0 group-hover/sub:opacity-100 text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition text-[11px]"
-                        title="Unterpunkt löschen"
+                        :title="$t('projects.unterpunkt_loeschen')"
                       >
                         ✕
                       </button>
@@ -3231,7 +3231,7 @@
                         v-model="itemSubtaskInputs[item.id || i]"
                         @keyup.enter="addSubtaskToItem(item)"
                         type="text"
-                        placeholder="+ Unterpunkt zur Checkliste hinzufügen..."
+                        :placeholder="$t('projects.unterpunkt_placeholder')"
                         class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#00A3C4]"
                       />
                       <button
@@ -3239,7 +3239,7 @@
                         @click="addSubtaskToItem(item)"
                         class="taskster_button px-3 text-[11px] h-[30px] rounded-lg"
                       >
-                        + Unterpunkt
+                        {{ $t('projects.unterpunkt_btn') }}
                       </button>
                     </div>
                   </div>
@@ -3252,7 +3252,7 @@
                   v-model="newChecklistInput"
                   @keyup.enter="addChecklistItem"
                   type="text"
-                  placeholder="+ Neuer Haupt-Checklistenpunkt..."
+                  :placeholder="$t('projects.hauptpunkt_placeholder')"
                   class="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20"
                 />
                 <button
@@ -3260,7 +3260,7 @@
                   type="button"
                   class="taskster_button px-4 text-xs h-[36px] rounded-lg"
                 >
-                  + Hauptpunkt
+                  {{ $t('projects.hauptpunkt_btn') }}
                 </button>
               </div>
             </div>
@@ -3270,9 +3270,9 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                   <span class="text-sm">⏱️</span>
-                  <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Zeiterfassung & Budget</span>
+                  <span class="text-xs font-black text-slate-800 uppercase tracking-wider">{{ $t('projects.zeiterfassung_budget') }}</span>
                   <span class="text-xs font-bold text-cyan-900 bg-cyan-100/80 px-2.5 py-0.5 rounded-full border border-cyan-300/60 shadow-2xs">
-                    {{ drawerTask.tracked_hours || 0 }} Std.
+                    {{ drawerTask.tracked_hours || 0 }} {{ $t('projects.std') }}
                     <span v-if="drawerTask.budget_hours" class="text-cyan-700 font-medium"> / {{ drawerTask.budget_hours }} Std.</span>
                   </span>
                 </div>
@@ -3282,7 +3282,7 @@
                   @click="showDrawerTimeMenu = !showDrawerTimeMenu"
                   class="text-xs font-bold text-cyan-800 hover:text-cyan-950 flex items-center space-x-1 px-3 py-1.5 rounded-xl hover:bg-cyan-100/70 bg-white border border-cyan-200 shadow-2xs transition cursor-pointer"
                 >
-                  <span>{{ showDrawerTimeMenu ? 'Menü verbergen' : 'Budget & Manuell buchen' }}</span>
+                  <span>{{ showDrawerTimeMenu ? $t('projects.menu_verbergen') : $t('projects.budget_manuell_buchen') }}</span>
                   <span class="text-[10px] transform transition-transform" :class="{ 'rotate-180': showDrawerTimeMenu }">▼</span>
                 </button>
               </div>
@@ -3301,7 +3301,7 @@
                 <!-- Budget Inputs -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Stunden)</label>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('projects.aufgaben_budget_stunden') }}</label>
                     <input
                       v-model="drawerTask.budget_hours"
                       @blur="autoSaveDrawer"
@@ -3314,7 +3314,7 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Aufgaben-Budget (Betrag in {{ project?.currency || 'CHF' }})</label>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">{{ $t('projects.aufgaben_budget_betrag', { currency: project?.currency || 'CHF' }) }}</label>
                     <input
                       v-model="drawerTask.budget_amount"
                       @blur="autoSaveDrawer"
@@ -3331,12 +3331,12 @@
                 <!-- Quick Time Logging Form (Manuell) -->
                 <div v-if="userRole !== 'viewer'" class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
                   <div class="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center justify-between">
-                    <span>Manuell Zeit auf diese Aufgabe buchen</span>
-                    <span class="text-[10px] text-slate-400 font-normal">Wird mit * markiert</span>
+                    <span>{{ $t('projects.manuell_zeit_buchen') }}</span>
+                    <span class="text-[10px] text-slate-400 font-normal">{{ $t('projects.wird_mit_stern_markiert') }}</span>
                   </div>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Dauer (Std.)</label>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">{{ $t('projects.dauer_std') }}</label>
                       <input
                         v-model="drawerTimeForm.duration_hours"
                         type="number"
@@ -3346,7 +3346,7 @@
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Datum</label>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">{{ $t('projects.datum') }}</label>
                       <input
                         v-model="drawerTimeForm.entry_date"
                         type="date"
@@ -3354,7 +3354,7 @@
                       />
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Stundensatz ({{ project?.currency || 'CHF' }})</label>
+                      <label class="block text-[10px] font-bold text-slate-500 mb-0.5">{{ $t('projects.stundensatz') }} ({{ project?.currency || 'CHF' }})</label>
                       <input
                         v-model="drawerTimeForm.hourly_rate"
                         type="number"
@@ -3367,7 +3367,7 @@
                   <div class="flex items-center gap-2">
                     <input
                       v-model="drawerTimeForm.description"
-                      placeholder="Beschreibung / Notiz..."
+                      :placeholder="$t('projects.beschreibung_notiz_placeholder')"
                       class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-cyan-600"
                     />
                     <button
@@ -3375,7 +3375,7 @@
                       type="button"
                       class="taskster_button px-4 text-xs h-[34px] rounded-lg"
                     >
-                      + Buchen
+                      {{ $t('projects.buchen_btn') }}
                     </button>
                   </div>
                 </div>
@@ -3404,7 +3404,7 @@
                         @click="openEditTimeModal(te)"
                         class="text-cyan-700 hover:text-cyan-900 font-bold text-[11px]"
                       >
-                        Ändern
+                        {{ $t('projects.aendern') }}
                       </button>
                       <button
                         v-if="te.user_id === user?.id || userRole === 'owner' || userRole === 'admin'"
@@ -3417,7 +3417,7 @@
                   </div>
                 </div>
                 <div v-else class="text-[11px] text-slate-500 italic text-center py-2">
-                  Noch keine Zeiten auf diese Aufgabe gebucht.
+                  {{ $t('projects.noch_keine_zeiten_gebucht') }}
                 </div>
               </div>
             </div>
@@ -3426,13 +3426,13 @@
             <div>
               <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
                 <span>💬</span>
-                <span>Kommentare & Besprechungsnotizen</span>
+                <span>{{ $t('projects.kommentare_notizen') }}</span>
               </label>
 
               <!-- Feed of comments -->
               <div class="space-y-3 mb-4">
                 <div v-if="drawerComments.length === 0" class="text-xs text-slate-500 italic text-center py-6 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                  Noch keine Kommentare oder Notizen vorhanden.
+                  {{ $t('projects.noch_keine_kommentare') }}
                 </div>
                 <div v-for="c in drawerComments" :key="c.id" class="flex items-start gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00A3C4] to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
@@ -3462,18 +3462,18 @@
                     v-model="newCommentInput"
                     @keydown.ctrl.enter="addComment"
                     rows="2"
-                    placeholder="Kommentar schreiben... (Strg+Enter zum Senden)"
+                    :placeholder="$t('projects.kommentar_placeholder')"
                     class="w-full px-3.5 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00A3C4] focus:ring-2 focus:ring-cyan-500/20 resize-none transition"
                   ></textarea>
                   <div class="flex items-center justify-between mt-1.5">
-                    <span class="text-[10px] text-slate-500 font-medium hidden sm:inline">Tipp: Mit Strg+Enter absenden</span>
+                    <span class="text-[10px] text-slate-500 font-medium hidden sm:inline">{{ $t('projects.tipp_strg_enter') }}</span>
                     <button
                       @click="addComment"
                       :disabled="!newCommentInput.trim()"
                       type="button"
                       class="taskster_button px-4 text-xs h-[34px] rounded-lg"
                     >
-                      Senden
+                      {{ $t('projects.senden') }}
                     </button>
                   </div>
                 </div>
@@ -3484,7 +3484,7 @@
             <div>
               <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
                 <span>📎</span>
-                <span>Dateianhänge</span>
+                <span>{{ $t('projects.dateianhaenge') }}</span>
               </label>
 
               <!-- Upload zone -->
@@ -3492,8 +3492,8 @@
                 <input ref="fileInput" type="file" multiple @change="onFileSelected" class="hidden" />
                 <div class="flex flex-col items-center text-center">
                   <span class="text-3xl mb-2">📤</span>
-                  <p class="text-xs font-bold text-slate-700">Dateien hierher ziehen oder klicken zum Auswählen</p>
-                  <p class="text-[10px] text-slate-500 mt-1">Max. 10 MB pro Datei · Bilder, PDFs, Office-Dokumente</p>
+                  <p class="text-xs font-bold text-slate-700">{{ $t('projects.dateien_hierher_ziehen') }}</p>
+                  <p class="text-[10px] text-slate-500 mt-1">{{ $t('projects.max_file_size_desc') }}</p>
                 </div>
               </div>
 
@@ -3513,7 +3513,7 @@
               <!-- Documents list -->
               <div class="space-y-2">
                 <div v-if="drawerDocuments.length === 0 && uploadingFiles.length === 0" class="text-xs text-slate-500 italic text-center py-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                  Noch keine Dateien angehängt.
+                  {{ $t('projects.noch_keine_dateien') }}
                 </div>
                 <div v-for="doc in drawerDocuments" :key="doc.id" class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-xs hover:border-slate-300 transition group/doc">
                   <!-- File icon based on mime type -->
@@ -3526,14 +3526,14 @@
                       <span>{{ formatFileSize(doc.file_size) }}</span>
                       <span>·</span>
                       <span>{{ new Date(doc.created_at).toLocaleDateString('de-CH') }}</span>
-                      <span v-if="doc.uploaded_by_name" class="text-cyan-700">· von {{ doc.uploaded_by_name }}</span>
+                      <span v-if="doc.uploaded_by_name" class="text-cyan-700">· {{ $t('projects.von_user') }} {{ doc.uploaded_by_name }}</span>
                     </p>
                   </div>
                   <div class="flex items-center gap-1">
-                    <a :href="doc.storage_path" target="_blank" class="p-2 rounded-lg text-slate-500 hover:text-cyan-700 hover:bg-cyan-50 transition" title="Herunterladen">
+                    <a :href="doc.storage_path" target="_blank" class="p-2 rounded-lg text-slate-500 hover:text-cyan-700 hover:bg-cyan-50 transition" :title="$t('projects.herunterladen')">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
-                    <button v-if="userRole !== 'viewer'" @click="deleteDocument(doc.id)" class="opacity-0 group-hover/doc:opacity-100 p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Löschen">
+                    <button v-if="userRole !== 'viewer'" @click="deleteDocument(doc.id)" class="opacity-0 group-hover/doc:opacity-100 p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" :title="$t('projects.loeschen')">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10m4-10v10M10 7v10"/></svg>
                     </button>
                   </div>
@@ -3547,7 +3547,7 @@
             
             <!-- Section / List mover -->
             <div>
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Abschnitt</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">{{ $t('projects.abschnitt') }}</label>
               <select
                 v-model="drawerTask.list_id"
                 @change="onDrawerSectionChange"
@@ -3562,7 +3562,7 @@
 
             <!-- Status Dropdown (Viewer darf abhaken!) -->
             <div v-show="isStandardFieldVisible('status', drawerTask)">
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Status</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">{{ $t('common.status') }}</label>
               <select
                 v-model="drawerTask.status"
                 @change="autoSaveDrawer"
@@ -3574,16 +3574,16 @@
                   'bg-white text-slate-800 border-slate-300': drawerTask.status === 'todo'
                 }"
               >
-                <option value="todo">📋 Zu erledigen (Todo)</option>
-                <option value="in_progress">🔄 In Arbeit (In Progress)</option>
-                <option value="review">🔍 In Prüfung (Review)</option>
-                <option value="done">✅ Abgeschlossen (Done)</option>
+                <option value="todo">{{ $t('projects.status_todo_icon') }}</option>
+                <option value="in_progress">{{ $t('projects.status_in_progress_icon') }}</option>
+                <option value="review">{{ $t('projects.status_review_icon') }}</option>
+                <option value="done">{{ $t('projects.status_done_icon') }}</option>
               </select>
             </div>
 
             <!-- Priority Dropdown -->
             <div v-show="isStandardFieldVisible('priority', drawerTask)">
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">Priorität</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">{{ $t('projects.prioritaet') }}</label>
               <select
                 v-model="drawerTask.priority"
                 @change="autoSaveDrawer"
@@ -3596,10 +3596,10 @@
                   'bg-emerald-50 text-emerald-800 border-emerald-300': drawerTask.priority === 'niedrig'
                 }"
               >
-                <option value="niedrig">🟢 Niedrig</option>
-                <option value="normal">🔵 Normal</option>
-                <option value="hoch">🟠 Hoch</option>
-                <option value="dringend">🔴 Dringend</option>
+                <option value="niedrig">{{ $t('projects.prio_low') }}</option>
+                <option value="normal">{{ $t('projects.prio_normal') }}</option>
+                <option value="hoch">{{ $t('projects.prio_high') }}</option>
+                <option value="dringend">{{ $t('projects.prio_urgent') }}</option>
               </select>
             </div>
 
@@ -3607,9 +3607,9 @@
             <div v-show="isStandardFieldVisible('assigned_to', drawerTask)">
               <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
-                  👥 Zuweisung ({{ drawerTaskAssignedUsers.length }})
+                  {{ $t('projects.zuweisung_label') }} ({{ drawerTaskAssignedUsers.length }})
                 </label>
-                <span class="text-[10px] text-slate-400 font-semibold">Mehrfachauswahl möglich</span>
+                <span class="text-[10px] text-slate-400 font-semibold">{{ $t('projects.mehrfachauswahl_moeglich') }}</span>
               </div>
 
               <!-- Selected assignees chips -->
@@ -3642,7 +3642,7 @@
                   @click="showAssigneeDropdown = !showAssigneeDropdown"
                   class="w-full px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-between shadow-xs transition"
                 >
-                  <span>+ Mitglied zuweisen / ändern...</span>
+                  <span>{{ $t('projects.mitglied_zuweisen_aendern') }}</span>
                   <span class="text-xs">▼</span>
                 </button>
 
@@ -3683,7 +3683,7 @@
 
             <!-- Due Date -->
             <div v-show="isStandardFieldVisible('due_date', drawerTask)">
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">📅 Fälligkeitsdatum</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">{{ $t('projects.faelligkeitsdatum_label') }}</label>
               <input
                 v-model="drawerTask.due_date"
                 @change="autoSaveDrawer"
@@ -3695,7 +3695,7 @@
 
             <!-- Color Palette Chips -->
             <div v-show="isStandardFieldVisible('color', drawerTask)">
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-2">🎨 Farbmarkierung</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-2">{{ $t('projects.farbmarkierung_label') }}</label>
               <div class="flex items-center flex-wrap gap-2">
                 <button
                   v-for="col in taskColors"
@@ -3714,14 +3714,14 @@
                   @click="setTaskColor('')"
                   class="text-[11px] text-slate-500 hover:text-slate-800 underline ml-1 font-bold"
                 >
-                  Entfernen
+                  {{ $t('projects.farbe_entfernen') }}
                 </button>
               </div>
             </div>
 
             <!-- Tags -->
             <div v-show="isStandardFieldVisible('tags', drawerTask)">
-              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">🏷️ Tags</label>
+              <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5">{{ $t('projects.tags_label') }}</label>
               <div class="flex flex-wrap gap-1.5 mb-2">
                 <span
                   v-for="(tag, i) in drawerTask.tags"
@@ -3731,14 +3731,14 @@
                   <span>{{ tag }}</span>
                   <button v-if="userRole !== 'viewer'" @click="removeTag(i)" class="text-cyan-600 hover:text-cyan-950 ml-0.5">✕</button>
                 </span>
-                <span v-if="!drawerTask.tags?.length" class="text-[11px] text-slate-400 italic">Keine Tags</span>
+                <span v-if="!drawerTask.tags?.length" class="text-[11px] text-slate-400 italic">{{ $t('projects.keine_tags') }}</span>
               </div>
               <div v-if="userRole !== 'viewer'" class="flex items-center gap-1.5">
                 <input
                   v-model="newTagInput"
                   @keyup.enter="addTag"
                   type="text"
-                  placeholder="Tag + Enter..."
+                  :placeholder="$t('projects.tag_input_placeholder')"
                   class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-[#00A3C4] shadow-xs"
                 />
                 <button @click="addTag" type="button" class="taskster_button px-3 text-xs h-[30px] rounded-lg">+</button>
@@ -3755,7 +3755,7 @@
                 class="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 transition flex items-center justify-center space-x-1.5"
               >
                 <span>🗑️</span>
-                <span>Aufgabe löschen</span>
+                <span>{{ $t('projects.aufgabe_loeschen_btn') }}</span>
               </button>
             </div>
           </div>
@@ -3765,7 +3765,7 @@
         <div class="px-6 py-3.5 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div class="text-[11px] text-slate-600 font-semibold flex items-center space-x-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>{{ isCreatingTaskInDrawer ? 'Aufgabe wird beim Speichern/Schliessen angelegt' : 'Änderungen werden automatisch gespeichert' }}</span>
+            <span>{{ isCreatingTaskInDrawer ? $t('projects.drawer_create_notice') : $t('projects.drawer_autosave_notice') }}</span>
           </div>
           <div class="flex items-center space-x-2">
             <button
@@ -3774,14 +3774,14 @@
               type="button"
               class="taskster_button px-6 text-xs h-[38px] rounded-lg"
             >
-              Aufgabe erstellen
+              {{ $t('projects.aufgabe_erstellen_btn') }}
             </button>
             <button
               @click="closeTaskDrawer"
               type="button"
               class="taskster_button_light px-6 text-xs h-[38px] rounded-lg"
             >
-              Schliessen
+              {{ $t('projects.schliessen') }}
             </button>
           </div>
         </div>
@@ -3796,10 +3796,10 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-2xl">📊</span>
-              <h3 class="text-lg font-black text-slate-900">Aufgaben aus Excel / CSV importieren</h3>
+              <h3 class="text-lg font-black text-slate-900">{{ $t('projects.import_modal_title') }}</h3>
             </div>
             <p class="text-xs text-slate-500 mt-0.5">
-              Lade eine CSV- oder Tabellendatei hoch und weise die Spalten flexibel den Feldern in Taskster zu.
+              {{ $t('projects.import_modal_desc') }}
             </p>
           </div>
           <button
@@ -3827,8 +3827,8 @@
               @change="onCsvFileSelected"
             />
             <span class="text-4xl mb-3">📁</span>
-            <p class="text-sm font-bold text-slate-800">Excel- (.xlsx, .xls) oder CSV-Datei auswählen oder hierher ziehen</p>
-            <p class="text-xs text-slate-500 mt-1">Unterstützt Formate: Excel (.xlsx, .xls) sowie CSV, TSV (Trennzeichen: Komma, Semikolon, Tab)</p>
+            <p class="text-sm font-bold text-slate-800">{{ $t('projects.import_drag_drop_title') }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ $t('projects.import_formats_desc') }}</p>
           </div>
 
           <div v-if="importError" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
@@ -3843,14 +3843,14 @@
               📄 Datei erkannt: <strong>{{ importFileName }}</strong> ({{ importParsedRows.length }} Zeilen gefunden)
             </span>
             <button @click="importStep = 1" type="button" class="text-cyan-700 underline font-bold hover:text-cyan-950">
-              Andere Datei wählen
+              {{ $t('projects.import_choose_other_file') }}
             </button>
           </div>
 
           <!-- Target section -->
           <div>
             <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">
-              Ziel-Abschnitt für importierte Aufgaben:
+              {{ $t('projects.import_target_section') }}
             </label>
             <select
               v-model="importTargetListId"
@@ -3864,16 +3864,16 @@
           <div>
             <div class="flex items-center justify-between mb-2">
               <label class="text-xs font-black text-slate-800 uppercase tracking-wider">
-                Spaltenzuweisung (Mapping):
+                {{ $t('projects.import_mapping_title') }}
               </label>
               <div class="flex items-center space-x-2">
-                <span class="text-[11px] text-slate-500 font-medium">Titel-Spalte ist Pflichtfeld</span>
+                <span class="text-[11px] text-slate-500 font-medium">{{ $t('projects.import_title_mandatory') }}</span>
                 <button
                   type="button"
                   @click="openNewFieldModal"
                   class="text-[11px] font-bold text-[#00A3C4] hover:underline"
                 >
-                  + Eigenes Feld anlegen
+                  {{ $t('projects.import_create_custom_field') }}
                 </button>
               </div>
             </div>
@@ -3882,9 +3882,9 @@
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
-                    <th class="py-2.5 px-4">Spalte in Datei</th>
-                    <th class="py-2.5 px-4">Beispielwert (Zeile 1)</th>
-                    <th class="py-2.5 px-4">Wird zugewiesen an Feld</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.import_col_in_file') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.import_example_value') }}</th>
+                    <th class="py-2.5 px-4">{{ $t('projects.import_mapped_to') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -3902,18 +3902,18 @@
                         class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:border-cyan-600"
                         :class="importColumnMapping[hIdx] === 'title' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : (importColumnMapping[hIdx]?.startsWith('custom:') ? 'border-amber-400 bg-amber-50/40 text-amber-900 font-semibold' : '')"
                       >
-                        <option value="">-- Ignorieren --</option>
-                        <optgroup label="Standard-Felder">
-                          <option value="title">📌 Aufgabentitel (Pflicht)</option>
-                          <option value="description">📋 Beschreibung</option>
-                          <option value="status">Status (todo/in_progress/done)</option>
-                          <option value="due_date">📅 Fälligkeitsdatum</option>
-                          <option value="priority">Priorität (niedrig/normal/hoch/dringend)</option>
-                          <option value="tags">🏷️ Tags</option>
+                        <option value="">{{ $t('projects.import_ignore') }}</option>
+                        <optgroup :label="$t('projects.import_standard_fields')">
+                          <option value="title">{{ $t('projects.import_field_title') }}</option>
+                          <option value="description">{{ $t('projects.import_field_desc') }}</option>
+                          <option value="status">{{ $t('projects.import_field_status') }}</option>
+                          <option value="due_date">{{ $t('projects.import_field_due') }}</option>
+                          <option value="priority">{{ $t('projects.import_field_priority') }}</option>
+                          <option value="tags">{{ $t('projects.import_field_tags') }}</option>
                         </optgroup>
 
                         <!-- Bestehende Zusatzfelder -->
-                        <optgroup v-if="fields.length > 0" label="Bestehende Zusatzfelder">
+                        <optgroup v-if="fields.length > 0" :label="$t('projects.import_existing_custom_fields')">
                           <option
                             v-for="f in fields"
                             :key="f.id"
@@ -3924,14 +3924,14 @@
                         </optgroup>
 
                         <!-- Als neues Feld aus dieser Spalte anlegen -->
-                        <optgroup label="✨ Als neues Zusatzfeld anlegen">
+                        <optgroup :label="$t('projects.import_create_as_new_field')">
                           <option :value="'custom:' + getHeaderKey(header)">
                             ✨ Neues Feld: "{{ header }}" ({{ getHeaderKey(header) }})
                           </option>
                         </optgroup>
 
                         <!-- Häufige Vorlagen-Felder -->
-                        <optgroup label="📋 Vorlagen-Zusatzfelder" v-if="getAvailableTemplateFields(header).length > 0">
+                        <optgroup :label="$t('projects.import_template_custom_fields')" v-if="getAvailableTemplateFields(header).length > 0">
                           <option
                             v-for="tf in getAvailableTemplateFields(header)"
                             :key="tf.key"
@@ -3951,7 +3951,7 @@
           <!-- Preview of First 3 Rows -->
           <div>
             <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">
-              Vorschau der ersten Zeilen:
+              {{ $t('projects.import_preview_rows') }}
             </label>
             <div class="border border-slate-200 rounded-2xl overflow-x-auto max-h-40 bg-slate-50 p-2 text-[11px] font-mono">
               <div v-for="(row, rIdx) in importParsedRows.slice(0, 3)" :key="rIdx" class="py-1 border-b border-slate-200 last:border-0 flex gap-2">
@@ -3971,9 +3971,9 @@
           <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl font-black flex items-center justify-center mx-auto">
             ✓
           </div>
-          <h4 class="text-lg font-black text-slate-900">Import erfolgreich abgeschlossen!</h4>
+          <h4 class="text-lg font-black text-slate-900">{{ $t('projects.import_success_title') }}</h4>
           <p class="text-xs text-slate-600">
-            Es wurden <strong>{{ importSuccessCount }}</strong> Aufgaben erfolgreich in den Abschnitt eingepflegt.
+            {{ $t('projects.import_success_desc', { count: importSuccessCount }) }}
           </p>
         </div>
 
@@ -3994,7 +3994,7 @@
             :disabled="importingTasks"
             class="taskster_button px-6 text-xs h-[42px] rounded-lg flex items-center space-x-2"
           >
-            <span>{{ importingTasks ? 'Importiere...' : 'Import starten (' + importParsedRows.length + ' Aufgaben)' }}</span>
+            <span>{{ importingTasks ? $t('projects.import_running') : $t('projects.import_start_btn', { count: importParsedRows.length }) }}</span>
           </button>
         </div>
       </div>
@@ -4005,18 +4005,18 @@
     <div v-if="showNewFieldModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-black text-slate-900 mb-1">
-          <span v-if="isStandardFieldModal">⚡ Logik-Regel: {{ newFieldLabel }}</span>
-          <span v-else>{{ editingFieldId ? 'Feld bearbeiten' : 'Neues benutzerdefiniertes Feld' }}</span>
+          <span v-if="isStandardFieldModal">{{ $t('projects.cf_modal_rule_title', { label: newFieldLabel }) }}</span>
+          <span v-else>{{ editingFieldId ? $t('projects.cf_modal_edit_field') : $t('projects.cf_modal_new_field') }}</span>
         </h3>
         <p class="text-xs text-slate-500 mb-4">
-          <span v-if="isStandardFieldModal">Bestimme, unter welcher Bedingung dieses Standard-Feld sichtbar ist.</span>
-          <span v-else>Definiere ein Attribut f&#252;r Aufgaben oder das Projekt.</span>
+          <span v-if="isStandardFieldModal">{{ $t('projects.cf_modal_rule_desc') }}</span>
+          <span v-else>{{ $t('projects.cf_modal_new_desc') }}</span>
         </p>
 
         <form @submit.prevent="saveField" class="space-y-4">
           <!-- Scope selector: only for regular custom fields -->
           <div v-if="!isStandardFieldModal">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Gültigkeitsbereich</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.cf_gueltigkeitsbereich') }}</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -4024,7 +4024,7 @@
                 class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
                 :class="newFieldEntityType === 'task' ? 'bg-cyan-50 text-cyan-800 border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
               >
-                Aufgaben-Feld
+                {{ $t('projects.cf_aufgaben_feld') }}
               </button>
               <button
                 type="button"
@@ -4032,13 +4032,13 @@
                 class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
                 :class="newFieldEntityType === 'project' ? 'bg-purple-50 text-purple-800 border-purple-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
               >
-                Projekt-Feld
+                {{ $t('projects.cf_projekt_feld') }}
               </button>
             </div>
           </div>
 
           <!-- Label: only for regular custom fields -->\n          <div v-if="!isStandardFieldModal">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Feld-Bezeichnung (Label)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.cf_feld_bezeichnung') }}</label>
             <input
               v-model="newFieldLabel"
               type="text"
@@ -4050,14 +4050,14 @@
 
           <!-- Field type: only for regular custom fields -->
           <div v-if="!isStandardFieldModal">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Feldtyp</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.cf_feldtyp') }}</label>
             <select
               v-model="newFieldType"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600 cursor-pointer"
             >
               <option value="text">Textzeile (kurz)</option>
-              <option value="textarea">Längerer Text / Notizfeld (mehrzeilig)</option>
-              <option value="number">Zahl / Währung / Messwert</option>
+              <option value="textarea">{{ $t('projects.feldtyp_textarea') }}</option>
+              <option value="number">{{ $t('projects.feldtyp_number') }}</option>
               <option value="select">Auswahlliste (Dropdown)</option>
               <option value="date">Datum</option>
               <option value="checkbox">Checkbox (Ja / Nein)</option>
@@ -4069,7 +4069,7 @@
 
           <!-- Options: only for select type regular custom fields -->
           <div v-if="!isStandardFieldModal && newFieldType === 'select'">
-            <label class="block text-xs font-bold text-slate-700 mb-1">Optionen (Komma-getrennt)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.cf_optionen_komma') }}</label>
             <input
               v-model="newFieldOptionsRaw"
               type="text"
@@ -4089,32 +4089,32 @@
                 class="rounded border-slate-300 text-cyan-600 focus:ring-0"
               />
               <label for="enableLogic" class="text-xs font-bold text-slate-700 cursor-pointer">
-                Bedingte Logik (Feld nur unter Bedingung anzeigen)
+                {{ $t('projects.cf_bedingte_logik') }}
               </label>
             </div>
             <!-- Info for standard field modal -->
             <div v-else class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-700">Bedingung definieren</span>
+              <span class="text-xs font-bold text-slate-700">{{ $t('projects.cf_bedingung_definieren') }}</span>
               <button
                 v-if="fields.find((f: any) => f.field_key === newFieldForcedKey && f.logic_rules?.depends_on_field)"
                 type="button"
                 @click="enableFieldLogic = false; logicDependsOnField = ''; logicDependsOnValue = ''"
                 class="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline"
               >
-                Bedingung entfernen
+                {{ $t('projects.cf_bedingung_entfernen') }}
               </button>
             </div>
 
             <div v-if="enableFieldLogic || isStandardFieldModal" class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
               <div>
-                <label class="block text-[11px] font-bold text-slate-600 mb-1">Abh&#228;ngig von Feld</label>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">{{ $t('projects.cf_abhaengig_von_feld') }}</label>
                 <select
                   v-model="logicDependsOnField"
                   @change="logicDependsOnValue = ''"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Feld ausw&#228;hlen --</option>
-                  <optgroup label="Standard-Aufgabenfelder">
+                  <option value="">{{ $t('projects.cf_feld_auswaehlen') }}</option>
+                  <optgroup :label="$t('projects.cf_standard_aufgabenfelder')">
                     <option value="status">Status</option>
                     <option value="priority">Priorit&#228;t</option>
                     <option value="assigned_to">Zuweisung</option>
@@ -4122,7 +4122,7 @@
                     <option value="color">Farbmarkierung</option>
                     <option value="tags">Tags</option>
                   </optgroup>
-                  <optgroup label="Eigene Felder" v-if="fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key) && f.entity_type !== 'project').length > 0">
+                  <optgroup :label="$t('projects.cf_eigene_felder')" v-if="fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key) && f.entity_type !== 'project').length > 0">
                     <option
                       v-for="other in fields.filter((f: any) => !['status','priority','assigned_to','due_date','color','tags'].includes(f.field_key) && f.entity_type !== 'project')"
                       :key="other.id"
@@ -4135,18 +4135,18 @@
               </div>
 
               <div>
-                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nur anzeigen wenn Wert gleich:</label>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">{{ $t('projects.cf_nur_anzeigen_wenn') }}</label>
 
                 <select
                   v-if="logicDependsOnField === 'status'"
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
                   <option value="todo">Zu erledigen (todo)</option>
                   <option value="in_progress">In Arbeit (in_progress)</option>
                   <option value="review">In Pr&#252;fung (review)</option>
-                  <option value="done">Abgeschlossen (done)</option>
+                  <option value="done">{{ $t('projects.status_done_logic') }}</option>
                 </select>
 
                 <select
@@ -4154,7 +4154,7 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
                   <option value="dringend">Dringend</option>
                   <option value="hoch">Hoch</option>
                   <option value="normal">Normal</option>
@@ -4166,9 +4166,9 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
-                  <option value="assigned">Mind. eine Person zugewiesen</option>
-                  <option value="unassigned">Keine Person zugewiesen</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
+                  <option value="assigned">{{ $t('projects.cf_mind_eine_person') }}</option>
+                  <option value="unassigned">{{ $t('projects.cf_keine_person') }}</option>
                 </select>
 
                 <select
@@ -4176,11 +4176,11 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
-                  <option value="set">Datum ist gesetzt</option>
-                  <option value="not_set">Kein Datum</option>
-                  <option value="overdue">&#220;berf&#228;llig</option>
-                  <option value="today">Heute f&#228;llig</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
+                  <option value="set">{{ $t('projects.cf_datum_gesetzt') }}</option>
+                  <option value="not_set">{{ $t('projects.cf_kein_datum') }}</option>
+                  <option value="overdue">{{ $t('projects.ueberfaellig') }}</option>
+                  <option value="today">{{ $t('projects.heute_faellig') }}</option>
                 </select>
 
                 <select
@@ -4188,9 +4188,9 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
-                  <option value="set">Farbe gesetzt</option>
-                  <option value="not_set">Keine Farbe</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
+                  <option value="set">{{ $t('projects.cf_farbe_gesetzt') }}</option>
+                  <option value="not_set">{{ $t('projects.cf_keine_farbe') }}</option>
                 </select>
 
                 <select
@@ -4198,9 +4198,9 @@
                   v-model="logicDependsOnValue"
                   class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-cyan-600"
                 >
-                  <option value="">-- Wert ausw&#228;hlen --</option>
-                  <option value="set">Mind. ein Tag gesetzt</option>
-                  <option value="not_set">Keine Tags</option>
+                  <option value="">{{ $t('projects.cf_wert_auswaehlen') }}</option>
+                  <option value="set">{{ $t('projects.cf_mind_ein_tag') }}</option>
+                  <option value="not_set">{{ $t('projects.cf_keine_tags') }}</option>
                 </select>
 
                 <input
@@ -4226,7 +4226,7 @@
               type="submit"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              {{ isStandardFieldModal ? 'Regel speichern' : 'Feld speichern' }}
+              {{ isStandardFieldModal ? $t('projects.cf_regel_speichern') : $t('projects.cf_feld_speichern') }}
             </button>
           </div>
         </form>
@@ -4334,20 +4334,20 @@
           <!-- Linked Task (optional, no forced auto-assign) -->
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
+              <label class="block text-xs font-bold text-slate-800">{{ $t('projects.verknuepfte_aufgabe_opt') }}</label>
             </div>
             <select
               v-model="newEntryForm.task_id"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option :value="null">-- Keine Verknüpfung --</option>
+              <option :value="null">{{ $t('projects.keine_verknuepfung') }}</option>
               <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                 {{ t.title }} ({{ getSectionTitle(t.list_id) }})
               </option>
             </select>
             <!-- Suggestions if detected (max 2) - user must click to assign -->
             <div v-if="newEntrySuggestedTasks.length > 0 && !newEntryForm.task_id" class="mt-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
-              <span class="text-[10px] font-bold text-amber-900 block">✨ Vorgeschlagene Aufgaben (Klick zum Zuweisen):</span>
+              <span class="text-[10px] font-bold text-amber-900 block">{{ $t('projects.vorgeschlagene_aufgaben') }}</span>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="sug in newEntrySuggestedTasks"
@@ -4525,7 +4525,7 @@
                     v-model="newEntryForm.autoApply"
                     class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-3.5 h-3.5"
                   />
-                  <span class="text-[11px] font-bold text-cyan-900">Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen</span>
+                  <span class="text-[11px] font-bold text-cyan-900">{{ $t('projects.aufgaben_auto_kanban') }}</span>
                 </label>
               </div>
             </label>
@@ -4708,20 +4708,20 @@
           <!-- Linked Task (optional, no forced auto-assign) -->
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-bold text-slate-800">Verknüpfte Aufgabe (optional)</label>
+              <label class="block text-xs font-bold text-slate-800">{{ $t('projects.verknuepfte_aufgabe_opt') }}</label>
             </div>
             <select
               v-model="newNoteForm.task_id"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             >
-              <option :value="null">-- Keine Verknüpfung --</option>
+              <option :value="null">{{ $t('projects.keine_verknuepfung') }}</option>
               <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                 {{ t.title }} ({{ getSectionTitle(t.list_id) }})
               </option>
             </select>
             <!-- Suggestions if detected (max 2) - user must click to assign -->
             <div v-if="newNoteSuggestedTasks.length > 0 && !newNoteForm.task_id" class="mt-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
-              <span class="text-[10px] font-bold text-amber-900 block">✨ Vorgeschlagene Aufgaben (Klick zum Zuweisen):</span>
+              <span class="text-[10px] font-bold text-amber-900 block">{{ $t('projects.vorgeschlagene_aufgaben') }}</span>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="sug in newNoteSuggestedTasks"
@@ -4769,7 +4769,7 @@
               @paste="handleNoteContentPaste"
               rows="6"
               required
-              placeholder="Notiz oder Inhalt der E-Mail hier einfügen..."
+              :placeholder="$t('projects.email_notiz_placeholder')"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             ></textarea>
           </div>
@@ -4797,7 +4797,7 @@
                     v-model="newNoteForm.autoApply"
                     class="rounded text-[#00A3C4] focus:ring-[#00A3C4] w-3.5 h-3.5"
                   />
-                  <span class="text-[11px] font-bold text-cyan-900">Vorgeschlagene Aufgaben automatisch direkt im Kanban-Board anlegen</span>
+                  <span class="text-[11px] font-bold text-cyan-900">{{ $t('projects.aufgaben_auto_kanban') }}</span>
                 </label>
               </div>
             </label>
@@ -4865,14 +4865,14 @@
     <!-- Modal: Invite Member -->
     <div v-if="showInviteMemberModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-black text-slate-900 mb-1">Teammitglied ins Projekt einladen</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">{{ $t('projects.teammitglied_einladen') }}</h3>
         <p class="text-xs text-slate-500 mb-4">
           Im Free Plan sind maximal 5 Mitglieder pro Projekt erlaubt.
         </p>
 
         <form @submit.prevent="inviteMember" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">E-Mail des Nutzers</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.email_des_nutzers') }}</label>
             <input
               v-model="inviteEmail"
               type="email"
@@ -4883,13 +4883,13 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Rolle im Projekt</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.rolle_im_projekt') }}</label>
             <select
               v-model="inviteRole"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
-              <option value="editor">Editor (Darf Aufgaben erstellen & bearbeiten)</option>
-              <option value="viewer">Viewer (Nur Leserechte)</option>
+              <option value="editor">{{ $t('projects.rolle_editor_desc') }}</option>
+              <option value="viewer">{{ $t('projects.rolle_viewer_desc') }}</option>
             </select>
           </div>
 
@@ -4915,7 +4915,7 @@
     <!-- Modal: Zeit erfassen (Projekt oder Aufgabe) -->
     <div v-if="showProjectTimeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-black text-slate-900 mb-1">⏱️ Zeit erfassen</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">{{ $t('projects.zeit_erfassen') }}</h3>
         <p class="text-xs text-slate-500 mb-4">
           Buche geleistete Stunden auf dieses Gesamtprojekt oder auf eine konkrete Aufgabe.
         </p>
@@ -4927,7 +4927,7 @@
               v-model="projectTimeForm.task_id"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-cyan-600"
             >
-              <option value="">🏢 Gesamtprojekt (ohne Aufgabe)</option>
+              <option value="">{{ $t('projects.gesamtprojekt_ohne_aufgabe') }}</option>
               <option v-for="t in allProjectTasks" :key="t.id" :value="t.id">
                 📋 Aufgabe: {{ t.title }}
               </option>
@@ -4969,7 +4969,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tätigkeit / Beschreibung</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.taetigkeit_beschreibung') }}</label>
             <textarea
               v-model="projectTimeForm.description"
               rows="3"
@@ -5000,7 +5000,7 @@
     <!-- Modal: Zeiteintrag bearbeiten -->
     <div v-if="showEditTimeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-black text-slate-900 mb-1">✏️ Zeiteintrag anpassen</h3>
+        <h3 class="text-lg font-black text-slate-900 mb-1">{{ $t('projects.zeiteintrag_anpassen') }}</h3>
         <p class="text-xs text-slate-500 mb-4">
           Manuell angepasste Einträge werden im Protokoll mit einem Stern (*) gekennzeichnet.
         </p>
@@ -5041,7 +5041,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tätigkeit / Beschreibung</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">{{ $t('projects.taetigkeit_beschreibung') }}</label>
             <textarea
               v-model="editTimeForm.description"
               rows="3"
@@ -5121,14 +5121,14 @@
               <textarea
                 v-model="aiRawTextProject"
                 rows="3"
-                placeholder="Beispiel: Hans Peter, Bauleiter bei Steiner Tiefbau AG in Zürich, Tel 044 123 45 67, Mobile 079 987 65 43, h.peter@steiner.ch"
+                :placeholder="$t('projects.ki_autofill_placeholder')"
                 class="w-full px-3 py-2 bg-white border border-cyan-300 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
               ></textarea>
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span v-if="aiStatusMessageProject" class="text-[11px] font-bold" :class="aiStatusSuccessProject ? 'text-emerald-700' : 'text-rose-600'">
                   {{ aiStatusMessageProject }}
                 </span>
-                <span v-else class="text-[10px] text-slate-400">Texte werden sicher verarbeitet</span>
+                <span v-else class="text-[10px] text-slate-400">{{ $t('projects.texte_sicher_verarbeitet') }}</span>
 
                 <button
                   @click="runAiExtractionProject"
@@ -5201,7 +5201,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-800 mb-1">
-                Nachname / Name <span class="text-rose-500">*</span>
+                {{ $t('projects.nachname') }} <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model="projectContactForm.last_name"
@@ -5212,7 +5212,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Vorname</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.vorname') }}</label>
               <input
                 v-model="projectContactForm.first_name"
                 type="text"
@@ -5224,7 +5224,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Firma / Unternehmen</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.firma_unternehmen') }}</label>
               <input
                 v-model="projectContactForm.company_name"
                 type="text"
@@ -5233,7 +5233,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Funktion / Gewerk</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.funktion_gewerk') }}</label>
               <input
                 v-model="projectContactForm.role_function"
                 type="text"
@@ -5245,7 +5245,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Mobile (Handy)</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.mobile_handy') }}</label>
               <input
                 v-model="projectContactForm.mobile"
                 type="tel"
@@ -5254,7 +5254,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Telefon Festnetz</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.telefon_festnetz') }}</label>
               <input
                 v-model="projectContactForm.phone"
                 type="tel"
@@ -5276,16 +5276,16 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Geschäftsadresse</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.geschaeftsadresse') }}</label>
               <input
                 v-model="projectContactForm.address"
                 type="text"
-                placeholder="z.B. Bahnhofstrasse 12, 8001 Zürich"
+                :placeholder="$t('projects.adresse_placeholder')"
                 class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-800 mb-1">Webseite</label>
+              <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.webseite') }}</label>
               <input
                 v-model="projectContactForm.website"
                 type="text"
@@ -5296,11 +5296,11 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-800 mb-1">Gruppe / Kategorie</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1">{{ $t('projects.gruppe_kategorie') }}</label>
             <input
               v-model="projectContactForm.category_group"
               type="text"
-              placeholder="z.B. Handwerker, Planer, Behörde"
+              :placeholder="$t('projects.gruppe_placeholder')"
               class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             />
           </div>
@@ -5310,7 +5310,7 @@
             <textarea
               v-model="projectContactForm.notes"
               rows="2"
-              placeholder="Notizen zur Baustelle, Schlüsselzugang, etc."
+              :placeholder="$t('projects.notizen_placeholder')"
               class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00A3C4]"
             ></textarea>
           </div>
@@ -5328,7 +5328,7 @@
               :disabled="savingProjectContact"
               class="taskster_button px-6 text-xs h-[42px] rounded-lg"
             >
-              {{ savingProjectContact ? 'Speichert...' : (isEditingProjectContact ? 'Änderungen speichern' : 'Kontakt speichern') }}
+              {{ savingProjectContact ? 'Speichert...' : (isEditingProjectContact ? $t('common.speichern') : $t('projects.kontakt_speichern_btn')) }}
             </button>
           </div>
         </form>
@@ -5396,8 +5396,8 @@
           <div class="flex items-center space-x-2">
             <BookOpen class="w-5 h-5 text-[#00A3C4]" />
             <div>
-              <h3 class="text-sm font-bold text-slate-900">Projektjournal</h3>
-              <p class="text-[11px] text-slate-500">Schnellsuche & Einträge zuweisen</p>
+              <h3 class="text-sm font-bold text-slate-900">{{ $t('projects.projektjournal') }}</h3>
+              <p class="text-[11px] text-slate-500">{{ $t('projects.schnellsuche_zuweisen') }}</p>
             </div>
           </div>
           <button @click="showQuickJournalDrawer = false" class="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition">✕</button>
@@ -5432,13 +5432,13 @@
 
             <!-- AI Suggestion or Assigned Task -->
             <div v-if="entry.task_id" class="flex items-center justify-between pt-1 border-t border-slate-100">
-              <span class="text-[11px] text-slate-500">Aufgabe: <strong class="text-slate-800">{{ entry.task_title || getTaskTitle(entry.task_id) }}</strong></span>
+              <span class="text-[11px] text-slate-500">{{ $t('projects.aufgabe_colon') }} <strong class="text-slate-800">{{ entry.task_title || getTaskTitle(entry.task_id) }}</strong></span>
               <button
                 type="button"
                 @click="openTaskDetailById(entry.task_id); showQuickJournalDrawer = false"
                 class="text-[11px] font-bold text-[#00A3C4] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>Aufgabe öffnen →</span>
+                <span>{{ $t('projects.aufgabe_oeffnen_arrow') }}</span>
               </button>
             </div>
             <div v-else-if="getSuggestedTasksForEntry(entry).length > 0" class="p-2 rounded-lg bg-amber-50 border border-amber-200 space-y-1.5">
@@ -5604,7 +5604,7 @@
               <span class="text-slate-900 font-medium select-all">{{ originalJournalEntry.metadata.email_sender }}</span>
             </div>
             <div v-if="originalJournalEntry.metadata?.email_recipients" class="flex items-start gap-2">
-              <span class="font-bold text-slate-500 w-20 shrink-0">Empfänger:</span>
+              <span class="font-bold text-slate-500 w-20 shrink-0">{{ $t('projects.empfaenger') }}</span>
               <span class="text-slate-700 select-all">{{ originalJournalEntry.metadata.email_recipients }}</span>
             </div>
             <div v-if="originalJournalEntry.metadata?.email_subject" class="flex items-start gap-2">
@@ -5780,7 +5780,7 @@ const confirmModal = ref<{
   title: '',
   subtitle: '',
   message: '',
-  confirmText: 'Bestätigen',
+  confirmText: t('common.bestaetigen'),
   danger: true,
   loading: false
 })
@@ -6313,7 +6313,7 @@ const deleteCustomField = async (fieldId: string) => {
       })
       showNewFieldModal.value = false
       await loadProjectData()
-      showToast('Zusatzfeld erfolgreich gelöscht', 'success')
+      showToast(t('projects.zusatzfeld_geloescht'), 'success')
     }
   })
 }
@@ -7143,7 +7143,7 @@ const loadProjectData = async () => {
     loadAvailableContacts()
   } catch (err: any) {
     if (err.statusCode === 404) {
-      showToast('Zugriff verweigert oder Projekt nicht gefunden.', 'error')
+      showToast(t('projects.zugriff_verweigert'), 'error')
       navigateTo('/dashboard')
     }
   } finally {
@@ -7344,8 +7344,8 @@ const deleteProjectContact = async (c: any) => {
   triggerConfirmModal({
     title: t('projects.kontakt_entfernen_title'),
     subtitle: name,
-    message: `Möchtest du den Kontakt "${name}" wirklich löschen?`,
-    confirmText: 'Kontakt löschen',
+    message: t('projects.kontakt_loeschen_confirm', { name }),
+    confirmText: t('projects.kontakt_entfernen_title'),
     danger: true,
     action: async () => {
       await $fetch(`/api/contacts/${c.id}`, {
@@ -7353,7 +7353,7 @@ const deleteProjectContact = async (c: any) => {
         headers: authHeaders()
       })
       projectContacts.value = projectContacts.value.filter((item: any) => item.id !== c.id)
-      showToast('Kontakt erfolgreich gelöscht', 'success')
+      showToast(t('projects.kontakt_geloescht'), 'success')
     }
   })
 }
@@ -7416,7 +7416,7 @@ const saveProjectTime = async () => {
   try {
     const durationMinutes = Math.round(Number(projectTimeForm.value.duration_hours || 0) * 60)
     if (durationMinutes <= 0) {
-      showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
+      showToast(t('projects.bitte_dauer_groesser_null'), 'info')
       return
     }
     await $fetch('/api/time-entries', {
@@ -7455,7 +7455,7 @@ const saveEditTime = async () => {
   try {
     const durationMinutes = Math.round(Number(editTimeForm.value.duration_hours || 0) * 60)
     if (durationMinutes <= 0) {
-      showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
+      showToast(t('projects.bitte_dauer_groesser_null'), 'info')
       return
     }
     await $fetch(`/api/time-entries/${editTimeForm.value.id}`, {
@@ -7486,7 +7486,7 @@ const deleteTimeEntry = async (id: string) => {
     title: t('projects.zeiteintrag_loeschen_title'),
     subtitle: t('projects.vorgang_unwiderruflich'),
     message: t('projects.zeiteintrag_loeschen_confirm'),
-    confirmText: 'Zeiteintrag löschen',
+    confirmText: t('projects.zeiteintrag_loeschen_title'),
     danger: true,
     action: async () => {
       await $fetch(`/api/time-entries/${id}`, {
@@ -7500,7 +7500,7 @@ const deleteTimeEntry = async (id: string) => {
       }
       await loadProjectTimeEntries()
       await loadProjectData()
-      showToast('Zeiteintrag gelöscht', 'success')
+      showToast(t('projects.zeiteintrag_geloescht'), 'success')
     }
   })
 }
@@ -7509,7 +7509,7 @@ const addTaskTimeEntry = async () => {
   if (!drawerTask.value?.id) return
   const durationMinutes = Math.round(Number(drawerTimeForm.value.duration_hours || 0) * 60)
   if (durationMinutes <= 0) {
-    showToast('Bitte eine Dauer grösser als 0 angeben.', 'info')
+    showToast(t('projects.bitte_dauer_groesser_null'), 'info')
     return
   }
   try {
@@ -7570,7 +7570,7 @@ const saveProjectSettings = async () => {
       }
     })
     await loadProjectData()
-    showToast('Projekt-Einstellungen erfolgreich gespeichert!', 'success')
+    showToast(t('projects.settings_gespeichert'), 'success')
   } catch (err: any) {
     showToast(err.data?.statusMessage || 'Fehler beim Speichern der Einstellungen', 'error')
   } finally {
@@ -7683,7 +7683,7 @@ const deleteField = async (fieldId: string) => {
         headers: authHeaders()
       })
       await loadProjectData()
-      showToast('Feld gelöscht', 'success')
+      showToast(t('projects.feld_geloescht'), 'success')
     }
   })
 }
@@ -7800,13 +7800,13 @@ const deleteSectionInModal = async (idx: number) => {
   const sec = managingSections.value[idx]
   const count = sec.tasks?.length || sec.task_count || 0
   const msg = count > 0
-    ? `Abschnitt "${sec.title}" enthält ${count} Aufgabe(n). Möchtest du diesen Abschnitt und alle darin enthaltenen Aufgaben wirklich unwiderruflich löschen?`
-    : `Möchtest du den Abschnitt "${sec.title}" wirklich löschen?`
+    ? t('projects.abschnitt_loeschen_mit_aufgaben_confirm', { title: sec.title, count })
+    : t('projects.abschnitt_loeschen_confirm', { title: sec.title })
   triggerConfirmModal({
     title: t('projects.abschnitt_loeschen_title'),
     subtitle: sec.title,
     message: msg,
-    confirmText: 'Abschnitt löschen',
+    confirmText: t('projects.abschnitt_loeschen_title'),
     danger: true,
     action: async () => {
       if (sec.id) {
@@ -7817,7 +7817,7 @@ const deleteSectionInModal = async (idx: number) => {
       }
       managingSections.value.splice(idx, 1)
       await loadProjectData()
-      showToast('Abschnitt gelöscht', 'success')
+      showToast(t('projects.abschnitt_geloescht'), 'success')
     }
   })
 }
@@ -7933,7 +7933,7 @@ const checkAndCascadeProjectCompletion = async () => {
       title: t('projects.projekt_abschliessen_title'),
       subtitle: t('projects.alle_aufgaben_erledigt'),
       message: t('projects.projekt_abschliessen_confirm'),
-      confirmText: 'Projekt abschließen',
+      confirmText: t('projects.projekt_abschliessen_title'),
       danger: false,
       action: async () => {
         await $fetch(`/api/projects/${projectId}`, {
@@ -7943,7 +7943,7 @@ const checkAndCascadeProjectCompletion = async () => {
         })
         project.value.status = 'completed'
         await loadProjectData()
-        showToast('Projekt erfolgreich als abgeschlossen markiert!', 'success')
+        showToast(t('projects.projekt_abgeschlossen_toast'), 'success')
       }
     })
   }
@@ -8006,7 +8006,7 @@ const openNewTaskModal = (listId: string) => {
 
 const saveNewTaskFromDrawer = async () => {
   if (!drawerTask.value?.title?.trim()) {
-    showToast('Bitte gib mindestens einen Aufgabentitel ein.', 'info')
+    showToast(t('projects.bitte_titel_eingeben'), 'info')
     return
   }
   try {
@@ -8233,7 +8233,7 @@ const checkAndCascadeTaskCompletion = async () => {
       title: t('projects.aufgabe_abschliessen_title'),
       subtitle: t('projects.alle_unterpunkte_erledigt'),
       message: t('projects.aufgabe_abschliessen_confirm'),
-      confirmText: 'Aufgabe abschließen',
+      confirmText: t('projects.aufgabe_abschliessen_title'),
       danger: false,
       action: async () => {
         drawerTask.value.status = 'done'
@@ -8244,7 +8244,7 @@ const checkAndCascadeTaskCompletion = async () => {
         await autoSaveDrawer()
         await loadProjectData()
         await checkAndCascadeProjectCompletion()
-        showToast('Aufgabe als erledigt markiert', 'success')
+        showToast(t('projects.aufgabe_erledigt_toast'), 'success')
       }
     })
   }
@@ -8347,13 +8347,13 @@ const deleteTaskFromDrawer = async () => {
     title: t('projects.aufgabe_loeschen_title'),
     subtitle: drawerTask.value?.title,
     message: t('projects.aufgabe_loeschen_unwiderruflich_confirm'),
-    confirmText: 'Aufgabe löschen',
+    confirmText: t('projects.aufgabe_loeschen_title'),
     danger: true,
     action: async () => {
       await $fetch(`/api/tasks/${drawerTask.value.id}`, { method: 'DELETE', headers: authHeaders() })
       closeTaskDrawer()
       await loadProjectData()
-      showToast('Aufgabe erfolgreich gelöscht', 'success')
+      showToast(t('projects.aufgabe_geloescht_toast'), 'success')
     }
   })
 }
@@ -8451,7 +8451,7 @@ const deleteDocument = async (docId: string) => {
         headers: authHeaders()
       })
       drawerDocuments.value = drawerDocuments.value.filter((d: any) => d.id !== docId)
-      showToast('Datei erfolgreich entfernt', 'success')
+      showToast(t('projects.datei_entfernt_toast'), 'success')
     }
   })
 }
@@ -8834,7 +8834,7 @@ const deleteTask = async () => {
   triggerConfirmModal({
     title: t('projects.aufgabe_loeschen_title'),
     message: t('projects.aufgabe_loeschen_confirm'),
-    confirmText: 'Aufgabe löschen',
+    confirmText: t('projects.aufgabe_loeschen_title'),
     danger: true,
     action: async () => {
       await $fetch(`/api/tasks/${currentEditingTaskId.value}`, {
@@ -8843,7 +8843,7 @@ const deleteTask = async () => {
       })
       showTaskModal.value = false
       await loadProjectData()
-      showToast('Aufgabe erfolgreich gelöscht', 'success')
+      showToast(t('projects.aufgabe_geloescht_toast'), 'success')
     }
   })
 }
@@ -9250,7 +9250,7 @@ const deleteJournalEntry = async (entry: any) => {
     title: t('projects.journaleintrag_loeschen_title'),
     subtitle: entry.title,
     message: (te && te('journal.delete_entry_confirm') ? t('journal.delete_entry_confirm') : '') || 'Möchtest du diesen Journaleintrag wirklich unwiderruflich löschen?',
-    confirmText: 'Eintrag löschen',
+    confirmText: t('projects.journaleintrag_loeschen_title'),
     danger: true,
     action: async () => {
       try {
@@ -9265,7 +9265,7 @@ const deleteJournalEntry = async (entry: any) => {
         })
       }
       journalEntries.value = journalEntries.value.filter((e: any) => e.id !== entry.id)
-      showToast('Journaleintrag erfolgreich gelöscht', 'success')
+      showToast(t('projects.journal_geloescht_toast'), 'success')
     }
   })
 }
@@ -9332,7 +9332,7 @@ const applyCreateTaskAction = async (entry: any, item: any, idx: number) => {
   try {
     const listId = item.section_id || (lists.value.length > 0 ? lists.value[0].id : null)
     if (!listId) {
-      showToast('Kein Abschnitt im Projekt vorhanden, um eine Aufgabe anzulegen.', 'info')
+      showToast(t('projects.kein_abschnitt_vorhanden'), 'info')
       return
     }
 
@@ -9342,7 +9342,7 @@ const applyCreateTaskAction = async (entry: any, item: any, idx: number) => {
       body: {
         project_id: projectId,
         list_id: listId,
-        title: item.title || 'Neue Aufgabe aus Journal',
+        title: item.title || t('projects.neue_aufgabe_aus_journal'),
         description: item.description || item.reason || '',
         priority: item.priority || 'normal',
         due_date: item.due_date || item.suggested_due_date || null
@@ -9501,7 +9501,7 @@ const inviteMember = async () => {
     showInviteMemberModal.value = false
     inviteEmail.value = ''
     await loadProjectData()
-    showToast('Mitglied erfolgreich hinzugefügt!', 'success')
+    showToast(t('projects.mitglied_hinzugefuegt_toast'), 'success')
   } catch (err: any) {
     showToast(err.data?.statusMessage || 'Fehler beim Einladen des Mitglieds', 'error')
   }

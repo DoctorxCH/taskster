@@ -133,7 +133,6 @@ const selectedDate = ref<string | null>(null)
 const loading = ref(false)
 
 const pad = (n: number) => String(n).padStart(2, '0')
-const { t } = useI18n()
 const todayKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
 
 const monthLabel = computed(() => {

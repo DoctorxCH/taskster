@@ -5,7 +5,7 @@
       <input
         :value="modelValue"
         type="text"
-        :placeholder="placeholder"
+        :placeholder="placeholder || $t('address.strasse_plz_ort')"
         autocomplete="off"
         class="w-full h-9 pl-9 pr-9 text-sm rounded-md bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-[#0891B2] focus:ring-2 focus:ring-[#0891B2]/15"
         @input="onInput"
@@ -90,7 +90,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   latitude: null,
   longitude: null,
-  placeholder: t('address.strasse_plz_ort')
+  placeholder: ''
 })
 
 const emit = defineEmits<{
