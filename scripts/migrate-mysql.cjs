@@ -684,6 +684,36 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  // Systemrollen Seeden
+  await conn.query(`
+    INSERT INTO roles (\`key\`, name, level, is_system, sort_order) VALUES
+    ('superadmin', 'Superadmin', 'system', 1, 10),
+    ('company_admin', 'Firmen-Admin', 'company', 1, 20),
+    ('project_manager', 'Projekt-Manager', 'company', 1, 30),
+    ('member', 'Mitarbeiter', 'company', 1, 40),
+    ('viewer', 'Betrachter', 'company', 1, 50)
+    ON DUPLICATE KEY UPDATE name=VALUES(name);
+  `);
+
+  // Migration der bestehenden User-Rollen
+  // 1. Superadmins -> user_company_roles mit role 'superadmin'
+  const [superadminRole] = await conn.query("SELECT id FROM roles WHERE `key` = 'superadmin'");
+  if (superadminRole && superadminRole.length > 0) {
+    await conn.query(`
+      INSERT IGNORE INTO user_company_roles (user_id, company_id, role_id)
+      SELECT id, 'system', ? FROM users WHERE is_superadmin = 1
+    `, [superadminRole[0].id]);
+  }
+
+  // 2. Company Admins -> user_company_roles mit role 'company_admin'
+  const [companyAdminRole] = await conn.query("SELECT id FROM roles WHERE `key` = 'company_admin'");
+  if (companyAdminRole && companyAdminRole.length > 0) {
+    await conn.query(`
+      INSERT IGNORE INTO user_company_roles (user_id, company_id, role_id)
+      SELECT id, company_id, ? FROM users WHERE company_role = 'admin' AND company_id IS NOT NULL
+    `, [companyAdminRole[0].id]);
+  }
+
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))
