@@ -2689,7 +2689,7 @@ $router->get('/admin/finance/revenue-report', ['FinanceController', 'getRevenueR
 $router->post('/admin/finance/invoice-rules', ['FinanceController', 'setInvoiceRule']);
 
 // System Routes
-$router->get('/system/bootstrap', ['Admin\\SystemController', 'bootstrap']);
+$router->get('/system/bootstrap', ['SystemController', 'bootstrap']);
 
 
 

@@ -1,11 +1,12 @@
 <?php
-namespace App\Controllers\Admin;
 
 use PDO;
 use Exception;
 
 class SystemController {
-    public function bootstrap($pdo, $body) {
+    public function bootstrap() {
+        $pdo = getDb();
+        
         $features = [
             'finance' => true,
             'workflow' => true,
@@ -29,11 +30,10 @@ class SystemController {
             // Ignore if table doesn't exist yet
         }
         
-        echo json_encode([
+        return [
             'design_tokens' => $tokens,
             'features' => $features,
             'locales_delta' => $localesDelta
-        ]);
-        exit;
+        ];
     }
 }
