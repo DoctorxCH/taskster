@@ -2688,6 +2688,9 @@ $router->post('/finance/time-entries', ['FinanceController', 'logTime']);
 $router->get('/admin/finance/revenue-report', ['FinanceController', 'getRevenueReport']);
 $router->post('/admin/finance/invoice-rules', ['FinanceController', 'setInvoiceRule']);
 
+// System Routes
+$router->get('/system/bootstrap', ['Admin\\SystemController', 'bootstrap']);
+
 
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
