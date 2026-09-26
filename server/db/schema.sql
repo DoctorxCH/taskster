@@ -495,3 +495,22 @@ CREATE TABLE IF NOT EXISTS user_company_roles (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(user_id, company_id, project_id, role_id)
 );
+
+-- ===========================================================================
+-- DESIGN TOKENS (Phase 2)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS design_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL,
+  value TEXT NOT NULL,
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  mode TEXT NOT NULL DEFAULT 'all',
+  description TEXT,
+  company_id TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(`key`, company_id, mode)
+);

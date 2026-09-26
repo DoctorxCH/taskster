@@ -714,6 +714,67 @@ async function migrate() {
     `, [companyAdminRole[0].id]);
   }
 
+  // --- PHASE 2: DESIGN TOKENS ---
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS design_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`key\` VARCHAR(100) NOT NULL,
+        value TEXT NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        subcategory VARCHAR(50) NULL,
+        mode ENUM('light', 'dark', 'high_contrast', 'all') NOT NULL DEFAULT 'all',
+        description TEXT NULL,
+        company_id VARCHAR(64) NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_token_key_company_mode (\`key\`, company_id, mode)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  // Token Seeding (v2 Default)
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const tokensPath = path.join(__dirname, '..', '99_anweisungen', 'design-v2-tokens.json');
+    if (fs.existsSync(tokensPath)) {
+      const v2Tokens = JSON.parse(fs.readFileSync(tokensPath, 'utf8'));
+      
+      const flattenTokens = (obj, prefix = '', category = 'color', subcategory = null) => {
+        let results = [];
+        for (const [k, v] of Object.entries(obj)) {
+          const newKey = prefix ? `${prefix}-${k}` : k;
+          if (typeof v === 'object' && v !== null && !v.text) { 
+             // v.text might exist for semantic tokens like { text: "#047857", bg: "#ECFDF5" }
+             // We'll flatten them further
+             results = results.concat(flattenTokens(v, newKey, category, subcategory || k));
+          } else if (typeof v === 'object' && v !== null && v.text) {
+             // For semantic tokens
+             results.push({ key: `${category}-${newKey}-text`, value: v.text, category, subcategory: subcategory || k });
+             if (v.bg) results.push({ key: `${category}-${newKey}-bg`, value: v.bg, category, subcategory: subcategory || k });
+             if (v.border) results.push({ key: `${category}-${newKey}-border`, value: v.border, category, subcategory: subcategory || k });
+          } else {
+             results.push({ key: `${category}-${newKey}`, value: String(v), category, subcategory: subcategory || k });
+          }
+        }
+        return results;
+      };
+
+      const tokensToSeed = flattenTokens(v2Tokens.colors || {}, 'color', 'color');
+      
+      for (const t of tokensToSeed) {
+        await conn.query(`
+          INSERT INTO design_tokens (\`key\`, value, category, subcategory, mode, is_system) 
+          VALUES (?, ?, ?, ?, 'all', 1)
+          ON DUPLICATE KEY UPDATE value=VALUES(value), category=VALUES(category), subcategory=VALUES(subcategory);
+        `, [t.key, t.value, t.category, t.subcategory]);
+      }
+      console.log('✅ Design Tokens (v2) successfully seeded!');
+    }
+  } catch(e) {
+    console.error('Error seeding design tokens:', e);
+  }
+
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))

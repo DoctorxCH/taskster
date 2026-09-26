@@ -2668,8 +2668,7 @@ $autoloader = new Autoloader(__DIR__);
 $autoloader->register();
 
 $router = new Router();
-// Hier werden künftig neue Controller-Routen registriert, z.B.:
-// require_once __DIR__ . '/routes.php'; // (kommt später)
+$router->get('/system/bootstrap', ['SystemController', 'bootstrap']);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
