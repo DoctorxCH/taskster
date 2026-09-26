@@ -2670,6 +2670,14 @@ $autoloader->register();
 $router = new Router();
 $router->get('/system/bootstrap', ['SystemController', 'bootstrap']);
 
+// Admin Workflow Routes
+$router->get('/admin/workflow', ['WorkflowController', 'index']);
+$router->put('/admin/workflow/statuses/:id', ['WorkflowController', 'updateStatus']);
+
+// Admin Custom Fields Routes
+$router->get('/admin/custom-fields', ['CustomFieldController', 'index']);
+$router->put('/admin/custom-fields/:id', ['CustomFieldController', 'update']);
+
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
 $path = trim($path, '/');

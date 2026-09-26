@@ -775,6 +775,65 @@ async function migrate() {
     console.error('Error seeding design tokens:', e);
   }
 
+  // --- PHASE 3: WORKFLOW ENGINE & CUSTOM FIELDS ---
+  
+  // Idempotente ALTER TABLE für folder_field_definitions
+  const fieldAlters = [
+    "ALTER TABLE folder_field_definitions ADD COLUMN validation_rules JSON NULL",
+    "ALTER TABLE folder_field_definitions ADD COLUMN visibility_conditions JSON NULL",
+    "ALTER TABLE folder_field_definitions ADD COLUMN is_system TINYINT(1) NOT NULL DEFAULT 0"
+  ];
+  for (const query of fieldAlters) {
+    try {
+      await conn.query(query);
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.warn('Warning during field definitions alter:', e.message);
+      }
+    }
+  }
+
+  // Workflow Tabellen anlegen
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS task_statuses (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`key\` VARCHAR(100) NOT NULL,
+        label_key VARCHAR(128) NOT NULL,
+        color VARCHAR(32) NOT NULL DEFAULT '#64748B',
+        company_id VARCHAR(64) NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        is_completed TINYINT(1) NOT NULL DEFAULT 0,
+        sort_order INT NOT NULL DEFAULT 0,
+        UNIQUE KEY uk_status_key_company (\`key\`, company_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS task_status_transitions (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        from_status_key VARCHAR(100) NOT NULL,
+        to_status_key VARCHAR(100) NOT NULL,
+        company_id VARCHAR(64) NULL,
+        required_role_id BIGINT UNSIGNED NULL,
+        conditions JSON NULL,
+        UNIQUE KEY uk_transition_company (from_status_key, to_status_key, company_id),
+        FOREIGN KEY (required_role_id) REFERENCES roles(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS task_priorities (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`key\` VARCHAR(100) NOT NULL,
+        label_key VARCHAR(128) NOT NULL,
+        color VARCHAR(32) NOT NULL DEFAULT '#64748B',
+        level INT NOT NULL DEFAULT 0,
+        company_id VARCHAR(64) NULL,
+        is_system TINYINT(1) NOT NULL DEFAULT 0,
+        UNIQUE KEY uk_priority_key_company (\`key\`, company_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))

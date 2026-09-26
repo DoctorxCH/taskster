@@ -63,8 +63,11 @@ CREATE TABLE IF NOT EXISTS folder_field_definitions (
   is_pro_only INTEGER NOT NULL DEFAULT 0,
   formula TEXT,
   logic_rules TEXT NOT NULL DEFAULT '{}',
+  validation_rules TEXT NULL,
+  visibility_conditions TEXT NULL,
   options TEXT NOT NULL DEFAULT '[]',
   is_required INTEGER NOT NULL DEFAULT 0,
+  is_system INTEGER NOT NULL DEFAULT 0,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 
@@ -514,3 +517,41 @@ CREATE TABLE IF NOT EXISTS design_tokens (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(`key`, company_id, mode)
 );
+
+-- ===========================================================================
+-- WORKFLOW ENGINE (Phase 3)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS task_statuses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL,
+  label_key TEXT NOT NULL,
+  color TEXT NOT NULL DEFAULT '#64748B',
+  company_id TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  is_completed INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(`key`, company_id)
+);
+
+CREATE TABLE IF NOT EXISTS task_status_transitions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_status_key TEXT NOT NULL,
+  to_status_key TEXT NOT NULL,
+  company_id TEXT,
+  required_role_id INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+  conditions TEXT NULL,
+  UNIQUE(from_status_key, to_status_key, company_id)
+);
+
+CREATE TABLE IF NOT EXISTS task_priorities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  `key` TEXT NOT NULL,
+  label_key TEXT NOT NULL,
+  color TEXT NOT NULL DEFAULT '#64748B',
+  level INTEGER NOT NULL DEFAULT 0,
+  company_id TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(`key`, company_id)
+);
+
