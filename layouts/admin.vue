@@ -64,6 +64,7 @@ const navItems = [
   { name: 'Workflow Engine', path: '/admin/workflow', icon: 'lucide:git-merge' },
   { name: 'Custom Fields', path: '/admin/custom-fields', icon: 'lucide:form-input' },
   { name: 'Translations (CMS)', path: '/admin/i18n', icon: 'lucide:languages' },
+  { name: 'Finance & Invoicing', path: '/admin/finance', icon: 'lucide:credit-card' },
   { name: 'Legacy Dashboard', path: '/admin/legacy', icon: 'lucide:archive' }
 ]
 
