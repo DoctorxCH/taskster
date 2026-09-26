@@ -2683,6 +2683,12 @@ $router->get('/admin/i18n', ['I18nController', 'index']);
 $router->post('/admin/i18n', ['I18nController', 'upsert']);
 $router->delete('/admin/i18n/:id', ['I18nController', 'delete']);
 
+// Finance & Time Tracking Routes
+$router->post('/finance/time-entries', ['FinanceController', 'logTime']);
+$router->get('/admin/finance/revenue-report', ['FinanceController', 'getRevenueReport']);
+$router->post('/admin/finance/invoice-rules', ['FinanceController', 'setInvoiceRule']);
+
+
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);

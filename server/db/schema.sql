@@ -571,3 +571,33 @@ CREATE TABLE IF NOT EXISTS i18n_translations (
   UNIQUE(locale, `key`, company_id)
 );
 
+-- ===========================================================================
+-- TIME TRACKING & FINANCE (Phase 6)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  project_id TEXT,
+  task_id TEXT,
+  duration_minutes INTEGER NOT NULL,
+  is_billable INTEGER NOT NULL DEFAULT 1,
+  hourly_rate_applied REAL,
+  currency TEXT DEFAULT 'CHF',
+  notes TEXT,
+  date_logged TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS invoice_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id TEXT NOT NULL,
+  entity_type TEXT NOT NULL, -- 'company', 'project', 'user'
+  entity_id TEXT NOT NULL,
+  hourly_rate REAL NOT NULL,
+  currency TEXT DEFAULT 'CHF',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(company_id, entity_type, entity_id)
+);
+

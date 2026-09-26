@@ -869,6 +869,39 @@ async function migrate() {
     `, [t.locale, t.key, t.value]);
   }
   
+  // --- PHASE 6: TIME TRACKING & FINANCE ---
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS time_entries (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        company_id VARCHAR(64) NOT NULL,
+        user_id VARCHAR(64) NOT NULL,
+        project_id VARCHAR(64) NULL,
+        task_id VARCHAR(64) NULL,
+        duration_minutes INT NOT NULL,
+        is_billable TINYINT(1) NOT NULL DEFAULT 1,
+        hourly_rate_applied DECIMAL(10,2) NULL,
+        currency VARCHAR(3) DEFAULT 'CHF',
+        notes TEXT NULL,
+        date_logged DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_time_company_project (company_id, project_id),
+        INDEX idx_time_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS invoice_rules (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        company_id VARCHAR(64) NOT NULL,
+        entity_type ENUM('company', 'project', 'user') NOT NULL,
+        entity_id VARCHAR(64) NOT NULL,
+        hourly_rate DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(3) DEFAULT 'CHF',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_invoice_rules (company_id, entity_type, entity_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   const [tables] = await conn.query('SHOW TABLES')
   console.log('✅ Remote MySQL Migration completed successfully!')
   console.log('Tables created in d44809_taskster_26:', tables.map((t) => Object.values(t)[0]))
