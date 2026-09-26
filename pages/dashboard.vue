@@ -803,36 +803,23 @@
           </div>
         </section>
 
-        <!-- WIDGET 4: Quick Summary / Stats (MeisterTask Style Compact Card) -->
-        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-            {{ $t('dashboard.system_workspace_status') }}
-          </h3>
-
-          <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.projekt_ordner') }}</span>
-              <span class="text-sm font-bold text-slate-900">{{ folders.length }}</span>
+        <!-- WIDGET 4: Kalender & Anstehende Fristen (Mini-Kalender & Fälligkeiten) -->
+        <section class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-3.5 border-b border-slate-200 mb-4">
+            <div class="flex items-center space-x-2.5">
+              <Calendar class="w-5 h-5 text-[#00A3C4]" />
+              <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ $t('dashboard.kalender_termine') }}</h2>
             </div>
-
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.aktive_projekte') }}</span>
-              <span class="text-sm font-bold text-[#00A3C4]">{{ totalProjects }}</span>
-            </div>
-
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-xs text-slate-700 font-medium">{{ $t('dashboard.offene_aufgaben') }}</span>
-              <span class="text-sm font-bold text-slate-900">{{ tasks.length }}</span>
-            </div>
-
-            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span class="text-xs font-semibold text-emerald-950">{{ $t('dashboard.zerotrust_pipeline') }}</span>
-              </div>
-              <span class="text-[10px] font-bold text-emerald-800">{{ $t('common.aktiv') }}</span>
-            </div>
+            <NuxtLink
+              to="/calendar"
+              class="text-xs font-semibold text-[#00A3C4] hover:underline inline-flex items-center space-x-1"
+            >
+              <span>{{ $t('dashboard.ganzer_kalender') }}</span>
+              <ArrowRight class="w-3.5 h-3.5" />
+            </NuxtLink>
           </div>
+
+          <MiniCalendar />
         </section>
       </div>
     </div>
