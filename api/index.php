@@ -2184,6 +2184,7 @@ function defaultUserSettings() {
         'density' => 'comfortable',
         'start_page' => 'dashboard',
         'timezone' => 'Europe/Zurich',
+        'sidebar_collapsed' => false,
         'calendar' => [
             'default_view' => 'month',
             'week_start' => 1,
@@ -2281,6 +2282,7 @@ function normalizeUserSettings($raw) {
         'density' => pickEnum($raw['density'] ?? null, ['comfortable', 'compact'], $d['density']),
         'start_page' => pickEnum($raw['start_page'] ?? null, ['dashboard', 'calendar', 'time', 'contacts'], $d['start_page']),
         'timezone' => pickTimezone($raw['timezone'] ?? null, $d['timezone']),
+        'sidebar_collapsed' => pickBool($raw['sidebar_collapsed'] ?? null, $d['sidebar_collapsed']),
         'calendar' => [
             'default_view' => pickEnum($cal['default_view'] ?? null, ['month', 'week', 'day'], $d['calendar']['default_view']),
             'week_start' => pickInt($cal['week_start'] ?? null, [0, 1], $d['calendar']['week_start']),

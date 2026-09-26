@@ -245,217 +245,375 @@
 
       <!-- Main Layout with Left Desktop Sidebar -->
       <div class="flex-1 flex w-full">
-        <!-- Left Fixed Desktop Sidebar (Design v2 Standard) -->
+        <!-- Left Fixed Desktop Sidebar (Design v2 Standard, Collapsible) -->
         <aside
           v-if="user && !isLoginPage"
-          class="hidden lg:flex flex-col w-60 shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14 select-none z-30"
+          class="hidden lg:flex flex-col shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14 select-none z-30 transition-all duration-300 ease-in-out"
+          :class="sidebarCollapsed ? 'w-16' : 'w-60'"
         >
-          <nav class="p-3 space-y-0.5 flex-1">
+          <!-- Sidebar Header: Toggle Button & Title -->
+          <div
+            class="p-2 border-b border-slate-100 flex items-center shrink-0"
+            :class="sidebarCollapsed ? 'justify-center' : 'justify-between'"
+          >
+            <span v-if="!sidebarCollapsed" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 truncate">
+              {{ $t('app.navigation') }}
+            </span>
+            <button
+              type="button"
+              @click="toggleSidebar"
+              class="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
+              :title="sidebarCollapsed ? $t('app.sidebar_ausklappen') : $t('app.sidebar_einklappen')"
+            >
+              <PanelLeftOpen v-if="sidebarCollapsed" class="w-4 h-4 text-[#00A3C4]" />
+              <PanelLeftClose v-else class="w-4 h-4 text-slate-500" />
+            </button>
+          </div>
+
+          <!-- Main Navigation Links -->
+          <nav
+            class="space-y-1 flex-1 overflow-y-auto overflow-x-hidden"
+            :class="sidebarCollapsed ? 'p-2' : 'p-3'"
+          >
             <NuxtLink
               to="/dashboard"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path === '/dashboard' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('common.dashboard')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path === '/dashboard' ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.dashboard') : ''"
             >
-              <LayoutDashboard class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('common.dashboard') }}</span>
+              <LayoutDashboard class="w-4 h-4 shrink-0" :class="$route.path === '/dashboard' ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.dashboard') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/time"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path === '/time' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('common.zeitrapporte')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path === '/time' ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.zeitrapporte') : ''"
             >
-              <Clock class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('common.zeitrapporte') }}</span>
+              <Clock class="w-4 h-4 shrink-0" :class="$route.path === '/time' ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.zeitrapporte') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/contacts"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path.startsWith('/contacts') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('common.kontakte')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path.startsWith('/contacts') ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.kontakte') : ''"
             >
-              <BookUser class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('common.kontakte') }}</span>
+              <BookUser class="w-4 h-4 shrink-0" :class="$route.path.startsWith('/contacts') ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.kontakte') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/calendar"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path.startsWith('/calendar') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('common.kalender')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path.startsWith('/calendar') ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.kalender') : ''"
             >
-              <CalendarDays class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('common.kalender') }}</span>
+              <CalendarDays class="w-4 h-4 shrink-0" :class="$route.path.startsWith('/calendar') ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.kalender') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/journal"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path.startsWith('/journal') ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('journal.tab_journal') || 'Projektjournal'"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path.startsWith('/journal') ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? ($t('journal.tab_journal') || 'Projektjournal') : ''"
             >
-              <BookOpen class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('journal.tab_journal') || 'Projektjournal' }}</span>
+              <BookOpen class="w-4 h-4 shrink-0" :class="$route.path.startsWith('/journal') ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('journal.tab_journal') || 'Projektjournal' }}</span>
             </NuxtLink>
 
             <NuxtLink
               v-if="isPlatformAdmin"
               to="/admin"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800 font-semibold' : 'text-slate-600 hover:bg-purple-50/60 hover:text-purple-900'"
-              :title="$t('common.administration')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path.startsWith('/admin') ? 'bg-purple-50 text-purple-800 font-semibold border border-purple-200 shadow-2xs' : 'text-slate-600 hover:bg-purple-50/60 hover:text-purple-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.administration') : ''"
             >
               <ShieldCheck class="w-4 h-4 shrink-0 text-purple-600" />
-              <span>{{ $t('common.administration') }}</span>
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.administration') }}</span>
             </NuxtLink>
 
             <!-- Admin Sub-Menu (Desktop) -->
-            <div v-if="isPlatformAdmin && $route.path.startsWith('/admin')" class="ml-4 pl-2.5 border-l-2 border-purple-200 space-y-0.5 my-1">
-              <NuxtLink
-                v-if="hasAdminPermission('manage_users')"
-                to="/admin?tab=users"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('admin.benutzerverwaltung')"
-              >
-                <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('admin.benutzerverwaltung') }}</span>
-              </NuxtLink>
+            <div v-if="isPlatformAdmin && $route.path.startsWith('/admin')">
+              <!-- Expanded: indented sub-menu -->
+              <div v-if="!sidebarCollapsed" class="ml-4 pl-2.5 border-l-2 border-purple-200 space-y-0.5 my-1">
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_users')"
+                  to="/admin?tab=users"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('admin.benutzerverwaltung')"
+                >
+                  <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('admin.benutzerverwaltung') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('company_settings')"
-                to="/admin?tab=companies"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('admin.unternehmen')"
-              >
-                <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('admin.unternehmen') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=companies"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('admin.unternehmen')"
+                >
+                  <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('admin.unternehmen') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('finance')"
-                to="/admin?tab=finance"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('admin.finanzen_lizenzen')"
-              >
-                <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('admin.finanzen_lizenzen') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('finance')"
+                  to="/admin?tab=finance"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('admin.finanzen_lizenzen')"
+                >
+                  <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('admin.finanzen_lizenzen') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('manage_templates')"
-                to="/admin?tab=templates"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('admin.projekt_vorlagen')"
-              >
-                <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('admin.projekt_vorlagen') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_templates')"
+                  to="/admin?tab=templates"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('admin.projekt_vorlagen')"
+                >
+                  <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('admin.projekt_vorlagen') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('company_settings')"
-                to="/admin?tab=email"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('admin.email_versand')"
-              >
-                <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('admin.email_versand') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=email"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('admin.email_versand')"
+                >
+                  <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('admin.email_versand') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('manage_users')"
-                to="/admin?tab=invites"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('app.einladungen')"
-              >
-                <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>Einladungen</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_users')"
+                  to="/admin?tab=invites"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('app.einladungen')"
+                >
+                  <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>Einladungen</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('company_settings')"
-                to="/admin?tab=website"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('app.webseite_cms')"
-              >
-                <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('app.webseite_cms') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=website"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('app.webseite_cms')"
+                >
+                  <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('app.webseite_cms') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('company_settings')"
-                to="/admin?tab=ai"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('app.ai_plaene')"
-              >
-                <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('app.ai_plaene') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=ai"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('app.ai_plaene')"
+                >
+                  <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('app.ai_plaene') }}</span>
+                </NuxtLink>
 
-              <NuxtLink
-                v-if="hasAdminPermission('any_admin')"
-                to="/admin?tab=audit"
-                class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
-                :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                :title="$t('app.security_audit')"
-              >
-                <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
-                <span>{{ $t('app.audit_logs') }}</span>
-              </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('any_admin')"
+                  to="/admin?tab=audit"
+                  class="flex items-center gap-2 px-2.5 h-8 rounded-md text-xs font-medium transition-colors"
+                  :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  :title="$t('app.security_audit')"
+                >
+                  <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span>{{ $t('app.audit_logs') }}</span>
+                </NuxtLink>
+              </div>
+
+              <!-- Collapsed: compact sub-item icons -->
+              <div v-else class="my-1.5 pt-1.5 border-t border-purple-100 space-y-1">
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_users')"
+                  to="/admin?tab=users"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'users' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('admin.benutzerverwaltung')"
+                >
+                  <Users class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=companies"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'companies' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('admin.unternehmen')"
+                >
+                  <Building2 class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('finance')"
+                  to="/admin?tab=finance"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'finance' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('admin.finanzen_lizenzen')"
+                >
+                  <CreditCard class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_templates')"
+                  to="/admin?tab=templates"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'templates' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('admin.projekt_vorlagen')"
+                >
+                  <ClipboardList class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=email"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'email' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('admin.email_versand')"
+                >
+                  <Mail class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('manage_users')"
+                  to="/admin?tab=invites"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'invites' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('app.einladungen')"
+                >
+                  <Send class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=website"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'website' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('app.webseite_cms')"
+                >
+                  <Globe class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('company_settings')"
+                  to="/admin?tab=ai"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'ai' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('app.ai_plaene')"
+                >
+                  <Sparkles class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+                <NuxtLink
+                  v-if="hasAdminPermission('any_admin')"
+                  to="/admin?tab=audit"
+                  class="flex items-center justify-center w-8 h-8 mx-auto rounded-md transition-colors"
+                  :class="currentAdminTab === 'audit' ? 'bg-purple-100 text-purple-900 shadow-2xs font-semibold' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-800'"
+                  :title="$t('app.security_audit')"
+                >
+                  <ShieldCheck class="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                </NuxtLink>
+              </div>
             </div>
 
             <NuxtLink
               v-else-if="isCompanyAdmin"
               to="/company"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-emerald-50/60 hover:text-emerald-900'"
-              :title="$t('common.firmen_admin')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path.startsWith('/company') ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 shadow-2xs' : 'text-slate-600 hover:bg-emerald-50/60 hover:text-emerald-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.firmen_admin') : ''"
             >
               <Building2 class="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>{{ $t('common.firmen_admin') }}</span>
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.firmen_admin') }}</span>
             </NuxtLink>
 
             <NuxtLink
               to="/settings"
-              class="flex items-center gap-3 px-3 h-9 rounded-md text-sm font-medium transition-colors"
-              :class="$route.path === '/settings' ? 'bg-cyan-50 text-cyan-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-              :title="$t('common.mein_profil')"
+              class="flex items-center rounded-lg text-sm font-medium transition-colors group"
+              :class="[
+                sidebarCollapsed ? 'justify-center w-10 h-10 mx-auto px-0' : 'gap-3 px-3 h-9',
+                $route.path === '/settings' ? 'bg-cyan-50 text-[#00A3C4] font-semibold border border-cyan-200/80 shadow-2xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+              ]"
+              :title="sidebarCollapsed ? $t('common.einstellungen') : ''"
             >
-              <Settings class="w-4 h-4 shrink-0 text-slate-500" />
-              <span>{{ $t('common.einstellungen') }}</span>
+              <Settings class="w-4 h-4 shrink-0" :class="$route.path === '/settings' ? 'text-[#00A3C4]' : 'text-slate-500 group-hover:text-slate-700'" />
+              <span v-if="!sidebarCollapsed" class="truncate">{{ $t('common.einstellungen') }}</span>
             </NuxtLink>
           </nav>
 
           <!-- Mini-Kalender (Terminübersicht) -->
-          <div class="border-t border-slate-200 pt-3">
-            <div class="px-4 pb-1 flex items-center gap-2">
-              <CalendarDays class="w-3.5 h-3.5 text-slate-400" />
-              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{{ $t('common.kalender') }}</span>
+          <div v-if="!sidebarCollapsed" class="border-t border-slate-200 pt-3">
+            <div class="px-4 pb-1 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <CalendarDays class="w-3.5 h-3.5 text-slate-400" />
+                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{{ $t('common.kalender') }}</span>
+              </div>
+              <NuxtLink
+                to="/calendar"
+                class="text-[11px] text-[#00A3C4] hover:underline font-semibold"
+              >
+                {{ $t('mini_cal.kalender_oeffnen') }}
+              </NuxtLink>
             </div>
             <MiniCalendar />
           </div>
+          <div v-else class="border-t border-slate-200 py-2 flex flex-col items-center">
+            <NuxtLink
+              to="/calendar"
+              class="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#00A3C4] hover:bg-cyan-50 transition-colors mx-auto"
+              :title="$t('common.kalender')"
+            >
+              <CalendarDays class="w-5 h-5" />
+            </NuxtLink>
+          </div>
 
-          <!-- Sidebar Footer Wallpaper Trigger -->
-          <div class="p-3 border-t border-slate-200 flex items-center justify-between">
+          <!-- Sidebar Footer Wallpaper Trigger & Version -->
+          <div
+            class="p-2 border-t border-slate-200 flex items-center shrink-0"
+            :class="sidebarCollapsed ? 'flex-col gap-1 justify-center' : 'justify-between px-3 py-2.5'"
+          >
             <button
               @click="showWallpaperPicker = true"
               type="button"
-              class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 cursor-pointer"
+              class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-900 transition-colors rounded-md hover:bg-slate-100 cursor-pointer"
+              :class="sidebarCollapsed ? 'w-10 h-10 justify-center p-0' : 'py-1 px-2'"
+              :title="$t('common.hintergrund')"
             >
-              <Image class="w-3.5 h-3.5" />
-              <span>{{ $t('common.hintergrund') }}</span>
+              <Image class="w-4 h-4" />
+              <span v-if="!sidebarCollapsed">{{ $t('common.hintergrund') }}</span>
             </button>
-            <span class="text-[11px] font-mono text-slate-400">v2.0</span>
+            <span v-if="!sidebarCollapsed" class="text-[11px] font-mono text-slate-400">v2.0</span>
           </div>
         </aside>
 
@@ -557,17 +715,59 @@ import {
   Mail,
   Send,
   Globe,
-  Sparkles
+  Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-vue-next'
 
 const route = useRoute()
-const { user, initAuth } = useAuth()
+const { user, initAuth, authHeaders } = useAuth()
 const { wallpapers, currentWallpaper, initWallpaper, setWallpaper } = useWallpaper()
 const { fetchSettings } = useWebsiteSettings()
 const { setLocale } = useI18n()
 
 const showWallpaperPicker = ref(false)
 const mobileMenuOpen = ref(false)
+const sidebarCollapsed = ref(false)
+
+function initSidebarState() {
+  if (!import.meta.client) return
+  const uid = user.value?.id || 'default'
+  const saved = localStorage.getItem(`taskster_sidebar_collapsed_${uid}`)
+  if (saved !== null) {
+    sidebarCollapsed.value = saved === 'true'
+  } else if (user.value?.settings?.sidebar_collapsed !== undefined) {
+    sidebarCollapsed.value = Boolean(user.value.settings.sidebar_collapsed)
+  }
+}
+
+const toggleSidebar = async () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  const uid = user.value?.id || 'default'
+  if (import.meta.client) {
+    localStorage.setItem(`taskster_sidebar_collapsed_${uid}`, String(sidebarCollapsed.value))
+  }
+  if (user.value?.id) {
+    try {
+      const currentSettings = user.value.settings || {}
+      await $fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: {
+          settings: {
+            ...currentSettings,
+            sidebar_collapsed: sidebarCollapsed.value
+          }
+        }
+      })
+      if (user.value.settings) {
+        user.value.settings.sidebar_collapsed = sidebarCollapsed.value
+      }
+    } catch {
+      // LocalStorage fallback already set
+    }
+  }
+}
 
 const isLoginPage = computed(() => route.path === '/login')
 
@@ -618,6 +818,7 @@ onMounted(async () => {
   initWallpaper()
   fetchSettings()
   await initAuth()
+  initSidebarState()
   syncUserLanguage()
   startNotificationPolling()
 })
@@ -641,6 +842,7 @@ async function startNotificationPolling() {
 
 watch(user, (u) => {
   if (u) {
+    initSidebarState()
     syncUserLanguage()
     startNotificationPolling()
   } else if (notificationTimer) {

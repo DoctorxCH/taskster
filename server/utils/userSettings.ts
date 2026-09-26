@@ -14,6 +14,7 @@ export interface UserSettings {
   density: 'comfortable' | 'compact'
   start_page: 'dashboard' | 'calendar' | 'time' | 'contacts'
   timezone: string
+  sidebar_collapsed?: boolean
 
   // --- Kalender ---
   calendar: {
@@ -61,6 +62,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   density: 'comfortable',
   start_page: 'dashboard',
   timezone: 'Europe/Zurich',
+  sidebar_collapsed: false,
 
   calendar: {
     default_view: 'month',
@@ -149,6 +151,7 @@ export function normalizeSettings(raw: any): UserSettings {
     density: pickEnum(src.density, ['comfortable', 'compact'] as const, d.density),
     start_page: pickEnum(src.start_page, ['dashboard', 'calendar', 'time', 'contacts'] as const, d.start_page),
     timezone: pickTimezone(src.timezone, d.timezone),
+    sidebar_collapsed: pickBool(src.sidebar_collapsed, d.sidebar_collapsed ?? false),
 
     calendar: {
       default_view: pickEnum(cal.default_view, ['month', 'week', 'day'] as const, d.calendar.default_view),
