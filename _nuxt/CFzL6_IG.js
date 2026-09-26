@@ -1,0 +1,4 @@
+import{aS as t,h as p}from"./DzR3mNyQ.js";const k=()=>{const s=t("admin_bootstrapped",()=>!1),a=t("admin_tokens",()=>({})),r=t("admin_features",()=>({})),l=t("admin_locales",()=>({})),{authHeaders:d}=p(),c=o=>{{let e=document.getElementById("taskster-design-tokens");e||(e=document.createElement("style"),e.id="taskster-design-tokens",document.head.appendChild(e));let n=`:root {
+`;for(const[u,i]of Object.entries(o)){const m="--"+u.replace(/[^a-zA-Z0-9-]/g,"-");n+=`  ${m}: ${i};
+`}n+=`}
+`,e.innerHTML=n}};return{isBootstrapped:s,tokens:a,features:r,locales:l,bootstrapSystem:async(o=!1)=>{if(!(s.value&&!o))try{const e=await $fetch("/api/system/bootstrap",{headers:d()});a.value=e.design_tokens||{},r.value=e.features||{},l.value=e.locales_delta||{},s.value=!0,c(a.value)}catch(e){console.error("Failed to bootstrap system",e)}},applyTokensToCSS:c}};export{k as u};
