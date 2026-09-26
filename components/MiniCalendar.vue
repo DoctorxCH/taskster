@@ -72,115 +72,127 @@
       </button>
     </div>
 
-    <!-- Ausgewählter Tag: Terminliste -->
-    <div v-if="selectedDate && selectedItems.length > 0" class="mt-4 pt-3 border-t border-slate-200">
-      <div class="flex items-center justify-between mb-2 px-1">
-        <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-          {{ selectedLabel }}
-        </span>
-        <button
-          type="button"
-          class="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition cursor-pointer"
-          :title="$t('mini_cal.auswahl_aufheben')"
-          @click="selectedDate = null"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      <ul class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-        <li v-for="item in selectedItems" :key="item.id">
-          <NuxtLink
-            :to="`/projects/${item.project_id}?task=${item.id}`"
-            class="flex items-start gap-2.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/80 hover:border-cyan-300 transition-all group"
+    <!-- Termine & Fristenliste (nur anzeigen wenn showEvents aktiv) -->
+    <template v-if="showEvents">
+      <!-- Ausgewählter Tag: Terminliste -->
+      <div v-if="selectedDate && selectedItems.length > 0" class="mt-4 pt-3 border-t border-slate-200">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+            {{ selectedLabel }}
+          </span>
+          <button
+            type="button"
+            class="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition cursor-pointer"
+            :title="$t('mini_cal.auswahl_aufheben')"
+            @click="selectedDate = null"
           >
-            <span
-              class="w-2 h-2 rounded-full mt-1.5 shrink-0"
-              :class="item.overdue ? 'bg-rose-500' : statusDot(item.status)"
-            />
-            <div class="min-w-0 flex-1">
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <ul class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+          <li v-for="item in selectedItems" :key="item.id">
+            <NuxtLink
+              :to="`/projects/${item.project_id}?task=${item.id}`"
+              class="flex items-start gap-2.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/80 hover:border-cyan-300 transition-all group"
+            >
               <span
-                class="block text-xs font-bold truncate transition-colors"
-                :class="item.overdue ? 'text-rose-700' : 'text-slate-900 group-hover:text-[#00A3C4]'"
-              >
-                {{ item.title }}
-              </span>
-              <span class="block text-[11px] text-slate-500 truncate mt-0.5">
-                {{ item.project_title }}
-              </span>
-            </div>
-          </NuxtLink>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Ausgewählter Tag: Keine Termine -->
-    <div v-else-if="selectedDate" class="mt-4 pt-3 border-t border-slate-200 px-1">
-      <div class="flex items-center justify-between">
-        <span class="text-xs text-slate-500">{{ selectedLabel }} – {{ $t('mini_cal.keine_termine') }}</span>
-        <button type="button" class="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition cursor-pointer" @click="selectedDate = null">
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Standard (kein Tag gewählt): Nächste Fristen & Termine -->
-    <div v-else class="mt-4 pt-3 border-t border-slate-200">
-      <div class="flex items-center justify-between mb-2 px-1">
-        <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-          {{ $t('mini_cal.naechste_faelligkeiten') }}
-        </span>
-        <span v-if="upcomingItems.length > 0" class="text-[10px] text-slate-500 font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
-          {{ upcomingItems.length }}
-        </span>
-      </div>
-
-      <div v-if="loading" class="py-4 text-center text-xs text-slate-400 font-medium">
-        ...
-      </div>
-
-      <ul v-else-if="upcomingItems.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-        <li v-for="item in upcomingItems" :key="item.id">
-          <NuxtLink
-            :to="`/projects/${item.project_id}?task=${item.id}`"
-            class="flex items-start gap-2.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/80 hover:border-cyan-300 transition-all group"
-          >
-            <span
-              class="w-2 h-2 rounded-full mt-1.5 shrink-0"
-              :class="item.overdue ? 'bg-rose-500 animate-pulse' : 'bg-[#00A3C4]'"
-            />
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-1.5">
+                class="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                :class="item.overdue ? 'bg-rose-500' : statusDot(item.status)"
+              />
+              <div class="min-w-0 flex-1">
                 <span
                   class="block text-xs font-bold truncate transition-colors"
                   :class="item.overdue ? 'text-rose-700' : 'text-slate-900 group-hover:text-[#00A3C4]'"
                 >
                   {{ item.title }}
                 </span>
-                <span
-                  class="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 border"
-                  :class="item.overdue ? 'bg-rose-100 text-rose-800 border-rose-200' : (item.dateKey === todayKey ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold' : 'bg-white text-slate-600 border-slate-200')"
-                >
-                  {{ formatItemDueDate(item.dateKey, item.overdue) }}
+                <span class="block text-[11px] text-slate-500 truncate mt-0.5">
+                  {{ item.project_title }}
                 </span>
               </div>
-              <span class="block text-[11px] text-slate-500 truncate mt-0.5">
-                {{ item.project_title }}
-              </span>
-            </div>
-          </NuxtLink>
-        </li>
-      </ul>
-
-      <div v-else class="py-3 px-2 text-center text-xs text-slate-400 font-medium">
-        {{ $t('mini_cal.keine_anstehenden_fristen') }}
+            </NuxtLink>
+          </li>
+        </ul>
       </div>
-    </div>
+
+      <!-- Ausgewählter Tag: Keine Termine -->
+      <div v-else-if="selectedDate" class="mt-4 pt-3 border-t border-slate-200 px-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500">{{ selectedLabel }} – {{ $t('mini_cal.keine_termine') }}</span>
+          <button type="button" class="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition cursor-pointer" @click="selectedDate = null">
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Standard (kein Tag gewählt): Nächste Fristen & Termine -->
+      <div v-else class="mt-4 pt-3 border-t border-slate-200">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+            {{ $t('mini_cal.naechste_faelligkeiten') }}
+          </span>
+          <span v-if="upcomingItems.length > 0" class="text-[10px] text-slate-500 font-semibold px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
+            {{ upcomingItems.length }}
+          </span>
+        </div>
+
+        <div v-if="loading" class="py-4 text-center text-xs text-slate-400 font-medium">
+          ...
+        </div>
+
+        <ul v-else-if="upcomingItems.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+          <li v-for="item in upcomingItems" :key="item.id">
+            <NuxtLink
+              :to="`/projects/${item.project_id}?task=${item.id}`"
+              class="flex items-start gap-2.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-cyan-50/50 border border-slate-200/80 hover:border-cyan-300 transition-all group"
+            >
+              <span
+                class="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                :class="item.overdue ? 'bg-rose-500 animate-pulse' : 'bg-[#00A3C4]'"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-1.5">
+                  <span
+                    class="block text-xs font-bold truncate transition-colors"
+                    :class="item.overdue ? 'text-rose-700' : 'text-slate-900 group-hover:text-[#00A3C4]'"
+                  >
+                    {{ item.title }}
+                  </span>
+                  <span
+                    class="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 border"
+                    :class="item.overdue ? 'bg-rose-100 text-rose-800 border-rose-200' : (item.dateKey === todayKey ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold' : 'bg-white text-slate-600 border-slate-200')"
+                  >
+                    {{ formatItemDueDate(item.dateKey, item.overdue) }}
+                  </span>
+                </div>
+                <span class="block text-[11px] text-slate-500 truncate mt-0.5">
+                  {{ item.project_title }}
+                </span>
+              </div>
+            </NuxtLink>
+          </li>
+        </ul>
+
+        <div v-else class="py-3 px-2 text-center text-xs text-slate-400 font-medium">
+          {{ $t('mini_cal.keine_anstehenden_fristen') }}
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
+
+const props = withDefaults(
+  defineProps<{
+    showEvents?: boolean
+  }>(),
+  {
+    showEvents: true
+  }
+)
 
 const { authHeaders } = useAuth()
 const { t, locale } = useI18n()
@@ -305,6 +317,10 @@ const formatItemDueDate = (dateKey: string, isOverdue: boolean) => {
 }
 
 const selectDay = (cell: any) => {
+  if (!props.showEvents) {
+    navigateTo({ path: '/calendar', query: { date: cell.key } })
+    return
+  }
   selectedDate.value = selectedDate.value === cell.key ? null : cell.key
 }
 

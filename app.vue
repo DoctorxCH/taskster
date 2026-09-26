@@ -586,7 +586,7 @@
                 {{ $t('mini_cal.kalender_oeffnen') }}
               </NuxtLink>
             </div>
-            <MiniCalendar />
+            <MiniCalendar :show-events="false" />
           </div>
           <div v-else class="border-t border-slate-200 py-2 flex flex-col items-center">
             <NuxtLink

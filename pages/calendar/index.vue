@@ -626,6 +626,7 @@ import {
 } from 'lucide-vue-next'
 
 const { user, authHeaders } = useAuth()
+const route = useRoute()
 
 // ---------------------------------------------------------------------------
 // Zustand
@@ -1451,12 +1452,26 @@ onMounted(async () => {
     const { initAuth } = useAuth()
     await initAuth()
   }
+  if (route.query.date && typeof route.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.date)) {
+    const [y, m, d] = route.query.date.split('-').map(Number)
+    cursor.value = new Date(y, m - 1, d)
+    selectedDate.value = route.query.date
+  }
   // Standard-Ansicht aus den persönlichen Einstellungen übernehmen
   const dv = calSettings.value.default_view
   if (dv === 'week' || dv === 'day' || dv === 'month') view.value = dv
   await Promise.all([loadEvents(), loadCategories(), loadProjects(), loadMembers()])
   if (view.value === 'week') {
     scrollToStartHour()
+  }
+})
+
+watch(() => route.query.date, (newDate) => {
+  if (newDate && typeof newDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+    const [y, m, d] = newDate.split('-').map(Number)
+    cursor.value = new Date(y, m - 1, d)
+    selectedDate.value = newDate
+    loadEvents()
   }
 })
 
