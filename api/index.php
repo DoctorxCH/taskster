@@ -2662,13 +2662,27 @@ function getOrCreateDefaultFolder($db, $user) {
     return $folder;
 }
 
-// ROUTER
+// CORE & ROUTER INITIALIZATION
+require_once __DIR__ . '/core/Autoloader.php';
+$autoloader = new Autoloader(__DIR__);
+$autoloader->register();
+
+$router = new Router();
+// Hier werden künftig neue Controller-Routen registriert, z.B.:
+// require_once __DIR__ . '/routes.php'; // (kommt später)
+
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = preg_replace('#^.*?/api/?#', '', $uri);
 $path = trim($path, '/');
 $method = $_SERVER['REQUEST_METHOD'];
 $body = getJsonBody();
 
+// Versuche, die Route über den neuen Router abzuwickeln
+if ($router->dispatch($method, $path, $body)) {
+    exit; // Route wurde erfolgreich vom neuen Router behandelt
+}
+
+// FALLBACK: Legacy Inline-Routen
 try {
     $db = getDb();
     // 1. POST auth/login

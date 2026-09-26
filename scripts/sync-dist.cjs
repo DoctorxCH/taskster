@@ -28,9 +28,13 @@ function copyRecursiveSync(src, dest) {
 
 console.log('🔄 Synchronisiere .output/public in das Git-Root-Verzeichnis...')
 
-// 1. Sync all entries from .output/public to root
+// 1. Sync all entries from .output/public to root (except api)
 const entries = fs.readdirSync(sourceDir)
 for (const entry of entries) {
+  if (entry === 'api') {
+    console.log(`  ⏭️ Übersprungen: api (Source bleibt erhalten)`)
+    continue
+  }
   const src = path.join(sourceDir, entry)
   const dest = path.join(targetDir, entry)
   copyRecursiveSync(src, dest)
