@@ -247,7 +247,7 @@
       <div class="flex-1 flex w-full">
         <!-- Left Fixed Desktop Sidebar (Design v2 Standard, Collapsible) -->
         <aside
-          v-if="user && !isLoginPage"
+          v-if="user && !isLoginPage && !isNewAdminRoute"
           class="hidden lg:flex flex-col shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14 select-none z-30 transition-all duration-300 ease-in-out"
           :class="sidebarCollapsed ? 'w-16' : 'w-60'"
         >
@@ -618,8 +618,10 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 min-w-0 transition-all">
-          <NuxtPage />
+        <main class="flex-1 min-w-0 transition-all" :class="{ 'bg-slate-50 z-20 relative': isNewAdminRoute }">
+          <NuxtLayout>
+            <NuxtPage />
+          </NuxtLayout>
         </main>
       </div>
     </div>
@@ -770,6 +772,9 @@ const toggleSidebar = async () => {
 }
 
 const isLoginPage = computed(() => route.path === '/login')
+const isNewAdminRoute = computed(() => {
+  return route.path === '/admin' || (route.path.startsWith('/admin/') && route.path !== '/admin/legacy')
+})
 
 // Plattform-Admin (Superadmin oder explizite Plattform-Permissions)
 const isPlatformAdmin = computed(() => {

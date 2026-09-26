@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+  <div class="h-full bg-slate-50 flex flex-col md:flex-row">
     <!-- Admin Sidebar -->
     <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col">
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
