@@ -6,19 +6,9 @@ class CustomFieldController {
     public function __construct() {
         $this->permissionService = new PermissionService();
     }
-    
-    private function requireAuth(): array {
-        // Mocked auth check
-        $headers = apache_request_headers();
-        $auth = $headers['Authorization'] ?? '';
-        if (!$auth) {
-            throw new Exception('error.auth.unauthorized', 401);
-        }
-        return ['id' => 'mock-user-id', 'company_id' => 'company-123'];
-    }
 
     public function index(): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.custom_fields.view')) {
             throw new Exception('error.auth.forbidden', 403);
         }
@@ -35,7 +25,7 @@ class CustomFieldController {
     }
     
     public function update(array $body, string $id): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.custom_fields.edit')) {
             throw new Exception('error.auth.forbidden', 403);
         }

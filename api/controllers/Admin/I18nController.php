@@ -8,19 +8,9 @@ class I18nController {
         $this->permissionService = new PermissionService();
         $this->translationService = new TranslationService();
     }
-    
-    private function requireAuth(): array {
-        // Mocked auth check
-        $headers = apache_request_headers();
-        $auth = $headers['Authorization'] ?? '';
-        if (!$auth) {
-            throw new Exception('error.auth.unauthorized', 401);
-        }
-        return ['id' => 'mock-user-id', 'company_id' => 'company-123'];
-    }
 
     public function index(): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.i18n.view')) {
             throw new Exception('error.auth.forbidden', 403);
         }
@@ -39,7 +29,7 @@ class I18nController {
     }
     
     public function upsert(array $body): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.i18n.edit')) {
             throw new Exception('error.auth.forbidden', 403);
         }
@@ -70,7 +60,7 @@ class I18nController {
     }
     
     public function delete(array $body, string $id): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.i18n.edit')) {
             throw new Exception('error.auth.forbidden', 403);
         }

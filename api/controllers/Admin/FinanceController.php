@@ -8,19 +8,9 @@ class FinanceController {
         $this->permissionService = new PermissionService();
         $this->financeService = new FinanceService();
     }
-    
-    private function requireAuth(): array {
-        // Mocked auth check
-        $headers = apache_request_headers();
-        $auth = $headers['Authorization'] ?? '';
-        if (!$auth) {
-            throw new Exception('error.auth.unauthorized', 401);
-        }
-        return ['id' => 'mock-user-id', 'company_id' => 'company-123'];
-    }
 
     public function logTime(array $body): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         
         // Ensure user has basic time logging permission (could be implicit for any user, but let's check)
         if (!$this->permissionService->hasPermission($user['id'], 'time.log')) {
@@ -35,7 +25,7 @@ class FinanceController {
     }
     
     public function getRevenueReport(): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         
         // Only admins/finance roles should see this
         if (!$this->permissionService->hasPermission($user['id'], 'admin.finance.view')) {
@@ -49,7 +39,7 @@ class FinanceController {
     }
     
     public function setInvoiceRule(array $body): array {
-        $user = $this->requireAuth();
+        $user = requireAuth();
         if (!$this->permissionService->hasPermission($user['id'], 'admin.finance.edit')) {
             throw new Exception('error.auth.forbidden', 403);
         }

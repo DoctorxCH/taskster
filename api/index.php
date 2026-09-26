@@ -2678,6 +2678,15 @@ $router->put('/admin/workflow/statuses/:id', ['WorkflowController', 'updateStatu
 $router->get('/admin/custom-fields', ['CustomFieldController', 'index']);
 $router->put('/admin/custom-fields/:id', ['CustomFieldController', 'update']);
 
+// Admin Companies Routes
+$router->get('/admin/companies', ['CompanyController', 'index']);
+$router->get('/admin/companies/:id', ['CompanyController', 'show']);
+$router->put('/admin/companies/:id', ['CompanyController', 'update']);
+
+// Admin Roles Routes
+$router->get('/admin/roles', ['RoleController', 'index']);
+$router->get('/admin/roles/:id', ['RoleController', 'show']);
+
 // Admin I18n / CMS Routes
 $router->get('/admin/i18n', ['I18nController', 'index']);
 $router->post('/admin/i18n', ['I18nController', 'upsert']);
